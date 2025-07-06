@@ -449,7 +449,25 @@ const gameState = {
     isMapVisible: true,
     saveVersion: '1.6-accumulator', // セーブデータのバージョン
     timelineLog: [], // 時系列ログエントリを格納
-    maxLogEntries: 100 // ログの最大保持数
+    maxLogEntries: 100, // ログの最大保持数
+    statistics: {
+        resources: {
+            cosmicDust: { total: 0, perSecond: 0, perHour: 0, history: [] },
+            energy: { total: 0, perSecond: 0, perHour: 0, history: [] },
+            organicMatter: { total: 0, perSecond: 0, perHour: 0, history: [] },
+            biomass: { total: 0, perSecond: 0, perHour: 0, history: [] },
+            darkMatter: { total: 0, perSecond: 0, perHour: 0, history: [] },
+            thoughtPoints: { total: 0, perSecond: 0, perHour: 0, history: [] }
+        },
+        cosmic: {
+            starCount: { current: 0, history: [] },
+            planetCount: { current: 0, history: [] },
+            cosmicActivity: { current: 0, history: [] },
+            totalPopulation: { current: 0, history: [] }
+        },
+        lastUpdate: Date.now(),
+        maxHistoryPoints: 60 // 1分間のデータを保持
+    }
 };
 
 // Initialize mathCache after gameState is defined
@@ -505,6 +523,277 @@ function updateTimelineLogDisplay() {
 function clearTimelineLog() {
     gameState.timelineLog = [];
     updateTimelineLogDisplay();
+}
+
+// --- 統計システム -------------------------------------------------------
+function updateStatistics() {
+    const now = Date.now();
+    const deltaTime = (now - gameState.statistics.lastUpdate) / 1000; // 秒単位
+    
+    if (deltaTime < 1) return; // 1秒未満の場合は更新しない
+    
+    // リソース統計を更新
+    const resources = ['cosmicDust', 'energy', 'organicMatter', 'biomass', 'darkMatter', 'thoughtPoints'];
+    resources.forEach(resource => {
+        const current = gameState[resource] || 0;
+        const stats = gameState.statistics.resources[resource];
+        
+        // 前回の値がない場合は初期化
+        if (stats.total === 0) stats.total = current;
+        
+        // 増加量を計算
+        const gained = current - stats.total;
+        if (gained > 0) {
+            stats.total = current;
+            stats.perSecond = gained / deltaTime;
+            stats.perHour = stats.perSecond * 3600;
+        } else {
+            // 減少または変化なしの場合、レートを徐々に減衰
+            stats.perSecond = Math.max(0, stats.perSecond * 0.95);
+            stats.perHour = stats.perSecond * 3600;
+        }
+        
+        // 履歴に追加
+        stats.history.push({
+            time: now,
+            value: current,
+            rate: stats.perSecond
+        });
+        
+        // 古い履歴を削除
+        if (stats.history.length > gameState.statistics.maxHistoryPoints) {
+            stats.history.shift();
+        }
+    });
+    
+    // 宇宙統計を更新
+    const starCount = gameState.stars.filter(s => s.userData.type === 'star').length;
+    const planetCount = gameState.stars.filter(s => 
+        ['planet', 'dwarfPlanet', 'moon', 'asteroid', 'comet'].includes(s.userData.type)
+    ).length;
+    const cosmicActivity = gameState.cosmicActivity || 0;
+    const totalPopulation = gameState.cachedTotalPopulation || 0;
+    
+    const cosmicStats = [
+        { key: 'starCount', value: starCount },
+        { key: 'planetCount', value: planetCount },
+        { key: 'cosmicActivity', value: cosmicActivity },
+        { key: 'totalPopulation', value: totalPopulation }
+    ];
+    
+    cosmicStats.forEach(({ key, value }) => {
+        const stats = gameState.statistics.cosmic[key];
+        stats.current = value;
+        
+        stats.history.push({
+            time: now,
+            value: value
+        });
+        
+        if (stats.history.length > gameState.statistics.maxHistoryPoints) {
+            stats.history.shift();
+        }
+    });
+    
+    gameState.statistics.lastUpdate = now;
+    updateStatisticsDisplay();
+}
+
+function updateStatisticsDisplay() {
+    updateResourceStatistics();
+    updateCosmicStatistics();
+    updateStatisticsChart();
+}
+
+function updateResourceStatistics() {
+    const container = document.getElementById('resource-stats-grid');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    const resourceNames = {
+        cosmicDust: '宇宙の塵',
+        energy: 'エネルギー',
+        organicMatter: '有機物',
+        biomass: 'バイオマス',
+        darkMatter: 'ダークマター',
+        thoughtPoints: '思考ポイント'
+    };
+    
+    Object.entries(gameState.statistics.resources).forEach(([key, stats]) => {
+        const item = document.createElement('div');
+        item.className = 'stat-item';
+        
+        const formatNumber = (num) => {
+            if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+            if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+            return num.toFixed(1);
+        };
+        
+        item.innerHTML = `
+            <span class="stat-name">${resourceNames[key]}</span>
+            <div class="stat-values">
+                <span class="stat-value">累計: ${formatNumber(stats.total)}</span>
+                <span class="stat-value">/秒: ${formatNumber(stats.perSecond)}</span>
+                <span class="stat-value">/時: ${formatNumber(stats.perHour)}</span>
+            </div>
+        `;
+        
+        container.appendChild(item);
+    });
+}
+
+function updateCosmicStatistics() {
+    const container = document.getElementById('cosmic-stats-grid');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    const cosmicNames = {
+        starCount: '恒星数',
+        planetCount: '天体数',
+        cosmicActivity: '活発度',
+        totalPopulation: '総人口'
+    };
+    
+    Object.entries(gameState.statistics.cosmic).forEach(([key, stats]) => {
+        const item = document.createElement('div');
+        item.className = 'stat-item';
+        
+        const formatNumber = (num) => {
+            if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+            if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+            return Math.floor(num).toLocaleString();
+        };
+        
+        item.innerHTML = `
+            <span class="stat-name">${cosmicNames[key]}</span>
+            <div class="stat-values">
+                <span class="stat-value">現在: ${formatNumber(stats.current)}</span>
+            </div>
+        `;
+        
+        container.appendChild(item);
+    });
+}
+
+let currentChart = 'resources';
+
+function updateStatisticsChart() {
+    const canvas = document.getElementById('statistics-chart');
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    const width = canvas.width = canvas.offsetWidth * window.devicePixelRatio;
+    const height = canvas.height = canvas.offsetHeight * window.devicePixelRatio;
+    
+    ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+    ctx.clearRect(0, 0, canvas.offsetWidth, canvas.offsetHeight);
+    
+    if (currentChart === 'resources') {
+        drawResourceChart(ctx, canvas.offsetWidth, canvas.offsetHeight);
+    } else {
+        drawCosmicChart(ctx, canvas.offsetWidth, canvas.offsetHeight);
+    }
+}
+
+function drawResourceChart(ctx, width, height) {
+    const padding = 30;
+    const chartWidth = width - padding * 2;
+    const chartHeight = height - padding * 2;
+    
+    // 主要なリソースのみ表示（データがあるもの）
+    const resources = ['cosmicDust', 'energy', 'darkMatter'];
+    const colors = ['#FFD700', '#00FFFF', '#FF69B4'];
+    
+    resources.forEach((resource, index) => {
+        const stats = gameState.statistics.resources[resource];
+        if (!stats.history.length) return;
+        
+        const maxValue = Math.max(...stats.history.map(h => h.value));
+        if (maxValue === 0) return;
+        
+        ctx.strokeStyle = colors[index];
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        
+        stats.history.forEach((point, i) => {
+            const x = padding + (i / (stats.history.length - 1)) * chartWidth;
+            const y = padding + chartHeight - (point.value / maxValue) * chartHeight;
+            
+            if (i === 0) {
+                ctx.moveTo(x, y);
+            } else {
+                ctx.lineTo(x, y);
+            }
+        });
+        
+        ctx.stroke();
+    });
+    
+    // 軸とラベル
+    ctx.strokeStyle = '#FFB700';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(padding, padding);
+    ctx.lineTo(padding, height - padding);
+    ctx.lineTo(width - padding, height - padding);
+    ctx.stroke();
+}
+
+function drawCosmicChart(ctx, width, height) {
+    const padding = 30;
+    const chartWidth = width - padding * 2;
+    const chartHeight = height - padding * 2;
+    
+    const metrics = ['starCount', 'planetCount', 'totalPopulation'];
+    const colors = ['#FFD700', '#00FFFF', '#FF69B4'];
+    
+    metrics.forEach((metric, index) => {
+        const stats = gameState.statistics.cosmic[metric];
+        if (!stats.history.length) return;
+        
+        const maxValue = Math.max(...stats.history.map(h => h.value));
+        if (maxValue === 0) return;
+        
+        ctx.strokeStyle = colors[index];
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        
+        stats.history.forEach((point, i) => {
+            const x = padding + (i / (stats.history.length - 1)) * chartWidth;
+            const y = padding + chartHeight - (point.value / maxValue) * chartHeight;
+            
+            if (i === 0) {
+                ctx.moveTo(x, y);
+            } else {
+                ctx.lineTo(x, y);
+            }
+        });
+        
+        ctx.stroke();
+    });
+    
+    // 軸とラベル
+    ctx.strokeStyle = '#FFB700';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(padding, padding);
+    ctx.lineTo(padding, height - padding);
+    ctx.lineTo(width - padding, height - padding);
+    ctx.stroke();
+}
+
+function switchChart(chartType) {
+    currentChart = chartType;
+    
+    // タブの表示を更新
+    document.querySelectorAll('.chart-tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    document.querySelector(`[data-chart="${chartType}"]`).classList.add('active');
+    
+    updateStatisticsChart();
 }
 
 // --- UI要素の取得 ----------------------------------------------------
@@ -2267,6 +2556,9 @@ function animate() {
         uiUpdateTimer = 0;
     }
     
+    // 統計更新（1秒間隔）
+    updateStatistics();
+    
     galaxyMapUpdateTimer += deltaTime;
     if (galaxyMapUpdateTimer >= galaxyMapUpdateInterval) {
         debouncedUpdateGalaxyMap();
@@ -2820,14 +3112,70 @@ function setupEventListeners() {
         return `全宇宙の知的生命体の総数。思考ポイントの生成源となる。<br>現在の総人口: ${Math.floor(totalPopulation).toLocaleString()}`;
     });
 
-    // 時系列ログパネルの開閉機能
-    const timelineToggle = document.getElementById('timeline-log-toggle');
-    const timelinePanel = document.getElementById('timeline-log-panel');
-    const timelineIcon = document.getElementById('timeline-log-toggle-icon');
+    // 統計・ログパネルの開閉機能
+    const statsLogContainer = document.getElementById('stats-log-container');
+    const statsLogTabs = document.getElementById('stats-log-tabs');
+    const statisticsPanel = document.getElementById('statistics-panel');
+    const timelineLogPanel = document.getElementById('timeline-log-panel');
+    const statsTabButton = document.getElementById('stats-tab-button');
+    const logTabButton = document.getElementById('log-tab-button');
+    const statsLogIcon = document.getElementById('stats-log-toggle-icon');
     
-    timelineToggle.addEventListener('click', () => {
-        timelineToggle.classList.toggle('expanded');
-        timelinePanel.classList.toggle('expanded');
+    let isStatsLogExpanded = false;
+    let currentStatsLogTab = 'stats';
+    
+    // パネル開閉機能
+    statsLogTabs.addEventListener('click', (e) => {
+        if (e.target.classList.contains('stats-log-tab')) return; // タブクリックは除外
+        
+        isStatsLogExpanded = !isStatsLogExpanded;
+        statsLogContainer.classList.toggle('expanded', isStatsLogExpanded);
+        
+        if (isStatsLogExpanded) {
+            if (currentStatsLogTab === 'stats') {
+                statisticsPanel.classList.add('expanded');
+                timelineLogPanel.classList.remove('expanded');
+            } else {
+                timelineLogPanel.classList.add('expanded');
+                statisticsPanel.classList.remove('expanded');
+            }
+        } else {
+            statisticsPanel.classList.remove('expanded');
+            timelineLogPanel.classList.remove('expanded');
+        }
+    });
+    
+    // タブ切り替え機能
+    statsTabButton.addEventListener('click', (e) => {
+        e.stopPropagation();
+        currentStatsLogTab = 'stats';
+        statsTabButton.classList.add('active');
+        logTabButton.classList.remove('active');
+        
+        if (isStatsLogExpanded) {
+            statisticsPanel.classList.add('expanded');
+            timelineLogPanel.classList.remove('expanded');
+        }
+    });
+    
+    logTabButton.addEventListener('click', (e) => {
+        e.stopPropagation();
+        currentStatsLogTab = 'log';
+        logTabButton.classList.add('active');
+        statsTabButton.classList.remove('active');
+        
+        if (isStatsLogExpanded) {
+            timelineLogPanel.classList.add('expanded');
+            statisticsPanel.classList.remove('expanded');
+        }
+    });
+    
+    // グラフタブ切り替え
+    document.querySelectorAll('.chart-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            const chartType = tab.getAttribute('data-chart');
+            switchChart(chartType);
+        });
     });
 }
 
@@ -2851,6 +3199,7 @@ function init() {
     setupEventListeners();
     updateUI();
     updateTimelineLogDisplay(); // 初期化時にログ表示を更新
+    updateStatisticsDisplay(); // 初期化時に統計表示を更新
     
     // ゲーム開始時のウェルカムメッセージ
     if (gameState.timelineLog.length === 0) {

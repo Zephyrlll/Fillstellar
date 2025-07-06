@@ -272,12 +272,43 @@
     <!-- 銀河マップコンテナ -->
     <div id="galaxy-map-container"></div>
 
-    <!-- 時系列ログパネル -->
-    <div id="timeline-log-container">
-      <div id="timeline-log-toggle">
-        <span id="timeline-log-toggle-text">ログ</span>
-        <span id="timeline-log-toggle-icon">▲</span>
+    <!-- 統計・ログパネル -->
+    <div id="stats-log-container">
+      <!-- タブボタン -->
+      <div id="stats-log-tabs">
+        <button id="stats-tab-button" class="stats-log-tab active">統計</button>
+        <button id="log-tab-button" class="stats-log-tab">ログ</button>
+        <span id="stats-log-toggle-icon">▲</span>
       </div>
+      
+      <!-- 統計パネル -->
+      <div id="statistics-panel">
+        <div id="statistics-content">
+          <!-- リソース統計セクション -->
+          <div id="resource-statistics" class="stats-section">
+            <h3>リソース統計</h3>
+            <div id="resource-stats-grid"></div>
+          </div>
+          
+          <!-- 宇宙統計セクション -->
+          <div id="cosmic-statistics" class="stats-section">
+            <h3>宇宙統計</h3>
+            <div id="cosmic-stats-grid"></div>
+          </div>
+          
+          <!-- グラフセクション -->
+          <div id="chart-section" class="stats-section">
+            <h3>グラフ</h3>
+            <div id="chart-tabs">
+              <button class="chart-tab active" data-chart="resources">リソース</button>
+              <button class="chart-tab" data-chart="cosmic">宇宙</button>
+            </div>
+            <canvas id="statistics-chart"></canvas>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 時系列ログパネル -->
       <div id="timeline-log-panel">
         <div id="timeline-log-content">
           <div id="timeline-log-entries"></div>
