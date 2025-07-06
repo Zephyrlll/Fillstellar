@@ -530,11 +530,11 @@ button:disabled {
 }
 
 #statistics-panel.expanded {
-    max-height: 400px;
+    max-height: 500px;
 }
 
 #statistics-content {
-    height: 400px;
+    height: 500px;
     overflow-y: auto;
     padding: 15px;
 }
@@ -617,7 +617,7 @@ button:disabled {
 
 #statistics-chart {
     width: 100%;
-    height: 150px;
+    height: 200px;
     border: 1px solid rgba(255, 183, 0, 0.3);
     border-radius: 4px;
     background: rgba(0, 0, 0, 0.3);
