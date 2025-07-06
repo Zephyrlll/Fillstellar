@@ -447,11 +447,65 @@ const gameState = {
     currentTimeMultiplier: '1x',
     timeMultiplierCosts: { '2x': 500, '5x': 2000, '10x': 5000 },
     isMapVisible: true,
-    saveVersion: '1.6-accumulator' // セーブデータのバージョン
+    saveVersion: '1.6-accumulator', // セーブデータのバージョン
+    timelineLog: [], // 時系列ログエントリを格納
+    maxLogEntries: 100 // ログの最大保持数
 };
 
 // Initialize mathCache after gameState is defined
 mathCache.init();
+
+// --- 時系列ログシステム -------------------------------------------------------
+function addTimelineLog(message, type = 'event') {
+    const logEntry = {
+        id: Date.now() + Math.random(),
+        year: Math.floor(gameState.gameYear),
+        message: message,
+        type: type,
+        timestamp: Date.now()
+    };
+    
+    // 新しいログエントリを先頭に追加
+    gameState.timelineLog.unshift(logEntry);
+    
+    // 最大保持数を超えた場合、古いエントリを削除
+    if (gameState.timelineLog.length > gameState.maxLogEntries) {
+        gameState.timelineLog = gameState.timelineLog.slice(0, gameState.maxLogEntries);
+    }
+    
+    // UIを更新
+    updateTimelineLogDisplay();
+}
+
+function updateTimelineLogDisplay() {
+    const logContainer = document.getElementById('timeline-log-entries');
+    if (!logContainer) return;
+    
+    // 既存のエントリをクリア
+    logContainer.innerHTML = '';
+    
+    // ログエントリを表示
+    gameState.timelineLog.forEach(entry => {
+        const logElement = document.createElement('div');
+        logElement.className = 'timeline-log-entry';
+        logElement.innerHTML = `
+            <span class="log-year">${entry.year}年</span>
+            <span class="log-message">${entry.message}</span>
+        `;
+        logContainer.appendChild(logElement);
+    });
+    
+    // 最新のログエントリが見えるように、自動スクロールを一番上に
+    const logContent = document.getElementById('timeline-log-content');
+    if (logContent) {
+        logContent.scrollTop = 0;
+    }
+}
+
+function clearTimelineLog() {
+    gameState.timelineLog = [];
+    updateTimelineLogDisplay();
+}
 
 // --- UI要素の取得 ----------------------------------------------------
 const ui = {
@@ -2425,6 +2479,19 @@ function setupEventListeners() {
             });
             gameState.stars.push(newBody);
             scene.add(newBody);
+            
+            // ログエントリを追加
+            const typeNames = {
+                'asteroid': '小惑星',
+                'comet': '彗星',
+                'moon': '衛星',
+                'dwarfPlanet': '準惑星',
+                'planet': '惑星'
+            };
+            const bodyName = newBody.userData.name || typeNames[type] || type;
+            const parentName = focusedStar.userData.name || '恒星';
+            addTimelineLog(`${bodyName}が${parentName}の周囲に誕生しました`, 'creation');
+            
             saveGame();
 
             creationCount++;
@@ -2473,6 +2540,10 @@ function setupEventListeners() {
         gameState.stars.push(newStar);
         scene.add(newStar);
         focusOnStar(newStar);
+        
+        // ログエントリを追加
+        addTimelineLog(`恒星「${name}」が銀河に誕生しました`, 'creation');
+        
         saveGame();
         return true;
     };
@@ -2748,6 +2819,16 @@ function setupEventListeners() {
         const totalPopulation = gameState.cachedTotalPopulation || 0;
         return `全宇宙の知的生命体の総数。思考ポイントの生成源となる。<br>現在の総人口: ${Math.floor(totalPopulation).toLocaleString()}`;
     });
+
+    // 時系列ログパネルの開閉機能
+    const timelineToggle = document.getElementById('timeline-log-toggle');
+    const timelinePanel = document.getElementById('timeline-log-panel');
+    const timelineIcon = document.getElementById('timeline-log-toggle-icon');
+    
+    timelineToggle.addEventListener('click', () => {
+        timelineToggle.classList.toggle('expanded');
+        timelinePanel.classList.toggle('expanded');
+    });
 }
 
 function init() {
@@ -2769,6 +2850,13 @@ function init() {
 
     setupEventListeners();
     updateUI();
+    updateTimelineLogDisplay(); // 初期化時にログ表示を更新
+    
+    // ゲーム開始時のウェルカムメッセージ
+    if (gameState.timelineLog.length === 0) {
+        addTimelineLog('宇宙の創造者として旅が始まりました', 'system');
+    }
+    
     animate();
 }
 

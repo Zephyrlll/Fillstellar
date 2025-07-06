@@ -449,3 +449,127 @@ button:disabled {
     background: #333;
     border-color: #555;
 }
+
+/* 時系列ログパネル */
+#timeline-log-container {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 400px;
+    z-index: 50;
+    pointer-events: auto;
+}
+
+#timeline-log-toggle {
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid #FFB700;
+    border-radius: 8px 8px 0 0;
+    padding: 8px 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 14px;
+    color: #FFD700;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 10px rgba(255, 183, 0, 0.7);
+}
+
+#timeline-log-toggle:hover {
+    background: rgba(0, 0, 0, 0.9);
+    box-shadow: 0 0 15px rgba(255, 183, 0, 0.9);
+}
+
+#timeline-log-toggle-text {
+    margin-right: 8px;
+    font-weight: bold;
+}
+
+#timeline-log-toggle-icon {
+    font-size: 12px;
+    transition: transform 0.3s ease;
+}
+
+#timeline-log-toggle.expanded #timeline-log-toggle-icon {
+    transform: rotate(180deg);
+}
+
+#timeline-log-panel {
+    background: rgba(0, 0, 0, 0.9);
+    border: 1px solid #FFB700;
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease-out;
+    box-shadow: 0 0 15px rgba(255, 183, 0, 0.7);
+}
+
+#timeline-log-panel.expanded {
+    max-height: 250px;
+}
+
+#timeline-log-content {
+    height: 250px;
+    overflow-y: auto;
+    padding: 10px;
+}
+
+#timeline-log-entries {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.timeline-log-entry {
+    background: rgba(255, 183, 0, 0.1);
+    border: 1px solid rgba(255, 183, 0, 0.3);
+    border-radius: 4px;
+    padding: 8px 12px;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 13px;
+    color: #eee;
+    animation: logEntryAppear 0.5s ease-out;
+}
+
+.timeline-log-entry .log-year {
+    color: #FFD700;
+    font-weight: bold;
+    margin-right: 8px;
+}
+
+.timeline-log-entry .log-message {
+    color: #ccc;
+}
+
+@keyframes logEntryAppear {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* スクロールバーのスタイル */
+#timeline-log-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+#timeline-log-content::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 3px;
+}
+
+#timeline-log-content::-webkit-scrollbar-thumb {
+    background: rgba(255, 183, 0, 0.6);
+    border-radius: 3px;
+}
+
+#timeline-log-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 183, 0, 0.8);
+}
