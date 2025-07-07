@@ -326,10 +326,10 @@ function updateStarList() {
 
     starListContainer.innerHTML = ''; // Clear existing list
 
-    const stars = gameState.stars.filter(s => s.userData.type === 'star');
+    const celestialBodies = gameState.stars.filter(s => s.userData.type === 'star' || s.userData.type === 'black_hole');
 
-    if (stars.length === 0) {
-        starListContainer.innerHTML = '<p>現在、管理対象の恒星はありません。</p>';
+    if (celestialBodies.length === 0) {
+        starListContainer.innerHTML = '<p>現在、管理対象の天体はありません。</p>';
         return;
     }
 
@@ -339,7 +339,7 @@ function updateStarList() {
 
     const renderTable = () => {
         // ソート処理
-        stars.sort((a, b) => {
+        celestialBodies.sort((a, b) => {
             const valA = a.userData[sortColumn];
             const valB = b.userData[sortColumn];
             let comparison = 0;
@@ -360,7 +360,7 @@ function updateStarList() {
         const headerRow = document.createElement('tr');
         const headers = [
             { key: 'name', text: '名前' },
-            { key: 'spectralType', text: '種類' },
+            { key: 'type', text: '種類' },
             { key: 'mass', text: '質量' },
             { key: 'temperature', text: '温度 (K)' },
             { key: 'age', text: '年齢 (億年)' },
@@ -390,18 +390,20 @@ function updateStarList() {
         table.appendChild(thead);
 
         const tbody = document.createElement('tbody');
-        stars.forEach(star => {
+        celestialBodies.forEach(body => {
             const row = document.createElement('tr');
+            const userData = body.userData;
+            const typeText = userData.type === 'black_hole' ? 'ブラックホール' : (userData.spectralType || '恒星');
             row.innerHTML = `
-                <td>${star.userData.name || 'N/A'}</td>
-                <td>${star.userData.spectralType || 'N/A'}</td>
-                <td>${parseFloat(star.userData.mass).toFixed(2)}</td>
-                <td>${star.userData.temperature}</td>
-                <td>${parseFloat(star.userData.age).toFixed(2)}</td>
-                <td>${star.userData.lifespan}</td>
+                <td>${userData.name || 'N/A'}</td>
+                <td>${typeText}</td>
+                <td>${parseFloat(userData.mass).toExponential(2)}</td>
+                <td>${userData.temperature || '-'}</td>
+                <td>${userData.age ? parseFloat(userData.age).toFixed(2) : '-'}</td>
+                <td>${userData.lifespan || '-'}</td>
             `;
             row.addEventListener('click', () => {
-                gameState.focusedObject = star;
+                gameState.focusedObject = body;
             });
             tbody.appendChild(row);
         });

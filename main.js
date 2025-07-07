@@ -246,6 +246,12 @@ function init() {
         scene.add(blackHole);
     }
 
+    // Always focus on the black hole at startup
+    const blackHole = gameState.stars.find(s => s.userData.type === 'black_hole');
+    if (blackHole) {
+        gameState.focusedObject = blackHole;
+    }
+
     setupEventListeners();
     animate();
 }
