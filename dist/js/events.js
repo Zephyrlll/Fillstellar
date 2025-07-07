@@ -8,7 +8,6 @@ import { mathCache } from './utils.js';
 import { addTimelineLog } from './timeline.js';
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
-export let focusedStar = null;
 export const keys = { w: false, a: false, s: false, d: false };
 function focusOnStar(star) {
     gameState.focusedObject = star;
@@ -157,7 +156,8 @@ export function setupEventListeners() {
         const createAction = () => {
             if (!isCreating)
                 return;
-            if (!focusedStar || focusedStar.userData.type !== 'star') {
+            const focusedObject = gameState.focusedObject;
+            if (!focusedObject || focusedObject.userData.type !== 'star') {
                 if (creationCount === 0) {
                     showMessage('まず、親となる恒星をクリックして選択してください。');
                 }
@@ -172,7 +172,7 @@ export function setupEventListeners() {
                 return;
             }
             gameState.cosmicDust -= cost;
-            const parentRadius = (focusedStar.children[0] ? focusedStar.children[0].scale.x : focusedStar.scale.x) || 1;
+            const parentRadius = (focusedObject.children[0] ? focusedObject.children[0].scale.x : focusedObject.scale.x) || 1;
             const orbitalRadius = parentRadius + 20 + Math.random() * (parentRadius * 5);
             const angle = Math.random() * Math.PI * 2;
             const position = new THREE.Vector3(orbitalRadius * Math.cos(angle), (Math.random() - 0.5) * 20, orbitalRadius * Math.sin(angle));
@@ -181,15 +181,15 @@ export function setupEventListeners() {
                 stopCreation();
                 return;
             }
-            const orbitalSpeed = Math.sqrt((gameState.physics.G * focusedStar.userData.mass) / orbitalRadius);
+            const orbitalSpeed = Math.sqrt((gameState.physics.G * focusedObject.userData.mass) / orbitalRadius);
             if (!isFinite(orbitalSpeed)) {
                 console.error(`[Creation Error] Calculated orbitalSpeed is not finite (${orbitalSpeed}) for ${type}. Skipping creation.`);
                 stopCreation();
                 return;
             }
             const relativeVelocity = new THREE.Vector3(-position.z, 0, position.x).normalize().multiplyScalar(orbitalSpeed);
-            const finalVelocity = focusedStar.userData.velocity.clone().add(relativeVelocity);
-            const finalPosition = focusedStar.position.clone().add(position);
+            const finalVelocity = focusedObject.userData.velocity.clone().add(relativeVelocity);
+            const finalPosition = focusedObject.position.clone().add(position);
             if (!isFinite(finalPosition.x) || !isFinite(finalVelocity.x)) {
                 console.error(`[Creation Error] Final position or velocity is not finite. Skipping creation.`);
                 stopCreation();
@@ -198,7 +198,7 @@ export function setupEventListeners() {
             const newBody = createCelestialBody(type, {
                 position: finalPosition,
                 velocity: finalVelocity,
-                parent: focusedStar
+                parent: focusedObject
             });
             gameState.stars.push(newBody);
             scene.add(newBody);
@@ -210,7 +210,7 @@ export function setupEventListeners() {
                 'planet': '惑星'
             };
             const bodyName = newBody.userData.name || typeNames[type] || type;
-            const parentName = focusedStar.userData.name || '恒星';
+            const parentName = focusedObject.userData.name || '恒星';
             addTimelineLog(`${bodyName}が${parentName}の周囲に誕生しました`, 'creation');
             saveGame();
             creationCount++;

@@ -1,13 +1,107 @@
-
 import * as THREE from 'three';
 
-// 天体オブジェクトの型定義。userDataプロパティを持つように拡張します。
-// まずはany型で定義し、段階的に型を厳密にしていきます。
-export interface CelestialBody extends THREE.Object3D {
-    userData: any;
+// --- Type Definitions ---
+
+export interface StarUserData {
+    type: 'star';
+    name: string;
+    creationYear: number;
+    mass: number;
+    radius: number;
+    velocity: THREE.Vector3;
+    acceleration: THREE.Vector3;
+    isStatic: boolean;
+    age: string;
+    temperature: number;
+    spectralType: string;
+    lifespan: number;
 }
 
-// ゲーム全体の型定義
+export interface PlanetUserData {
+    type: 'planet';
+    name: string;
+    creationYear: number;
+    mass: number;
+    radius: number;
+    velocity: THREE.Vector3;
+    acceleration: THREE.Vector3;
+    isStatic: boolean;
+    planetType: string;
+    subType: string;
+    temperature: number;
+    atmosphere: string;
+    water: string;
+    geologicalActivity: string;
+    habitability: number;
+    hasLife?: boolean;
+    lifeStage?: string;
+    population?: number;
+}
+
+export interface BlackHoleUserData {
+    type: 'black_hole';
+    name: string;
+    creationYear: number;
+    mass: number;
+    radius: number;
+    velocity: THREE.Vector3;
+    acceleration: THREE.Vector3;
+    isStatic: boolean;
+}
+
+export type CelestialBodyUserData = StarUserData | PlanetUserData | BlackHoleUserData | { [key: string]: any };
+
+export interface CelestialBody extends THREE.Object3D {
+    userData: CelestialBodyUserData;
+}
+
+export interface PhysicsState {
+    G: number;
+    softeningFactor: number;
+    simulationSpeed: number;
+    timeStep: number;
+    accumulator: number;
+    dragFactor: number;
+}
+
+export interface ResourceStats {
+    total: number;
+    perSecond: number;
+    perHour: number;
+    history: { time: number; value: number; rate: number }[];
+    previousValue?: number;
+}
+
+export interface CosmicStats {
+    current: number;
+    history: { time: number; value: number }[];
+}
+
+export interface StatisticsState {
+    resources: {
+        cosmicDust: ResourceStats;
+        energy: ResourceStats;
+        organicMatter: ResourceStats;
+        biomass: ResourceStats;
+        darkMatter: ResourceStats;
+        thoughtPoints: ResourceStats;
+    };
+    cosmic: {
+        starCount: CosmicStats;
+        planetCount: CosmicStats;
+        asteroidCount: CosmicStats;
+        cometCount: CosmicStats;
+        moonCount: CosmicStats;
+        cosmicActivity: CosmicStats;
+        totalPopulation: CosmicStats;
+        intelligentLifeCount: CosmicStats;
+        averageStarAge: CosmicStats;
+        totalMass: CosmicStats;
+    };
+    lastUpdate: number;
+    maxHistoryPoints: number;
+}
+
 export interface GameState {
     gameYear: number;
     cosmicDust: number;
@@ -31,26 +125,27 @@ export interface GameState {
     };
     thoughtSpeedMps: number;
     cosmicActivity: number;
-    physics: any;
+    physics: PhysicsState;
     researchEnhancedDust: boolean;
     researchAdvancedEnergy: boolean;
-    unlockedCelestialBodies: any;
+    unlockedCelestialBodies: { [key: string]: boolean };
     graphicsQuality: string;
     currentUnitSystem: string;
-    unlockedTimeMultipliers: any;
+    unlockedTimeMultipliers: { [key: string]: boolean };
     currentTimeMultiplier: string;
-    timeMultiplierCosts: any;
+    timeMultiplierCosts: { [key: string]: number };
     isMapVisible: boolean;
     saveVersion: string;
     focusedObject: CelestialBody | null;
-    timelineLog: any[];
+    timelineLog: { id: number; year: number; message: string; type: string; timestamp: number }[];
     maxLogEntries: number;
-    statistics: any;
-    cachedTotalPopulation?: number; // main.tsで追加されるプロパティ
-    currentDustRate?: number;      // main.tsで追加されるプロパティ
+    statistics: StatisticsState;
+    cachedTotalPopulation?: number;
+    currentDustRate?: number;
 }
 
-// --- ゲーム状態管理 -----------------------------------------------------------
+// --- Game State Initialization ---
+
 export const gameState: GameState = {
     gameYear: 0,
     cosmicDust: 150000,

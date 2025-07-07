@@ -1,36 +1,28 @@
+
 import * as THREE from 'three';
 import { scene, camera, renderer, composer, controls } from './js/threeSetup.js';
-import { gameState } from './js/state.js';
+import { gameState, PlanetUserData } from './js/state.js';
 import { saveGame, loadGame } from './js/saveload.js';
-import { ui, updateUI, switchTab, showMessage, debouncedUpdateGalaxyMap } from './js/ui.js';
+import { updateUI, debouncedUpdateGalaxyMap } from './js/ui.js';
 import { createCelestialBody, checkLifeSpawn, evolveLife } from './js/celestialBody.js';
 import { spatialGrid, updatePhysics } from './js/physics.js';
-import { updateStatistics, switchChart } from './js/statistics.js';
-import { addTimelineLog, clearTimelineLog } from './js/timeline.js';
+import { updateStatistics } from './js/statistics.js';
 import { GALAXY_BOUNDARY } from './js/constants.js';
-import { mathCache, starGeometry } from './js/utils.js';
-import { setupEventListeners, keys, focusedStar } from './js/events.js';
+import { mathCache } from './js/utils.js';
+import { setupEventListeners, keys } from './js/events.js';
 
-// --- グローバル変数 & 物理定数 ------------------------------------------------
-const raycaster = new THREE.Raycaster();
-const mouse = new THREE.Vector2();
+const moveSpeed = 200;
 
+let uiUpdateTimer = 0;
+const uiUpdateInterval = 0.1;
 
-const moveSpeed = 200; // 移動速度を調整
-const RESTORING_FORCE_FACTOR = 0.001; // 復元力の係数
-
-let uiUpdateTimer = 0; // UI更新用タイマー
-const uiUpdateInterval = 0.1; // 0.1秒ごとにUIを更新
-
-// Galaxy map debouncing
 let galaxyMapUpdateTimer = 0;
-const galaxyMapUpdateInterval = 0.2; // Update galaxy map every 0.2 seconds (slower than UI)
+const galaxyMapUpdateInterval = 0.2;
 
 function createStarfield() {
     const starsGeometry = new THREE.BufferGeometry();
     const starsMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 1, sizeAttenuation: true });
     const starsVertices = [];
-    // 密度を減らし（20000→8000）、範囲を拡大（8000→20000）
     for (let i = 0; i < 8000; i++) {
         const x = (Math.random() - 0.5) * 20000;
         const y = (Math.random() - 0.5) * 20000;
@@ -46,14 +38,12 @@ function animate() {
     requestAnimationFrame(animate);
     const now = Date.now();
     
-    // 安全なtimeStep計算
     const rawDeltaTime = (now - gameState.lastTick) / 1000;
     if (!isFinite(rawDeltaTime) || rawDeltaTime < 0 || rawDeltaTime > 1) {
         gameState.lastTick = now;
-        return; // 異常な値の場合はこのフレームをスキップ
+        return;
     }
     
-    // 時間倍率の安全な取得
     let timeMultiplier = 1;
     if (gameState.currentTimeMultiplier && typeof gameState.currentTimeMultiplier === 'string') {
         const multiplierValue = parseInt(gameState.currentTimeMultiplier.replace('x', ''));
@@ -63,32 +53,24 @@ function animate() {
     }
     
     const deltaTime = rawDeltaTime * timeMultiplier;
-    const animationDeltaTime = deltaTime * 0.05; // アニメーション用の時間
+    const animationDeltaTime = deltaTime * 0.05;
     
-    // デバッグ用ログ（一時的）
     if (!isFinite(animationDeltaTime) || animationDeltaTime <= 0) {
-        console.warn('Invalid animationDeltaTime:', {
-            rawDeltaTime,
-            timeMultiplier,
-            deltaTime,
-            animationDeltaTime,
-            currentTimeMultiplier: gameState.currentTimeMultiplier
-        });
+        console.warn('Invalid animationDeltaTime:', { rawDeltaTime, timeMultiplier, deltaTime, animationDeltaTime, currentTimeMultiplier: gameState.currentTimeMultiplier });
         gameState.lastTick = now;
         return;
     }
     
     gameState.lastTick = now;
 
-    gameState.gameYear += deltaTime / 5; // ゲーム内時間は元の速度
-    updatePhysics(animationDeltaTime); // 物理演算はアニメーション速度に合わせる
+    gameState.gameYear += deltaTime / 5;
+    updatePhysics(animationDeltaTime);
     
-    // 宇���活発度を計算（天体の平均速度から）
     let totalVelocity = 0;
     let movingBodies = 0;
     gameState.stars.forEach(body => {
         if (body.userData && body.userData.velocity && !body.userData.isStatic) {
-            const speed = body.userData.velocity.length();
+            const speed = (body.userData.velocity as THREE.Vector3).length();
             if (speed > 0) {
                 totalVelocity += speed;
                 movingBodies++;
@@ -106,27 +88,24 @@ function animate() {
     let dustRate = 1 + gameState.dustUpgradeLevel * 0.5 + (gameState.researchEnhancedDust ? 2 : 0);
     let energyRate = 0;
     let intelligentLifeCount = 0;
-    let totalPopulation = 0; // Add population tracking to eliminate UI loop
+    let totalPopulation = 0;
 
-    // Clear spatial grid once before the combined loop
     spatialGrid.clear();
     
-    // Combined optimized loop - consolidates multiple forEach iterations
     gameState.stars.forEach(body => {
-        // Spatial grid insertion (previously separate forEach in updatePhysics)
         spatialGrid.insert(body);
         
-        // Rotation update
         body.rotation.y += 0.3 * animationDeltaTime;
 
-        // Population tracking for UI (eliminates separate UI forEach)
-        if (body.userData.hasLife) {
-            totalPopulation += body.userData.population;
+        if (body.userData.type === 'planet') {
+            if ((body.userData as PlanetUserData).hasLife) {
+                totalPopulation += (body.userData as PlanetUserData).population || 0;
+            }
         }
 
         switch (body.userData.type) {
             case 'star':
-                energyRate += body.userData.mass / 1000;
+                energyRate += (body.userData.mass as number) / 1000;
                 break;
             case 'asteroid':
             case 'comet':
@@ -135,11 +114,9 @@ function animate() {
             case 'planet':
                 checkLifeSpawn(body);
                 evolveLife(body);
-                // updateGeology(body, deltaTime);
-                // updateClimate(body, deltaTime);
-                if (body.userData.hasLife) {
+                if ((body.userData as PlanetUserData).hasLife) {
                     let organicRate = 0, biomassRate = 0, populationGrowthRate = 0;
-                    switch (body.userData.lifeStage) {
+                    switch ((body.userData as PlanetUserData).lifeStage) {
                         case 'microbial':
                             organicRate = 0.1; populationGrowthRate = 0.01; break;
                         case 'plant':
@@ -149,30 +126,26 @@ function animate() {
                         case 'intelligent':
                             organicRate = 1.0; biomassRate = 0.5; populationGrowthRate = 0.5;
                             intelligentLifeCount++;
-                            let thoughtPointRate = (body.userData.population / 1000000) * (1 + gameState.cosmicActivity / 10000);
+                            let thoughtPointRate = (((body.userData as PlanetUserData).population || 0) / 1000000) * (1 + gameState.cosmicActivity / 10000);
                             gameState.thoughtPoints += thoughtPointRate * deltaTime;
                             break;
                     }
                     gameState.organicMatter += organicRate * deltaTime;
                     gameState.biomass += biomassRate * deltaTime;
-                    body.userData.population += body.userData.population * populationGrowthRate * deltaTime;
+                    (body.userData as PlanetUserData).population = ((body.userData as PlanetUserData).population || 0) + ((body.userData as PlanetUserData).population || 0) * populationGrowthRate * deltaTime;
                 }
                 break;
         }
     });
     
-    // Store population for UI (eliminates UI forEach loop)
     gameState.cachedTotalPopulation = totalPopulation;
 
     if (gameState.researchAdvancedEnergy) energyRate *= 2;
     
-    // 塵の生成レートを保存（UI表示用）
     gameState.currentDustRate = dustRate;
 
-    // 思考速度の計算 (思考ポイントに基づいて指数関数的に増加) - use cached calculation
     gameState.thoughtSpeedMps = mathCache.getThoughtSpeed();
 
-    // リソースの蓄積と加算
     gameState.resourceAccumulators.cosmicDust += dustRate * deltaTime;
     gameState.resourceAccumulators.energy += energyRate * deltaTime;
 
@@ -187,20 +160,17 @@ function animate() {
         gameState.resourceAccumulators.energy -= energyToAdd;
     }
 
-    // WASDによるカメラ移動
     if (keys.w) camera.position.z -= moveSpeed * animationDeltaTime;
     if (keys.s) camera.position.z += moveSpeed * animationDeltaTime;
     if (keys.a) camera.position.x -= moveSpeed * animationDeltaTime;
     if (keys.d) camera.position.x += moveSpeed * animationDeltaTime;
 
-    // カメラの滑らかな追従
     if (gameState.focusedObject) {
         const offset = camera.position.clone().sub(controls.target);
         controls.target.lerp(gameState.focusedObject.position, 0.05);
         camera.position.copy(controls.target).add(offset);
     }
 
-    // ブラックホールのエッジグローをカメラに向ける
     const edgeGlow = scene.getObjectByName('black_hole_edge_glow');
     if (edgeGlow) {
         edgeGlow.lookAt(camera.position);
@@ -215,7 +185,6 @@ function animate() {
         uiUpdateTimer = 0;
     }
     
-    // 統計更新（1秒間隔）
     updateStatistics();
     
     galaxyMapUpdateTimer += deltaTime;
@@ -229,7 +198,6 @@ function init() {
     createStarfield();
     loadGame();
 
-    // Check if black hole exists, if not, create it (for new games)
     const blackHoleExists = gameState.stars.some(star => star.userData.type === 'black_hole');
     if (!blackHoleExists) {
         const blackHole = createCelestialBody('black_hole', {
@@ -243,7 +211,6 @@ function init() {
         scene.add(blackHole);
     }
 
-    // Always focus on the black hole at startup
     const blackHole = gameState.stars.find(s => s.userData.type === 'black_hole');
     if (blackHole) {
         gameState.focusedObject = blackHole;

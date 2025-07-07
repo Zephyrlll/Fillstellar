@@ -1,11 +1,10 @@
-
 import * as THREE from 'three';
-import { gameState, CelestialBody } from './state.js';
+import { gameState, CelestialBody, StarUserData, PlanetUserData, BlackHoleUserData, CelestialBodyUserData } from './state.js';
 import { celestialObjectPools, starGeometry } from './utils.js';
 import { showMessage } from './ui.js';
 import { addTimelineLog } from './timeline.js';
 
-function createStar(): any {
+function createStar(): Partial<StarUserData> {
     const starTypes = [
         { type: 'red', tempMin: 2400, tempMax: 3700, massMin: 0.08, massMax: 0.45 },
         { type: 'orange', tempMin: 3700, tempMax: 5200, massMin: 0.45, massMax: 0.8 },
@@ -17,17 +16,17 @@ function createStar(): any {
     const age = Math.random() * 500;
     const temperature = Math.floor(Math.random() * (selectedType.tempMax - selectedType.tempMin + 1)) + selectedType.tempMin;
     const mass = Math.random() * (selectedType.massMax - selectedType.massMin) + selectedType.massMin;
-    const starData: any = {
+    const starData: Partial<StarUserData> = {
         age: age.toFixed(2),
         temperature: temperature,
-        mass: mass.toFixed(2),
+        mass: parseFloat(mass.toFixed(2)),
         spectralType: selectedType.type
     };
-    starData.lifespan = calculateStarLifespan(starData);
+    starData.lifespan = calculateStarLifespan(starData as StarUserData);
     return starData;
 }
 
-function calculateStarLifespan(starData: any) {
+function calculateStarLifespan(starData: StarUserData): number {
     if (starData.mass < 0.1) return 1000;
     if (starData.mass < 0.5) return 500;
     if (starData.mass < 1.0) return 200;
@@ -36,8 +35,8 @@ function calculateStarLifespan(starData: any) {
     return 5;
 }
 
-function createPlanet(parentStar: CelestialBody): any {
-    const parentMass = parentStar.userData.mass;
+function createPlanet(parentStar: CelestialBody): Partial<PlanetUserData> {
+    const parentMass = parentStar.userData.mass as number;
     const mass = parentMass * (Math.random() * 0.005 + 0.0001);
     const radius = Math.cbrt(mass);
     const temperature = Math.floor(Math.random() * 300) - 150;
@@ -63,9 +62,9 @@ function createPlanet(parentStar: CelestialBody): any {
         subType = (temperature > 0) ? 'jupiter_like' : 'neptune_like';
     }
 
-    const planetData: any = {
-        mass: mass.toFixed(5),
-        radius: radius.toFixed(5),
+    const planetData: Partial<PlanetUserData> = {
+        mass: parseFloat(mass.toFixed(5)),
+        radius: parseFloat(radius.toFixed(5)),
         planetType: planetType,
         subType: subType,
         temperature: temperature,
@@ -73,13 +72,13 @@ function createPlanet(parentStar: CelestialBody): any {
         water: water.toFixed(2),
         geologicalActivity: geologicalActivity.toFixed(2)
     };
-    planetData.habitability = calculateHabitability(planetData);
+    planetData.habitability = calculateHabitability(planetData as PlanetUserData);
     return planetData;
 }
 
-function calculateHabitability(planetData: any) {
+function calculateHabitability(planetData: PlanetUserData): number {
     let score = 0;
-    const temp = parseFloat(planetData.temperature);
+    const temp = planetData.temperature;
     if (temp >= 0 && temp <= 40) score += 40;
     else if (temp > -50 && temp < 90) score += 20;
     const atm = parseFloat(planetData.atmosphere);
@@ -91,19 +90,20 @@ function calculateHabitability(planetData: any) {
 }
 
 export function checkLifeSpawn(planetObject: CelestialBody) {
-    if (planetObject.userData.type !== 'planet' || 
-        planetObject.userData.hasLife || 
-        planetObject.userData.planetType !== 'rocky' ||
-        (planetObject.userData.subType !== 'terran' && planetObject.userData.subType !== 'ocean_world') ||
-        planetObject.userData.habitability < 70) { 
+    const userData = planetObject.userData as PlanetUserData;
+    if (userData.type !== 'planet' || 
+        userData.hasLife || 
+        userData.planetType !== 'rocky' ||
+        (userData.subType !== 'terran' && userData.subType !== 'ocean_world') ||
+        userData.habitability < 70) { 
         return;
     }
 
-    const spawnChance = (planetObject.userData.habitability / 100) * 0.0001;
+    const spawnChance = (userData.habitability / 100) * 0.0001;
     if (Math.random() < spawnChance) {
-        planetObject.userData.hasLife = true;
-        planetObject.userData.lifeStage = 'microbial';
-        planetObject.userData.population = 10;
+        userData.hasLife = true;
+        userData.lifeStage = 'microbial';
+        userData.population = 10;
 
         const auraMaterial = celestialObjectPools.getMaterial('lifeAura');
         const radius = (planetObject.children[0] as THREE.Mesh).scale.x;
@@ -111,34 +111,35 @@ export function checkLifeSpawn(planetObject: CelestialBody) {
         const auraSphere = new THREE.Mesh(auraGeometry, auraMaterial);
         auraSphere.scale.set(radius * 1.1, radius * 1.1, radius * 1.1);
         auraSphere.name = 'life_aura';
-        auraSphere.userData.originalRadius = radius * 1.1;
-        auraSphere.userData.materialType = 'lifeAura';
+        (auraSphere.userData as any).originalRadius = radius * 1.1;
+        (auraSphere.userData as any).materialType = 'lifeAura';
         planetObject.add(auraSphere);
 
-        showMessage(`${planetObject.userData.name} に生命が誕生しました！`);
+        showMessage(`${userData.name} に生命が誕生しました！`);
     }
 }
 
 export function evolveLife(planetObject: CelestialBody) {
-    if (!planetObject.userData.hasLife) return;
-    const currentStage = planetObject.userData.lifeStage;
-    const ageInYears = gameState.gameYear - planetObject.userData.creationYear;
-    let nextStage = null;
+    const userData = planetObject.userData as PlanetUserData;
+    if (!userData.hasLife) return;
+    const currentStage = userData.lifeStage;
+    const ageInYears = gameState.gameYear - userData.creationYear;
+    let nextStage: string | null = null;
     switch (currentStage) {
         case 'microbial': if (ageInYears >= 50) nextStage = 'plant'; break;
         case 'plant': if (ageInYears >= 100) nextStage = 'animal'; break;
         case 'animal': if (ageInYears >= 200) nextStage = 'intelligent'; break;
     }
     if (nextStage) {
-        planetObject.userData.lifeStage = nextStage;
-        showMessage(`${planetObject.userData.name} の生命が ${nextStage} に進化しました！`);
+        userData.lifeStage = nextStage;
+        showMessage(`${userData.name} の生命が ${nextStage} に進化しました！`);
         
         const stageNames: { [key: string]: string } = {
             'plant': '植物',
             'animal': '動物',
             'intelligent': '知的生命体'
         };
-        addTimelineLog(`${planetObject.userData.name}で生命が${stageNames[nextStage]}に進化しました`, 'evolution');
+        addTimelineLog(`${userData.name}で生命が${stageNames[nextStage]}に進化しました`, 'evolution');
 
         if (nextStage === 'intelligent') {
             const planetMesh = planetObject.children[0] as THREE.Mesh;
@@ -165,7 +166,7 @@ export function evolveLife(planetObject: CelestialBody) {
     }
 }
 
-const createRealisticPlanetMaps = (subType: string, water: number, atmosphere: number) => {
+const createRealisticPlanetMaps = (subType: string, water: number, atmosphere: number): { map: THREE.CanvasTexture | null, normalMap: THREE.CanvasTexture | null } => {
     const width = 512, height = 256;
     const canvas = document.createElement('canvas');
     canvas.width = width; canvas.height = height;
@@ -267,8 +268,8 @@ export function createCelestialBody(type: string, options: any = {}): CelestialB
     const materialParams: any = { color: new THREE.Color(0xffffff), roughness: 0.8, metalness: 0.2, emissive: new THREE.Color(0x000000), emissiveIntensity: 0.2 };
     let radius = 1;
     let gameMass = 0;
-    let starParams: any = null;
-    let planetParams: any = null;
+    let starParams: Partial<StarUserData> | null = null;
+    let planetParams: Partial<PlanetUserData> | null = null;
     const starColors: { [key: string]: THREE.Color } = {
         'red': new THREE.Color(0xFF4000),
         'orange': new THREE.Color(0xFFA500),
@@ -303,27 +304,27 @@ export function createCelestialBody(type: string, options: any = {}): CelestialB
         switch (type) {
             case 'star':
                 starParams = createStar();
-                gameMass = parseFloat(starParams.mass) * 1000;
+                gameMass = (starParams.mass as number) * 1000;
                 break;
             case 'planet':
                 planetParams = createPlanet(options.parent);
-                gameMass = parseFloat(planetParams.mass);
+                gameMass = planetParams.mass as number;
                 console.log(`[Mass Debug] Created planet with mass string: "${planetParams.mass}", parsed to: ${gameMass}`);
                 break;
             case 'moon':
-                const parentMassForMoon = options.parent ? options.parent.userData.mass : 1000;
+                const parentMassForMoon = options.parent ? (options.parent.userData.mass as number) : 1000;
                 gameMass = parentMassForMoon * (Math.random() * 0.0001 + 0.00001);
                 break;
             case 'dwarfPlanet':
-                const parentMassForDwarfPlanet = options.parent ? options.parent.userData.mass : 1000;
+                const parentMassForDwarfPlanet = options.parent ? (options.parent.userData.mass as number) : 1000;
                 gameMass = parentMassForDwarfPlanet * (Math.random() * 0.0005 + 0.00005);
                 break;
             case 'asteroid':
-                const parentMassForAsteroid = options.parent ? options.parent.userData.mass : 1000;
+                const parentMassForAsteroid = options.parent ? (options.parent.userData.mass as number) : 1000;
                 gameMass = parentMassForAsteroid * (Math.random() * 0.00001 + 0.000001);
                 break;
             case 'comet':
-                const parentMassForComet = options.parent ? options.parent.userData.mass : 1000;
+                const parentMassForComet = options.parent ? (options.parent.userData.mass as number) : 1000;
                 gameMass = parentMassForComet * (Math.random() * 0.000005 + 0.0000005);
                 break;
             case 'black_hole':
@@ -412,7 +413,7 @@ export function createCelestialBody(type: string, options: any = {}): CelestialB
             break;
         case 'star':
             radius = Math.cbrt(gameMass) * 0.8;
-            const starColor = starColors[starParams.spectralType] || new THREE.Color(0xffffff);
+            const starColor = starColors[(starParams as StarUserData).spectralType] || new THREE.Color(0xffffff);
             materialParams.color.set(starColor);
             materialParams.emissive.set(starColor);
             materialParams.emissiveIntensity = 2.0;
@@ -422,12 +423,12 @@ export function createCelestialBody(type: string, options: any = {}): CelestialB
             body = new THREE.Mesh(starSphereGeometry, starMaterial);
             body.scale.set(radius, radius, radius);
             
-            body.userData.originalRadius = radius;
-            body.userData.materialType = 'star';
+            (body.userData as any).originalRadius = radius;
+            (body.userData as any).materialType = 'star';
             break;
         case 'planet':
             radius = Math.cbrt(gameMass) * 2.0;
-            const maps = createRealisticPlanetMaps(planetParams.subType, planetParams.water, planetParams.atmosphere);
+            const maps = createRealisticPlanetMaps((planetParams as PlanetUserData).subType, parseFloat((planetParams as PlanetUserData).water), parseFloat((planetParams as PlanetUserData).atmosphere));
             if (maps.map && maps.normalMap) {
                 const planetMaterial = celestialObjectPools.getMaterial('planet', { 
                     map: maps.map, 
@@ -441,32 +442,32 @@ export function createCelestialBody(type: string, options: any = {}): CelestialB
                 const planetGeometry = celestialObjectPools.getSphereGeometry(radius);
                 const planetMesh = new THREE.Mesh(planetGeometry, planetMaterial);
                 planetMesh.scale.set(radius, radius, radius);
-                planetMesh.userData.originalRadius = radius;
-                planetMesh.userData.materialType = 'planet';
+                (planetMesh.userData as any).originalRadius = radius;
+                (planetMesh.userData as any).materialType = 'planet';
                 
                 body = new THREE.Group();
                 body.add(planetMesh);
                 
-                if (planetParams.atmosphere > 0.1) {
+                if (parseFloat((planetParams as PlanetUserData).atmosphere) > 0.1) {
                     let atmosphereColor: any = 0xffffff;
-                    if (planetParams.subType === 'neptune_like') atmosphereColor = 0x4169E1;
-                    else if (planetParams.subType === 'terran' || planetParams.subType === 'ocean_world') atmosphereColor = 0x87ceeb;
+                    if ((planetParams as PlanetUserData).subType === 'neptune_like') atmosphereColor = 0x4169E1;
+                    else if ((planetParams as PlanetUserData).subType === 'terran' || (planetParams as PlanetUserData).subType === 'ocean_world') atmosphereColor = 0x87ceeb;
                     
                     const atmosphereMaterial = celestialObjectPools.getMaterial('atmosphere', { 
                         color: atmosphereColor, 
                         transparent: true, 
-                        opacity: parseFloat(planetParams.atmosphere) * 0.3, 
+                        opacity: parseFloat((planetParams as PlanetUserData).atmosphere) * 0.3, 
                         blending: THREE.AdditiveBlending 
                     });
                     const atmosphereGeometry = celestialObjectPools.getSphereGeometry(radius * 1.05);
                     const atmosphereSphere = new THREE.Mesh(atmosphereGeometry, atmosphereMaterial);
                     atmosphereSphere.name = 'atmosphere';
                     atmosphereSphere.scale.set(radius * 1.05, radius * 1.05, radius * 1.05);
-                    atmosphereSphere.userData.originalRadius = radius * 1.05;
-                    atmosphereSphere.userData.materialType = 'atmosphere';
+                    (atmosphereSphere.userData as any).originalRadius = radius * 1.05;
+                    (atmosphereSphere.userData as any).materialType = 'atmosphere';
                     body.add(atmosphereSphere);
                 }
-                if (planetParams.planetType === 'gas_giant' && Math.random() < 0.5) {
+                if ((planetParams as PlanetUserData).planetType === 'gas_giant' && Math.random() < 0.5) {
                     const ringTexture = new THREE.CanvasTexture(document.createElement('canvas'));
                     const ringMaterial = new THREE.MeshBasicMaterial({ map: ringTexture, side: THREE.DoubleSide, transparent: true, opacity: 0.6 });
                     const ring = new THREE.Mesh(new THREE.RingGeometry(radius * 1.5, radius * 2.5, 64), ringMaterial);
@@ -491,7 +492,7 @@ export function createCelestialBody(type: string, options: any = {}): CelestialB
             break;
     }
 
-    let finalUserData = {
+    let finalUserData: CelestialBodyUserData = {
         type: type,
         name: options.name || `${type}-${Math.random().toString(16).slice(2, 8)}`,
         creationYear: gameState.gameYear,

@@ -80,7 +80,7 @@ export function loadGame() {
         });
         if (starData.uuid)
             body.uuid = starData.uuid;
-        if (body.userData.hasLife) {
+        if (starData.userData.type === 'planet' && starData.userData.hasLife) {
             const auraMaterial = celestialObjectPools.getMaterial('lifeAura');
             const radius = body.userData.radius || 1;
             const auraGeometry = celestialObjectPools.getSphereGeometry(radius * 1.1);
@@ -91,7 +91,7 @@ export function loadGame() {
             auraSphere.userData.materialType = 'lifeAura';
             body.add(auraSphere);
         }
-        if (body.userData.lifeStage === 'intelligent') {
+        if (starData.userData.type === 'planet' && starData.userData.lifeStage === 'intelligent') {
             const planetMesh = body.children.find(c => c.type === 'Mesh');
             if (planetMesh && planetMesh.material && planetMesh.material.map) {
                 const texture = planetMesh.material.map;

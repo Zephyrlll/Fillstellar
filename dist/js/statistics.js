@@ -50,7 +50,7 @@ function updateCosmicStatistics() {
         planetCount: '惑星数',
         asteroidCount: '小惑星数',
         cometCount: '彗星数',
-        moonCount: '衛��数',
+        moonCount: '衛星数',
         cosmicActivity: '宇宙活発度',
         totalPopulation: '総人口',
         intelligentLifeCount: '知的文明数',
@@ -397,7 +397,7 @@ export function updateStatistics() {
     const moonCount = gameState.stars.filter(s => s.userData.type === 'moon').length;
     const cosmicActivity = gameState.cosmicActivity || 0;
     const totalPopulation = gameState.cachedTotalPopulation || 0;
-    const intelligentLifeCount = gameState.stars.filter(s => s.userData && s.userData.hasLife && s.userData.lifeStage === 'intelligent').length;
+    const intelligentLifeCount = gameState.stars.filter(s => s.userData.type === 'planet' && s.userData.hasLife && s.userData.lifeStage === 'intelligent').length;
     const stars = gameState.stars.filter(s => s.userData && s.userData.type === 'star');
     let averageStarAge = 0;
     if (stars.length > 0) {

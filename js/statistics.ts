@@ -1,4 +1,5 @@
-import { gameState } from './state.js';
+
+import { gameState, PlanetUserData } from './state.js';
 
 let currentChart = 'resources';
 
@@ -37,9 +38,9 @@ function updateResourceStatistics() {
         item.innerHTML = `
             <span class="stat-name">${resourceNames[key]}</span>
             <div class="stat-values">
-                <span class="stat-value">累計: ${formatNumber((stats as any).total)}</span>
-                <span class="stat-value">/秒: ${formatNumber((stats as any).perSecond)}</span>
-                <span class="stat-value">/時: ${formatNumber((stats as any).perHour)}</span>
+                <span class="stat-value">累計: ${formatNumber(stats.total)}</span>
+                <span class="stat-value">/秒: ${formatNumber(stats.perSecond)}</span>
+                <span class="stat-value">/時: ${formatNumber(stats.perHour)}</span>
             </div>
         `;
         
@@ -58,7 +59,7 @@ function updateCosmicStatistics() {
         planetCount: '惑星数',
         asteroidCount: '小惑星数',
         cometCount: '彗星数',
-        moonCount: '衛��数',
+        moonCount: '衛星数',
         cosmicActivity: '宇宙活発度',
         totalPopulation: '総人口',
         intelligentLifeCount: '知的文明数',
@@ -91,7 +92,7 @@ function updateCosmicStatistics() {
         item.innerHTML = `
             <span class="stat-name">${cosmicNames[key]}</span>
             <div class="stat-values">
-                <span class="stat-value">現在: ${formatNumber((stats as any).current, key)}</span>
+                <span class="stat-value">現在: ${formatNumber(stats.current, key)}</span>
             </div>
         `;
         
@@ -159,7 +160,7 @@ function drawResourceChart(ctx: CanvasRenderingContext2D, width: number, height:
     }
     
     const resourcesWithData = resources.filter(resource => {
-        const stats = gameState.statistics.resources[resource];
+        const stats = (gameState.statistics.resources as any)[resource];
         return stats.history.length > 0 && Math.max(...stats.history.map((h: any) => h.value)) > 0;
     });
     
@@ -173,13 +174,13 @@ function drawResourceChart(ctx: CanvasRenderingContext2D, width: number, height:
     
     let globalMax = 0;
     resourcesWithData.forEach(resource => {
-        const stats = gameState.statistics.resources[resource];
+        const stats = (gameState.statistics.resources as any)[resource];
         const max = Math.max(...stats.history.map((h: any) => h.value));
         globalMax = Math.max(globalMax, max);
     });
     
     resourcesWithData.forEach((resource, index) => {
-        const stats = gameState.statistics.resources[resource];
+        const stats = (gameState.statistics.resources as any)[resource];
         const color = colors[resources.indexOf(resource)];
         
         ctx.strokeStyle = color;
@@ -297,7 +298,7 @@ function drawCosmicChart(ctx: CanvasRenderingContext2D, width: number, height: n
     }
     
     const metricsWithData = metrics.filter(metric => {
-        const stats = gameState.statistics.cosmic[metric];
+        const stats = (gameState.statistics.cosmic as any)[metric];
         return stats.history.length > 0 && Math.max(...stats.history.map((h: any) => h.value)) > 0;
     });
     
@@ -310,7 +311,7 @@ function drawCosmicChart(ctx: CanvasRenderingContext2D, width: number, height: n
     }
     
     metricsWithData.forEach((metric, index) => {
-        const stats = gameState.statistics.cosmic[metric];
+        const stats = (gameState.statistics.cosmic as any)[metric];
         const color = colors[index];
         const maxValue = Math.max(...stats.history.map((h: any) => h.value));
         
@@ -366,7 +367,7 @@ function drawCosmicChart(ctx: CanvasRenderingContext2D, width: number, height: n
         ctx.textAlign = 'left';
         ctx.fillText(metricNames[metric], x + 16, y + 9);
         
-        const currentValue = gameState.statistics.cosmic[metric].current;
+        const currentValue = (gameState.statistics.cosmic as any)[metric].current;
         let valueText = '';
         if (metric === 'cosmicActivity') {
             valueText = ` (${currentValue.toFixed(2)})`;
@@ -416,7 +417,7 @@ export function updateStatistics() {
     const resources = ['cosmicDust', 'energy', 'organicMatter', 'biomass', 'darkMatter', 'thoughtPoints'];
     resources.forEach(resource => {
         const current = (gameState as any)[resource] || 0;
-        const stats = gameState.statistics.resources[resource];
+        const stats = (gameState.statistics.resources as any)[resource];
         
         if (!stats.hasOwnProperty('previousValue')) {
             stats.previousValue = current;
@@ -458,7 +459,7 @@ export function updateStatistics() {
     const totalPopulation = gameState.cachedTotalPopulation || 0;
     
     const intelligentLifeCount = gameState.stars.filter(s => 
-        s.userData && s.userData.hasLife && s.userData.lifeStage === 'intelligent'
+        s.userData.type === 'planet' && (s.userData as PlanetUserData).hasLife && (s.userData as PlanetUserData).lifeStage === 'intelligent'
     ).length;
     
     const stars = gameState.stars.filter(s => s.userData && s.userData.type === 'star');
@@ -496,7 +497,7 @@ export function updateStatistics() {
     ];
     
     cosmicStats.forEach(({ key, value }) => {
-        const stats = gameState.statistics.cosmic[key];
+        const stats = (gameState.statistics.cosmic as any)[key];
         if (!stats) return;
         
         const safeValue = (typeof value === 'number' && isFinite(value)) ? value : 0;

@@ -1,13 +1,12 @@
-
 import * as THREE from 'three';
-import { gameState, GameState, CelestialBody } from './state.js';
+import { gameState, GameState, CelestialBody, PlanetUserData } from './state.js';
 import { removeAndDispose, celestialObjectPools } from './utils.js';
 import { createCelestialBody } from './celestialBody.js';
 import { scene } from './threeSetup.js';
 
 export function saveGame() {
     const savableStars = gameState.stars.map(star => {
-        const { tail, ...serializableUserData } = star.userData;
+        const { tail, ...serializableUserData } = star.userData as any;
 
         const safeVelocity = serializableUserData.velocity && isFinite(serializableUserData.velocity.x) && isFinite(serializableUserData.velocity.y) && isFinite(serializableUserData.velocity.z) 
             ? serializableUserData.velocity.toArray() 
@@ -95,18 +94,18 @@ export function loadGame() {
         
         if(starData.uuid) body.uuid = starData.uuid;
 
-        if (body.userData.hasLife) {
+        if (starData.userData.type === 'planet' && (starData.userData as PlanetUserData).hasLife) {
             const auraMaterial = celestialObjectPools.getMaterial('lifeAura');
             const radius = body.userData.radius || 1;
             const auraGeometry = celestialObjectPools.getSphereGeometry(radius * 1.1);
             const auraSphere = new THREE.Mesh(auraGeometry, auraMaterial);
             auraSphere.scale.set(radius * 1.1, radius * 1.1, radius * 1.1);
             auraSphere.name = 'life_aura';
-            auraSphere.userData.originalRadius = radius * 1.1;
-            auraSphere.userData.materialType = 'lifeAura';
+            (auraSphere.userData as any).originalRadius = radius * 1.1;
+            (auraSphere.userData as any).materialType = 'lifeAura';
             body.add(auraSphere);
         }
-        if (body.userData.lifeStage === 'intelligent') {
+        if (starData.userData.type === 'planet' && (starData.userData as PlanetUserData).lifeStage === 'intelligent') {
             const planetMesh = body.children.find(c => c.type === 'Mesh') as THREE.Mesh;
             if (planetMesh && planetMesh.material && (planetMesh.material as THREE.MeshStandardMaterial).map) {
                 const texture = (planetMesh.material as THREE.MeshStandardMaterial).map as THREE.CanvasTexture;
@@ -140,9 +139,9 @@ export function loadGame() {
         
         if (gameState.statistics.resources) {
             Object.keys(gameState.statistics.resources).forEach(resource => {
-                const stats = gameState.statistics.resources[resource];
+                const stats = (gameState.statistics.resources as any)[resource];
                 if (stats) {
-                    (stats as any).previousValue = (gameState as any)[resource] || 0;
+                    stats.previousValue = (gameState as any)[resource] || 0;
                 }
             });
         }

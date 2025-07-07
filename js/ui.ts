@@ -1,4 +1,5 @@
-import { gameState, CelestialBody } from './state.js';
+
+import { gameState, CelestialBody, StarUserData, PlanetUserData } from './state.js';
 import { mathCache } from './utils.js';
 
 let messageTimeout: any;
@@ -115,21 +116,23 @@ function updateFocusedBodyUI() {
         if (!focusedBody) return;
         const userData = focusedBody.userData;
         if (userData.type === 'star') {
-            if (ui.focusedStarAge) ui.focusedStarAge.textContent = userData.age;
-            if (ui.focusedStarTemp) ui.focusedStarTemp.textContent = userData.temperature;
-            if (ui.focusedStarMass) ui.focusedStarMass.textContent = userData.mass;
-            if (ui.focusedStarLifespan) ui.focusedStarLifespan.textContent = userData.lifespan;
-            if (ui.focusedStarSpeed) ui.focusedStarSpeed.textContent = userData.velocity.length().toFixed(2);
+            const starData = userData as StarUserData;
+            if (ui.focusedStarAge) ui.focusedStarAge.textContent = starData.age;
+            if (ui.focusedStarTemp) ui.focusedStarTemp.textContent = String(starData.temperature);
+            if (ui.focusedStarMass) ui.focusedStarMass.textContent = String(starData.mass);
+            if (ui.focusedStarLifespan) ui.focusedStarLifespan.textContent = String(starData.lifespan);
+            if (ui.focusedStarSpeed) ui.focusedStarSpeed.textContent = starData.velocity.length().toFixed(2);
         } else if (userData.type === 'planet') {
-            if (ui.focusedPlanetMass) ui.focusedPlanetMass.textContent = userData.mass;
-            if (ui.focusedPlanetRadius) ui.focusedPlanetRadius.textContent = userData.radius;
-            if (ui.focusedPlanetAtmosphere) ui.focusedPlanetAtmosphere.textContent = userData.atmosphere;
-            if (ui.focusedPlanetWater) ui.focusedPlanetWater.textContent = userData.water;
-            if (ui.focusedPlanetHabitability) ui.focusedPlanetHabitability.textContent = userData.habitability;
-            if (ui.focusedPlanetHasLife) ui.focusedPlanetHasLife.textContent = userData.hasLife ? 'はい' : 'いいえ';
-            if (ui.focusedPlanetLifeStage) ui.focusedPlanetLifeStage.textContent = userData.lifeStage || '--';
-            if (ui.focusedPlanetPopulation) ui.focusedPlanetPopulation.textContent = Math.floor(userData.population || 0).toLocaleString();
-            if (ui.focusedPlanetSpeed) ui.focusedPlanetSpeed.textContent = userData.velocity.length().toFixed(2);
+            const planetData = userData as PlanetUserData;
+            if (ui.focusedPlanetMass) ui.focusedPlanetMass.textContent = String(planetData.mass);
+            if (ui.focusedPlanetRadius) ui.focusedPlanetRadius.textContent = String(planetData.radius);
+            if (ui.focusedPlanetAtmosphere) ui.focusedPlanetAtmosphere.textContent = planetData.atmosphere;
+            if (ui.focusedPlanetWater) ui.focusedPlanetWater.textContent = planetData.water;
+            if (ui.focusedPlanetHabitability) ui.focusedPlanetHabitability.textContent = String(planetData.habitability);
+            if (ui.focusedPlanetHasLife) ui.focusedPlanetHasLife.textContent = planetData.hasLife ? 'はい' : 'いいえ';
+            if (ui.focusedPlanetLifeStage) ui.focusedPlanetLifeStage.textContent = planetData.lifeStage || '--';
+            if (ui.focusedPlanetPopulation) ui.focusedPlanetPopulation.textContent = Math.floor(planetData.population || 0).toLocaleString();
+            if (ui.focusedPlanetSpeed) ui.focusedPlanetSpeed.textContent = planetData.velocity.length().toFixed(2);
         }
         return;
     }
@@ -139,29 +142,31 @@ function updateFocusedBodyUI() {
         if (ui.focusedStarName) ui.focusedStarName.textContent = userData.name;
 
         if (userData.type === 'star') {
+            const starData = userData as StarUserData;
             if (ui.starParameters) ui.starParameters.classList.remove('hidden');
             if (ui.planetParameters) ui.planetParameters.classList.add('hidden');
-            if (ui.focusedStarAge) ui.focusedStarAge.textContent = userData.age;
-            if (ui.focusedStarTemp) ui.focusedStarTemp.textContent = userData.temperature;
-            if (ui.focusedStarMass) ui.focusedStarMass.textContent = userData.mass;
-            if (ui.focusedStarLifespan) ui.focusedStarLifespan.textContent = userData.lifespan;
-            if (ui.focusedStarSpeed) ui.focusedStarSpeed.textContent = userData.velocity.length().toFixed(2);
+            if (ui.focusedStarAge) ui.focusedStarAge.textContent = starData.age;
+            if (ui.focusedStarTemp) ui.focusedStarTemp.textContent = String(starData.temperature);
+            if (ui.focusedStarMass) ui.focusedStarMass.textContent = String(starData.mass);
+            if (ui.focusedStarLifespan) ui.focusedStarLifespan.textContent = String(starData.lifespan);
+            if (ui.focusedStarSpeed) ui.focusedStarSpeed.textContent = starData.velocity.length().toFixed(2);
         } else if (userData.type === 'planet') {
+            const planetData = userData as PlanetUserData;
             if (ui.starParameters) ui.starParameters.classList.add('hidden');
             if (ui.planetParameters) ui.planetParameters.classList.remove('hidden');
-            if (ui.focusedPlanetType) ui.focusedPlanetType.textContent = userData.subType || userData.planetType;
-            if (ui.focusedPlanetMass) ui.focusedPlanetMass.textContent = userData.mass;
-            if (ui.focusedPlanetRadius) ui.focusedPlanetRadius.textContent = userData.radius;
-            if (ui.focusedPlanetAtmosphere) ui.focusedPlanetAtmosphere.textContent = userData.atmosphere;
-            if (ui.focusedPlanetWater) ui.focusedPlanetWater.textContent = userData.water;
-            if (ui.focusedPlanetHabitability) ui.focusedPlanetHabitability.textContent = userData.habitability;
-            if (ui.focusedPlanetHasLife) ui.focusedPlanetHasLife.textContent = userData.hasLife ? 'はい' : 'いいえ';
-            if (ui.focusedPlanetLifeStage) ui.focusedPlanetLifeStage.textContent = userData.lifeStage || '--';
-            if (ui.focusedPlanetPopulation) ui.focusedPlanetPopulation.textContent = Math.floor(userData.population || 0).toLocaleString();
-            if (ui.focusedPlanetSpeed) ui.focusedPlanetSpeed.textContent = userData.velocity.length().toFixed(2);
-            if (userData.geologicalActivity) {
+            if (ui.focusedPlanetType) ui.focusedPlanetType.textContent = planetData.subType || planetData.planetType;
+            if (ui.focusedPlanetMass) ui.focusedPlanetMass.textContent = String(planetData.mass);
+            if (ui.focusedPlanetRadius) ui.focusedPlanetRadius.textContent = String(planetData.radius);
+            if (ui.focusedPlanetAtmosphere) ui.focusedPlanetAtmosphere.textContent = planetData.atmosphere;
+            if (ui.focusedPlanetWater) ui.focusedPlanetWater.textContent = planetData.water;
+            if (ui.focusedPlanetHabitability) ui.focusedPlanetHabitability.textContent = String(planetData.habitability);
+            if (ui.focusedPlanetHasLife) ui.focusedPlanetHasLife.textContent = planetData.hasLife ? 'はい' : 'いいえ';
+            if (ui.focusedPlanetLifeStage) ui.focusedPlanetLifeStage.textContent = planetData.lifeStage || '--';
+            if (ui.focusedPlanetPopulation) ui.focusedPlanetPopulation.textContent = Math.floor(planetData.population || 0).toLocaleString();
+            if (ui.focusedPlanetSpeed) ui.focusedPlanetSpeed.textContent = planetData.velocity.length().toFixed(2);
+            if (planetData.geologicalActivity) {
                 if (ui.focusedPlanetGeologyRow) ui.focusedPlanetGeologyRow.style.display = '';
-                if (ui.focusedPlanetGeology) ui.focusedPlanetGeology.textContent = `${(userData.geologicalActivity * 100).toFixed(0)} %`;
+                if (ui.focusedPlanetGeology) ui.focusedPlanetGeology.textContent = `${(parseFloat(planetData.geologicalActivity) * 100).toFixed(0)} %`;
             } else {
                 if (ui.focusedPlanetGeologyRow) ui.focusedPlanetGeologyRow.style.display = 'none';
             }
@@ -335,8 +340,8 @@ function updateStarList() {
 
     const renderTable = () => {
         celestialBodies.sort((a, b) => {
-            const valA = a.userData[sortColumn];
-            const valB = b.userData[sortColumn];
+            const valA = (a.userData as any)[sortColumn];
+            const valB = (b.userData as any)[sortColumn];
             let comparison = 0;
             if (valA > valB) {
                 comparison = 1;
@@ -388,14 +393,14 @@ function updateStarList() {
         celestialBodies.forEach(body => {
             const row = document.createElement('tr');
             const userData = body.userData;
-            const typeText = userData.type === 'black_hole' ? 'ブラックホール' : (userData.spectralType || '恒星');
+            const typeText = userData.type === 'black_hole' ? 'ブラックホール' : ((userData as StarUserData).spectralType || '恒星');
             row.innerHTML = `
                 <td>${userData.name || 'N/A'}</td>
                 <td>${typeText}</td>
-                <td>${parseFloat(userData.mass).toExponential(2)}</td>
-                <td>${userData.temperature || '-'}</td>
-                <td>${userData.age ? parseFloat(userData.age).toFixed(2) : '-'}</td>
-                <td>${userData.lifespan || '-'}</td>
+                <td>${(userData.mass as number).toExponential(2)}</td>
+                <td>${(userData as StarUserData).temperature || '-'}</td>
+                <td>${(userData as StarUserData).age ? parseFloat((userData as StarUserData).age).toFixed(2) : '-'}</td>
+                <td>${(userData as StarUserData).lifespan || '-'}</td>
             `;
             row.addEventListener('click', () => {
                 gameState.focusedObject = body;
@@ -506,13 +511,13 @@ export function debouncedUpdateGalaxyMap() {
     
     const significantChange = 
         previousGalaxyMapState.starCount !== currentStarCount ||
-        previousUIValues.isMapVisible !== currentIsMapVisible ||
+        (previousUIValues as any).isMapVisible !== currentIsMapVisible ||
         previousGalaxyMapState.blackHolePosition !== currentBlackHolePos;
     
     if (significantChange) {
         updateGalaxyMap();
         previousGalaxyMapState.starCount = currentStarCount;
-        previousUIValues.isMapVisible = currentIsMapVisible;
+        (previousUIValues as any).isMapVisible = currentIsMapVisible;
         previousGalaxyMapState.blackHolePosition = currentBlackHolePos;
     }
 }

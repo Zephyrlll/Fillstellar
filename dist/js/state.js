@@ -1,4 +1,4 @@
-// --- ゲーム状態管理 -----------------------------------------------------------
+// --- Game State Initialization ---
 export const gameState = {
     gameYear: 0,
     cosmicDust: 150000,
