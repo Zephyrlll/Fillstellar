@@ -1,15 +1,13 @@
 import * as THREE from 'three';
 import { gameState } from './state.js';
-import { removeAndDispose } from './utils.js';
+import { removeAndDispose, celestialObjectPools } from './utils.js';
 import { createCelestialBody } from './celestialBody.js';
 import { scene } from './threeSetup.js';
 
 export function saveGame() {
     const savableStars = gameState.stars.map(star => {
-        // Destructure to remove non-serializable 'tail' and handle 'velocity' separately
         const { tail, velocity, acceleration, ...serializableUserData } = star.userData;
 
-        // 安全装置：保存前に値が有限数であることを確認
         const safeVelocity = velocity && isFinite(velocity.x) && isFinite(velocity.y) && isFinite(velocity.z) 
             ? velocity.toArray() 
             : [0, 0, 0];
@@ -19,14 +17,22 @@ export function saveGame() {
 
         return {
             position: star.position.toArray(),
+            uuid: star.uuid, // Save UUID for re-linking focus
             userData: {
                 ...serializableUserData,
-                velocity: safeVelocity, // Convert Vector3 to array for JSON
+                velocity: safeVelocity,
                 acceleration: safeAcceleration
             }
         };
     });
+
     const savableState = { ...gameState, stars: savableStars };
+
+    if (savableState.focusedObject && savableState.focusedObject.uuid) {
+        savableState.focusedObjectUUID = savableState.focusedObject.uuid;
+    }
+    delete savableState.focusedObject;
+
     localStorage.setItem('cosmicGardenerState', JSON.stringify(savableState));
 }
 
@@ -48,12 +54,13 @@ export function loadGame() {
         return;
     }
 
-    const { stars, ...restOfState } = parsedState;
+    const { stars, focusedObjectUUID, ...restOfState } = parsedState;
     Object.assign(gameState, restOfState);
+    
+    gameState.focusedObject = null;
 
     gameState.stars.forEach(star => removeAndDispose(star));
     gameState.stars = stars.map(starData => {
-        // 安全装置：ロード時のデータ検証
         const safePosition = starData.position && Array.isArray(starData.position) && starData.position.length >= 3
             ? starData.position
             : [0, 0, 0];
@@ -64,7 +71,6 @@ export function loadGame() {
             ? starData.userData.acceleration
             : [0, 0, 0];
             
-        // 値が有限数かチェック
         const position = new THREE.Vector3().fromArray(safePosition);
         const velocity = new THREE.Vector3().fromArray(safeVelocity);
         const acceleration = new THREE.Vector3().fromArray(safeAcceleration);
@@ -85,8 +91,9 @@ export function loadGame() {
             isLoading: true,
             userData: { ...starData.userData, acceleration: acceleration }
         });
+        
+        if(starData.uuid) body.uuid = starData.uuid;
 
-        // Re-create visual elements that are not saved
         if (body.userData.hasLife) {
             const auraMaterial = celestialObjectPools.getMaterial('lifeAura');
             const radius = body.userData.radius || 1;
@@ -121,11 +128,13 @@ export function loadGame() {
         return body;
     });
     
-    // 統計データのlastUpdateをリセット
+    if (focusedObjectUUID) {
+        gameState.focusedObject = gameState.stars.find(s => s.uuid === focusedObjectUUID) || null;
+    }
+
     if (gameState.statistics) {
         gameState.statistics.lastUpdate = Date.now();
         
-        // リソース統計の前回値をリセット
         if (gameState.statistics.resources) {
             Object.keys(gameState.statistics.resources).forEach(resource => {
                 const stats = gameState.statistics.resources[resource];

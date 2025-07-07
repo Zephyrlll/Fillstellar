@@ -197,9 +197,9 @@ function animate() {
     if (keys.d) camera.position.x += moveSpeed * animationDeltaTime;
 
     // カメラの滑らかな追従
-    if (focusedStar) {
+    if (gameState.focusedObject) {
         const offset = camera.position.clone().sub(controls.target);
-        controls.target.lerp(focusedStar.position, 0.05);
+        controls.target.lerp(gameState.focusedObject.position, 0.05);
         camera.position.copy(controls.target).add(offset);
     }
 
@@ -231,6 +231,21 @@ function animate() {
 function init() {
     createStarfield();
     loadGame();
+
+    // Check if black hole exists, if not, create it (for new games)
+    const blackHoleExists = gameState.stars.some(star => star.userData.type === 'black_hole');
+    if (!blackHoleExists) {
+        const blackHole = createCelestialBody('black_hole', {
+            name: 'Galactic Center',
+            mass: 10000000,
+            radius: 500,
+            position: new THREE.Vector3(0, 0, 0),
+            velocity: new THREE.Vector3(0, 0, 0)
+        });
+        gameState.stars.push(blackHole);
+        scene.add(blackHole);
+    }
+
     setupEventListeners();
     animate();
 }

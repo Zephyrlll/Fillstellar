@@ -1,5 +1,8 @@
+
 import { gameState } from './state.js';
 import { mathCache } from './utils.js';
+
+let messageTimeout;
 
 // UI dirty checking - previous values cache
 const previousUIValues = {
@@ -20,14 +23,15 @@ const previousUIValues = {
     darkMatterConverterCost: -1,
     totalPopulation: -1,
     researchStates: {},
-    unlockedBodies: {}
+    unlockedBodies: {},
+    focusedBody: null
 };
 
 // --- UI要素の取得 ----------------------------------------------------
 export const ui = {
     gameYear: document.getElementById('gameYear'),
-    thoughtSpeedMps: document.getElementById('thoughtSpeedMps'), // 変更
-    lightSpeedPercent: document.getElementById('lightSpeedPercent'), // 追加
+    thoughtSpeedMps: document.getElementById('thoughtSpeedMps'),
+    lightSpeedPercent: document.getElementById('lightSpeedPercent'),
     cosmicDust: document.getElementById('resource-cosmicDust'),
     dustRate: document.getElementById('dustRate'),
     energy: document.getElementById('resource-energy'),
@@ -59,8 +63,8 @@ export const ui = {
     focusedPlanetHasLife: document.getElementById('focused-planet-hasLife'),
     focusedPlanetLifeStage: document.getElementById('focused-planet-lifeStage'),
     focusedPlanetPopulation: document.getElementById('focused-planet-population'),
-    focusedPlanetGeology: document.getElementById('focusedPlanetGeology'), // 追加
-    focusedPlanetGeologyRow: document.getElementById('focused-planet-geology-row'), // 追加
+    focusedPlanetGeology: document.getElementById('focusedPlanetGeology'),
+    focusedPlanetGeologyRow: document.getElementById('focused-planet-geology-row'),
     focusedPlanetSpeed: document.getElementById('focused-planet-speed'),
     researchEnhancedDustStatus: document.getElementById('researchEnhancedDustStatus'),
     researchAdvancedEnergyStatus: document.getElementById('researchAdvancedEnergyStatus'),
@@ -75,212 +79,219 @@ export const ui = {
     researchDwarfPlanetButton: document.getElementById('researchDwarfPlanetButton'),
     researchPlanetButton: document.getElementById('researchPlanetButton'),
     researchStarButton: document.getElementById('researchStarButton'),
-    timeMultiplier2xCost: document.getElementById('timeMultiplier2xCost'),
-    timeMultiplier2xStatus: document.getElementById('timeMultiplier2xStatus'),
-    timeMultiplier2xButton: document.getElementById('timeMultiplier2xButton'),
-    timeMultiplier5xCost: document.getElementById('timeMultiplier5xCost'),
-    timeMultiplier5xStatus: document.getElementById('timeMultiplier5xStatus'),
-    timeMultiplier5xButton: document.getElementById('timeMultiplier5xButton'),
-    timeMultiplier10xCost: document.getElementById('timeMultiplier10xCost'),
-    timeMultiplier10xStatus: document.getElementById('timeMultiplier10xStatus'),
-    timeMultiplier10xButton: document.getElementById('timeMultiplier10xButton'),
-    timeMultiplierSelect: document.getElementById('timeMultiplierSelect'),
     createAsteroidButton: document.getElementById('createAsteroidButton'),
     createCometButton: document.getElementById('createCometButton'),
     createMoonButton: document.getElementById('createMoonButton'),
     createDwarfPlanetButton: document.getElementById('createDwarfPlanetButton'),
     createPlanetButton: document.getElementById('createPlanetButton'),
     createStarButton: document.getElementById('createStarButton'),
-    asteroidCostDisplay: document.getElementById('asteroidCostDisplay'),
-    cometCostDisplay: document.getElementById('cometCostDisplay'),
-    moonCostDisplay: document.getElementById('moonCostDisplay'),
-    dwarfPlanetCostDisplay: document.getElementById('dwarfPlanetCostDisplay'),
-    planetCostDisplay: document.getElementById('planetCostDisplay'),
-    starCostDisplay: document.getElementById('starCostDisplay'),
-    overlayCosmicDust: document.getElementById('overlayCosmicDust'),
-    overlayEnergy: document.getElementById('overlayEnergy'),
-    overlayStarCount: document.getElementById('overlayStarCount'),
-    overlayThoughtPoints: document.getElementById('overlayThoughtPoints'),
-    overlayCosmicActivity: document.getElementById('overlayCosmicActivity'),
-    overlayPopulation: document.getElementById('overlayPopulation'),
     uiArea: document.getElementById('ui-area'),
     gameScreen: document.getElementById('game-screen'),
     researchScreen: document.getElementById('research-screen'),
     optionsScreen: document.getElementById('options-screen'),
+    starManagementScreen: document.getElementById('star-management-screen'),
     gameTabButton: document.getElementById('gameTabButton'),
     researchTabButton: document.getElementById('researchTabButton'),
     optionsTabButton: document.getElementById('optionsTabButton'),
-    closeOptionsButton: document.getElementById('closeOptionsButton'),
-    graphicsQualitySelect: document.getElementById('graphicsQualitySelect'),
-    unitSystemSelect: document.getElementById('unitSystemSelect'),
-    resetGameButton: document.getElementById('resetGameButton'),
-    addCosmicDustButton: document.getElementById('addCosmicDustButton'),
-    addEnergyButton: document.getElementById('addEnergyButton'),
-    addDarkMatterButton: document.getElementById('addDarkMatterButton'),
     starManagementTabButton: document.getElementById('starManagementTabButton'),
-    starManagementScreen: document.getElementById('star-management-screen'),
+    closeOptionsButton: document.getElementById('closeOptionsButton'),
     starListContainer: document.getElementById('star-list-container'),
     messageOverlay: document.getElementById('message-overlay'),
     messageText: document.getElementById('message-text'),
+    galaxyMapContainer: document.getElementById('galaxy-map-container'),
+    addAllResourcesButton: document.getElementById('addAllResourcesButton'),
+    resetGameButton: document.getElementById('resetGameButton'),
     gravitySlider: document.getElementById('gravitySlider'),
     gravityValue: document.getElementById('gravityValue'),
     simulationSpeedSlider: document.getElementById('simulationSpeedSlider'),
     simulationSpeedValue: document.getElementById('simulationSpeedValue'),
     dragSlider: document.getElementById('dragSlider'),
     dragValue: document.getElementById('dragValue'),
-    addAllResourcesButton: document.getElementById('addAllResourcesButton'),
-    galaxyMapContainer: document.getElementById('galaxy-map-container'),
-    
-    // Cache frequently queried elements
-    starActionsDropdowns: null,
-    collapsibleHeaders: null
+    graphicsQualitySelect: document.getElementById('graphicsQualitySelect'),
+    unitSystemSelect: document.getElementById('unitSystemSelect'),
 };
 
+function updateFocusedBodyUI() {
+    const focusedBody = gameState.focusedObject;
+
+    if (previousUIValues.focusedBody === focusedBody) {
+        if (!focusedBody) return;
+        const userData = focusedBody.userData;
+        if (userData.type === 'star') {
+            ui.focusedStarAge.textContent = userData.age;
+            ui.focusedStarTemp.textContent = userData.temperature;
+            ui.focusedStarMass.textContent = userData.mass;
+            ui.focusedStarLifespan.textContent = userData.lifespan;
+            ui.focusedStarSpeed.textContent = userData.velocity.length().toFixed(2);
+        } else if (userData.type === 'planet') {
+            ui.focusedPlanetMass.textContent = userData.mass;
+            ui.focusedPlanetRadius.textContent = userData.radius;
+            ui.focusedPlanetAtmosphere.textContent = userData.atmosphere;
+            ui.focusedPlanetWater.textContent = userData.water;
+            ui.focusedPlanetHabitability.textContent = userData.habitability;
+            ui.focusedPlanetHasLife.textContent = userData.hasLife ? 'はい' : 'いいえ';
+            ui.focusedPlanetLifeStage.textContent = userData.lifeStage || '--';
+            ui.focusedPlanetPopulation.textContent = Math.floor(userData.population || 0).toLocaleString();
+            ui.focusedPlanetSpeed.textContent = userData.velocity.length().toFixed(2);
+        }
+        return;
+    }
+
+    if (focusedBody) {
+        const userData = focusedBody.userData;
+        ui.focusedStarName.textContent = userData.name;
+
+        if (userData.type === 'star') {
+            ui.starParameters.classList.remove('hidden');
+            ui.planetParameters.classList.add('hidden');
+            ui.focusedStarAge.textContent = userData.age;
+            ui.focusedStarTemp.textContent = userData.temperature;
+            ui.focusedStarMass.textContent = userData.mass;
+            ui.focusedStarLifespan.textContent = userData.lifespan;
+            ui.focusedStarSpeed.textContent = userData.velocity.length().toFixed(2);
+        } else if (userData.type === 'planet') {
+            ui.starParameters.classList.add('hidden');
+            ui.planetParameters.classList.remove('hidden');
+            ui.focusedPlanetType.textContent = userData.subType || userData.planetType;
+            ui.focusedPlanetMass.textContent = userData.mass;
+            ui.focusedPlanetRadius.textContent = userData.radius;
+            ui.focusedPlanetAtmosphere.textContent = userData.atmosphere;
+            ui.focusedPlanetWater.textContent = userData.water;
+            ui.focusedPlanetHabitability.textContent = userData.habitability;
+            ui.focusedPlanetHasLife.textContent = userData.hasLife ? 'はい' : 'いいえ';
+            ui.focusedPlanetLifeStage.textContent = userData.lifeStage || '--';
+            ui.focusedPlanetPopulation.textContent = Math.floor(userData.population || 0).toLocaleString();
+            ui.focusedPlanetSpeed.textContent = userData.velocity.length().toFixed(2);
+            if (userData.geologicalActivity) {
+                ui.focusedPlanetGeologyRow.style.display = '';
+                ui.focusedPlanetGeology.textContent = `${(userData.geologicalActivity * 100).toFixed(0)} %`;
+            } else {
+                ui.focusedPlanetGeologyRow.style.display = 'none';
+            }
+        } else {
+            ui.starParameters.classList.add('hidden');
+            ui.planetParameters.classList.add('hidden');
+        }
+    } else {
+        ui.focusedStarName.textContent = 'フォーカス中の星はありません';
+        ui.starParameters.classList.add('hidden');
+        ui.planetParameters.classList.add('hidden');
+    }
+    previousUIValues.focusedBody = focusedBody;
+}
+
 export function updateUI() {
-    // Calculate current values
-    const currentGameYear = Math.floor(gameState.gameYear);
-    const currentCosmicDust = Math.floor(gameState.cosmicDust);
-    const currentDustRate = (gameState.currentDustRate || 0).toFixed(1);
-    const currentEnergy = Math.floor(gameState.energy);
-    const currentOrganicMatter = Math.floor(gameState.organicMatter);
-    const currentBiomass = Math.floor(gameState.biomass);
-    const currentDarkMatter = Math.floor(gameState.darkMatter);
-    const currentThoughtPoints = Math.floor(gameState.thoughtPoints);
-    const currentStarCount = gameState.stars.length;
-    const currentCosmicActivity = Math.floor(gameState.cosmicActivity);
-    const currentTotalPopulation = Math.floor(gameState.cachedTotalPopulation || 0);
+    const {
+        gameYear, cosmicDust, energy, organicMatter, biomass, darkMatter, thoughtPoints,
+        dustUpgradeLevel, darkMatterConverterLevel,
+        researchEnhancedDust, researchAdvancedEnergy,
+        unlockedCelestialBodies,
+        currentDustRate, cachedTotalPopulation
+    } = gameState;
 
-    // --- Update UI elements if they have changed ---
+    const currentGameYear = Math.floor(gameYear);
+    const currentCosmicDust = Math.floor(cosmicDust);
+    const currentEnergy = Math.floor(energy);
+    const currentDarkMatter = Math.floor(darkMatter);
+    const nextDustUpgradeCost = mathCache.getDustUpgradeCost();
+    const nextConverterCost = mathCache.getConverterCost();
 
-    // Game Year
     if (previousUIValues.gameYear !== currentGameYear) {
         if (ui.gameYear) ui.gameYear.textContent = currentGameYear;
         previousUIValues.gameYear = currentGameYear;
     }
-
-    // Cosmic Dust
     if (previousUIValues.cosmicDust !== currentCosmicDust) {
         if (ui.cosmicDust) ui.cosmicDust.textContent = currentCosmicDust;
-        if (ui.overlayCosmicDust) ui.overlayCosmicDust.textContent = currentCosmicDust;
         previousUIValues.cosmicDust = currentCosmicDust;
     }
-
-    // Dust Rate
-    if (previousUIValues.dustRate !== currentDustRate) {
-        if (ui.dustRate) ui.dustRate.textContent = currentDustRate;
-        previousUIValues.dustRate = currentDustRate;
-    }
-
-    // Energy
-    if (previousUIValues.energy !== currentEnergy) {
+     if (previousUIValues.energy !== currentEnergy) {
         if (ui.energy) ui.energy.textContent = currentEnergy;
-        if (ui.overlayEnergy) ui.overlayEnergy.textContent = currentEnergy;
         previousUIValues.energy = currentEnergy;
     }
-
-    // Organic Matter
+    if (previousUIValues.darkMatter !== currentDarkMatter) {
+        if (ui.darkMatter) ui.darkMatter.textContent = currentDarkMatter;
+        previousUIValues.darkMatter = currentDarkMatter;
+    }
+    const currentOrganicMatter = Math.floor(organicMatter);
     if (previousUIValues.organicMatter !== currentOrganicMatter) {
         if (ui.organicMatter) ui.organicMatter.textContent = currentOrganicMatter;
         previousUIValues.organicMatter = currentOrganicMatter;
     }
-
-    // Biomass
+    const currentBiomass = Math.floor(biomass);
     if (previousUIValues.biomass !== currentBiomass) {
         if (ui.biomass) ui.biomass.textContent = currentBiomass;
         previousUIValues.biomass = currentBiomass;
     }
-
-    // Star Count
-    if (previousUIValues.starCount !== currentStarCount) {
-        if (ui.starCount) ui.starCount.textContent = currentStarCount;
-        if (ui.overlayStarCount) ui.overlayStarCount.textContent = currentStarCount;
-        previousUIValues.starCount = currentStarCount;
+    const currentThoughtPoints = Math.floor(thoughtPoints);
+     if (previousUIValues.thoughtPoints !== currentThoughtPoints) {
+        if (ui.thoughtPoints) ui.thoughtPoints.textContent = currentThoughtPoints;
+        previousUIValues.thoughtPoints = currentThoughtPoints;
     }
-    
-    // Cosmic Activity
-    if (previousUIValues.cosmicActivity !== currentCosmicActivity) {
-        if (ui.overlayCosmicActivity) ui.overlayCosmicActivity.textContent = currentCosmicActivity;
-        previousUIValues.cosmicActivity = currentCosmicActivity;
+    const currentDustRateStr = (currentDustRate || 0).toFixed(1);
+    if (previousUIValues.dustRate !== currentDustRateStr) {
+        if (ui.dustRate) ui.dustRate.textContent = currentDustRateStr;
+        previousUIValues.dustRate = currentDustRateStr;
     }
 
-    // Total Population
-    if (previousUIValues.totalPopulation !== currentTotalPopulation) {
-        if (ui.overlayPopulation) ui.overlayPopulation.textContent = currentTotalPopulation.toLocaleString();
-        previousUIValues.totalPopulation = currentTotalPopulation;
-    }
+    if (ui.upgradeDustButton) ui.upgradeDustButton.disabled = currentEnergy < nextDustUpgradeCost;
+    if (ui.upgradeDarkMatterConverterButton) ui.upgradeDarkMatterConverterButton.disabled = currentEnergy < nextConverterCost;
 
-    // Thought Speed
-    const LIGHT_SPEED = 299792458;
-    const currentThoughtSpeedMps = gameState.thoughtSpeedMps;
-    const currentLightSpeedPercent = ((currentThoughtSpeedMps / LIGHT_SPEED) * 100).toFixed(2);
-    if (previousUIValues.thoughtSpeedMps !== currentThoughtSpeedMps) {
-        if (ui.thoughtSpeedMps) ui.thoughtSpeedMps.textContent = currentThoughtSpeedMps.toLocaleString(undefined, { maximumFractionDigits: 0 });
-        previousUIValues.thoughtSpeedMps = currentThoughtSpeedMps;
-    }
-    if (previousUIValues.lightSpeedPercent !== currentLightSpeedPercent) {
-        if (ui.lightSpeedPercent) ui.lightSpeedPercent.textContent = currentLightSpeedPercent;
-        previousUIValues.lightSpeedPercent = currentLightSpeedPercent;
-    }
-
-    // Upgrades
-    const nextDustUpgradeCost = mathCache.getDustUpgradeCost();
-    if (previousUIValues.dustUpgradeLevel !== gameState.dustUpgradeLevel) {
-        if (ui.dustUpgradeLevel) ui.dustUpgradeLevel.textContent = gameState.dustUpgradeLevel;
-        previousUIValues.dustUpgradeLevel = gameState.dustUpgradeLevel;
+    if (previousUIValues.dustUpgradeLevel !== dustUpgradeLevel) {
+        if (ui.dustUpgradeLevel) ui.dustUpgradeLevel.textContent = dustUpgradeLevel;
+        previousUIValues.dustUpgradeLevel = dustUpgradeLevel;
     }
     if (previousUIValues.dustUpgradeCost !== nextDustUpgradeCost) {
         if (ui.dustUpgradeCost) ui.dustUpgradeCost.textContent = nextDustUpgradeCost;
-        if (ui.upgradeDustButton) ui.upgradeDustButton.disabled = gameState.energy < nextDustUpgradeCost;
         previousUIValues.dustUpgradeCost = nextDustUpgradeCost;
     }
-    const nextConverterCost = mathCache.getConverterCost();
-    if (previousUIValues.darkMatterConverterLevel !== gameState.darkMatterConverterLevel) {
-        if (ui.darkMatterConverterLevel) ui.darkMatterConverterLevel.textContent = gameState.darkMatterConverterLevel;
-        previousUIValues.darkMatterConverterLevel = gameState.darkMatterConverterLevel;
+    if (previousUIValues.darkMatterConverterLevel !== darkMatterConverterLevel) {
+        if (ui.darkMatterConverterLevel) ui.darkMatterConverterLevel.textContent = darkMatterConverterLevel;
+        previousUIValues.darkMatterConverterLevel = darkMatterConverterLevel;
     }
     if (previousUIValues.darkMatterConverterCost !== nextConverterCost) {
         if (ui.darkMatterConverterCost) ui.darkMatterConverterCost.textContent = nextConverterCost;
-        if (ui.upgradeDarkMatterConverterButton) ui.upgradeDarkMatterConverterButton.disabled = gameState.energy < nextConverterCost;
         previousUIValues.darkMatterConverterCost = nextConverterCost;
     }
 
-    // Research Buttons
-    if (previousUIValues.researchStates.enhancedDust !== gameState.researchEnhancedDust) {
-        if (ui.researchEnhancedDustStatus) ui.researchEnhancedDustStatus.textContent = gameState.researchEnhancedDust ? '完了' : '未完了';
-        if (ui.researchEnhancedDustButton) ui.researchEnhancedDustButton.disabled = gameState.researchEnhancedDust || gameState.darkMatter < 1;
-        previousUIValues.researchStates.enhancedDust = gameState.researchEnhancedDust;
-    }
-    if (previousUIValues.researchStates.advancedEnergy !== gameState.researchAdvancedEnergy) {
-        if (ui.researchAdvancedEnergyStatus) ui.researchAdvancedEnergyStatus.textContent = gameState.researchAdvancedEnergy ? '完了' : '未完了';
-        if (ui.researchAdvancedEnergyButton) ui.researchAdvancedEnergyButton.disabled = gameState.researchAdvancedEnergy || gameState.darkMatter < 5;
-        previousUIValues.researchStates.advancedEnergy = gameState.researchAdvancedEnergy;
-    }
+    if (ui.researchEnhancedDustButton) ui.researchEnhancedDustButton.disabled = researchEnhancedDust || currentDarkMatter < 1;
+    if (ui.researchAdvancedEnergyButton) ui.researchAdvancedEnergyButton.disabled = researchAdvancedEnergy || currentDarkMatter < 2;
+    if (ui.researchMoonButton) ui.researchMoonButton.disabled = unlockedCelestialBodies.moon || currentDarkMatter < 1;
+    if (ui.researchDwarfPlanetButton) ui.researchDwarfPlanetButton.disabled = unlockedCelestialBodies.dwarfPlanet || currentDarkMatter < 2;
+    if (ui.researchPlanetButton) ui.researchPlanetButton.disabled = unlockedCelestialBodies.planet || currentDarkMatter < 3;
+    const researchStarCost = 5;
+    if (ui.researchStarButton) ui.researchStarButton.disabled = unlockedCelestialBodies.star || currentDarkMatter < researchStarCost;
 
-    // Unlockable bodies
-    if (previousUIValues.unlockedBodies.moon !== gameState.unlockedCelestialBodies.moon) {
-        if (ui.researchMoonStatus) ui.researchMoonStatus.textContent = gameState.unlockedCelestialBodies.moon ? '完了' : '未完了';
-        if (ui.researchMoonButton) ui.researchMoonButton.disabled = gameState.unlockedCelestialBodies.moon || gameState.darkMatter < 10;
-        if (ui.createMoonButton) ui.createMoonButton.style.display = gameState.unlockedCelestialBodies.moon ? 'inline-block' : 'none';
-        previousUIValues.unlockedBodies.moon = gameState.unlockedCelestialBodies.moon;
+    if (previousUIValues.researchStates.enhancedDust !== researchEnhancedDust) {
+        if (ui.researchEnhancedDustStatus) ui.researchEnhancedDustStatus.textContent = researchEnhancedDust ? '完了' : '未完了';
+        previousUIValues.researchStates.enhancedDust = researchEnhancedDust;
     }
-    if (previousUIValues.unlockedBodies.dwarfPlanet !== gameState.unlockedCelestialBodies.dwarfPlanet) {
-        if (ui.researchDwarfPlanetStatus) ui.researchDwarfPlanetStatus.textContent = gameState.unlockedCelestialBodies.dwarfPlanet ? '完了' : '未完了';
-        if (ui.researchDwarfPlanetButton) ui.researchDwarfPlanetButton.disabled = gameState.unlockedCelestialBodies.dwarfPlanet || gameState.darkMatter < 20;
-        if (ui.createDwarfPlanetButton) ui.createDwarfPlanetButton.style.display = gameState.unlockedCelestialBodies.dwarfPlanet ? 'inline-block' : 'none';
-        previousUIValues.unlockedBodies.dwarfPlanet = gameState.unlockedCelestialBodies.dwarfPlanet;
+    if (previousUIValues.researchStates.advancedEnergy !== researchAdvancedEnergy) {
+        if (ui.researchAdvancedEnergyStatus) ui.researchAdvancedEnergyStatus.textContent = researchAdvancedEnergy ? '完了' : '未完了';
+        previousUIValues.researchStates.advancedEnergy = researchAdvancedEnergy;
     }
-    if (previousUIValues.unlockedBodies.planet !== gameState.unlockedCelestialBodies.planet) {
-        if (ui.researchPlanetStatus) ui.researchPlanetStatus.textContent = gameState.unlockedCelestialBodies.planet ? '完了' : '未完了';
-        if (ui.researchPlanetButton) ui.researchPlanetButton.disabled = gameState.unlockedCelestialBodies.planet || gameState.darkMatter < 50;
-        if (ui.createPlanetButton) ui.createPlanetButton.style.display = gameState.unlockedCelestialBodies.planet ? 'inline-block' : 'none';
-        previousUIValues.unlockedBodies.planet = gameState.unlockedCelestialBodies.planet;
+    if (previousUIValues.unlockedBodies.moon !== unlockedCelestialBodies.moon) {
+        if (ui.researchMoonStatus) ui.researchMoonStatus.textContent = unlockedCelestialBodies.moon ? '完了' : '未完了';
+        if (ui.createMoonButton) ui.createMoonButton.style.display = unlockedCelestialBodies.moon ? 'inline-block' : 'none';
+        previousUIValues.unlockedBodies.moon = unlockedCelestialBodies.moon;
     }
-    if (previousUIValues.unlockedBodies.star !== gameState.researchStar) {
-        if (ui.researchStarStatus) ui.researchStarStatus.textContent = gameState.researchStar ? '完了' : '未完了';
-        if (ui.researchStarButton) ui.researchStarButton.disabled = gameState.researchStar || gameState.darkMatter < 100;
-        if (ui.createStarButton) ui.createStarButton.style.display = gameState.researchStar ? 'inline-block' : 'none';
-        previousUIValues.unlockedBodies.star = gameState.researchStar;
+    if (previousUIValues.unlockedBodies.dwarfPlanet !== unlockedCelestialBodies.dwarfPlanet) {
+        if (ui.researchDwarfPlanetStatus) ui.researchDwarfPlanetStatus.textContent = unlockedCelestialBodies.dwarfPlanet ? '完了' : '未完了';
+        if (ui.createDwarfPlanetButton) ui.createDwarfPlanetButton.style.display = unlockedCelestialBodies.dwarfPlanet ? 'inline-block' : 'none';
+        previousUIValues.unlockedBodies.dwarfPlanet = unlockedCelestialBodies.dwarfPlanet;
     }
+    if (previousUIValues.unlockedBodies.planet !== unlockedCelestialBodies.planet) {
+        if (ui.researchPlanetStatus) ui.researchPlanetStatus.textContent = unlockedCelestialBodies.planet ? '完了' : '未完了';
+        if (ui.createPlanetButton) ui.createPlanetButton.style.display = unlockedCelestialBodies.planet ? 'inline-block' : 'none';
+        previousUIValues.unlockedBodies.planet = unlockedCelestialBodies.planet;
+    }
+    if (previousUIValues.unlockedBodies.star !== unlockedCelestialBodies.star) {
+        if (ui.researchStarStatus) ui.researchStarStatus.textContent = unlockedCelestialBodies.star ? '完了' : '未完了';
+        if (ui.researchStarCost) ui.researchStarCost.textContent = researchStarCost;
+        if (ui.createStarButton) ui.createStarButton.style.display = unlockedCelestialBodies.star ? 'inline-block' : 'none';
+        previousUIValues.unlockedBodies.star = unlockedCelestialBodies.star;
+    }
+    
+    updateFocusedBodyUI();
 }
 
 export function switchTab(activeTab) {
@@ -309,6 +320,99 @@ export function switchTab(activeTab) {
     }
 }
 
+function updateStarList() {
+    const starListContainer = ui.starListContainer;
+    if (!starListContainer) return;
+
+    starListContainer.innerHTML = ''; // Clear existing list
+
+    const stars = gameState.stars.filter(s => s.userData.type === 'star');
+
+    if (stars.length === 0) {
+        starListContainer.innerHTML = '<p>現在、管理対象の恒星はありません。</p>';
+        return;
+    }
+
+    // ソート状態を保持する変数
+    let sortColumn = 'name';
+    let sortDirection = 'asc';
+
+    const renderTable = () => {
+        // ソート処理
+        stars.sort((a, b) => {
+            const valA = a.userData[sortColumn];
+            const valB = b.userData[sortColumn];
+            let comparison = 0;
+            if (valA > valB) {
+                comparison = 1;
+            } else if (valA < valB) {
+                comparison = -1;
+            }
+            return sortDirection === 'asc' ? comparison : -comparison;
+        });
+
+        starListContainer.innerHTML = ''; // 再描画のためにクリア
+
+        const table = document.createElement('table');
+        table.className = 'star-table';
+
+        const thead = document.createElement('thead');
+        const headerRow = document.createElement('tr');
+        const headers = [
+            { key: 'name', text: '名前' },
+            { key: 'spectralType', text: '種類' },
+            { key: 'mass', text: '質量' },
+            { key: 'temperature', text: '温度 (K)' },
+            { key: 'age', text: '年齢 (億年)' },
+            { key: 'lifespan', text: '寿命 (億年)' },
+        ];
+
+        headers.forEach(header => {
+            const th = document.createElement('th');
+            th.textContent = header.text;
+            th.dataset.sortKey = header.key;
+            if (header.key === sortColumn) {
+                th.classList.add(sortDirection === 'asc' ? 'sort-asc' : 'sort-desc');
+            }
+            th.addEventListener('click', () => {
+                if (sortColumn === header.key) {
+                    sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+                } else {
+                    sortColumn = header.key;
+                    sortDirection = 'asc';
+                }
+                renderTable();
+            });
+            headerRow.appendChild(th);
+        });
+
+        thead.appendChild(headerRow);
+        table.appendChild(thead);
+
+        const tbody = document.createElement('tbody');
+        stars.forEach(star => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${star.userData.name || 'N/A'}</td>
+                <td>${star.userData.spectralType || 'N/A'}</td>
+                <td>${parseFloat(star.userData.mass).toFixed(2)}</td>
+                <td>${star.userData.temperature}</td>
+                <td>${parseFloat(star.userData.age).toFixed(2)}</td>
+                <td>${star.userData.lifespan}</td>
+            `;
+            row.addEventListener('click', () => {
+                gameState.focusedObject = star;
+            });
+            tbody.appendChild(row);
+        });
+
+        table.appendChild(tbody);
+        starListContainer.appendChild(table);
+    };
+
+    renderTable(); // 初期描画
+}
+
 export function showMessage(message, duration = 2000) {
     clearTimeout(messageTimeout);
     ui.messageText.textContent = message;
@@ -321,8 +425,6 @@ export function showMessage(message, duration = 2000) {
     }, duration);
 }
 
-let galaxyMapUpdateTimer = 0;
-const galaxyMapUpdateInterval = 0.2; // Update galaxy map every 0.2 seconds (slower than UI)
 let previousGalaxyMapState = {
     starCount: -1,
     isMapVisible: false,
@@ -339,9 +441,8 @@ function updateGalaxyMap() {
         return;
     }
     map.style.display = 'block';
-    map.innerHTML = ''; // マップをクリア
+    map.innerHTML = '';
 
-    // Cache map size to avoid repeated clientWidth calls (causes layout reflow)
     let mapSize;
     if (previousGalaxyMapState.mapSize === -1) {
         mapSize = map.clientWidth;
@@ -350,7 +451,7 @@ function updateGalaxyMap() {
         mapSize = previousGalaxyMapState.mapSize;
     }
     
-    const mapScale = 40000; // 3D空間のどのくらいの範囲をマップに表示するか
+    const mapScale = 40000;
 
     const blackHole = gameState.stars.find(s => s.userData.type === 'black_hole');
     if (!blackHole) return;
@@ -358,7 +459,6 @@ function updateGalaxyMap() {
     const centerX = blackHole.position.x;
     const centerZ = blackHole.position.z;
 
-    // Use DocumentFragment for batch DOM operations
     const fragment = document.createDocumentFragment();
 
     gameState.stars.forEach(star => {
@@ -380,39 +480,36 @@ function updateGalaxyMap() {
                 marker.style.height = '5px';
                 marker.style.backgroundColor = 'red';
                 marker.style.borderRadius = '50%';
-                marker.style.transform = 'translate(-50%, -50%)'; // 中央に配置
+                marker.style.transform = 'translate(-50%, -50%)';
             } else if (star.userData.type === 'star') {
                 marker.style.width = '2px';
                 marker.style.height = '2px';
                 marker.style.backgroundColor = 'white';
                 marker.style.borderRadius = '50%';
-                marker.style.transform = 'translate(-50%, -50%)'; // 中央に配置
+                marker.style.transform = 'translate(-50%, -50%)';
             }
             fragment.appendChild(marker);
         }
     });
 
-    // Single DOM operation instead of multiple appendChild calls
     map.appendChild(fragment);
 }
 
-// Debounced galaxy map update function
 export function debouncedUpdateGalaxyMap() {
     const blackHole = gameState.stars.find(s => s.userData.type === 'black_hole');
     const currentStarCount = gameState.stars.length;
     const currentIsMapVisible = gameState.isMapVisible;
     const currentBlackHolePos = blackHole ? `${blackHole.position.x},${blackHole.position.z}` : null;
     
-    // Check if significant changes have occurred
     const significantChange = 
         previousGalaxyMapState.starCount !== currentStarCount ||
-        previousGalaxyMapState.isMapVisible !== currentIsMapVisible ||
+        previousUIValues.isMapVisible !== currentIsMapVisible ||
         previousGalaxyMapState.blackHolePosition !== currentBlackHolePos;
     
     if (significantChange) {
         updateGalaxyMap();
         previousGalaxyMapState.starCount = currentStarCount;
-        previousGalaxyMapState.isMapVisible = currentIsMapVisible;
+        previousUIValues.isMapVisible = currentIsMapVisible;
         previousGalaxyMapState.blackHolePosition = currentBlackHolePos;
     }
 }

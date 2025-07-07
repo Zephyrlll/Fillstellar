@@ -707,3 +707,57 @@ button:disabled {
 #timeline-log-content::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 183, 0, 0.8);
 }
+
+/* 恒星管理テーブルのスタイル */
+.star-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+    font-size: 14px;
+}
+
+.star-table th, .star-table td {
+    border: 1px solid #444;
+    padding: 8px 12px;
+    text-align: left;
+}
+
+.star-table thead {
+    background-color: #2a2a2a;
+}
+
+.star-table th {
+    cursor: pointer;
+    position: relative;
+}
+
+.star-table th:hover {
+    background-color: #3a3a3a;
+}
+
+/* ソートアイコン */
+.star-table th.sort-asc::after,
+.star-table th.sort-desc::after {
+    content: '';
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    margin-top: -8px;
+    border: 4px solid transparent;
+}
+
+.star-table th.sort-asc::after {
+    border-bottom-color: #ccc;
+}
+
+.star-table th.sort-desc::after {
+    border-top-color: #ccc;
+}
+
+.star-table tbody tr:nth-child(even) {
+    background-color: #1e1e1e;
+}
+
+.star-table tbody tr:hover {
+    background-color: #333;
+}

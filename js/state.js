@@ -38,9 +38,8 @@ export const gameState = {
         moon: false,
         dwarfPlanet: false,
         planet: false,
-        star: true
+        star: false
     },
-    researchStar: false,
     graphicsQuality: 'medium',
     currentUnitSystem: 'astronomical',
     unlockedTimeMultipliers: { '2x': false, '5x': false, '10x': false },
@@ -48,6 +47,7 @@ export const gameState = {
     timeMultiplierCosts: { '2x': 500, '5x': 2000, '10x': 5000 },
     isMapVisible: true,
     saveVersion: '1.6-accumulator', // セーブデータのバージョン
+    focusedObject: null, // フォーカス中の天体
     timelineLog: [], // 時系列ログエントリを格納
     maxLogEntries: 100, // ログの最大保持数
     statistics: {

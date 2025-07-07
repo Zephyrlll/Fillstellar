@@ -1,10 +1,22 @@
-import { camera, renderer, composer } from './threeSetup.js';
+import * as THREE from 'three';
+import { scene, camera, renderer, composer } from './threeSetup.js';
 import { gameState } from './state.js';
-import { ui, switchTab, showMessage } from './ui.js';
+import { ui, switchTab, showMessage, updateUI } from './ui.js';
 import { saveGame } from './saveload.js';
 import { createCelestialBody } from './celestialBody.js';
 import { GALAXY_BOUNDARY } from './constants.js';
 import { mathCache } from './utils.js';
+import { addTimelineLog } from './timeline.js';
+
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+let focusedStar = null; // events.jsでフォーカスされた星を管理
+
+// 仮のfocusOnStar関数。本来はmain.jsにあるべきだが、循環参照を避けるためここに置く
+function focusOnStar(star) {
+    gameState.focusedObject = star;
+    console.log("Focused on:", star.userData.name);
+}
 
 let eventListenersSetup = false;
 
@@ -59,9 +71,8 @@ function createInfoPanel() {
 
 export function setupEventListeners() {
     // Prevent multiple event listener registrations
-    // Temporarily disabled to debug research issue
-    // if (eventListenersSetup) return;
-    // eventListenersSetup = true;
+    if (eventListenersSetup) return;
+    eventListenersSetup = true;
     
     window.addEventListener('resize', () => {
         camera.aspect = window.innerWidth / window.innerHeight;
@@ -479,7 +490,7 @@ export function setupEventListeners() {
 
     if (ui.researchStarButton) {
         ui.researchStarButton.addEventListener('click', () => {
-            const cost = parseInt(ui.researchStarCost.textContent);
+            const cost = 5; // コストを明示
             if (gameState.darkMatter >= cost && !gameState.unlockedCelestialBodies.star) {
                 gameState.darkMatter -= cost;
                 gameState.unlockedCelestialBodies.star = true;
