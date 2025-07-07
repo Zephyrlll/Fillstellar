@@ -10,6 +10,7 @@ import { updateStatistics } from './js/statistics.js';
 import { GALAXY_BOUNDARY } from './js/constants.js';
 import { mathCache } from './js/utils.js';
 import { setupEventListeners, keys } from './js/events.js';
+import { soundManager } from './js/sound.js';
 
 const moveSpeed = 200;
 
@@ -177,6 +178,14 @@ function animate() {
     }
 
     controls.update();
+    
+    // サウンドリスナーの位置を更新
+    soundManager.updateListenerPosition(camera.position, {
+        x: camera.getWorldDirection(new THREE.Vector3()).x,
+        y: camera.getWorldDirection(new THREE.Vector3()).y,
+        z: camera.getWorldDirection(new THREE.Vector3()).z
+    });
+    
     composer.render();
 
     uiUpdateTimer += deltaTime;
@@ -215,6 +224,19 @@ function init() {
     if (blackHole) {
         gameState.focusedObject = blackHole;
     }
+
+    // サウンドシステムの初期化（ユーザーインタラクション後）
+    const initSound = async () => {
+        await soundManager.init();
+        // カメラ位置に基づいてリスナー位置を更新
+        soundManager.updateListenerPosition(camera.position, {
+            x: 0, y: 0, z: -1  // カメラの向き
+        });
+    };
+    
+    // 最初のクリックでサウンドを初期化
+    document.addEventListener('click', initSound, { once: true });
+    document.addEventListener('keydown', initSound, { once: true });
 
     setupEventListeners();
     animate();

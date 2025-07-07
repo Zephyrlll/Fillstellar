@@ -3,6 +3,7 @@ import { gameState } from './state.js';
 import { celestialObjectPools, starGeometry } from './utils.js';
 import { showMessage } from './ui.js';
 import { addTimelineLog } from './timeline.js';
+import { soundManager } from './sound.js';
 function createStar() {
     const starTypes = [
         { type: 'red', tempMin: 2400, tempMax: 3700, massMin: 0.08, massMax: 0.45 },
@@ -119,6 +120,9 @@ export function checkLifeSpawn(planetObject) {
         auraSphere.userData.materialType = 'lifeAura';
         planetObject.add(auraSphere);
         showMessage(`${userData.name} に生命が誕生しました！`);
+        addTimelineLog(`${userData.name}に生命が誕生しました`, 'evolution');
+        // 生命誕生サウンドの再生
+        soundManager.playEvolutionSound('microbial', planetObject.position);
     }
 }
 export function evolveLife(planetObject) {
@@ -151,6 +155,8 @@ export function evolveLife(planetObject) {
             'intelligent': '知的生命体'
         };
         addTimelineLog(`${userData.name}で生命が${stageNames[nextStage]}に進化しました`, 'evolution');
+        // 進化サウンドの再生
+        soundManager.playEvolutionSound(nextStage, planetObject.position);
         if (nextStage === 'intelligent') {
             const planetMesh = planetObject.children[0];
             if (planetMesh && planetMesh.material && planetMesh.material.map) {

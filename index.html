@@ -237,6 +237,40 @@
               </div>
 
               <div class="collapsible-section">
+                <div class="collapsible-header" id="soundHeader">サウンド設定</div>
+                <div class="collapsible-content" id="soundContent">
+                    <div class="option-item">
+                        <label for="masterVolumeSlider">マスター音量: <span id="masterVolumeValue">70</span>%</label>
+                        <input type="range" id="masterVolumeSlider" min="0" max="100" value="70" step="1">
+                    </div>
+                    <div class="option-item">
+                        <label for="ambientVolumeSlider">環境音: <span id="ambientVolumeValue">60</span>%</label>
+                        <input type="range" id="ambientVolumeSlider" min="0" max="100" value="60" step="1">
+                    </div>
+                    <div class="option-item">
+                        <label for="effectsVolumeSlider">効果音: <span id="effectsVolumeValue">80</span>%</label>
+                        <input type="range" id="effectsVolumeSlider" min="0" max="100" value="80" step="1">
+                    </div>
+                    <div class="option-item">
+                        <label for="uiVolumeSlider">UI音: <span id="uiVolumeValue">50</span>%</label>
+                        <input type="range" id="uiVolumeSlider" min="0" max="100" value="50" step="1">
+                    </div>
+                    <div class="option-item">
+                        <label for="spatialAudioCheckbox">
+                            <input type="checkbox" id="spatialAudioCheckbox" checked>
+                            3D空間音響を有効にする
+                        </label>
+                    </div>
+                    <div class="option-item">
+                        <button id="muteToggleButton">ミュート</button>
+                    </div>
+                    <div class="option-item">
+                        <button id="testSoundButton">サウンドテスト</button>
+                    </div>
+                </div>
+              </div>
+
+              <div class="collapsible-section">
                   <div class="collapsible-header" id="debugHeader">デバッグ</div>
                   <div class="collapsible-content" id="debugContent">
                       <button id="addAllResourcesButton">全リソースを一括付与</button>

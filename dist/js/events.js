@@ -6,6 +6,7 @@ import { saveGame } from './saveload.js';
 import { createCelestialBody } from './celestialBody.js';
 import { mathCache } from './utils.js';
 import { addTimelineLog } from './timeline.js';
+import { soundManager } from './sound.js';
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 export const keys = { w: false, a: false, s: false, d: false };
@@ -91,15 +92,30 @@ export function setupEventListeners() {
         }
     });
     if (ui.gameTabButton)
-        ui.gameTabButton.addEventListener('click', () => switchTab('game'));
+        ui.gameTabButton.addEventListener('click', () => {
+            soundManager.playUISound('tab');
+            switchTab('game');
+        });
     if (ui.researchTabButton)
-        ui.researchTabButton.addEventListener('click', () => switchTab('research'));
+        ui.researchTabButton.addEventListener('click', () => {
+            soundManager.playUISound('tab');
+            switchTab('research');
+        });
     if (ui.optionsTabButton)
-        ui.optionsTabButton.addEventListener('click', () => switchTab('options'));
+        ui.optionsTabButton.addEventListener('click', () => {
+            soundManager.playUISound('tab');
+            switchTab('options');
+        });
     if (ui.starManagementTabButton)
-        ui.starManagementTabButton.addEventListener('click', () => switchTab('starManagement'));
+        ui.starManagementTabButton.addEventListener('click', () => {
+            soundManager.playUISound('tab');
+            switchTab('starManagement');
+        });
     if (ui.closeOptionsButton)
-        ui.closeOptionsButton.addEventListener('click', () => switchTab('game'));
+        ui.closeOptionsButton.addEventListener('click', () => {
+            soundManager.playUISound('click');
+            switchTab('game');
+        });
     const collapsibleHeaders = document.querySelectorAll('.collapsible-header');
     collapsibleHeaders.forEach(header => {
         header.addEventListener('click', () => {
@@ -202,6 +218,8 @@ export function setupEventListeners() {
             });
             gameState.stars.push(newBody);
             scene.add(newBody);
+            // サウンドエフェクトの再生
+            soundManager.createCelestialBodySound(type, finalPosition);
             const typeNames = {
                 'asteroid': '小惑星',
                 'comet': '彗星',
@@ -255,6 +273,8 @@ export function setupEventListeners() {
         gameState.stars.push(newStar);
         scene.add(newStar);
         focusOnStar(newStar);
+        // 恒星作成サウンドの再生
+        soundManager.createCelestialBodySound('star', position);
         addTimelineLog(`恒星「${name}」が銀河に誕生しました`, 'creation');
         saveGame();
         return true;
@@ -335,6 +355,7 @@ export function setupEventListeners() {
                     gameState.dustUpgradeLevel++;
                     updateUI();
                     saveGame();
+                    soundManager.playUISound('success');
                     upgradeCount++;
                     let nextDelay;
                     if (upgradeCount <= 3)
@@ -371,6 +392,7 @@ export function setupEventListeners() {
                     gameState.darkMatter++;
                     updateUI();
                     saveGame();
+                    soundManager.playUISound('success');
                     upgradeCount++;
                     let nextDelay;
                     if (upgradeCount <= 3)
@@ -511,6 +533,108 @@ export function setupEventListeners() {
                 localStorage.removeItem('cosmicGardenerState');
                 location.reload();
             }
+        });
+    }
+    // サウンド設定のイベントリスナー
+    const masterVolumeSlider = document.getElementById('masterVolumeSlider');
+    const masterVolumeValue = document.getElementById('masterVolumeValue');
+    const ambientVolumeSlider = document.getElementById('ambientVolumeSlider');
+    const ambientVolumeValue = document.getElementById('ambientVolumeValue');
+    const effectsVolumeSlider = document.getElementById('effectsVolumeSlider');
+    const effectsVolumeValue = document.getElementById('effectsVolumeValue');
+    const uiVolumeSlider = document.getElementById('uiVolumeSlider');
+    const uiVolumeValue = document.getElementById('uiVolumeValue');
+    const spatialAudioCheckbox = document.getElementById('spatialAudioCheckbox');
+    const muteToggleButton = document.getElementById('muteToggleButton');
+    if (masterVolumeSlider && masterVolumeValue) {
+        masterVolumeSlider.addEventListener('input', () => {
+            const value = parseFloat(masterVolumeSlider.value) / 100;
+            masterVolumeValue.textContent = masterVolumeSlider.value;
+            soundManager.updateSettings({ masterVolume: value });
+            soundManager.playUISound('click');
+        });
+    }
+    if (ambientVolumeSlider && ambientVolumeValue) {
+        ambientVolumeSlider.addEventListener('input', () => {
+            const value = parseFloat(ambientVolumeSlider.value) / 100;
+            ambientVolumeValue.textContent = ambientVolumeSlider.value;
+            soundManager.updateSettings({ ambientVolume: value });
+        });
+    }
+    if (effectsVolumeSlider && effectsVolumeValue) {
+        effectsVolumeSlider.addEventListener('input', () => {
+            const value = parseFloat(effectsVolumeSlider.value) / 100;
+            effectsVolumeValue.textContent = effectsVolumeSlider.value;
+            soundManager.updateSettings({ effectsVolume: value });
+        });
+    }
+    if (uiVolumeSlider && uiVolumeValue) {
+        uiVolumeSlider.addEventListener('input', () => {
+            const value = parseFloat(uiVolumeSlider.value) / 100;
+            uiVolumeValue.textContent = uiVolumeSlider.value;
+            soundManager.updateSettings({ uiVolume: value });
+            soundManager.playUISound('click');
+        });
+    }
+    if (spatialAudioCheckbox) {
+        spatialAudioCheckbox.addEventListener('change', () => {
+            soundManager.updateSettings({ spatialAudio: spatialAudioCheckbox.checked });
+            soundManager.playUISound('click');
+        });
+    }
+    if (muteToggleButton) {
+        muteToggleButton.addEventListener('click', () => {
+            const settings = soundManager.getSettings();
+            soundManager.updateSettings({ muted: !settings.muted });
+            muteToggleButton.textContent = settings.muted ? 'ミュート解除' : 'ミュート';
+            soundManager.playUISound('click');
+        });
+    }
+    // サウンド設定の初期化
+    const settings = soundManager.getSettings();
+    if (masterVolumeSlider && masterVolumeValue) {
+        masterVolumeSlider.value = String(settings.masterVolume * 100);
+        masterVolumeValue.textContent = String(Math.round(settings.masterVolume * 100));
+    }
+    if (ambientVolumeSlider && ambientVolumeValue) {
+        ambientVolumeSlider.value = String(settings.ambientVolume * 100);
+        ambientVolumeValue.textContent = String(Math.round(settings.ambientVolume * 100));
+    }
+    if (effectsVolumeSlider && effectsVolumeValue) {
+        effectsVolumeSlider.value = String(settings.effectsVolume * 100);
+        effectsVolumeValue.textContent = String(Math.round(settings.effectsVolume * 100));
+    }
+    if (uiVolumeSlider && uiVolumeValue) {
+        uiVolumeSlider.value = String(settings.uiVolume * 100);
+        uiVolumeValue.textContent = String(Math.round(settings.uiVolume * 100));
+    }
+    if (spatialAudioCheckbox) {
+        spatialAudioCheckbox.checked = settings.spatialAudio;
+    }
+    if (muteToggleButton) {
+        muteToggleButton.textContent = settings.muted ? 'ミュート解除' : 'ミュート';
+    }
+    // サウンドテストボタン
+    const testSoundButton = document.getElementById('testSoundButton');
+    if (testSoundButton) {
+        testSoundButton.addEventListener('click', async () => {
+            // サウンドシステムの初期化
+            if (!soundManager.initialized) {
+                await soundManager.init();
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+            // 各種テスト音を順番に再生
+            soundManager.playTestTone();
+            setTimeout(() => {
+                soundManager.playUISound('click');
+            }, 700);
+            setTimeout(() => {
+                soundManager.createCelestialBodySound('asteroid');
+            }, 1400);
+            setTimeout(() => {
+                soundManager.playUISound('success');
+            }, 2100);
+            showMessage('サウンドテストを実行しました');
         });
     }
     const setupInfoPanel = createInfoPanel();
