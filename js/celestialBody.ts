@@ -321,7 +321,7 @@ export function createCelestialBody(type: string, options: any = {}): CelestialB
                 break;
             case 'moon':
                 const parentMassForMoon = options.parent ? (options.parent.userData.mass as number) : 1000;
-                gameMass = parentMassForMoon * (Math.random() * 0.0001 + 0.00001);
+                gameMass = parentMassForMoon * (Math.random() * 0.0002 + 0.00002);
                 break;
             case 'dwarfPlanet':
                 const parentMassForDwarfPlanet = options.parent ? (options.parent.userData.mass as number) : 1000;
@@ -420,7 +420,8 @@ export function createCelestialBody(type: string, options: any = {}): CelestialB
             body = blackHoleGroup;
             break;
         case 'star':
-            radius = Math.cbrt(gameMass) * 0.8;
+            // 恒星は大きいが、ゲーム性を考慮して適度に調整
+            radius = Math.max(Math.cbrt(gameMass) * 8.0, 15.0);
             const starColor = starColors[(starParams as StarUserData).spectralType] || new THREE.Color(0xffffff);
             materialParams.color.set(starColor);
             materialParams.emissive.set(starColor);
@@ -435,7 +436,8 @@ export function createCelestialBody(type: string, options: any = {}): CelestialB
             (body.userData as any).materialType = 'star';
             break;
         case 'planet':
-            radius = Math.cbrt(gameMass) * 2.0;
+            // 惑星は恒星より小さいが、視認できるサイズを確保
+            radius = Math.max(Math.cbrt(gameMass) * 2.5, 3.0);
             const maps = createRealisticPlanetMaps((planetParams as PlanetUserData).subType, parseFloat((planetParams as PlanetUserData).water), parseFloat((planetParams as PlanetUserData).atmosphere));
             if (maps.map && maps.normalMap) {
                 const planetMaterial = celestialObjectPools.getMaterial('planet', { 
@@ -484,16 +486,102 @@ export function createCelestialBody(type: string, options: any = {}): CelestialB
                 }
             }
             break;
+        case 'moon':
+            // 衛星は惑星より小さいが、最小サイズを確保
+            radius = Math.max(Math.cbrt(gameMass) * 1.8, 1.5);
+            const moonGeometry = celestialObjectPools.getSphereGeometry(radius);
+            const moonMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x999999, 
+                roughness: 0.8,
+                metalness: 0.1,
+                emissive: new THREE.Color(0x333333),
+                emissiveIntensity: 0.1
+            });
+            body = new THREE.Mesh(moonGeometry, moonMaterial);
+            body.scale.set(radius, radius, radius);
+            
+            // 視認性向上のため薄いアウトラインを追加
+            const moonOutlineGeometry = celestialObjectPools.getSphereGeometry(radius);
+            const moonOutlineMaterial = new THREE.MeshBasicMaterial({
+                color: 0xffffff,
+                transparent: true,
+                opacity: 0.2,
+                side: THREE.BackSide
+            });
+            const moonOutline = new THREE.Mesh(moonOutlineGeometry, moonOutlineMaterial);
+            moonOutline.scale.set(radius * 1.05, radius * 1.05, radius * 1.05);
+            body.add(moonOutline);
+            break;
+        case 'dwarfPlanet':
+            // 準惑星は惑星と衛星の中間サイズ
+            radius = Math.max(Math.cbrt(gameMass) * 2.0, 2.0);
+            const dwarfGeometry = celestialObjectPools.getSphereGeometry(radius);
+            const dwarfMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0xaa8866, 
+                roughness: 0.9,
+                metalness: 0.2
+            });
+            body = new THREE.Mesh(dwarfGeometry, dwarfMaterial);
+            body.scale.set(radius, radius, radius);
+            break;
         case 'asteroid':
-            radius = Math.cbrt(gameMass) * 5.0;
+            // 小惑星は小さいが、視認できる最小サイズを確保
+            radius = Math.max(Math.cbrt(gameMass) * 1.0, 0.8);
             const asteroidGeom = createRealisticAsteroid(radius);
-            const asteroidMaterial = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.9, metalness: 0.5 });
+            const asteroidMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x888888, 
+                roughness: 0.9, 
+                metalness: 0.5,
+                emissive: new THREE.Color(0x222222),
+                emissiveIntensity: 0.05
+            });
             body = new THREE.Mesh(asteroidGeom, asteroidMaterial);
+            
+            // 視認性向上のため薄いアウトラインを追加
+            const asteroidOutlineGeometry = celestialObjectPools.getSphereGeometry(radius);
+            const asteroidOutlineMaterial = new THREE.MeshBasicMaterial({
+                color: 0xaaaaaa,
+                transparent: true,
+                opacity: 0.15,
+                side: THREE.BackSide
+            });
+            const asteroidOutline = new THREE.Mesh(asteroidOutlineGeometry, asteroidOutlineMaterial);
+            asteroidOutline.scale.set(radius * 1.08, radius * 1.08, radius * 1.08);
+            body.add(asteroidOutline);
             break;
         case 'comet':
-            radius = Math.cbrt(gameMass) * 8.0;
-            const coreMaterial = new THREE.MeshBasicMaterial({ color: 0xaaddff, blending: THREE.AdditiveBlending });
-            body = new THREE.Mesh(new THREE.SphereGeometry(radius, 16, 16), coreMaterial);
+            // 彗星は小惑星より少し大きく、コマの視認性を確保
+            radius = Math.max(Math.cbrt(gameMass) * 1.2, 1.0);
+            const coreGeometry = new THREE.SphereGeometry(radius, 16, 16);
+            const coreMaterial = new THREE.MeshBasicMaterial({ 
+                color: 0xaaddff, 
+                blending: THREE.AdditiveBlending,
+                transparent: true,
+                opacity: 0.8
+            });
+            body = new THREE.Mesh(coreGeometry, coreMaterial);
+            
+            // 彗星のコマ効果を追加
+            const comaGeometry = new THREE.SphereGeometry(radius * 2, 12, 12);
+            const comaMaterial = new THREE.MeshBasicMaterial({
+                color: 0x66aaff,
+                transparent: true,
+                opacity: 0.2,
+                blending: THREE.AdditiveBlending
+            });
+            const coma = new THREE.Mesh(comaGeometry, comaMaterial);
+            body.add(coma);
+            
+            // 視認性向上のためのアウトライン
+            const cometOutlineGeometry = new THREE.SphereGeometry(radius * 1.1, 12, 12);
+            const cometOutlineMaterial = new THREE.MeshBasicMaterial({
+                color: 0xffffff,
+                transparent: true,
+                opacity: 0.3,
+                side: THREE.BackSide
+            });
+            const cometOutline = new THREE.Mesh(cometOutlineGeometry, cometOutlineMaterial);
+            body.add(cometOutline);
             break;
         default:
             body = new THREE.Mesh(starGeometry.clone(), new THREE.MeshStandardMaterial({color: 0xff00ff}));
