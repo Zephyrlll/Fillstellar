@@ -4,7 +4,8 @@
       "Bash(rg:*)",
       "Bash(grep:*)",
       "Bash(npx tsc:*)",
-      "Bash(mkdir:*)"
+      "Bash(mkdir:*)",
+      "Bash(cargo:*)"
     ],
     "deny": []
   }
