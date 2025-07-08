@@ -1,0 +1,60 @@
+# EditorConfig is awesome: https://EditorConfig.org
+
+# top-most EditorConfig file
+root = true
+
+# All files
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 2
+
+# Rust files
+[*.rs]
+indent_size = 4
+max_line_length = 100
+
+# TOML files
+[*.toml]
+indent_size = 4
+
+# JSON files
+[*.json]
+indent_size = 2
+
+# YAML files
+[*.{yml,yaml}]
+indent_size = 2
+
+# Markdown files
+[*.md]
+trim_trailing_whitespace = false
+max_line_length = 100
+
+# SQL files
+[*.sql]
+indent_size = 2
+
+# Shell scripts
+[*.{sh,bash}]
+indent_size = 2
+
+# Docker files
+[{Dockerfile,*.dockerfile}]
+indent_size = 2
+
+# Makefile
+[{Makefile,*.mk}]
+indent_style = tab
+indent_size = 4
+
+# GitHub Actions
+[.github/workflows/*.{yml,yaml}]
+indent_size = 2
+
+# Configuration files
+[.{eslintrc,prettierrc,stylelintrc}]
+indent_size = 2

@@ -28,3 +28,7 @@ dist/
 CLAUDE.md
 プロンプト.md
 favicon.ico
+
+
+*.yml
+*.yaml

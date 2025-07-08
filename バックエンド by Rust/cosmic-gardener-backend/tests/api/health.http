@@ -1,0 +1,87 @@
+# Health Check API Tests
+# VSCode REST Client format
+# 
+# Usage:
+# 1. Install REST Client extension for VSCode
+# 2. Open this file in VSCode
+# 3. Click "Send Request" above each request
+
+@baseUrl = {{$shared baseUrl}}
+
+### Health Check - Basic
+GET {{baseUrl}}/health
+Content-Type: application/json
+
+### Health Check with Headers
+GET {{baseUrl}}/health
+Accept: application/json
+User-Agent: Cosmic-Gardener-Client/1.0
+
+### API Version Health Check
+GET {{baseUrl}}/api/v1/health
+Content-Type: application/json
+
+### Check Response Time
+# @name healthCheck
+GET {{baseUrl}}/health
+
+### Verify Health Response Structure
+# @name healthResponse
+GET {{baseUrl}}/health
+
+###
+# Test response
+@healthData = {{healthResponse.response.body}}
+
+### Health Check - Development Environment
+# @name devHealth
+GET http://localhost:8080/health
+
+### Health Check - Staging Environment  
+# @name stagingHealth
+GET https://staging.cosmic-gardener.com/health
+
+### Health Check - Production Environment
+# @name prodHealth
+GET https://api.cosmic-gardener.com/health
+
+### Metrics Endpoint (if available)
+GET {{baseUrl}}/metrics
+Accept: text/plain
+
+### Server Info (Development only)
+GET {{baseUrl}}/api/v1/info
+Content-Type: application/json
+
+### Test Error Handling - Non-existent endpoint
+GET {{baseUrl}}/nonexistent
+Content-Type: application/json
+
+### Test CORS - Options Request
+OPTIONS {{baseUrl}}/health
+Origin: http://localhost:3000
+Access-Control-Request-Method: GET
+
+### Performance Test - Multiple Requests
+GET {{baseUrl}}/health
+
+###
+GET {{baseUrl}}/health
+
+###
+GET {{baseUrl}}/health
+
+### Load Test Simulation
+GET {{baseUrl}}/health
+Accept: application/json
+X-Request-ID: load-test-1
+
+###
+GET {{baseUrl}}/health  
+Accept: application/json
+X-Request-ID: load-test-2
+
+###
+GET {{baseUrl}}/health
+Accept: application/json
+X-Request-ID: load-test-3
