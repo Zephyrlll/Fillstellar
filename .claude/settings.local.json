@@ -5,7 +5,8 @@
       "Bash(grep:*)",
       "Bash(npx tsc:*)",
       "Bash(mkdir:*)",
-      "Bash(cargo:*)"
+      "Bash(cargo:*)",
+      "Bash(chmod:*)"
     ],
     "deny": []
   }

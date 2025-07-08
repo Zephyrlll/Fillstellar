@@ -1,0 +1,30 @@
+# 環境変数
+.env
+
+# Node.js 関連
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS/エディタ固有
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ビルド成果物
+dist/
+*.tsbuildinfo
+
+# IDE 関連
+.vscode/
+.idea/
+
+# バッチファイル（追跡不要なら）
+*.bat
+
+# その他不要な個人ファイル（任意）
+アイデア.tx
+CLAUDE.md
+プロンプト.md
+favicon.ico
