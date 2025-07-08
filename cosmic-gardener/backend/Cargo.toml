@@ -28,8 +28,13 @@ redis = { version = "0.24", features = ["tokio-comp", "connection-manager"] }
 # 認証・セキュリティ
 jsonwebtoken = "9.2"
 bcrypt = "0.15"
+argon2 = "0.5"
 uuid = { version = "1.6", features = ["v4", "v7", "serde"] }
 secrecy = "0.8"
+
+# API ドキュメント
+utoipa = { version = "4.2", features = ["actix_extras", "chrono", "uuid"] }
+utoipa-swagger-ui = { version = "4.0", features = ["actix-web"] }
 
 # シリアライゼーション
 serde = { version = "1.0", features = ["derive"] }

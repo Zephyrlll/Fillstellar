@@ -1,0 +1,591 @@
+{
+  "info": {
+    "name": "Cosmic Gardener API",
+    "description": "3D宇宙シミュレーションゲーム Cosmic Gardener のバックエンド API\n\n## 使用方法\n1. Environment を設定してください\n2. 「1. User Registration」でアカウント作成\n3. 「2. User Login」でアクセストークンを取得\n4. その他のAPIを試用してください\n\nアクセストークンは自動的に環境変数に設定されます。",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "cosmic-gardener-api-v1",
+    "version": {
+      "major": 1,
+      "minor": 0,
+      "patch": 0
+    }
+  },
+  "item": [
+    {
+      "name": "Authentication",
+      "description": "認証関連のエンドポイント",
+      "item": [
+        {
+          "name": "1. User Registration",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has user data\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('id');",
+                  "    pm.expect(jsonData).to.have.property('email');",
+                  "    pm.expect(jsonData).to.have.property('username');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{user_email}}\",\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "register"]
+            },
+            "description": "新しいユーザーアカウントを作成します。\n\n**要求事項:**\n- 有効なメールアドレス（RFC 5322準拠）\n- 3-50文字のユーザー名（英数字とアンダースコアのみ）\n- 12-128文字のパスワード"
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"user@example.com\",\n  \"username\": \"cosmic_player\",\n  \"password\": \"secure_password_123\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/auth/register",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "auth", "register"]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n  \"email\": \"user@example.com\",\n  \"username\": \"cosmic_player\",\n  \"created_at\": \"2024-01-01T00:00:00Z\",\n  \"last_login\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "2. User Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has access token\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('access_token');",
+                  "    pm.expect(jsonData).to.have.property('token_type');",
+                  "    pm.expect(jsonData.token_type).to.eql('Bearer');",
+                  "});",
+                  "",
+                  "// アクセストークンを環境変数に保存",
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.access_token) {",
+                  "    pm.environment.set('access_token', jsonData.access_token);",
+                  "}",
+                  "if (jsonData.refresh_token) {",
+                  "    pm.environment.set('refresh_token', jsonData.refresh_token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{user_email}}\",\n  \"password\": \"{{password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "login"]
+            },
+            "description": "メールアドレスとパスワードでユーザー認証を行い、アクセストークンを発行します。"
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"secure_password_123\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/auth/login",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "auth", "login"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"access_token\": \"eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...\",\n  \"token_type\": \"Bearer\",\n  \"expires_in\": 3600,\n  \"user\": {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"email\": \"user@example.com\",\n    \"username\": \"cosmic_player\",\n    \"created_at\": \"2024-01-01T00:00:00Z\",\n    \"last_login\": \"2024-01-01T12:00:00Z\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "3. Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "// 新しいトークンを環境変数に保存",
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.access_token) {",
+                  "    pm.environment.set('access_token', jsonData.access_token);",
+                  "}",
+                  "if (jsonData.refresh_token) {",
+                  "    pm.environment.set('refresh_token', jsonData.refresh_token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/refresh",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "refresh"]
+            },
+            "description": "リフレッシュトークンを使用して新しいアクセストークンを取得します。"
+          }
+        },
+        {
+          "name": "4. Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/logout",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "logout"]
+            },
+            "description": "リフレッシュトークンを無効化してセッションを終了します。"
+          }
+        }
+      ]
+    },
+    {
+      "name": "User Management",
+      "description": "ユーザー管理関連のエンドポイント（認証必須）",
+      "item": [
+        {
+          "name": "Get My Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has user data\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('id');",
+                  "    pm.expect(jsonData).to.have.property('email');",
+                  "    pm.expect(jsonData).to.have.property('username');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/users/me",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "me"]
+            },
+            "description": "現在ログインしているユーザーの情報を取得します。"
+          }
+        },
+        {
+          "name": "Update My Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"new_username\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/users/me",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "me"]
+            },
+            "description": "ユーザー情報を更新します。パスワード変更の場合は current_password も必要です。"
+          }
+        },
+        {
+          "name": "Delete My Account",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/users/me",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "me"]
+            },
+            "description": "アカウントを削除（非アクティブ化）します。"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Game Management",
+      "description": "ゲーム状態管理関連のエンドポイント（認証必須）",
+      "item": [
+        {
+          "name": "Get Game State",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/game/state?save_name={{save_name}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "game", "state"],
+              "query": [
+                {
+                  "key": "save_name",
+                  "value": "{{save_name}}",
+                  "description": "セーブデータ名（省略時はdefault）"
+                }
+              ]
+            },
+            "description": "保存されたゲーム状態を取得します。"
+          }
+        },
+        {
+          "name": "Save Game State",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has game data\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('save_name');",
+                  "    pm.expect(jsonData).to.have.property('game_data');",
+                  "    pm.expect(jsonData).to.have.property('version');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"save_name\": \"{{save_name}}\",\n  \"game_data\": {\n    \"version\": \"1.6-accumulator\",\n    \"resources\": {\n      \"cosmicDust\": 1000,\n      \"energy\": 500,\n      \"organicMatter\": 0,\n      \"biomass\": 0,\n      \"darkMatter\": 0,\n      \"thoughtPoints\": 0\n    },\n    \"celestialBodies\": [],\n    \"research\": {\n      \"unlockedTechnologies\": []\n    },\n    \"statistics\": {\n      \"totalDustCollected\": 1000,\n      \"totalStarsCreated\": 0,\n      \"totalPlanetsCreated\": 0,\n      \"totalPlayTime\": 300\n    }\n  },\n  \"version\": \"1.6-accumulator\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/game/save",
+              "host": ["{{base_url}}"],
+              "path": ["api", "game", "save"]
+            },
+            "description": "ゲーム状態を保存します。"
+          }
+        },
+        {
+          "name": "Get Statistics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/game/statistics",
+              "host": ["{{base_url}}"],
+              "path": ["api", "game", "statistics"]
+            },
+            "description": "プレイヤーの統計情報を取得します。"
+          }
+        },
+        {
+          "name": "Get Leaderboard",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/game/leaderboard?metric={{leaderboard_metric}}&limit={{leaderboard_limit}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "game", "leaderboard"],
+              "query": [
+                {
+                  "key": "metric",
+                  "value": "{{leaderboard_metric}}",
+                  "description": "順位付けの指標 (total_dust_collected, total_stars_created, highest_energy)"
+                },
+                {
+                  "key": "limit",
+                  "value": "{{leaderboard_limit}}",
+                  "description": "取得する順位の数（最大100）"
+                }
+              ]
+            },
+            "description": "リーダーボードを取得します。"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Error Examples",
+      "description": "エラーレスポンスの例",
+      "item": [
+        {
+          "name": "Validation Error Example",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"invalid-email\",\n  \"username\": \"ab\",\n  \"password\": \"short\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "register"]
+            },
+            "description": "バリデーションエラーの例（意図的に無効なデータを送信）"
+          }
+        },
+        {
+          "name": "Unauthorized Error Example",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/users/me",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "me"]
+            },
+            "description": "認証エラーの例（Authorizationヘッダーなし）"
+          }
+        },
+        {
+          "name": "Not Found Error Example",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/game/state?save_name=nonexistent_save",
+              "host": ["{{base_url}}"],
+              "path": ["api", "game", "state"],
+              "query": [
+                {
+                  "key": "save_name",
+                  "value": "nonexistent_save"
+                }
+              ]
+            },
+            "description": "404エラーの例（存在しないセーブデータ）"
+          }
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// リクエスト前に実行されるスクリプト",
+          "// 必要に応じてここで認証トークンの確認などを行う"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// 全リクエスト共通のテスト",
+          "pm.test(\"Response time is less than 5000ms\", function () {",
+          "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+          "});",
+          "",
+          "pm.test(\"Response has request ID header\", function () {",
+          "    pm.expect(pm.response.headers.get('X-Request-ID')).to.not.be.undefined;",
+          "});"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8080",
+      "description": "APIベースURL"
+    },
+    {
+      "key": "user_email",
+      "value": "test@example.com",
+      "description": "テスト用メールアドレス"
+    },
+    {
+      "key": "username",
+      "value": "test_user",
+      "description": "テスト用ユーザー名"
+    },
+    {
+      "key": "password",
+      "value": "test_password_123",
+      "description": "テスト用パスワード"
+    },
+    {
+      "key": "save_name",
+      "value": "test_save",
+      "description": "テスト用セーブ名"
+    },
+    {
+      "key": "leaderboard_metric",
+      "value": "total_dust_collected",
+      "description": "リーダーボードの指標"
+    },
+    {
+      "key": "leaderboard_limit",
+      "value": "10",
+      "description": "リーダーボードの取得件数"
+    }
+  ]
+}

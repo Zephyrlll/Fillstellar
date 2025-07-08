@@ -1,106 +1,251 @@
-# Cosmic Gardener Backend
+# Cosmic Gardener Backend API
 
-高性能な3D宇宙アイドルゲームのバックエンドサーバー
+Cosmic Gardenerの認証システムとゲーム状態管理を提供するRust製バックエンドAPI
 
 ## 概要
 
-Cosmic Gardenerは、プレイヤーが宇宙塵から始めて星や惑星、さらには生命を育成する3D宇宙シミュレーションゲームです。このバックエンドは、リアルタイムの物理シミュレーション、大規模なデータ管理、マルチプレイヤー対応を提供します。
+Cosmic Gardenerは、プレイヤーが宇宙塵から始めて星や惑星、さらには生命を育成する3D宇宙シミュレーションゲームです。このバックエンドAPIは、ユーザー認証、ゲーム状態の永続化、統計情報の管理を提供します。
 
-## 主要機能
+## 🚀 主要機能
 
-- **高性能物理シミュレーション**: N体問題の最適化実装
-- **リアルタイム通信**: WebSocketによる双方向通信
-- **スケーラブルアーキテクチャ**: 水平スケーリング対応
-- **空間データ最適化**: PostGIS + R-tree索引
-- **チート検出**: 統計的異常検知
-- **モニタリング**: OpenTelemetry + Prometheus
+- **JWT認証システム**: セキュアなユーザー認証とセッション管理
+- **ゲーム状態管理**: セーブデータの永続化と読み込み
+- **統計システム**: プレイヤーの進捗と実績の追跡
+- **セキュリティ**: Argon2パスワードハッシュ化、レート制限
+- **REST API**: 明確でシンプルなAPI設計
 
-## アーキテクチャ
-
-```text
-┌─────────────────────────────────────────────────────────────┐
-│                    Presentation Layer                        │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐ │
-│  │   Controllers   │  │   Middleware    │  │   WebSocket     │ │
-│  │                 │  │                 │  │   Handlers      │ │
-│  └─────────────────┘  └─────────────────┘  └─────────────────┘ │
-└─────────────────────────────────────────────────────────────┘
-┌─────────────────────────────────────────────────────────────┐
-│                    Application Layer                         │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐ │
-│  │    Commands     │  │    Queries      │  │    Services     │ │
-│  │                 │  │                 │  │                 │ │
-│  └─────────────────┘  └─────────────────┘  └─────────────────┘ │
-└─────────────────────────────────────────────────────────────┘
-┌─────────────────────────────────────────────────────────────┐
-│                     Domain Layer                            │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐ │
-│  │    Entities     │  │    Services     │  │  Repositories   │ │
-│  │                 │  │                 │  │  (Interfaces)   │ │
-│  └─────────────────┘  └─────────────────┘  └─────────────────┘ │
-└─────────────────────────────────────────────────────────────┘
-┌─────────────────────────────────────────────────────────────┐
-│                   Infrastructure Layer                       │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐ │
-│  │    Database     │  │     Cache       │  │   External      │ │
-│  │                 │  │                 │  │     APIs        │ │
-│  └─────────────────┘  └─────────────────┘  └─────────────────┘ │
-└─────────────────────────────────────────────────────────────┘
-```
-
-## 技術スタック
+## 🏗️ 技術スタック
 
 - **言語**: Rust 1.70+
 - **Webフレームワーク**: Actix Web 4.4
-- **データベース**: PostgreSQL 15+ with PostGIS
-- **キャッシュ**: Redis 7.0+
-- **通信**: WebSocket, REST API
-- **監視**: OpenTelemetry, Prometheus, Jaeger
-- **テスト**: Cargo test, Criterion benchmarks
+- **データベース**: PostgreSQL 12+
+- **認証**: JWT (jsonwebtoken)
+- **パスワードハッシュ**: Argon2
+- **バリデーション**: validator
+- **テスト**: Cargo test
 
-## クイックスタート
+## 🚀 クイックスタート
 
 ### 前提条件
 
-- Rust 1.70以上
-- PostgreSQL 15以上（PostGIS拡張付き）
-- Redis 7.0以上
-- Docker & Docker Compose（開発環境用）
+- Rust 1.70+
+- PostgreSQL 12+
+- Redis 6+ (オプション)
 
-### 開発環境のセットアップ
+### セットアップ
 
 1. **リポジトリのクローン**
-```bash
-git clone https://github.com/cosmic-gardener/backend.git
-cd cosmic-gardener-backend
-```
+   ```bash
+   git clone <repository-url>
+   cd cosmic-gardener/backend
+   ```
 
 2. **環境変数の設定**
-```bash
-cp .env.example .env
-# .envファイルを編集して必要な設定を行う
+   ```bash
+   cp .env.example .env
+   # .envファイルを編集してデータベース接続情報等を設定
+   ```
+
+3. **データベースの作成**
+   ```bash
+   createdb cosmic_gardener
+   createdb cosmic_gardener_test  # テスト用
+   ```
+
+4. **マイグレーションの実行**
+   ```bash
+   cargo install sqlx-cli
+   sqlx migrate run
+   ```
+
+5. **サーバーの起動**
+   ```bash
+   cargo run
+   ```
+
+## 📚 API ドキュメント
+
+### Swagger UI
+
+APIドキュメントはSwagger UIで確認できます：
+
+```
+http://localhost:8080/swagger-ui/
 ```
 
-3. **データベースとキャッシュの起動（Docker）**
+### エンドポイント一覧
+
+| エンドポイント | メソッド | 認証 | 説明 |
+|-------------|--------|------|-----|
+| `/api/auth/register` | POST | 不要 | ユーザー登録 |
+| `/api/auth/login` | POST | 不要 | ログイン |
+| `/api/auth/refresh` | POST | 不要 | トークンリフレッシュ |
+| `/api/auth/logout` | POST | 不要 | ログアウト |
+| `/api/users/me` | GET | 必要 | 現在のユーザー情報取得 |
+| `/api/users/me` | PUT | 必要 | ユーザー情報更新 |
+| `/api/users/me` | DELETE | 必要 | アカウント削除 |
+| `/api/game/state` | GET | 必要 | ゲーム状態取得 |
+| `/api/game/save` | POST | 必要 | ゲーム状態保存 |
+| `/api/game/statistics` | GET | 必要 | 統計情報取得 |
+| `/api/game/leaderboard` | GET | 必要 | リーダーボード取得 |
+
+### 認証方法
+
+APIは **JWT Bearer Token** 認証を使用します：
+
 ```bash
-docker-compose up -d postgres redis
+# ヘッダーに含める
+Authorization: Bearer <access_token>
 ```
 
-4. **データベースのセットアップ**
-```bash
-cargo run --bin cosmic-gardener-migrate
-```
+#### 認証フロー
 
-5. **開発サーバーの起動**
-```bash
-cargo run
-```
+1. **ユーザー登録** または **ログイン** でアクセストークンを取得
+2. **リクエストヘッダー** にトークンを含めてAPIを呼び出し
+3. **トークン期限切れ** 時はリフレッシュトークンで更新
 
-### Docker Composeでの起動
+### 使用例（curl）
+
+#### 1. ユーザー登録
 
 ```bash
-docker-compose up -d
+curl -X POST http://localhost:8080/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com",
+    "username": "cosmic_player",
+    "password": "secure_password_123"
+  }'
 ```
+
+**レスポンス:**
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "email": "user@example.com",
+  "username": "cosmic_player",
+  "created_at": "2024-01-01T00:00:00Z",
+  "last_login": null
+}
+```
+
+#### 2. ログイン
+
+```bash
+curl -X POST http://localhost:8080/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com",
+    "password": "secure_password_123"
+  }'
+```
+
+**レスポンス:**
+```json
+{
+  "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
+  "token_type": "Bearer",
+  "expires_in": 3600,
+  "user": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "email": "user@example.com",
+    "username": "cosmic_player",
+    "created_at": "2024-01-01T00:00:00Z",
+    "last_login": "2024-01-01T12:00:00Z"
+  }
+}
+```
+
+#### 3. ユーザー情報取得（認証必要）
+
+```bash
+curl -X GET http://localhost:8080/api/users/me \
+  -H "Authorization: Bearer <access_token>"
+```
+
+#### 4. ゲーム状態保存
+
+```bash
+curl -X POST http://localhost:8080/api/game/save \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <access_token>" \
+  -d '{
+    "save_name": "my_game",
+    "game_data": {
+      "version": "1.6-accumulator",
+      "resources": {
+        "cosmicDust": 1000,
+        "energy": 500
+      },
+      "celestialBodies": []
+    },
+    "version": "1.6-accumulator"
+  }'
+```
+
+#### 5. ゲーム状態取得
+
+```bash
+curl -X GET "http://localhost:8080/api/game/state?save_name=my_game" \
+  -H "Authorization: Bearer <access_token>"
+```
+
+#### 6. 統計情報取得
+
+```bash
+curl -X GET http://localhost:8080/api/game/statistics \
+  -H "Authorization: Bearer <access_token>"
+```
+
+### エラーレスポンス
+
+全てのエラーは統一された形式で返されます：
+
+```json
+{
+  "error": "Unauthorized",
+  "error_code": "AUTH_INVALID_CREDENTIALS",
+  "message": "メールアドレスまたはパスワードが正しくありません",
+  "request_id": "550e8400-e29b-41d4-a716-446655440000",
+  "timestamp": "2024-01-01T00:00:00Z",
+  "details": {
+    "field": "password"
+  }
+}
+```
+
+### 主要エラーコード
+
+| エラーコード | HTTPステータス | 説明 |
+|-------------|---------------|-----|
+| `AUTH_INVALID_CREDENTIALS` | 401 | メールアドレスまたはパスワードが無効 |
+| `AUTH_TOKEN_EXPIRED` | 401 | アクセストークンの有効期限切れ |
+| `AUTH_INVALID_REFRESH_TOKEN` | 401 | リフレッシュトークンが無効 |
+| `VALIDATION_MULTIPLE_ERRORS` | 400 | バリデーションエラー |
+| `RESOURCE_NOT_FOUND` | 404 | リソースが見つからない |
+| `RESOURCE_ALREADY_EXISTS` | 409 | リソースが既に存在 |
+| `RATE_LIMIT_EXCEEDED` | 429 | レート制限超過 |
+| `SYSTEM_INTERNAL_ERROR` | 500 | 内部サーバーエラー |
+
+### レート制限
+
+| エンドポイント | 制限 |
+|-------------|-----|
+| `/api/auth/*` | 30リクエスト/分 |
+| `/api/game/*` | 120リクエスト/分 |
+| その他 | 100リクエスト/分 |
+
+### バリデーション
+
+#### ユーザー登録
+- **メール**: RFC 5322準拠
+- **ユーザー名**: 3-50文字、英数字とアンダースコアのみ
+- **パスワード**: 12-128文字
+
+#### ゲームデータ
+- **セーブ名**: 1-100文字
+- **バージョン**: 1-20文字
+- **ゲームデータ**: 有効なJSON形式
 
 ## 設定
 

@@ -1,9 +1,15 @@
 use actix_cors::Cors;
 use actix_web::{middleware::Logger, web, App, HttpServer};
 use sqlx::postgres::PgPoolOptions;
-use std::env;
+use utoipa::OpenApi;
+use utoipa_swagger_ui::SwaggerUi;
 
-use cosmic_gardener_backend::{Config, services::JwtService, routes::configure_routes};
+use cosmic_gardener_backend::{
+    Config, 
+    services::JwtService, 
+    routes::configure_routes,
+    docs::ApiDoc,
+};
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -26,8 +32,19 @@ async fn main() -> std::io::Result<()> {
     // JWT サービスの初期化
     let jwt_service = web::Data::new(JwtService::new(config.jwt_secret.clone()));
 
-    log::info!("Starting Cosmic Gardener Backend server on {}:{}", 
-              config.server_host, config.server_port);
+    // OpenAPI仕様書の生成
+    let openapi = ApiDoc::openapi();
+
+    log::info!(
+        "Starting Cosmic Gardener Backend server on {}:{}",
+        config.server_host, 
+        config.server_port
+    );
+    log::info!(
+        "Swagger UI available at: http://{}:{}/swagger-ui/",
+        config.server_host,
+        config.server_port
+    );
 
     // HTTPサーバーの起動
     HttpServer::new(move || {
@@ -49,6 +66,23 @@ async fn main() -> std::io::Result<()> {
             .app_data(jwt_service.clone())
             .wrap(cors)
             .wrap(Logger::default())
+            // Swagger UI の設定
+            .service(
+                SwaggerUi::new("/swagger-ui/{_:.*}")
+                    .url("/api-docs/openapi.json", openapi.clone())
+                    .config(utoipa_swagger_ui::Config::default()
+                        .try_it_out_enabled(true)
+                        .filter(true)
+                        .display_request_duration(true)
+                    )
+            )
+            // OpenAPI JSON エンドポイント
+            .route("/api-docs/openapi.json", 
+                web::get().to(|| async move {
+                    web::Json(openapi.clone())
+                })
+            )
+            // API ルートの設定
             .configure(configure_routes)
     })
     .bind(format!("{}:{}", config.server_host, config.server_port))?
