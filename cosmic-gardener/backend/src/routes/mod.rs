@@ -2,6 +2,7 @@ use actix_web::{web, App, HttpServer};
 
 use crate::handlers::{auth, user, game};
 use crate::middleware::{AuthenticationMiddleware, RateLimitMiddleware, RateLimitConfig};
+use crate::websocket::configure_websocket_routes;
 
 pub fn configure_routes(cfg: &mut web::ServiceConfig) {
     cfg
@@ -37,5 +38,7 @@ pub fn configure_routes(cfg: &mut web::ServiceConfig) {
                 .route("/save", web::post().to(game::save_game_state))
                 .route("/statistics", web::get().to(game::get_statistics))
                 .route("/leaderboard", web::get().to(game::get_leaderboard))
-        );
+        )
+        // WebSocket接続
+        .configure(configure_websocket_routes);
 }

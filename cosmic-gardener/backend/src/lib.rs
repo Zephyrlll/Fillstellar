@@ -55,6 +55,7 @@ pub mod middleware;
 pub mod models;
 pub mod routes;
 pub mod services;
+pub mod websocket;
 
 pub use config::Config;
 pub use errors::{ApiError, ErrorCode, ErrorResponse, Result};

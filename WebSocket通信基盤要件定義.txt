@@ -1,0 +1,178 @@
+要件1
+    actix-wsを使用してWebSocketハンドラーを実装してほしい。
+
+    実装内容:
+    1. WebSocket接続エンドポイント
+        - GET /api/ws
+        - JWT認証必須
+        - 接続時の初期化処理
+
+    2. メッセージハンドラー
+        - ゲーム状態の取得
+        - アクション（天体作成、研究等）の処理
+        - エラーメッセージの送信
+
+    3. セッション管理
+        - ユーザーごとのWebSocket接続管理
+        - 切断時のクリーンアップ
+        - 再接続サポート
+
+    以下の構造で実装してください：
+        - src/websocket/mod.rs
+        - src/websocket/handler.rs
+        - src/websocket/session.rs
+        - src/websocket/messages.rs
+
+    具体的な実装:
+    rust// メッセージ型の例
+    #[derive(Serialize, Deserialize, Debug)]
+    #[serde(tag = "type", content = "data")]
+    pub enum ClientMessage {
+        GetState,
+        CreateCelestialBody { body_type: String, position: Vec3 },
+        SaveGame { state: GameState },
+        Heartbeat,
+    }
+
+    #[derive(Serialize, Deserialize, Debug)]
+    #[serde(tag = "type", content = "data")]
+    pub enum ServerMessage {
+        StateUpdate { full: bool, data: StateData },
+        ActionResult { success: bool, message: String },
+        Error { code: String, message: String },
+        Heartbeat,
+    }
+
+
+要件2
+    ゲーム状態のリアルタイム同期システムを実装してください。
+
+    実装内容:
+    1. 差分計算と送信
+        - 前回送信時からの変更のみを送信
+        - バイナリdiffまたはJSONパッチ
+
+    2. 状態管理
+        - プレイヤーごとの最終送信状態を保持
+        - 効率的なメモリ使用
+
+    3. 同期タイミング
+        - 変更があった場合のみ送信
+        - 最大送信頻度の制限（例: 10回/秒）
+
+    4. 優先度付き送信
+        - 重要な変更を優先
+        - 帯域幅管理
+
+    実装ファイル:
+        - src/game/state_manager.rs
+        - src/game/diff_calculator.rs
+        - src/websocket/broadcaster.rs
+
+    ここで期待する実装:
+        ・状態のスナップショット管理
+        ・差分計算アルゴリズム
+        ・ブロードキャストシステム
+        ・送信キューの実装
+
+
+要件3
+    WebSocketの再接続機能とエラー処理を実装してください。
+
+    1. クライアント側の再接続ロジック
+        - 指数バックオフ
+        - 最大リトライ回数
+        - 接続状態の管理
+
+    2. サーバー側の対応
+        - セッション復旧
+        - 未送信メッセージの再送
+        - 状態の再同期
+
+    3. エラーハンドリング
+        - ネットワークエラー
+        - プロトコルエラー
+        - 認証エラー
+        - タイムアウト処理
+
+    TypeScriptのクライアント側コードも含めてほしい
+
+
+
+要件4
+    実装したWebSocketシステムの統合テストとパフォーマンス検証を行うフェーズ
+
+    1. 統合テストの設計
+        - 複数クライアントの同時接続
+        - 大量メッセージの処理
+        - 再接続シナリオ
+        - エラーシナリオ
+
+    2. パフォーマンステスト
+        - 同時接続数の限界測定
+        - メッセージ遅延の測定
+        - メモリ使用量の監視
+        - CPU使用率の分析
+
+    # 負荷テスト
+    artillery quick --count 100 --num 10 ws://localhost:8080/api/ws
+
+    # ログ監視
+    tail -f logs/websocket.log | grep ERROR
+
+
+
+
+
+最後にチェックリスト
+
+
+・WebSocket基盤
+□WebSocketエンドポイント実装
+□認証付き接続処理
+□メッセージ型定義
+□ハートビート機能
+□セッション管理
+
+
+・状態同期システム
+□差分計算機能
+□ブロードキャスト機能
+□優先度付き送信
+□帯域幅制御
+
+
+・信頼性機能
+□自動再接続
+□メッセージ再送
+□エラーリカバリ
+□タイムアウト処理
+
+
+・クライアント統合
+□TypeScript WebSocketクライアント
+□状態管理との統合
+□UIへの反映
+□オフライン対応
+
+
+・テスト・ドキュメント
+□WebSocket統合テスト
+□負荷テスト
+□プロトコル仕様書
+□クライアント実装ガイド
+
+
+
+
+*終了時の状態
+リアルタイム通信が完全に動作
+効率的な状態同期を実現
+再接続やエラーに強い実装
+クライアントとの統合完了
+Day 4のゲームロジック移行準備が完了
+
+#重要な注意点
+WebSocketは状態を持つため、テストが複雑
+並行性の問題に注意（Rustの所有権システムを活用）
+メモリリークに注意（切断時のクリーンアップ）

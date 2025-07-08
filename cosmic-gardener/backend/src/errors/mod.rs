@@ -7,8 +7,10 @@ use uuid::Uuid;
 pub mod codes;
 pub mod macros;
 pub mod conversions;
+pub mod websocket;
 
 pub use codes::{ErrorCode, ErrorCategory};
+pub use websocket::{WsErrorCode, ErrorHandler, BackoffStrategy};
 
 /// 統一的なエラーレスポンス構造体
 #[derive(Debug, Serialize, Deserialize)]
@@ -31,9 +33,18 @@ pub struct ErrorResponse {
     pub trace_id: Option<String>,
 }
 
+/// 簡易エラー構造体（WebSocketエラー用）
+#[derive(Debug)]
+pub struct ApiError {
+    pub code: ErrorCode,
+    pub message: String,
+    pub details: Option<serde_json::Value>,
+    pub status_code: u16,
+}
+
 /// メインのエラー型
 #[derive(Debug)]
-pub enum ApiError {
+pub enum ApiErrorEnum {
     // === 認証・認可エラー ===
     /// 認証が必要
     Unauthorized { 

@@ -2,8 +2,15 @@ use actix_cors::Cors;
 use actix_web::{middleware::Logger, web, App, HttpServer};
 use sqlx::postgres::PgPoolOptions;
 use std::env;
+use std::sync::Arc;
+use tokio::sync::RwLock;
 
-use cosmic_gardener_backend::{Config, services::JwtService, routes::configure_routes};
+use cosmic_gardener_backend::{
+    Config, 
+    services::JwtService, 
+    routes::configure_routes,
+    websocket::SessionManager,
+};
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -26,6 +33,9 @@ async fn main() -> std::io::Result<()> {
     // JWT サービスの初期化
     let jwt_service = web::Data::new(JwtService::new(config.jwt_secret.clone()));
 
+    // WebSocketセッションマネージャーの初期化
+    let session_manager = web::Data::new(Arc::new(RwLock::new(SessionManager::new())));
+
     log::info!("Starting Cosmic Gardener Backend server on {}:{}", 
               config.server_host, config.server_port);
 
@@ -47,6 +57,7 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .app_data(web::Data::new(pool.clone()))
             .app_data(jwt_service.clone())
+            .app_data(session_manager.clone())
             .wrap(cors)
             .wrap(Logger::default())
             .configure(configure_routes)
