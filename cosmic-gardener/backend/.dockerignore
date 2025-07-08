@@ -1,0 +1,136 @@
+# Rust build artifacts
+target/
+**/*.rs.bk
+*.pdb
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+logs/
+
+# Documentation
+README.md
+docs/
+*.md
+!DOCKERFILE.md
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# Testing
+coverage/
+*.lcov
+tarpaulin-report.html
+
+# Development tools
+.cargo/
+.rustup/
+
+# Temporary files
+tmp/
+temp/
+.cache/
+
+# Node.js (if any)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Configuration that shouldn't be in image
+config/local.*
+config/development.*
+
+# Scripts that shouldn't be in production image
+scripts/dev/
+scripts/local/
+
+# Kubernetes configs
+k8s/
+*.yaml
+*.yml
+!docker-compose.yml
+
+# Terraform
+*.tf
+*.tfstate
+*.tfvars
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# Compressed files
+*.zip
+*.tar.gz
+*.tgz
+
+# Editor configs
+.editorconfig
+.prettierrc
+.eslintrc*
+
+# Performance files
+*.prof
+*.heap
+*.svg
+perf.data*
+
+# Local development
+local/
+dev/
+
+# Benchmarks (source code only, not results)
+criterion/
+benchmarks/results/
+
+# Generated files
+src/**/*.pb.rs
+openapi/generated/
+
+# Example files
+examples/
+samples/
+
+# License and contribution files
+LICENSE*
+CONTRIBUTING.md
+CHANGELOG.md
+CODE_OF_CONDUCT.md
+
+# Docker files (avoid recursion)
+Dockerfile*
+docker-compose*.yml
+.dockerignore

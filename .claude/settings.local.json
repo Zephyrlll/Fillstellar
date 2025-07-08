@@ -6,7 +6,13 @@
       "Bash(npx tsc:*)",
       "Bash(mkdir:*)",
       "Bash(cargo:*)",
-      "Bash(chmod:*)"
+      "Bash(chmod:*)",
+      "Bash(ls:*)",
+      "Bash(mv:*)",
+      "Bash(true)",
+      "Bash(cp:*)",
+      "Bash(rm:*)",
+      "Bash(find:*)"
     ],
     "deny": []
   }

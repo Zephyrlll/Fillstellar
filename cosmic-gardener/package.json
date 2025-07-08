@@ -1,0 +1,133 @@
+{
+  "name": "cosmic-gardener",
+  "version": "1.0.0",
+  "description": "High-performance 3D space idle game - Create and nurture cosmic civilizations",
+  "keywords": [
+    "game",
+    "idle",
+    "space",
+    "simulation",
+    "3d",
+    "threejs",
+    "rust",
+    "physics"
+  ],
+  "homepage": "https://cosmic-gardener.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cosmic-gardener/cosmic-gardener.git"
+  },
+  "bugs": {
+    "url": "https://github.com/cosmic-gardener/cosmic-gardener/issues"
+  },
+  "license": "MIT",
+  "author": {
+    "name": "Cosmic Gardener Team",
+    "email": "team@cosmic-gardener.com"
+  },
+  "contributors": [
+    {
+      "name": "Claude Code Assistant",
+      "email": "claude@anthropic.com"
+    }
+  ],
+  "private": false,
+  "workspaces": [
+    "frontend",
+    "tools/*"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && make dev",
+    "build": "npm run build:frontend && npm run build:backend",
+    "build:frontend": "cd frontend && npm run build",
+    "build:backend": "cd backend && make build-release",
+    "test": "npm run test:frontend && npm run test:backend",
+    "test:frontend": "cd frontend && npm test",
+    "test:backend": "cd backend && make test-all",
+    "lint": "npm run lint:frontend && npm run lint:backend",
+    "lint:frontend": "cd frontend && npm run lint",
+    "lint:backend": "cd backend && make lint",
+    "format": "npm run format:frontend && npm run format:backend",
+    "format:frontend": "cd frontend && npm run format",
+    "format:backend": "cd backend && make fmt",
+    "setup": "npm run setup:frontend && npm run setup:backend",
+    "setup:frontend": "cd frontend && npm install",
+    "setup:backend": "cd backend && make setup",
+    "clean": "npm run clean:frontend && npm run clean:backend",
+    "clean:frontend": "cd frontend && npm run clean",
+    "clean:backend": "cd backend && make clean",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f",
+    "docker:clean": "docker-compose down -v --remove-orphans && docker system prune -f",
+    "start": "npm run dev",
+    "start:production": "NODE_ENV=production npm run build && npm run serve",
+    "serve": "concurrently \"npm run serve:frontend\" \"npm run serve:backend\"",
+    "serve:frontend": "cd frontend && npm run serve",
+    "serve:backend": "cd backend && make build-release && ./target/release/cosmic-gardener-server",
+    "docs:dev": "cd docs && npm run dev",
+    "docs:build": "cd docs && npm run build",
+    "security": "npm run security:frontend && npm run security:backend",
+    "security:frontend": "cd frontend && npm audit",
+    "security:backend": "cd backend && make security-check",
+    "update": "npm run update:frontend && npm run update:backend",
+    "update:frontend": "cd frontend && npm update",
+    "update:backend": "cd backend && cargo update",
+    "benchmark": "npm run benchmark:frontend && npm run benchmark:backend",
+    "benchmark:frontend": "cd frontend && npm run benchmark",
+    "benchmark:backend": "cd backend && make bench",
+    "release": "npm run test && npm run build && npm run release:tag",
+    "release:tag": "git tag v$(node -p \"require('./package.json').version\") && git push --tags",
+    "deploy:staging": "cd backend && make deploy-staging",
+    "deploy:production": "cd backend && make deploy-production",
+    "health": "curl -f http://localhost:8080/health && echo '\\nBackend: OK' || echo '\\nBackend: FAIL'",
+    "postinstall": "npm run setup:frontend"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0",
+    "cross-env": "^7.0.3",
+    "husky": "^8.0.3",
+    "lint-staged": "^13.2.3"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead",
+    "not ie 11"
+  ],
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged",
+      "pre-push": "npm run test"
+    }
+  },
+  "lint-staged": {
+    "frontend/**/*.{ts,tsx,js,jsx}": [
+      "cd frontend && npm run lint:fix",
+      "cd frontend && npm run format"
+    ],
+    "backend/**/*.rs": [
+      "cd backend && make fmt",
+      "cd backend && make lint"
+    ],
+    "*.{md,json,yaml,yml}": [
+      "prettier --write"
+    ]
+  },
+  "funding": {
+    "type": "github",
+    "url": "https://github.com/sponsors/cosmic-gardener"
+  },
+  "config": {
+    "frontend_port": 3000,
+    "backend_port": 8080,
+    "database_port": 5432,
+    "redis_port": 6379
+  }
+}
