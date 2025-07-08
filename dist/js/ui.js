@@ -94,6 +94,12 @@ export const ui = {
     messageText: document.getElementById('message-text'),
     galaxyMapContainer: document.getElementById('galaxy-map-container'),
     addAllResourcesButton: document.getElementById('addAllResourcesButton'),
+    overlayCosmicDust: document.getElementById('overlayCosmicDust'),
+    overlayEnergy: document.getElementById('overlayEnergy'),
+    overlayStarCount: document.getElementById('overlayStarCount'),
+    overlayThoughtPoints: document.getElementById('overlayThoughtPoints'),
+    overlayCosmicActivity: document.getElementById('overlayCosmicActivity'),
+    overlayPopulation: document.getElementById('overlayPopulation'),
     resetGameButton: document.getElementById('resetGameButton'),
     gravitySlider: document.getElementById('gravitySlider'),
     gravityValue: document.getElementById('gravityValue'),
@@ -350,6 +356,22 @@ export function updateUI() {
             ui.createStarButton.style.display = unlockedCelestialBodies.star ? 'inline-block' : 'none';
         previousUIValues.unlockedBodies.star = unlockedCelestialBodies.star;
     }
+    // 右下のオーバーレイパネルの更新
+    if (ui.overlayCosmicDust)
+        ui.overlayCosmicDust.textContent = String(currentCosmicDust);
+    if (ui.overlayEnergy)
+        ui.overlayEnergy.textContent = String(currentEnergy);
+    if (ui.overlayStarCount)
+        ui.overlayStarCount.textContent = String(gameState.stars.length);
+    if (ui.overlayThoughtPoints)
+        ui.overlayThoughtPoints.textContent = String(currentThoughtPoints);
+    // 宇宙活動度の計算（天体の総数 + エネルギー生産率）
+    const cosmicActivity = gameState.stars.length + Math.floor(currentDustRate || 0);
+    if (ui.overlayCosmicActivity)
+        ui.overlayCosmicActivity.textContent = String(cosmicActivity);
+    // 総人口の表示
+    if (ui.overlayPopulation)
+        ui.overlayPopulation.textContent = String(cachedTotalPopulation || 0);
     updateFocusedBodyUI();
 }
 export function switchTab(activeTab) {
