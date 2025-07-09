@@ -1,0 +1,73 @@
+# Development Configuration for Cosmic Gardener Backend
+
+# Basic settings
+database_url = "postgresql://dev:dev@localhost:5432/cosmic_gardener_dev"
+jwt_secret = "development-jwt-secret-key-32-chars-long"
+server_host = "127.0.0.1"
+server_port = 8080
+cors_allowed_origins = ["http://localhost:3000", "http://localhost:8000"]
+
+# Redis settings
+redis_url = "redis://localhost:6379"
+redis_pool_size = 10
+cache_enabled = true
+
+# Metrics settings
+metrics_enabled = true
+metrics_namespace = "cosmic_gardener_dev"
+metrics_endpoint = "/metrics"
+
+# Detailed component configurations
+[metrics]
+enabled = true
+namespace = "cosmic_gardener_dev"
+endpoint = "/metrics"
+export_interval_seconds = 60
+
+[cache]
+player_state_ttl_seconds = 3600
+user_session_ttl_seconds = 7200
+celestial_bodies_ttl_seconds = 1800
+game_stats_ttl_seconds = 300
+leaderboard_ttl_seconds = 600
+
+[database_pool]
+max_size = 5
+min_idle = 2
+max_lifetime_seconds = 1800
+idle_timeout_seconds = 600
+connection_timeout_seconds = 30
+
+[database_pool.timeouts]
+wait_for_connection_secs = 30
+create_connection_secs = 30
+recycle_connection_secs = 30
+
+[logging]
+level = "debug"
+format = "Pretty"
+enable_json = false
+enable_file_logging = true
+file_path = "logs/cosmic-gardener-dev.log"
+max_file_size_mb = 100
+max_files = 10
+
+[compression]
+algorithm = "Lz4"
+min_size_threshold = 100
+enable_adaptive = true
+max_compression_ratio = 0.8
+adaptive_threshold_bytes = 1024
+
+[physics]
+simd_threshold = 8
+direct_threshold = 64
+gravitational_constant = 6.67430e-11
+softening_factor = 1e-6
+max_velocity = 29979245.8
+
+[game_loop]
+target_tps = 60
+max_celestial_bodies = 1000
+cleanup_interval_seconds = 300
+metrics_interval_seconds = 60

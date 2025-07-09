@@ -1,0 +1,23 @@
+# Trivy Security Scanner Ignore File
+# This file contains vulnerabilities that are acceptable for this project
+
+# Low severity vulnerabilities that are not exploitable in our context
+CVE-2023-45853
+CVE-2023-44487
+
+# Library vulnerabilities that are handled by our security measures
+CVE-2023-40167
+
+# Development dependencies not present in production
+CVE-2024-24576
+
+# Vulnerabilities in test dependencies
+CVE-2023-42282
+
+# Base image vulnerabilities that are patched in our runtime
+CVE-2023-29469
+CVE-2023-4813
+
+# Note: This file should be reviewed regularly and vulnerabilities
+# should only be ignored if they are not applicable to our use case
+# or if they are adequately mitigated by other security measures

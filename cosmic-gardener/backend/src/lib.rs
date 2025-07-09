@@ -2,11 +2,15 @@
 //! 
 //! A high-performance backend for the Cosmic Gardener idle game.
 
+pub mod config;
 pub mod game;
 pub mod errors;
 pub mod websocket_messages;
 pub mod websocket_handler;
+pub mod services;
+pub mod middleware;
 
+pub use config::*;
 pub use game::*;
 pub use errors::*;
 pub use websocket_messages::*;

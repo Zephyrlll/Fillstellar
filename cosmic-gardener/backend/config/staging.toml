@@ -1,0 +1,101 @@
+# Staging Configuration for Cosmic Gardener Backend
+
+# Basic settings
+database_url = "postgresql://staging:staging@localhost:5432/cosmic_gardener_staging"
+jwt_secret = "staging-jwt-secret-key-must-be-32-characters-or-longer"
+server_host = "0.0.0.0"
+server_port = 8080
+cors_allowed_origins = ["https://staging.cosmic-gardener.com", "https://staging-api.cosmic-gardener.com"]
+
+# Redis settings
+redis_url = "redis://localhost:6379"
+redis_pool_size = 15
+cache_enabled = true
+
+# Metrics settings
+metrics_enabled = true
+metrics_namespace = "cosmic_gardener_staging"
+metrics_endpoint = "/metrics"
+
+# Detailed component configurations
+[metrics]
+enabled = true
+namespace = "cosmic_gardener_staging"
+endpoint = "/metrics"
+export_interval_seconds = 60
+
+[cache]
+player_state_ttl_seconds = 1800
+user_session_ttl_seconds = 3600
+celestial_bodies_ttl_seconds = 900
+game_stats_ttl_seconds = 180
+leaderboard_ttl_seconds = 300
+
+[database_pool]
+max_size = 15
+min_idle = 5
+max_lifetime_seconds = 2400
+idle_timeout_seconds = 600
+connection_timeout_seconds = 20
+
+[database_pool.timeouts]
+wait_for_connection_secs = 20
+create_connection_secs = 20
+recycle_connection_secs = 20
+
+[logging]
+level = "info"
+format = "Json"
+enable_json = true
+enable_file_logging = true
+file_path = "logs/cosmic-gardener-staging.log"
+max_file_size_mb = 200
+max_files = 20
+
+[compression]
+algorithm = "Lz4"
+min_size_threshold = 100
+enable_adaptive = true
+max_compression_ratio = 0.75
+adaptive_threshold_bytes = 1024
+
+[physics]
+simd_threshold = 12
+direct_threshold = 96
+gravitational_constant = 6.67430e-11
+softening_factor = 1e-6
+max_velocity = 29979245.8
+
+[game_loop]
+target_tps = 60
+max_celestial_bodies = 2000
+cleanup_interval_seconds = 240
+metrics_interval_seconds = 60
+
+# AWS settings for staging
+[aws]
+region = "us-east-1"
+parameter_store_prefix = "/cosmic-gardener/staging/"
+secrets_manager_prefix = "cosmic-gardener/staging/"
+
+# Monitoring settings
+[monitoring]
+cloudwatch_enabled = true
+cloudwatch_namespace = "CosmicGardener/Staging"
+health_check_interval_seconds = 30
+metrics_export_interval_seconds = 60
+
+# Security settings
+[security]
+enable_cors = true
+enable_rate_limiting = true
+rate_limit_requests_per_minute = 120
+enable_request_logging = true
+
+# Backup settings
+[backup]
+enabled = true
+interval_hours = 6
+retention_days = 7
+s3_bucket = "cosmic-gardener-staging-backups"
+s3_region = "us-east-1"

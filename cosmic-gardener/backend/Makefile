@@ -340,6 +340,51 @@ health: ## Check application health
 	@curl -f http://localhost:8080/health || echo "$(RED)Application is not running$(NC)"
 
 # ===============================================
+# Deployment Commands
+# ===============================================
+
+.PHONY: deploy-staging
+deploy-staging: ## Deploy to staging environment
+	@echo "$(BLUE)Deploying to staging...$(NC)"
+	./scripts/deploy-enhanced.sh staging latest blue-green
+
+.PHONY: deploy-production
+deploy-production: ## Deploy to production environment
+	@echo "$(BLUE)Deploying to production...$(NC)"
+	./scripts/deploy-enhanced.sh production latest blue-green
+
+.PHONY: deploy-lightsail-staging
+deploy-lightsail-staging: ## Deploy to Lightsail staging
+	@echo "$(BLUE)Deploying to Lightsail staging...$(NC)"
+	./scripts/deploy-lightsail.sh staging latest blue-green
+
+.PHONY: deploy-lightsail-production
+deploy-lightsail-production: ## Deploy to Lightsail production
+	@echo "$(BLUE)Deploying to Lightsail production...$(NC)"
+	./scripts/deploy-lightsail.sh production latest blue-green
+
+.PHONY: build-secure
+build-secure: ## Build secure Docker image
+	@echo "$(BLUE)Building secure Docker image...$(NC)"
+	./scripts/build-secure.sh -n cosmic-gardener-backend -t $(or $(TAG),latest) -s
+
+.PHONY: build-and-deploy-staging
+build-and-deploy-staging: build-secure deploy-staging ## Build and deploy to staging
+
+.PHONY: build-and-deploy-production
+build-and-deploy-production: build-secure deploy-production ## Build and deploy to production
+
+.PHONY: rollback-staging
+rollback-staging: ## Rollback staging deployment
+	@echo "$(BLUE)Rolling back staging deployment...$(NC)"
+	./scripts/deploy-enhanced.sh staging rollback
+
+.PHONY: rollback-production
+rollback-production: ## Rollback production deployment
+	@echo "$(BLUE)Rolling back production deployment...$(NC)"
+	./scripts/deploy-enhanced.sh production rollback
+
+# ===============================================
 # Release Commands
 # ===============================================
 
@@ -358,6 +403,75 @@ release-build: ## Build release artifacts
 	$(CARGO) build --release
 	strip target/release/cosmic-gardener-server
 	@echo "$(GREEN)Release build completed!$(NC)"
+
+.PHONY: release-deploy
+release-deploy: release-check build-secure ## Complete release deployment
+	@echo "$(BLUE)Starting release deployment...$(NC)"
+	./scripts/deploy-enhanced.sh production $(or $(TAG),latest) blue-green
+
+# ===============================================
+# Backup Commands
+# ===============================================
+
+.PHONY: backup-full
+backup-full: ## Create full backup
+	@echo "$(BLUE)Creating full backup...$(NC)"
+	./scripts/backup.sh backup --type full --compress --upload-s3
+
+.PHONY: backup-database
+backup-database: ## Create database backup
+	@echo "$(BLUE)Creating database backup...$(NC)"
+	./scripts/backup.sh backup --type database --compress
+
+.PHONY: backup-config
+backup-config: ## Create configuration backup
+	@echo "$(BLUE)Creating configuration backup...$(NC)"
+	./scripts/backup.sh backup --type configuration --compress
+
+.PHONY: backup-list
+backup-list: ## List available backups
+	@echo "$(BLUE)Listing available backups...$(NC)"
+	./scripts/backup.sh list
+
+.PHONY: backup-cleanup
+backup-cleanup: ## Cleanup old backups
+	@echo "$(BLUE)Cleaning up old backups...$(NC)"
+	./scripts/backup.sh cleanup --retention-days 7
+
+.PHONY: backup-validate
+backup-validate: ## Validate backup (requires BACKUP_ID)
+	@if [ -z "$(BACKUP_ID)" ]; then \
+		echo "$(RED)Error: Please provide BACKUP_ID$(NC)"; \
+		echo "Usage: make backup-validate BACKUP_ID=backup_id"; \
+		exit 1; \
+	fi
+	@echo "$(BLUE)Validating backup: $(BACKUP_ID)$(NC)"
+	./scripts/backup.sh validate --backup-id $(BACKUP_ID)
+
+.PHONY: backup-restore
+backup-restore: ## Restore from backup (requires BACKUP_ID)
+	@if [ -z "$(BACKUP_ID)" ]; then \
+		echo "$(RED)Error: Please provide BACKUP_ID$(NC)"; \
+		echo "Usage: make backup-restore BACKUP_ID=backup_id"; \
+		exit 1; \
+	fi
+	@echo "$(BLUE)Restoring from backup: $(BACKUP_ID)$(NC)"
+	./scripts/backup.sh restore --backup-id $(BACKUP_ID)
+
+.PHONY: backup-schedule-install
+backup-schedule-install: ## Install backup cron jobs
+	@echo "$(BLUE)Installing backup schedule...$(NC)"
+	./scripts/schedule-backups.sh install --environment $(or $(ENV),production)
+
+.PHONY: backup-schedule-uninstall
+backup-schedule-uninstall: ## Uninstall backup cron jobs
+	@echo "$(BLUE)Uninstalling backup schedule...$(NC)"
+	./scripts/schedule-backups.sh uninstall
+
+.PHONY: backup-schedule-status
+backup-schedule-status: ## Show backup schedule status
+	@echo "$(BLUE)Checking backup schedule status...$(NC)"
+	./scripts/schedule-backups.sh status
 
 # ===============================================
 # Aliases for common commands

@@ -46,6 +46,8 @@ pub enum ClientMessage {
     },
     /// ハートビート
     Heartbeat,
+    /// 圧縮有効化
+    EnableCompression,
 }
 
 /// サーバーからのメッセージ

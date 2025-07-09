@@ -1,0 +1,256 @@
+# ===============================================
+# Optimized Multi-stage Dockerfile for Cosmic Gardener Backend
+# Production-ready with security scanning and minimal image size
+# ===============================================
+
+# ===============================================
+# Stage 1: Base Build Environment
+# ===============================================
+FROM rust:1.75-bullseye AS base
+
+# Install system dependencies and security tools
+RUN apt-get update && apt-get install -y \
+    pkg-config \
+    libssl-dev \
+    libpq-dev \
+    ca-certificates \
+    wget \
+    curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+# Install security scanner
+RUN wget -qO- https://github.com/aquasecurity/trivy/releases/latest/download/trivy_0.47.0_Linux-64bit.tar.gz | tar xz -C /tmp \
+    && mv /tmp/trivy /usr/local/bin/
+
+# Create non-root user for building
+RUN groupadd -r builduser && useradd -r -g builduser builduser
+
+# Set up workspace
+WORKDIR /app
+RUN chown -R builduser:builduser /app
+
+# ===============================================
+# Stage 2: Dependency Planning with Chef
+# ===============================================
+FROM base AS chef
+
+# Install cargo-chef for dependency caching
+RUN cargo install cargo-chef
+
+# Copy source files for dependency analysis
+COPY --chown=builduser:builduser . .
+
+# Generate dependency recipe
+RUN cargo chef prepare --recipe-path recipe.json
+
+# ===============================================
+# Stage 3: Dependency Building
+# ===============================================
+FROM base AS dependencies
+
+# Install cargo-chef
+RUN cargo install cargo-chef
+
+# Copy dependency recipe
+COPY --from=chef /app/recipe.json recipe.json
+
+# Build dependencies with optimizations
+ENV CARGO_NET_RETRY=10
+ENV RUSTFLAGS="-C target-cpu=native -C opt-level=3 -C link-arg=-s"
+RUN cargo chef cook --release --recipe-path recipe.json
+
+# ===============================================
+# Stage 4: Application Building
+# ===============================================
+FROM dependencies AS builder
+
+# Copy source code
+COPY --chown=builduser:builduser . .
+
+# Build application with security optimizations
+ENV CARGO_TERM_COLOR=always
+ENV RUSTFLAGS="-C target-cpu=native -C opt-level=3 -C link-arg=-s -C relocation-model=pic -D warnings"
+
+# Build the application
+RUN cargo build --release --bin cosmic-gardener-server
+
+# Verify binary and strip symbols
+RUN ls -la target/release/ && \
+    file target/release/cosmic-gardener-server && \
+    strip target/release/cosmic-gardener-server && \
+    upx --best target/release/cosmic-gardener-server || true
+
+# Security scan of the built binary
+RUN trivy fs --security-checks vuln,secret,config target/release/cosmic-gardener-server || true
+
+# ===============================================
+# Stage 5: Security Scanning
+# ===============================================
+FROM base AS security-scan
+
+# Copy built binary for scanning
+COPY --from=builder /app/target/release/cosmic-gardener-server /tmp/cosmic-gardener-server
+
+# Run comprehensive security scan
+RUN trivy fs --security-checks vuln,secret,config --severity HIGH,CRITICAL /tmp/cosmic-gardener-server || true
+
+# ===============================================
+# Stage 6: Runtime Base (Distroless)
+# ===============================================
+FROM gcr.io/distroless/cc-debian11:latest AS runtime-base
+
+# Copy CA certificates
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+
+# ===============================================
+# Stage 7: Production Runtime
+# ===============================================
+FROM runtime-base AS production
+
+# Copy binary from builder
+COPY --from=builder /app/target/release/cosmic-gardener-server /cosmic-gardener-server
+
+# Copy configuration and migrations
+COPY --from=builder /app/config/ /config/
+COPY --from=builder /app/migrations/ /migrations/
+
+# Set environment variables
+ENV RUST_LOG=info
+ENV RUST_BACKTRACE=0
+ENV SERVER_HOST=0.0.0.0
+ENV SERVER_PORT=8080
+
+# Expose port
+EXPOSE 8080
+
+# Health check using built-in healthcheck
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD ["/cosmic-gardener-server", "--health-check"]
+
+# Set entrypoint
+ENTRYPOINT ["/cosmic-gardener-server"]
+
+# Labels for metadata and security
+LABEL maintainer="Cosmic Gardener Team <team@cosmic-gardener.com>" \
+      version="1.0.0" \
+      description="High-performance backend for Cosmic Gardener idle game" \
+      org.opencontainers.image.title="Cosmic Gardener Backend" \
+      org.opencontainers.image.description="High-performance backend for Cosmic Gardener idle game" \
+      org.opencontainers.image.vendor="Cosmic Gardener Team" \
+      org.opencontainers.image.licenses="MIT" \
+      org.opencontainers.image.source="https://github.com/cosmic-gardener/backend" \
+      org.opencontainers.image.created="$(date -u +'%Y-%m-%dT%H:%M:%SZ')" \
+      org.opencontainers.image.revision="$(git rev-parse HEAD)" \
+      security.scan.enabled="true" \
+      security.scan.tool="trivy"
+
+# ===============================================
+# Stage 8: Development Runtime
+# ===============================================
+FROM rust:1.75-bullseye AS development
+
+# Install development tools and dependencies
+RUN apt-get update && apt-get install -y \
+    pkg-config \
+    libssl-dev \
+    libpq-dev \
+    ca-certificates \
+    postgresql-client \
+    redis-tools \
+    curl \
+    git \
+    htop \
+    vim \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+# Install development cargo tools
+RUN cargo install \
+    cargo-watch \
+    cargo-audit \
+    cargo-tarpaulin \
+    cargo-deny \
+    cargo-expand \
+    cargo-outdated \
+    cargo-udeps \
+    sqlx-cli \
+    sea-orm-cli
+
+# Install debugging tools
+RUN cargo install \
+    cargo-flamegraph \
+    cargo-valgrind \
+    cargo-profdata
+
+# Create development user
+RUN groupadd -r devuser && useradd -r -g devuser devuser -m -s /bin/bash
+
+# Set up workspace
+WORKDIR /workspace
+RUN chown -R devuser:devuser /workspace
+
+# Switch to dev user
+USER devuser
+
+# Development environment setup
+ENV RUST_LOG=debug
+ENV RUST_BACKTRACE=full
+ENV CARGO_TERM_COLOR=always
+
+# Development startup script
+COPY --chown=devuser:devuser scripts/dev-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/dev-entrypoint.sh
+
+# Default command for development
+CMD ["/usr/local/bin/dev-entrypoint.sh"]
+
+# ===============================================
+# Stage 9: Testing Runtime
+# ===============================================
+FROM development AS testing
+
+# Install testing dependencies
+RUN cargo install \
+    cargo-nextest \
+    cargo-llvm-cov \
+    cargo-mutants
+
+# Copy test configuration
+COPY --chown=devuser:devuser .cargo/config.toml /workspace/.cargo/config.toml
+
+# Set testing environment
+ENV RUST_LOG=debug
+ENV RUST_BACKTRACE=full
+ENV CARGO_TERM_COLOR=always
+ENV ENVIRONMENT=test
+
+# Testing command
+CMD ["cargo", "nextest", "run", "--all-features"]
+
+# ===============================================
+# Stage 10: Lightsail Optimized
+# ===============================================
+FROM production AS lightsail
+
+# Add AWS CLI for Lightsail integration
+COPY --from=amazon/aws-cli:2.13.40 /usr/local/aws-cli/ /usr/local/aws-cli/
+COPY --from=amazon/aws-cli:2.13.40 /usr/local/bin/aws /usr/local/bin/aws
+
+# Copy Lightsail specific configurations
+COPY --from=builder /app/config/lightsail/ /config/lightsail/
+
+# Environment variables for Lightsail
+ENV ENVIRONMENT=production
+ENV AWS_DEFAULT_REGION=us-east-1
+ENV RUST_LOG=info
+
+# Lightsail specific health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD ["/cosmic-gardener-server", "--health-check", "--lightsail"]
+
+# Labels for Lightsail deployment
+LABEL lightsail.service="cosmic-gardener-backend" \
+      lightsail.environment="production" \
+      lightsail.region="us-east-1" \
+      lightsail.auto-scaling="enabled"

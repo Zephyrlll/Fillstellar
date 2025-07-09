@@ -1,0 +1,137 @@
+# Lightsail Production Configuration for Cosmic Gardener Backend
+
+# Basic settings optimized for Lightsail
+database_url = "postgresql://prod:prod@localhost:5432/cosmic_gardener_prod"
+jwt_secret = "OVERRIDE_WITH_LIGHTSAIL_SECRETS"
+server_host = "0.0.0.0"
+server_port = 8080
+cors_allowed_origins = ["https://cosmic-gardener.com", "https://www.cosmic-gardener.com"]
+
+# Redis settings (optimized for Lightsail managed Redis)
+redis_url = "redis://localhost:6379"
+redis_pool_size = 20
+cache_enabled = true
+
+# Metrics settings (CloudWatch integration)
+metrics_enabled = true
+metrics_namespace = "cosmic_gardener_lightsail"
+metrics_endpoint = "/metrics"
+
+# Detailed component configurations
+[metrics]
+enabled = true
+namespace = "cosmic_gardener_lightsail"
+endpoint = "/metrics"
+export_interval_seconds = 30
+
+[cache]
+player_state_ttl_seconds = 900
+user_session_ttl_seconds = 1800
+celestial_bodies_ttl_seconds = 600
+game_stats_ttl_seconds = 120
+leaderboard_ttl_seconds = 180
+
+[database_pool]
+max_size = 20
+min_idle = 5
+max_lifetime_seconds = 3600
+idle_timeout_seconds = 300
+connection_timeout_seconds = 10
+
+[database_pool.timeouts]
+wait_for_connection_secs = 10
+create_connection_secs = 10
+recycle_connection_secs = 10
+
+[logging]
+level = "info"
+format = "Json"
+enable_json = true
+enable_file_logging = true
+file_path = "/app/logs/cosmic-gardener-lightsail.log"
+max_file_size_mb = 500
+max_files = 50
+
+[compression]
+algorithm = "Lz4"
+min_size_threshold = 50
+enable_adaptive = true
+max_compression_ratio = 0.7
+adaptive_threshold_bytes = 2048
+
+[physics]
+simd_threshold = 16
+direct_threshold = 128
+gravitational_constant = 6.67430e-11
+softening_factor = 1e-6
+max_velocity = 29979245.8
+
+[game_loop]
+target_tps = 60
+max_celestial_bodies = 5000
+cleanup_interval_seconds = 180
+metrics_interval_seconds = 30
+
+# Lightsail specific settings
+[lightsail]
+enabled = true
+region = "us-east-1"
+service_name = "cosmic-gardener-backend"
+container_name = "cosmic-gardener-backend"
+public_domain = "cosmic-gardener.com"
+
+# AWS settings for Lightsail
+[aws]
+region = "us-east-1"
+parameter_store_prefix = "/cosmic-gardener/lightsail/"
+secrets_manager_prefix = "cosmic-gardener/lightsail/"
+
+# Monitoring settings (optimized for Lightsail)
+[monitoring]
+cloudwatch_enabled = true
+cloudwatch_namespace = "CosmicGardener/Lightsail"
+health_check_interval_seconds = 15
+metrics_export_interval_seconds = 30
+lightsail_metrics_enabled = true
+
+# Security settings (production-grade)
+[security]
+enable_cors = true
+enable_rate_limiting = true
+rate_limit_requests_per_minute = 60
+enable_request_logging = true
+enable_security_headers = true
+
+# Backup settings (S3 integration)
+[backup]
+enabled = true
+interval_hours = 2
+retention_days = 30
+s3_bucket = "cosmic-gardener-lightsail-backups"
+s3_region = "us-east-1"
+encrypt_backups = true
+
+# Auto-scaling settings
+[auto_scaling]
+enabled = true
+min_capacity = 1
+max_capacity = 10
+target_cpu_utilization = 70
+scale_up_cooldown_seconds = 300
+scale_down_cooldown_seconds = 600
+
+# Load balancer settings
+[load_balancer]
+enabled = true
+health_check_path = "/health"
+health_check_interval_seconds = 30
+health_check_timeout_seconds = 5
+healthy_threshold = 2
+unhealthy_threshold = 3
+
+# SSL/TLS settings
+[ssl]
+enabled = true
+certificate_arn = "arn:aws:acm:us-east-1:123456789012:certificate/12345678-1234-1234-1234-123456789012"
+redirect_http_to_https = true
+ssl_policy = "ELBSecurityPolicy-TLS-1-2-2017-01"

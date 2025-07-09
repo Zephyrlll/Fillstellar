@@ -36,11 +36,52 @@ thiserror = "1.0"
 # ログ
 log = "0.4"
 tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["json"] }
+
+# データベース
+sqlx = { version = "0.7", features = ["postgres", "runtime-tokio-rustls", "uuid", "chrono"] }
+
+# キャッシュ
+redis = { version = "0.24", features = ["tokio-comp", "connection-manager"] }
+
+# 認証
+jsonwebtoken = "9.0"
+argon2 = "0.5"
+
+# 圧縮
+flate2 = "1.0"
+lz4_flex = "0.11"
+
+# メトリクス
+prometheus = "0.13"
+
+# SIMD最適化
+wide = "0.7"
+simdeez = "1.0"
+
+# 高性能データ構造
+dashmap = "5.5"
+
+# 接続プール
+deadpool-postgres = "0.10"
+
+# 時間測定
+instant = "0.1"
+
+# 設定ファイル
+toml = "0.8"
+
+# システム情報
+num_cpus = "1.16"
+
+# HTTP クライアント
+reqwest = { version = "0.11", features = ["json"] }
 
 # テスト
 [dev-dependencies]
 tokio-test = "0.4"
 serial_test = "3.0"
+criterion = { version = "0.5", features = ["html_reports"] }
 
 # 機能フラグ
 [features]
@@ -50,3 +91,16 @@ default = []
 [[bin]]
 name = "cosmic-gardener-server"
 path = "src/main.rs"
+
+# ベンチマーク設定
+[[bench]]
+name = "physics_benchmark"
+harness = false
+
+[[bench]]
+name = "database_benchmark"
+harness = false
+
+[[bench]]
+name = "websocket_benchmark"
+harness = false

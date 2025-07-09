@@ -15,6 +15,7 @@ use uuid::Uuid;
 
 use crate::models::AuthenticatedUser;
 use crate::services::JwtService;
+use crate::services::websocket::compression::{CompressionService, CompressionConfig, CompressedMessage};
 use crate::websocket::messages::{ClientMessage, ServerMessage};
 
 /// WebSocketセッション
@@ -31,6 +32,10 @@ pub struct WsSession {
     jwt_service: Arc<JwtService>,
     /// セッションマネージャー
     session_manager: Arc<RwLock<SessionManager>>,
+    /// 圧縮サービス
+    compression: CompressionService,
+    /// クライアントが圧縮をサポートするか
+    supports_compression: bool,
 }
 
 /// セッションマネージャー
@@ -119,6 +124,8 @@ impl WsSession {
             pool,
             jwt_service,
             session_manager,
+            compression: CompressionService::new(CompressionConfig::default()),
+            supports_compression: false,
         }
     }
 
@@ -211,13 +218,105 @@ impl WsSession {
         self.send_message(ctx, ServerMessage::success("ゲームを保存しました"));
     }
 
-    /// メッセージ送信
+    /// メッセージ送信（圧縮対応）
     fn send_message(&self, ctx: &mut ws::WebsocketContext<Self>, msg: ServerMessage) {
         match serde_json::to_string(&msg) {
-            Ok(text) => ctx.text(text),
+            Ok(text) => {
+                if self.supports_compression {
+                    self.send_compressed_message(ctx, text.as_bytes());
+                } else {
+                    ctx.text(text);
+                }
+            }
             Err(e) => {
                 log::error!("Failed to serialize message: {}", e);
                 ctx.text(r#"{"type":"Error","data":{"code":"SERIALIZE_ERROR","message":"メッセージの送信に失敗しました"}}"#);
+            }
+        }
+    }
+
+    /// 圧縮メッセージ送信
+    fn send_compressed_message(&self, ctx: &mut ws::WebsocketContext<Self>, data: &[u8]) {
+        match self.compression.compress(data) {
+            Ok(compressed_msg) => {
+                match compressed_msg.to_bytes() {
+                    Ok(bytes) => {
+                        ctx.binary(bytes);
+                    }
+                    Err(e) => {
+                        log::error!("Failed to serialize compressed message: {}", e);
+                        // フォールバックで非圧縮送信
+                        if let Ok(text) = std::str::from_utf8(data) {
+                            ctx.text(text);
+                        }
+                    }
+                }
+            }
+            Err(e) => {
+                log::error!("Failed to compress message: {}", e);
+                // フォールバックで非圧縮送信
+                if let Ok(text) = std::str::from_utf8(data) {
+                    ctx.text(text);
+                }
+            }
+        }
+    }
+
+    /// 圧縮メッセージを処理
+    fn handle_compressed_message(&mut self, data: &[u8], ctx: &mut ws::WebsocketContext<Self>) {
+        match CompressedMessage::from_bytes(data) {
+            Ok(compressed_msg) => {
+                match self.compression.decompress(&compressed_msg) {
+                    Ok(decompressed) => {
+                        if let Ok(text) = std::str::from_utf8(&decompressed) {
+                            self.handle_text_message(text, ctx);
+                        } else {
+                            log::warn!("Decompressed data is not valid UTF-8");
+                            self.send_message(ctx, ServerMessage::error(
+                                "INVALID_UTF8",
+                                "解凍されたデータが無効です"
+                            ));
+                        }
+                    }
+                    Err(e) => {
+                        log::error!("Failed to decompress message: {}", e);
+                        self.send_message(ctx, ServerMessage::error(
+                            "DECOMPRESSION_ERROR",
+                            "メッセージの解凍に失敗しました"
+                        ));
+                    }
+                }
+            }
+            Err(e) => {
+                log::error!("Failed to parse compressed message: {}", e);
+                self.send_message(ctx, ServerMessage::error(
+                    "INVALID_COMPRESSED_FORMAT",
+                    "圧縮メッセージの形式が正しくありません"
+                ));
+            }
+        }
+    }
+
+    /// テキストメッセージを処理
+    fn handle_text_message(&mut self, text: &str, ctx: &mut ws::WebsocketContext<Self>) {
+        match serde_json::from_str::<ClientMessage>(text) {
+            Ok(client_msg) => {
+                // 圧縮サポートの有効化チェック
+                if let ClientMessage::EnableCompression = client_msg {
+                    self.supports_compression = true;
+                    self.send_message(ctx, ServerMessage::success("圧縮が有効になりました"));
+                    log::info!("Compression enabled for session {}", self.id);
+                    return;
+                }
+                
+                self.handle_client_message(client_msg, ctx);
+            }
+            Err(e) => {
+                log::warn!("Invalid message format: {}", e);
+                self.send_message(ctx, ServerMessage::error(
+                    "INVALID_FORMAT",
+                    "メッセージフォーマットが正しくありません"
+                ));
             }
         }
     }
@@ -265,25 +364,12 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsSession {
             }
             Ok(ws::Message::Text(text)) => {
                 self.heartbeat = Instant::now();
-                match serde_json::from_str::<ClientMessage>(&text) {
-                    Ok(client_msg) => {
-                        self.handle_client_message(client_msg, ctx);
-                    }
-                    Err(e) => {
-                        log::warn!("Invalid message format: {}", e);
-                        self.send_message(ctx, ServerMessage::error(
-                            "INVALID_FORMAT",
-                            "メッセージフォーマットが正しくありません"
-                        ));
-                    }
-                }
+                self.handle_text_message(&text, ctx);
             }
-            Ok(ws::Message::Binary(_)) => {
-                log::warn!("Binary messages not supported");
-                self.send_message(ctx, ServerMessage::error(
-                    "BINARY_NOT_SUPPORTED",
-                    "バイナリメッセージはサポートされていません"
-                ));
+            Ok(ws::Message::Binary(data)) => {
+                self.heartbeat = Instant::now();
+                // バイナリメッセージは圧縮データとして処理
+                self.handle_compressed_message(&data, ctx);
             }
             Ok(ws::Message::Close(reason)) => {
                 log::info!("WebSocket closing: {:?}", reason);
