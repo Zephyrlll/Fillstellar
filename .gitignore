@@ -25,10 +25,7 @@ dist/
 
 # その他不要な個人ファイル（任意）
 アイデア.tx
-CLAUDE.md
 プロンプト.md
 favicon.ico
-
-
 *.yml
 *.yaml
