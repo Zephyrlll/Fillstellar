@@ -1,71 +1,22 @@
-//! # Cosmic Gardener Backend
-//!
-//! 高性能な3D宇宙アイドルゲームのバックエンドサーバー
-//!
-//! ## アーキテクチャ
-//!
-//! このプロジェクトはクリーンアーキテクチャに基づいて設計されています：
-//!
-//! ```text
-//! ┌─────────────────────────────────────────────────────────────┐
-//! │                    Presentation Layer                        │
-//! │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐ │
-//! │  │   Controllers   │  │   Middleware    │  │   WebSocket     │ │
-//! │  │                 │  │                 │  │   Handlers      │ │
-//! │  └─────────────────┘  └─────────────────┘  └─────────────────┘ │
-//! └─────────────────────────────────────────────────────────────┘
-//! ┌─────────────────────────────────────────────────────────────┐
-//! │                    Application Layer                         │
-//! │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐ │
-//! │  │    Commands     │  │    Queries      │  │    Services     │ │
-//! │  │                 │  │                 │  │                 │ │
-//! │  └─────────────────┘  └─────────────────┘  └─────────────────┘ │
-//! └─────────────────────────────────────────────────────────────┘
-//! ┌─────────────────────────────────────────────────────────────┐
-//! │                     Domain Layer                            │
-//! │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐ │
-//! │  │    Entities     │  │    Services     │  │  Repositories   │ │
-//! │  │                 │  │                 │  │  (Interfaces)   │ │
-//! │  └─────────────────┘  └─────────────────┘  └─────────────────┘ │
-//! └─────────────────────────────────────────────────────────────┘
-//! ┌─────────────────────────────────────────────────────────────┐
-//! │                   Infrastructure Layer                       │
-//! │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐ │
-//! │  │    Database     │  │     Cache       │  │   External      │ │
-//! │  │                 │  │                 │  │     APIs        │ │
-//! │  └─────────────────┘  └─────────────────┘  └─────────────────┘ │
-//! └─────────────────────────────────────────────────────────────┘
-//! ```
-//!
-//! ## 主要機能
-//!
-//! - **高性能物理シミュレーション**: N体問題の最適化実装
-//! - **リアルタイム通信**: WebSocketによる双方向通信
-//! - **スケーラブルアーキテクチャ**: 水平スケーリング対応
-//! - **空間データ最適化**: PostGIS + R-tree索引
-//! - **チート検出**: 統計的異常検知
-//! - **モニタリング**: OpenTelemetry + Prometheus
+//! Cosmic Gardener Backend
+//! 
+//! A high-performance backend for the Cosmic Gardener idle game.
 
-pub mod config;
-pub mod docs;
-pub mod error;
+pub mod game;
 pub mod errors;
-pub mod handlers;
-pub mod middleware;
-pub mod models;
-pub mod routes;
-pub mod services;
-pub mod websocket;
+pub mod websocket_messages;
+pub mod websocket_handler;
 
-pub use config::Config;
-pub use errors::{ApiError, ErrorCode, ErrorResponse, Result};
+pub use game::*;
+pub use errors::*;
+pub use websocket_messages::*;
+pub use websocket_handler::*;
 
-/// アプリケーションのバージョン情報
+/// Application version
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
-/// アプリケーションの名前
+/// Application name
 pub const APP_NAME: &str = env!("CARGO_PKG_NAME");
 
-/// アプリケーションの説明
+/// Application description
 pub const APP_DESCRIPTION: &str = env!("CARGO_PKG_DESCRIPTION");
-

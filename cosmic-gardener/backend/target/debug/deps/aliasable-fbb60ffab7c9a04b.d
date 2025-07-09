@@ -1,0 +1,11 @@
+C:\AIagent\Space_Idle_Game\cosmic-gardener\backend\target\debug\deps\aliasable-fbb60ffab7c9a04b.d: C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\aliasable-0.1.3\src\lib.rs C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\aliasable-0.1.3\src\mut_ref.rs C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\aliasable-0.1.3\src\boxed.rs C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\aliasable-0.1.3\src\string.rs C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\aliasable-0.1.3\src\vec.rs
+
+C:\AIagent\Space_Idle_Game\cosmic-gardener\backend\target\debug\deps\libaliasable-fbb60ffab7c9a04b.rlib: C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\aliasable-0.1.3\src\lib.rs C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\aliasable-0.1.3\src\mut_ref.rs C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\aliasable-0.1.3\src\boxed.rs C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\aliasable-0.1.3\src\string.rs C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\aliasable-0.1.3\src\vec.rs
+
+C:\AIagent\Space_Idle_Game\cosmic-gardener\backend\target\debug\deps\libaliasable-fbb60ffab7c9a04b.rmeta: C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\aliasable-0.1.3\src\lib.rs C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\aliasable-0.1.3\src\mut_ref.rs C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\aliasable-0.1.3\src\boxed.rs C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\aliasable-0.1.3\src\string.rs C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\aliasable-0.1.3\src\vec.rs
+
+C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\aliasable-0.1.3\src\lib.rs:
+C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\aliasable-0.1.3\src\mut_ref.rs:
+C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\aliasable-0.1.3\src\boxed.rs:
+C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\aliasable-0.1.3\src\string.rs:
+C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\aliasable-0.1.3\src\vec.rs:

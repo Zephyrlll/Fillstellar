@@ -1,0 +1,12 @@
+C:\AIagent\Space_Idle_Game\cosmic-gardener\backend\target\debug\deps\lz4-3d37508a88fc18dc.d: C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\lz4-1.28.1\src\lib.rs C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\lz4-1.28.1\src\liblz4.rs C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\lz4-1.28.1\src\decoder.rs C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\lz4-1.28.1\src\encoder.rs C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\lz4-1.28.1\src\block\mod.rs C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\lz4-1.28.1\src\../README.md
+
+C:\AIagent\Space_Idle_Game\cosmic-gardener\backend\target\debug\deps\liblz4-3d37508a88fc18dc.rlib: C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\lz4-1.28.1\src\lib.rs C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\lz4-1.28.1\src\liblz4.rs C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\lz4-1.28.1\src\decoder.rs C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\lz4-1.28.1\src\encoder.rs C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\lz4-1.28.1\src\block\mod.rs C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\lz4-1.28.1\src\../README.md
+
+C:\AIagent\Space_Idle_Game\cosmic-gardener\backend\target\debug\deps\liblz4-3d37508a88fc18dc.rmeta: C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\lz4-1.28.1\src\lib.rs C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\lz4-1.28.1\src\liblz4.rs C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\lz4-1.28.1\src\decoder.rs C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\lz4-1.28.1\src\encoder.rs C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\lz4-1.28.1\src\block\mod.rs C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\lz4-1.28.1\src\../README.md
+
+C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\lz4-1.28.1\src\lib.rs:
+C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\lz4-1.28.1\src\liblz4.rs:
+C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\lz4-1.28.1\src\decoder.rs:
+C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\lz4-1.28.1\src\encoder.rs:
+C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\lz4-1.28.1\src\block\mod.rs:
+C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\lz4-1.28.1\src\../README.md:

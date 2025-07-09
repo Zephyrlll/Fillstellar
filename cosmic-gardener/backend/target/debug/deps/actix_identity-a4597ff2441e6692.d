@@ -1,0 +1,10 @@
+C:\AIagent\Space_Idle_Game\cosmic-gardener\backend\target\debug\deps\actix_identity-a4597ff2441e6692.d: C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\actix-identity-0.6.0\src\lib.rs C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\actix-identity-0.6.0\src\config.rs C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\actix-identity-0.6.0\src\error.rs C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\actix-identity-0.6.0\src\identity.rs C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\actix-identity-0.6.0\src\identity_ext.rs C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\actix-identity-0.6.0\src\middleware.rs
+
+C:\AIagent\Space_Idle_Game\cosmic-gardener\backend\target\debug\deps\libactix_identity-a4597ff2441e6692.rmeta: C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\actix-identity-0.6.0\src\lib.rs C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\actix-identity-0.6.0\src\config.rs C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\actix-identity-0.6.0\src\error.rs C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\actix-identity-0.6.0\src\identity.rs C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\actix-identity-0.6.0\src\identity_ext.rs C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\actix-identity-0.6.0\src\middleware.rs
+
+C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\actix-identity-0.6.0\src\lib.rs:
+C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\actix-identity-0.6.0\src\config.rs:
+C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\actix-identity-0.6.0\src\error.rs:
+C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\actix-identity-0.6.0\src\identity.rs:
+C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\actix-identity-0.6.0\src\identity_ext.rs:
+C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\actix-identity-0.6.0\src\middleware.rs:

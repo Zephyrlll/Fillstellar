@@ -14,7 +14,7 @@ Step 2 - 基本API構築
 エラーハンドリングのボイラープレート
 APIドキュメント生成
 
-Step 3 - WebSocket基礎  ----  **いまここ**
+Step 3 - WebSocket基礎
 WebSocketプロトコル設計、状態同期戦略
 基本的なWebSocketハンドラー実装
 クライアント側の接続コード

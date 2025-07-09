@@ -1,9 +1,7 @@
 use std::collections::HashMap;
-use nalgebra::{Vector3, Point3, Matrix3, Unit};
 use rayon::prelude::*;
-use rstar::{RTree, RTreeObject, AABB};
+use rstar::{RTree, RTreeObject, AABB, Envelope};
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 
 use crate::errors::GameError;
 use crate::game::celestial_bodies::{CelestialBody, BodyId, Vec3Fixed, Point3Fixed};
@@ -25,7 +23,7 @@ pub struct PhysicsAABB {
 }
 
 impl RTreeObject for PhysicsAABB {
-    type Envelope = AABB<[Fixed; 3]>;
+    type Envelope = AABB<[f64; 3]>;
     
     fn envelope(&self) -> Self::Envelope {
         AABB::from_corners(
@@ -41,11 +39,11 @@ pub struct SpatialCell {
     pub bodies: Vec<BodyId>,
     pub center_of_mass: Point3Fixed,
     pub total_mass: Fixed,
-    pub bounds: AABB<[Fixed; 3]>,
+    pub bounds: AABB<[f64; 3]>,
 }
 
 impl SpatialCell {
-    pub fn new(bounds: AABB<[Fixed; 3]>) -> Self {
+    pub fn new(bounds: AABB<[f64; 3]>) -> Self {
         Self {
             bodies: Vec::new(),
             center_of_mass: Point3Fixed::origin(),
@@ -77,7 +75,7 @@ impl SpatialCell {
 /// Barnes-Hut木のノード
 #[derive(Debug, Clone)]
 pub struct BHNode {
-    pub bounds: AABB<[Fixed; 3]>,
+    pub bounds: AABB<[f64; 3]>,
     pub center_of_mass: Point3Fixed,
     pub total_mass: Fixed,
     pub body_id: Option<BodyId>,
@@ -85,7 +83,7 @@ pub struct BHNode {
 }
 
 impl BHNode {
-    pub fn new(bounds: AABB<[Fixed; 3]>) -> Self {
+    pub fn new(bounds: AABB<[f64; 3]>) -> Self {
         Self {
             bounds,
             center_of_mass: Point3Fixed::origin(),
@@ -117,7 +115,7 @@ impl BHNode {
             } else {
                 // 既存のボディがあるリーフノードを分割
                 self.subdivide();
-                if let Some(existing_id) = self.body_id.take() {
+                if let Some(_existing_id) = self.body_id.take() {
                     // 既存のボディを再挿入（位置が必要）
                     // 実際の実装では既存ボディの位置を保持する必要がある
                 }
@@ -130,27 +128,29 @@ impl BHNode {
     }
     
     fn subdivide(&mut self) {
-        let center = Point3Fixed::from(self.bounds.center());
-        let size = self.bounds.size();
-        let half_size = [size[0] / 2, size[1] / 2, size[2] / 2];
+        let center = self.bounds.center();
+        let lower = self.bounds.lower();
+        let upper = self.bounds.upper();
+        let size = [upper[0] - lower[0], upper[1] - lower[1], upper[2] - lower[2]];
+        let half_size = [size[0] / 2.0, size[1] / 2.0, size[2] / 2.0];
         
         let mut children = Vec::with_capacity(8);
         for i in 0..8 {
             let offset = [
-                if i & 1 == 0 { -half_size[0] } else { half_size[0] } / 2,
-                if i & 2 == 0 { -half_size[1] } else { half_size[1] } / 2,
-                if i & 4 == 0 { -half_size[2] } else { half_size[2] } / 2,
+                if i & 1 == 0 { -half_size[0] } else { half_size[0] } / 2.0,
+                if i & 2 == 0 { -half_size[1] } else { half_size[1] } / 2.0,
+                if i & 4 == 0 { -half_size[2] } else { half_size[2] } / 2.0,
             ];
             
             let child_center = [
-                center.x + offset[0],
-                center.y + offset[1],
-                center.z + offset[2],
+                center[0] + offset[0],
+                center[1] + offset[1],
+                center[2] + offset[2],
             ];
             
             let child_bounds = AABB::from_corners(
-                [child_center[0] - half_size[0]/2, child_center[1] - half_size[1]/2, child_center[2] - half_size[2]/2],
-                [child_center[0] + half_size[0]/2, child_center[1] + half_size[1]/2, child_center[2] + half_size[2]/2],
+                [child_center[0] - half_size[0]/2.0, child_center[1] - half_size[1]/2.0, child_center[2] - half_size[2]/2.0],
+                [child_center[0] + half_size[0]/2.0, child_center[1] + half_size[1]/2.0, child_center[2] + half_size[2]/2.0],
             );
             
             children.push(BHNode::new(child_bounds));
@@ -258,8 +258,8 @@ impl PhysicsEngine {
             
             let aabb = PhysicsAABB {
                 body_id: *id,
-                min: Point3Fixed::new(pos.x - radius, pos.y - radius, pos.z - radius),
-                max: Point3Fixed::new(pos.x + radius, pos.y + radius, pos.z + radius),
+                min: Point3Fixed::new(pos.x - fixed::to_f64(radius), pos.y - fixed::to_f64(radius), pos.z - fixed::to_f64(radius)),
+                max: Point3Fixed::new(pos.x + fixed::to_f64(radius), pos.y + fixed::to_f64(radius), pos.z + fixed::to_f64(radius)),
             };
             
             spatial_objects.push(aabb);
@@ -297,17 +297,17 @@ impl PhysicsEngine {
                 let r = other_pos - pos;
                 let distance_sq = r.magnitude_squared();
                 
-                if distance_sq < fixed::from_f64(SOFTENING_FACTOR * SOFTENING_FACTOR) {
+                if distance_sq < SOFTENING_FACTOR * SOFTENING_FACTOR {
                     continue; // 軟化係数以下は無視
                 }
                 
-                let distance = fixed::to_f64(distance_sq.sqrt());
+                let distance = distance_sq.sqrt();
                 let force_magnitude = GRAVITATIONAL_CONSTANT * 
                     fixed::to_f64(*mass) * fixed::to_f64(*other_mass) / 
                     (distance * distance + SOFTENING_FACTOR * SOFTENING_FACTOR);
                 
                 let force_direction = r.normalize();
-                force += force_direction * fixed::from_f64(force_magnitude);
+                force += force_direction * force_magnitude;
             }
             
             (*id, force)
@@ -316,16 +316,14 @@ impl PhysicsEngine {
         // 速度の更新
         for (id, force) in forces.iter() {
             if let Some(body) = bodies.get_mut(id) {
-                let acceleration = Vec3Fixed::from(force.as_slice().iter().map(|&f| {
-                    fixed::from_f64(fixed::to_f64(f) / fixed::to_f64(body.physics.mass))
-                }).collect::<Vec<_>>());
+                let acceleration = *force / fixed::to_f64(body.physics.mass);
                 
-                body.physics.velocity += acceleration * fixed::from_f64(delta_time);
+                body.physics.velocity += acceleration * delta_time;
                 
                 // 速度制限
-                let velocity_magnitude = fixed::to_f64(body.physics.velocity.magnitude());
+                let velocity_magnitude = body.physics.velocity.magnitude();
                 if velocity_magnitude > MAX_VELOCITY {
-                    body.physics.velocity = body.physics.velocity.normalize() * fixed::from_f64(MAX_VELOCITY);
+                    body.physics.velocity = body.physics.velocity.normalize() * MAX_VELOCITY;
                 }
             }
         }
@@ -340,18 +338,16 @@ impl PhysicsEngine {
         
         // 各ボディに対して力を計算
         for (id, body) in bodies.iter_mut() {
-            let force = self.calculate_force_from_tree(*id, body.physics.position, body.physics.mass);
+            let force = self.calculate_force_from_tree(*id, body.physics.position.into(), body.physics.mass);
             
-            let acceleration = Vec3Fixed::from(force.as_slice().iter().map(|&f| {
-                fixed::from_f64(fixed::to_f64(f) / fixed::to_f64(body.physics.mass))
-            }).collect::<Vec<_>>());
+            let acceleration = force / fixed::to_f64(body.physics.mass);
             
-            body.physics.velocity += acceleration * fixed::from_f64(delta_time);
+            body.physics.velocity += acceleration * delta_time;
             
             // 速度制限
-            let velocity_magnitude = fixed::to_f64(body.physics.velocity.magnitude());
+            let velocity_magnitude = body.physics.velocity.magnitude();
             if velocity_magnitude > MAX_VELOCITY {
-                body.physics.velocity = body.physics.velocity.normalize() * fixed::from_f64(MAX_VELOCITY);
+                body.physics.velocity = body.physics.velocity.normalize() * MAX_VELOCITY;
             }
         }
         
@@ -365,8 +361,8 @@ impl PhysicsEngine {
         }
         
         // 全ボディを含む境界を計算
-        let mut min_pos = Point3Fixed::new(Fixed::MAX, Fixed::MAX, Fixed::MAX);
-        let mut max_pos = Point3Fixed::new(Fixed::MIN, Fixed::MIN, Fixed::MIN);
+        let mut min_pos = Point3Fixed::new(f64::MAX, f64::MAX, f64::MAX);
+        let mut max_pos = Point3Fixed::new(f64::MIN, f64::MIN, f64::MIN);
         
         for body in bodies.values() {
             let pos = body.physics.position;
@@ -387,7 +383,7 @@ impl PhysicsEngine {
         
         // 全ボディを木に挿入
         for (id, body) in bodies.iter() {
-            root.insert(*id, body.physics.position, body.physics.mass);
+            root.insert(*id, body.physics.position.into(), body.physics.mass);
         }
         
         self.bh_tree = Some(root);
@@ -409,7 +405,7 @@ impl PhysicsEngine {
         }
         
         let r = node.center_of_mass - position;
-        let distance = fixed::to_f64(r.magnitude());
+        let distance = r.magnitude();
         
         if node.is_leaf() {
             // リーフノードの場合、直接計算
@@ -428,11 +424,13 @@ impl PhysicsEngine {
                 (distance * distance + SOFTENING_FACTOR * SOFTENING_FACTOR);
             
             let force_direction = r.normalize();
-            return force_direction * fixed::from_f64(force_magnitude);
+            return force_direction * force_magnitude;
         } else {
             // 内部ノードの場合、theta基準で判定
-            let size = node.bounds.size();
-            let node_size = fixed::to_f64((size[0] + size[1] + size[2]) / 3);
+            let lower = node.bounds.lower();
+            let upper = node.bounds.upper();
+            let size = [upper[0] - lower[0], upper[1] - lower[1], upper[2] - lower[2]];
+            let node_size = (size[0] + size[1] + size[2]) / 3.0;
             
             if node_size / distance < self.theta {
                 // 近似を使用
@@ -445,7 +443,7 @@ impl PhysicsEngine {
                     (distance * distance + SOFTENING_FACTOR * SOFTENING_FACTOR);
                 
                 let force_direction = r.normalize();
-                return force_direction * fixed::from_f64(force_magnitude);
+                return force_direction * force_magnitude;
             } else {
                 // 子ノードを再帰的に計算
                 let mut total_force = Vec3Fixed::zeros();
@@ -462,7 +460,7 @@ impl PhysicsEngine {
     /// 位置の更新
     fn update_positions(&mut self, bodies: &mut HashMap<BodyId, CelestialBody>, delta_time: f64) {
         for body in bodies.values_mut() {
-            body.physics.position += body.physics.velocity * fixed::from_f64(delta_time);
+            body.physics.position += body.physics.velocity * delta_time;
         }
     }
     
@@ -475,8 +473,8 @@ impl PhysicsEngine {
             let pos = body.physics.position;
             
             let query_aabb = AABB::from_corners(
-                [pos.x - radius, pos.y - radius, pos.z - radius],
-                [pos.x + radius, pos.y + radius, pos.z + radius],
+                [pos.x - fixed::to_f64(radius), pos.y - fixed::to_f64(radius), pos.z - fixed::to_f64(radius)],
+                [pos.x + fixed::to_f64(radius), pos.y + fixed::to_f64(radius), pos.z + fixed::to_f64(radius)],
             );
             
             let nearby_bodies: Vec<_> = self.spatial_tree.locate_in_envelope(&query_aabb).collect();
@@ -485,7 +483,7 @@ impl PhysicsEngine {
                 if nearby.body_id != *id {
                     if let Some(other_body) = bodies.get(&nearby.body_id) {
                         let distance = (body.physics.position - other_body.physics.position).magnitude();
-                        let collision_distance = body.physics.radius + other_body.physics.radius;
+                        let collision_distance = fixed::to_f64(body.physics.radius + other_body.physics.radius);
                         
                         if distance < collision_distance {
                             collision_pairs.push((*id, nearby.body_id));
@@ -517,18 +515,10 @@ impl PhysicsEngine {
         let m2 = fixed::to_f64(body2.physics.mass);
         
         // 運動量保存
-        let final_velocity = Vec3Fixed::from(
-            (body1.physics.velocity.as_slice().iter().zip(body2.physics.velocity.as_slice().iter()).map(|(v1, v2)| {
-                fixed::from_f64((fixed::to_f64(*v1) * m1 + fixed::to_f64(*v2) * m2) / (m1 + m2))
-            }).collect::<Vec<_>>()).as_slice()
-        );
+        let final_velocity = (body1.physics.velocity * m1 + body2.physics.velocity * m2) / (m1 + m2);
         
         // 新しい位置（質量中心）
-        let final_position = Point3Fixed::from(
-            (body1.physics.position.coords.as_slice().iter().zip(body2.physics.position.coords.as_slice().iter()).map(|(p1, p2)| {
-                fixed::from_f64((fixed::to_f64(*p1) * m1 + fixed::to_f64(*p2) * m2) / (m1 + m2))
-            }).collect::<Vec<_>>()).as_slice()
-        );
+        let final_position = Point3Fixed::from((body1.physics.position.to_homogeneous().xyz() * m1 + body2.physics.position.to_homogeneous().xyz() * m2) / (m1 + m2));
         
         // より大きな天体を残す
         let (survivor_id, removed_id) = if body1.physics.mass > body2.physics.mass {
@@ -541,7 +531,7 @@ impl PhysicsEngine {
         if let Some(survivor) = bodies.get_mut(&survivor_id) {
             survivor.physics.mass = total_mass;
             survivor.physics.velocity = final_velocity;
-            survivor.physics.position = final_position;
+            survivor.physics.position = final_position.to_homogeneous().xyz();
             // 新しい半径を計算（体積保存）
             let new_radius = fixed::from_f64(fixed::to_f64(total_mass).cbrt());
             survivor.physics.radius = new_radius;
@@ -561,11 +551,11 @@ impl PhysicsEngine {
         for body in bodies.values() {
             // 運動エネルギー
             let velocity_sq = body.physics.velocity.magnitude_squared();
-            let kinetic_energy = fixed::from_f64(0.5) * body.physics.mass * velocity_sq;
+            let kinetic_energy = fixed::from_f64(0.5 * fixed::to_f64(body.physics.mass) * velocity_sq);
             total_energy += kinetic_energy;
             
             // 運動量
-            total_momentum += body.physics.velocity * body.physics.mass;
+            total_momentum += body.physics.velocity * fixed::to_f64(body.physics.mass);
         }
         
         self.state.total_energy = total_energy;
@@ -599,7 +589,7 @@ mod tests {
     
     #[test]
     fn test_bh_node_creation() {
-        let bounds = AABB::from_corners([0, 0, 0], [fixed::from_f64(100.0); 3]);
+        let bounds = AABB::from_corners([0.0, 0.0, 0.0], [100.0; 3]);
         let node = BHNode::new(bounds);
         
         assert!(node.is_leaf());
@@ -609,11 +599,11 @@ mod tests {
     
     #[test]
     fn test_spatial_cell_add_body() {
-        let bounds = AABB::from_corners([0, 0, 0], [fixed::from_f64(100.0); 3]);
+        let bounds = AABB::from_corners([0.0, 0.0, 0.0], [100.0; 3]);
         let mut cell = SpatialCell::new(bounds);
         
         let body_id = Uuid::new_v4();
-        let position = Point3Fixed::new(fixed::from_f64(10.0), fixed::from_f64(20.0), fixed::from_f64(30.0));
+        let position = Point3Fixed::new(10.0, 20.0, 30.0);
         let mass = fixed::from_f64(1000.0);
         
         cell.add_body(body_id, position, mass);
@@ -635,7 +625,7 @@ mod tests {
         let body1 = CelestialBody::new(
             id1,
             CelestialType::Asteroid,
-            Vec3Fixed::new(fixed::from_f64(0.0), fixed::from_f64(0.0), fixed::from_f64(0.0)),
+            Vec3Fixed::new(0.0, 0.0, 0.0),
             fixed::from_f64(1000.0),
             fixed::from_f64(1.0),
         );
@@ -643,7 +633,7 @@ mod tests {
         let body2 = CelestialBody::new(
             id2,
             CelestialType::Asteroid,
-            Vec3Fixed::new(fixed::from_f64(10.0), fixed::from_f64(0.0), fixed::from_f64(0.0)),
+            Vec3Fixed::new(10.0, 0.0, 0.0),
             fixed::from_f64(1000.0),
             fixed::from_f64(1.0),
         );

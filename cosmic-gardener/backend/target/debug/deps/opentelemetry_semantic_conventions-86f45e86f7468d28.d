@@ -1,0 +1,9 @@
+C:\AIagent\Space_Idle_Game\cosmic-gardener\backend\target\debug\deps\opentelemetry_semantic_conventions-86f45e86f7468d28.d: C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\opentelemetry-semantic-conventions-0.13.0\src\lib.rs C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\opentelemetry-semantic-conventions-0.13.0\src\resource.rs C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\opentelemetry-semantic-conventions-0.13.0\src\trace.rs
+
+C:\AIagent\Space_Idle_Game\cosmic-gardener\backend\target\debug\deps\libopentelemetry_semantic_conventions-86f45e86f7468d28.rlib: C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\opentelemetry-semantic-conventions-0.13.0\src\lib.rs C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\opentelemetry-semantic-conventions-0.13.0\src\resource.rs C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\opentelemetry-semantic-conventions-0.13.0\src\trace.rs
+
+C:\AIagent\Space_Idle_Game\cosmic-gardener\backend\target\debug\deps\libopentelemetry_semantic_conventions-86f45e86f7468d28.rmeta: C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\opentelemetry-semantic-conventions-0.13.0\src\lib.rs C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\opentelemetry-semantic-conventions-0.13.0\src\resource.rs C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\opentelemetry-semantic-conventions-0.13.0\src\trace.rs
+
+C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\opentelemetry-semantic-conventions-0.13.0\src\lib.rs:
+C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\opentelemetry-semantic-conventions-0.13.0\src\resource.rs:
+C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\opentelemetry-semantic-conventions-0.13.0\src\trace.rs:

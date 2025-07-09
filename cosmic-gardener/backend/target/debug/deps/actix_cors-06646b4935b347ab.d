@@ -1,0 +1,10 @@
+C:\AIagent\Space_Idle_Game\cosmic-gardener\backend\target\debug\deps\actix_cors-06646b4935b347ab.d: C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\actix-cors-0.6.5\src\lib.rs C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\actix-cors-0.6.5\src\all_or_some.rs C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\actix-cors-0.6.5\src\builder.rs C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\actix-cors-0.6.5\src\error.rs C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\actix-cors-0.6.5\src\inner.rs C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\actix-cors-0.6.5\src\middleware.rs
+
+C:\AIagent\Space_Idle_Game\cosmic-gardener\backend\target\debug\deps\libactix_cors-06646b4935b347ab.rmeta: C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\actix-cors-0.6.5\src\lib.rs C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\actix-cors-0.6.5\src\all_or_some.rs C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\actix-cors-0.6.5\src\builder.rs C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\actix-cors-0.6.5\src\error.rs C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\actix-cors-0.6.5\src\inner.rs C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\actix-cors-0.6.5\src\middleware.rs
+
+C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\actix-cors-0.6.5\src\lib.rs:
+C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\actix-cors-0.6.5\src\all_or_some.rs:
+C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\actix-cors-0.6.5\src\builder.rs:
+C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\actix-cors-0.6.5\src\error.rs:
+C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\actix-cors-0.6.5\src\inner.rs:
+C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\actix-cors-0.6.5\src\middleware.rs:

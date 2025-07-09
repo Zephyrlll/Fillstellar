@@ -5,16 +5,16 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::errors::GameError;
-use crate::game::resources::{Resources, ProductionRates, ResourceType, Fixed, fixed};
+use crate::game::resources::{Resources, ProductionRates, Fixed, fixed};
 
 /// 天体のID
 pub type BodyId = Uuid;
 
 /// 3D位置ベクトル（固定小数点）
-pub type Vec3Fixed = Vector3<Fixed>;
+pub type Vec3Fixed = Vector3<f64>;
 
 /// 3D位置座標（固定小数点）
-pub type Point3Fixed = Point3<Fixed>;
+pub type Point3Fixed = Point3<f64>;
 
 /// 天体の種類
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -29,7 +29,7 @@ pub enum CelestialType {
 }
 
 /// 恒星データ
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct StarData {
     pub spectral_type: SpectralType,
     pub temperature: u32,
@@ -39,7 +39,7 @@ pub struct StarData {
 }
 
 /// スペクトル型
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum SpectralType {
     O, B, A, F, G, K, M
 }
@@ -71,7 +71,7 @@ impl SpectralType {
 }
 
 /// 惑星データ
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct PlanetData {
     pub planet_type: PlanetType,
     pub atmosphere: AtmosphereType,
@@ -81,7 +81,7 @@ pub struct PlanetData {
 }
 
 /// 惑星タイプ
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum PlanetType {
     Rocky,
     GasGiant,
@@ -93,7 +93,7 @@ pub enum PlanetType {
 }
 
 /// 大気タイプ
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum AtmosphereType {
     None,
     Thin,
@@ -105,7 +105,7 @@ pub enum AtmosphereType {
 }
 
 /// ブラックホールデータ
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct BlackHoleData {
     pub schwarzschild_radius: Fixed,
     pub accretion_rate: Fixed,
@@ -372,23 +372,33 @@ impl CelestialBodyManager {
     pub fn update_life_systems(&mut self, delta_time_ms: u64) {
         let time_factor = delta_time_ms as f64 / self.tick_duration_ms as f64;
         
-        for body in self.bodies.values_mut() {
-            body.lifecycle.age += delta_time_ms / self.tick_duration_ms;
-            
-            // 生命進化の更新
-            if let CelestialType::Planet(planet_data) = &body.body_type {
-                if planet_data.habitability > 50 {
-                    self.update_life_evolution(body, time_factor);
+        let body_ids: Vec<BodyId> = self.bodies.keys().copied().collect();
+        
+        for body_id in body_ids {
+            if let Some(body) = self.bodies.get_mut(&body_id) {
+                body.lifecycle.age += delta_time_ms / self.tick_duration_ms;
+                
+                // 生命進化の更新
+                if let CelestialType::Planet(planet_data) = &body.body_type {
+                    if planet_data.habitability > 50 {
+                        self.update_life_evolution_for_body(body_id, time_factor);
+                    }
                 }
+                
+                // リソース生成の更新
+                self.update_resource_production_for_body(body_id, time_factor);
             }
-            
-            // リソース生成の更新
-            self.update_resource_production(body, time_factor);
         }
     }
     
+    /// 生命進化の更新（単体）
+    fn update_life_evolution_for_body(&mut self, body_id: BodyId, time_factor: f64) {
+        Self::update_life_evolution(self.bodies.get_mut(&body_id), time_factor);
+    }
+    
     /// 生命進化の更新
-    fn update_life_evolution(&mut self, body: &mut CelestialBody, time_factor: f64) {
+    fn update_life_evolution(body_opt: Option<&mut CelestialBody>, time_factor: f64) {
+        if let Some(body) = body_opt {
         body.lifecycle.evolution_timer += (time_factor * 1000.0) as u64;
         
         match &body.lifecycle.life_stage {
@@ -403,7 +413,7 @@ impl CelestialBodyManager {
                     body.lifecycle.evolution_timer = 0;
                 }
             },
-            LifeStage::Microbial { diversity, .. } => {
+            LifeStage::Microbial { .. } => {
                 // 人口成長
                 body.lifecycle.population = (body.lifecycle.population as f64 * 1.01) as u64;
                 
@@ -416,7 +426,7 @@ impl CelestialBodyManager {
                     body.lifecycle.evolution_timer = 0;
                 }
             },
-            LifeStage::Plant { coverage, .. } => {
+            LifeStage::Plant { .. } => {
                 // 人口成長
                 body.lifecycle.population = (body.lifecycle.population as f64 * 1.05) as u64;
                 
@@ -429,7 +439,7 @@ impl CelestialBodyManager {
                     body.lifecycle.evolution_timer = 0;
                 }
             },
-            LifeStage::Animal { species_count, .. } => {
+            LifeStage::Animal { .. } => {
                 // 人口成長
                 body.lifecycle.population = (body.lifecycle.population as f64 * 1.1) as u64;
                 
@@ -443,7 +453,7 @@ impl CelestialBodyManager {
                     body.lifecycle.evolution_timer = 0;
                 }
             },
-            LifeStage::Intelligent { tech_level, .. } => {
+            LifeStage::Intelligent { .. } => {
                 // 人口成長（減速）
                 body.lifecycle.population = (body.lifecycle.population as f64 * 1.02) as u64;
                 
@@ -454,20 +464,27 @@ impl CelestialBodyManager {
                 }
             },
         }
+        }
+    }
+    
+    /// リソース生成の更新（単体）
+    fn update_resource_production_for_body(&mut self, body_id: BodyId, time_factor: f64) {
+        Self::update_resource_production(self.bodies.get_mut(&body_id), time_factor);
     }
     
     /// リソース生成の更新
-    fn update_resource_production(&mut self, body: &mut CelestialBody, time_factor: f64) {
+    fn update_resource_production(body_opt: Option<&mut CelestialBody>, _time_factor: f64) {
+        if let Some(body) = body_opt {
         match &body.body_type {
-            CelestialType::Star(star_data) => {
+            CelestialType::Star(_) => {
                 // 恒星からエネルギー生成
                 let energy_rate = fixed::from_f64(fixed::to_f64(body.physics.mass) / 1000.0);
                 body.resources.production_rates.energy_per_tick = energy_rate;
             },
-            CelestialType::Planet(planet_data) => {
+            CelestialType::Planet(_) => {
                 // 惑星からの生命ベースリソース
                 match &body.lifecycle.life_stage {
-                    LifeStage::Plant { coverage, .. } => {
+                    LifeStage::Plant { .. } => {
                         body.resources.production_rates.organic_per_tick = fixed::from_f64(0.5);
                         body.resources.production_rates.biomass_per_tick = fixed::from_f64(0.1);
                     },
@@ -499,6 +516,7 @@ impl CelestialBodyManager {
             },
             _ => {},
         }
+        }
     }
     
     /// 作成の検証
@@ -510,19 +528,19 @@ impl CelestialBodyManager {
         
         // 型別制限
         let type_key = std::mem::discriminant(body_type);
-        let current_count = self.bodies.values()
+        let _current_count = self.bodies.values()
             .filter(|b| std::mem::discriminant(&b.body_type) == type_key)
             .count();
         
         // 境界チェック
-        if position.magnitude() > self.limits.max_position {
+        if position.magnitude() > fixed::to_f64(self.limits.max_position) {
             return Err(GameError::OutOfBounds);
         }
         
         // 最小分離距離チェック
         for body in self.bodies.values() {
             let distance = (position - body.physics.position).magnitude();
-            let min_distance = body.physics.radius + self.limits.min_separation;
+            let min_distance = fixed::to_f64(body.physics.radius + self.limits.min_separation);
             if distance < min_distance {
                 return Err(GameError::TooClose);
             }
@@ -609,6 +627,11 @@ impl CelestialBodyManager {
     pub fn get_all_bodies(&self) -> &HashMap<BodyId, CelestialBody> {
         &self.bodies
     }
+    
+    /// 全天体の可変参照取得
+    pub fn get_all_bodies_mut(&mut self) -> &mut HashMap<BodyId, CelestialBody> {
+        &mut self.bodies
+    }
 }
 
 #[cfg(test)]
@@ -633,7 +656,7 @@ mod tests {
         let mut resources = Resources::new();
         resources.cosmic_dust = 1000;
         
-        let position = Vec3Fixed::new(fixed::from_f64(10.0), fixed::from_f64(20.0), fixed::from_f64(30.0));
+        let position = Vec3Fixed::new(10.0, 20.0, 30.0);
         let result = manager.create_body(CelestialType::Asteroid, position, &mut resources);
         
         assert!(result.is_ok());
@@ -647,7 +670,7 @@ mod tests {
     #[test]
     fn test_position_validation() {
         let manager = CelestialBodyManager::new(50);
-        let far_position = Vec3Fixed::new(fixed::from_f64(200000.0), fixed::from_f64(0.0), fixed::from_f64(0.0));
+        let far_position = Vec3Fixed::new(200000.0, 0.0, 0.0);
         
         let result = manager.validate_creation(&CelestialType::Asteroid, &far_position);
         assert!(result.is_err());
@@ -668,7 +691,7 @@ mod tests {
             habitability: 80,
         };
         
-        let position = Vec3Fixed::new(fixed::from_f64(0.0), fixed::from_f64(0.0), fixed::from_f64(0.0));
+        let position = Vec3Fixed::new(0.0, 0.0, 0.0);
         let body_id = manager.create_body(CelestialType::Planet(planet_data), position, &mut resources).unwrap();
         
         // 生命進化をシミュレート

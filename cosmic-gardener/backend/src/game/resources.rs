@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 
 use crate::errors::GameError;
 
@@ -471,6 +470,16 @@ impl ResourceManager {
     /// ゲーム状態の設定
     pub fn set_game_state(&mut self, state: GameState) {
         self.game_state = state;
+    }
+    
+    /// リソースの取得
+    pub fn get_resources(&self) -> &Resources {
+        &self.game_state.resources
+    }
+    
+    /// リソースの可変参照取得
+    pub fn get_resources_mut(&mut self) -> &mut Resources {
+        &mut self.game_state.resources
     }
     
     /// リソースの検証
