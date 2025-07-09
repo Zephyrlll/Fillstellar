@@ -29,3 +29,6 @@ dist/
 favicon.ico
 *.yml
 *.yaml
+/target/
+**/*.rs.bk
+Cargo.lock

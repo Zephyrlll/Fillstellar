@@ -11,6 +11,7 @@ import { GALAXY_BOUNDARY } from './js/constants.js';
 import { mathCache } from './js/utils.js';
 import { setupEventListeners, keys } from './js/events.js';
 import { soundManager } from './js/sound.js';
+import { createWebSocketClient } from './js/websocket.js';
 
 const moveSpeed = 200;
 
@@ -19,6 +20,9 @@ const uiUpdateInterval = 0.1;
 
 let galaxyMapUpdateTimer = 0;
 const galaxyMapUpdateInterval = 0.2;
+
+// WebSocketクライアント
+let wsClient: any = null;
 
 function createStarfield() {
     const starsGeometry = new THREE.BufferGeometry();
@@ -239,6 +243,51 @@ function init() {
     document.addEventListener('keydown', initSound, { once: true });
 
     setupEventListeners();
+    
+    // WebSocket接続の初期化
+    wsClient = createWebSocketClient();
+    
+    // WebSocketイベントハンドラー
+    wsClient.on('connected', () => {
+        console.log('バックエンドに接続しました');
+        wsClient.getGameState(); // 接続後に状態を取得
+        wsClient.setGameRunning(true); // ゲームループを開始
+    });
+    
+    wsClient.on('gameState', (data: any) => {
+        console.log('ゲーム状態更新:', data);
+        // リソースを更新
+        if (data.resources) {
+            gameState.resources = data.resources;
+        }
+        // 天体情報を更新（必要に応じて）
+        if (data.bodies) {
+            console.log('天体数:', data.bodies.length);
+        }
+        // UIを更新
+        updateUI();
+    });
+    
+    wsClient.on('bodyCreated', (data: any) => {
+        console.log('天体作成:', data);
+        if (data.success) {
+            console.log('天体作成成功:', data.bodyId);
+        } else {
+            console.error('天体作成失敗:', data.error);
+        }
+    });
+    
+    wsClient.on('serverError', (data: any) => {
+        console.error('サーバーエラー:', data.message);
+    });
+    
+    wsClient.on('disconnected', () => {
+        console.log('バックエンドから切断されました');
+    });
+    
+    // 接続を開始
+    wsClient.connect();
+    
     animate();
 }
 

@@ -23,19 +23,21 @@ export interface StateData {
     timestamp: string;
 }
 
-// クライアントメッセージ
+// クライアントメッセージ（バックエンドに合わせて更新）
 export type ClientMessage = 
-    | { type: 'GetState' }
-    | { type: 'CreateCelestialBody'; data: { body_type: string; position: Vec3 } }
-    | { type: 'SaveGame'; data: { state: GameState } }
-    | { type: 'Heartbeat' };
+    | { type: 'GetGameState' }
+    | { type: 'CreateBody'; body_type: string; position: [number, number, number] }
+    | { type: 'RemoveBody'; body_id: string }
+    | { type: 'SpendResources'; cosmic_dust: number; energy: number }
+    | { type: 'SetGameRunning'; running: boolean };
 
-// サーバーメッセージ
+// サーバーメッセージ（バックエンドに合わせて更新）
 export type ServerMessage =
-    | { type: 'StateUpdate'; data: { full: boolean; data: StateData } }
-    | { type: 'ActionResult'; data: { success: boolean; message: string } }
-    | { type: 'Error'; data: { code: string; message: string } }
-    | { type: 'Heartbeat' };
+    | { type: 'GameState'; resources: any; bodies: any[]; tick: number }
+    | { type: 'BodyCreated'; body_id: string; success: boolean; error?: string }
+    | { type: 'BodyRemoved'; body_id: string; success: boolean }
+    | { type: 'Error'; message: string }
+    | { type: 'Ping' };
 
 // 接続状態
 export enum ConnectionState {
@@ -75,7 +77,7 @@ export class CosmicGardenerWebSocket {
     
     constructor(config: Partial<WebSocketConfig> = {}) {
         this.config = {
-            url: 'ws://localhost:8080/api/ws',
+            url: 'ws://localhost:8080/ws',
             token: '',
             maxRetries: 5,
             retryDelay: 1000,
@@ -89,14 +91,6 @@ export class CosmicGardenerWebSocket {
      * WebSocket接続を開始
      */
     public async connect(token?: string): Promise<void> {
-        if (token) {
-            this.config.token = token;
-        }
-
-        if (!this.config.token) {
-            throw new Error('認証トークンが設定されていません');
-        }
-
         if (this.state === ConnectionState.Connected) {
             console.warn('WebSocket is already connected');
             return;
@@ -105,8 +99,8 @@ export class CosmicGardenerWebSocket {
         this.setState(ConnectionState.Connecting);
         
         try {
-            const wsUrl = `${this.config.url}?token=${encodeURIComponent(this.config.token)}`;
-            this.ws = new WebSocket(wsUrl);
+            // トークン認証不要のシンプルな接続
+            this.ws = new WebSocket(this.config.url);
             
             this.ws.onopen = this.onOpen.bind(this);
             this.ws.onmessage = this.onMessage.bind(this);
@@ -154,8 +148,8 @@ export class CosmicGardenerWebSocket {
     /**
      * ゲーム状態を取得
      */
-    public getState(): void {
-        this.send({ type: 'GetState' });
+    public getGameState(): void {
+        this.send({ type: 'GetGameState' });
     }
 
     /**
@@ -163,18 +157,40 @@ export class CosmicGardenerWebSocket {
      */
     public createCelestialBody(bodyType: string, position: Vec3): void {
         this.send({
-            type: 'CreateCelestialBody',
-            data: { body_type: bodyType, position }
+            type: 'CreateBody',
+            body_type: bodyType,
+            position: [position.x, position.y, position.z]
         });
     }
 
     /**
-     * ゲームを保存
+     * 天体を削除
      */
-    public saveGame(state: GameState): void {
+    public removeCelestialBody(bodyId: string): void {
         this.send({
-            type: 'SaveGame',
-            data: { state }
+            type: 'RemoveBody',
+            body_id: bodyId
+        });
+    }
+
+    /**
+     * リソースを消費
+     */
+    public spendResources(cosmicDust: number, energy: number): void {
+        this.send({
+            type: 'SpendResources',
+            cosmic_dust: cosmicDust,
+            energy: energy
+        });
+    }
+
+    /**
+     * ゲームの実行状態を設定
+     */
+    public setGameRunning(running: boolean): void {
+        this.send({
+            type: 'SetGameRunning',
+            running: running
         });
     }
 
@@ -249,26 +265,36 @@ export class CosmicGardenerWebSocket {
 
     private handleServerMessage(message: ServerMessage): void {
         switch (message.type) {
-            case 'StateUpdate':
-                this.emit('stateUpdate', message.data);
+            case 'GameState':
+                this.emit('gameState', {
+                    resources: message.resources,
+                    bodies: message.bodies,
+                    tick: message.tick
+                });
                 break;
             
-            case 'ActionResult':
-                this.emit('actionResult', message.data);
-                if (message.data.success) {
-                    this.emit('success', message.data.message);
-                } else {
-                    this.emit('error', message.data.message);
-                }
+            case 'BodyCreated':
+                this.emit('bodyCreated', {
+                    bodyId: message.body_id,
+                    success: message.success,
+                    error: message.error
+                });
+                break;
+            
+            case 'BodyRemoved':
+                this.emit('bodyRemoved', {
+                    bodyId: message.body_id,
+                    success: message.success
+                });
                 break;
             
             case 'Error':
-                this.emit('serverError', message.data);
-                console.error('Server error:', message.data.code, message.data.message);
+                this.emit('serverError', { message: message.message });
+                console.error('Server error:', message.message);
                 break;
             
-            case 'Heartbeat':
-                // ハートビート応答は何もしない
+            case 'Ping':
+                // Ping応答は何もしない
                 break;
         }
     }
