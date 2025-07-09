@@ -37,8 +37,13 @@ export function saveGame() {
 }
 
 export function loadGame() {
+    console.log(`[DEBUG] loadGame() called at ${new Date().toISOString()}`);
     const savedState = localStorage.getItem('cosmicGardenerState');
-    if (!savedState) return;
+    if (!savedState) {
+        console.log(`[DEBUG] No saved state found`);
+        return;
+    }
+    console.log(`[DEBUG] Found saved state, loading...`);
 
     let parsedState: any;
     try {
@@ -54,8 +59,12 @@ export function loadGame() {
         return;
     }
 
-    const { stars, focusedObjectUUID, ...restOfState } = parsedState;
+    const { stars, focusedObjectUUID, isInitializing, ...restOfState } = parsedState;
     Object.assign(gameState, restOfState);
+    
+    // 初期化フラグは保持（上書きしない）
+    console.log(`[DEBUG] Setting gameState.isInitializing = true in loadGame`);
+    gameState.isInitializing = true;
     
     gameState.focusedObject = null;
 
@@ -129,6 +138,9 @@ export function loadGame() {
         scene.add(body);
         return body;
     });
+    
+    console.log(`[DEBUG] loadGame() completed. Stars loaded: ${gameState.stars.length}`);
+    console.log(`[DEBUG] Stars after loading:`, gameState.stars.map(s => ({ type: s.userData.type, name: s.userData.name })));
     
     if (focusedObjectUUID) {
         gameState.focusedObject = gameState.stars.find(s => s.uuid === focusedObjectUUID) || null;

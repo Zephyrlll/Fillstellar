@@ -100,7 +100,13 @@ export function checkLifeSpawn(planetObject: CelestialBody) {
         return;
     }
 
-    const spawnChance = (userData.habitability / 100) * 0.0001;
+    let spawnChance = (userData.habitability / 100) * 0.0001;
+    
+    // 生命発生促進研究の効果
+    if (gameState.researchLifeSpawnRate) {
+        spawnChance *= 3; // 200%増加 = 3倍
+    }
+    
     if (Math.random() < spawnChance) {
         userData.hasLife = true;
         userData.lifeStage = 'microbial';
@@ -130,10 +136,17 @@ export function evolveLife(planetObject: CelestialBody) {
     const currentStage = userData.lifeStage;
     const ageInYears = gameState.gameYear - userData.creationYear;
     let nextStage: string | null = null;
+    
+    // 進化加速研究の効果
+    let evolutionSpeedMultiplier = 1;
+    if (gameState.researchEvolutionSpeed) {
+        evolutionSpeedMultiplier = 2; // 100%増加 = 2倍速
+    }
+    
     switch (currentStage) {
-        case 'microbial': if (ageInYears >= 50) nextStage = 'plant'; break;
-        case 'plant': if (ageInYears >= 100) nextStage = 'animal'; break;
-        case 'animal': if (ageInYears >= 200) nextStage = 'intelligent'; break;
+        case 'microbial': if (ageInYears >= (50 / evolutionSpeedMultiplier)) nextStage = 'plant'; break;
+        case 'plant': if (ageInYears >= (100 / evolutionSpeedMultiplier)) nextStage = 'animal'; break;
+        case 'animal': if (ageInYears >= (200 / evolutionSpeedMultiplier)) nextStage = 'intelligent'; break;
     }
     if (nextStage) {
         userData.lifeStage = nextStage;

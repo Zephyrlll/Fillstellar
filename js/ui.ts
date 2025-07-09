@@ -4,6 +4,28 @@ import { mathCache } from './utils.js';
 
 let messageTimeout: any;
 
+// 大きな数値のフォーマット関数
+function formatLargeNumber(num: number): string {
+    const value = (typeof num === 'number' && isFinite(num)) ? num : 0;
+    if (value >= 1e15) return (value / 1e15).toFixed(1) + 'P';
+    if (value >= 1e12) return (value / 1e12).toFixed(1) + 'T';
+    if (value >= 1e9) return (value / 1e9).toFixed(1) + 'B';
+    if (value >= 1e6) return (value / 1e6).toFixed(1) + 'M';
+    if (value >= 1e3) return (value / 1e3).toFixed(1) + 'K';
+    return Math.floor(value).toString();
+}
+
+// 人口専用のフォーマット関数（整数のみ）
+function formatPopulation(num: number): string {
+    const value = (typeof num === 'number' && isFinite(num)) ? Math.floor(num) : 0;
+    if (value >= 1e15) return Math.floor(value / 1e15) + 'P';
+    if (value >= 1e12) return Math.floor(value / 1e12) + 'T';
+    if (value >= 1e9) return Math.floor(value / 1e9) + 'B';
+    if (value >= 1e6) return Math.floor(value / 1e6) + 'M';
+    if (value >= 1e3) return Math.floor(value / 1e3) + 'K';
+    return value.toString();
+}
+
 const previousUIValues: any = {
     gameYear: -1,
     cosmicDust: -1,
@@ -137,7 +159,7 @@ function updateFocusedBodyUI() {
             if (ui.focusedPlanetHabitability) ui.focusedPlanetHabitability.textContent = String(planetData.habitability);
             if (ui.focusedPlanetHasLife) ui.focusedPlanetHasLife.textContent = planetData.hasLife ? 'はい' : 'いいえ';
             if (ui.focusedPlanetLifeStage) ui.focusedPlanetLifeStage.textContent = planetData.lifeStage || '--';
-            if (ui.focusedPlanetPopulation) ui.focusedPlanetPopulation.textContent = Math.floor(planetData.population || 0).toLocaleString();
+            if (ui.focusedPlanetPopulation) ui.focusedPlanetPopulation.textContent = formatPopulation(planetData.population || 0);
             if (ui.focusedPlanetSpeed) ui.focusedPlanetSpeed.textContent = planetData.velocity.length().toFixed(2);
         }
         return;
@@ -168,7 +190,7 @@ function updateFocusedBodyUI() {
             if (ui.focusedPlanetHabitability) ui.focusedPlanetHabitability.textContent = String(planetData.habitability);
             if (ui.focusedPlanetHasLife) ui.focusedPlanetHasLife.textContent = planetData.hasLife ? 'はい' : 'いいえ';
             if (ui.focusedPlanetLifeStage) ui.focusedPlanetLifeStage.textContent = planetData.lifeStage || '--';
-            if (ui.focusedPlanetPopulation) ui.focusedPlanetPopulation.textContent = Math.floor(planetData.population || 0).toLocaleString();
+            if (ui.focusedPlanetPopulation) ui.focusedPlanetPopulation.textContent = formatPopulation(planetData.population || 0);
             if (ui.focusedPlanetSpeed) ui.focusedPlanetSpeed.textContent = planetData.velocity.length().toFixed(2);
             if (planetData.geologicalActivity) {
                 if (ui.focusedPlanetGeologyRow) ui.focusedPlanetGeologyRow.style.display = '';
@@ -209,11 +231,11 @@ export function updateUI() {
         previousUIValues.gameYear = currentGameYear;
     }
     if (previousUIValues.cosmicDust !== currentCosmicDust) {
-        if (ui.cosmicDust) ui.cosmicDust.textContent = String(currentCosmicDust);
+        if (ui.cosmicDust) ui.cosmicDust.textContent = formatLargeNumber(currentCosmicDust);
         previousUIValues.cosmicDust = currentCosmicDust;
     }
      if (previousUIValues.energy !== currentEnergy) {
-        if (ui.energy) ui.energy.textContent = String(currentEnergy);
+        if (ui.energy) ui.energy.textContent = formatLargeNumber(currentEnergy);
         previousUIValues.energy = currentEnergy;
     }
     if (previousUIValues.darkMatter !== currentDarkMatter) {
@@ -222,17 +244,17 @@ export function updateUI() {
     }
     const currentOrganicMatter = Math.floor(organicMatter);
     if (previousUIValues.organicMatter !== currentOrganicMatter) {
-        if (ui.organicMatter) ui.organicMatter.textContent = String(currentOrganicMatter);
+        if (ui.organicMatter) ui.organicMatter.textContent = formatLargeNumber(currentOrganicMatter);
         previousUIValues.organicMatter = currentOrganicMatter;
     }
     const currentBiomass = Math.floor(biomass);
     if (previousUIValues.biomass !== currentBiomass) {
-        if (ui.biomass) ui.biomass.textContent = String(currentBiomass);
+        if (ui.biomass) ui.biomass.textContent = formatLargeNumber(currentBiomass);
         previousUIValues.biomass = currentBiomass;
     }
     const currentThoughtPoints = Math.floor(thoughtPoints);
      if (previousUIValues.thoughtPoints !== currentThoughtPoints) {
-        if (ui.thoughtPoints) ui.thoughtPoints.textContent = String(currentThoughtPoints);
+        if (ui.thoughtPoints) ui.thoughtPoints.textContent = formatLargeNumber(currentThoughtPoints);
         previousUIValues.thoughtPoints = currentThoughtPoints;
     }
     const currentDustRateStr = (currentDustRate || 0).toFixed(1);
@@ -299,6 +321,24 @@ export function updateUI() {
         previousUIValues.unlockedBodies.star = unlockedCelestialBodies.star;
     }
 
+    // 新しい思考ポイント研究の状態表示
+    const researchPopulationEfficiencyStatus = document.getElementById('researchPopulationEfficiencyStatus');
+    if (researchPopulationEfficiencyStatus) {
+        researchPopulationEfficiencyStatus.textContent = gameState.researchPopulationEfficiency ? '完了' : '未完了';
+    }
+    const researchResourceMultiplierStatus = document.getElementById('researchResourceMultiplierStatus');
+    if (researchResourceMultiplierStatus) {
+        researchResourceMultiplierStatus.textContent = gameState.researchResourceMultiplier ? '完了' : '未完了';
+    }
+    const researchLifeSpawnRateStatus = document.getElementById('researchLifeSpawnRateStatus');
+    if (researchLifeSpawnRateStatus) {
+        researchLifeSpawnRateStatus.textContent = gameState.researchLifeSpawnRate ? '完了' : '未完了';
+    }
+    const researchEvolutionSpeedStatus = document.getElementById('researchEvolutionSpeedStatus');
+    if (researchEvolutionSpeedStatus) {
+        researchEvolutionSpeedStatus.textContent = gameState.researchEvolutionSpeed ? '完了' : '未完了';
+    }
+
     // 右下のオーバーレイパネルの更新
     if (ui.overlayCosmicDust) ui.overlayCosmicDust.textContent = String(currentCosmicDust);
     if (ui.overlayEnergy) ui.overlayEnergy.textContent = String(currentEnergy);
@@ -310,7 +350,7 @@ export function updateUI() {
     if (ui.overlayCosmicActivity) ui.overlayCosmicActivity.textContent = String(cosmicActivity);
     
     // 総人口の表示
-    if (ui.overlayPopulation) ui.overlayPopulation.textContent = String(cachedTotalPopulation || 0);
+    if (ui.overlayPopulation) ui.overlayPopulation.textContent = formatPopulation(cachedTotalPopulation || 0);
     
     updateFocusedBodyUI();
 }

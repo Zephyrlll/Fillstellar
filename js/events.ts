@@ -8,6 +8,8 @@ import { GALAXY_BOUNDARY } from './constants.js';
 import { mathCache } from './utils.js';
 import { addTimelineLog } from './timeline.js';
 import { soundManager } from './sound.js';
+import { switchStatsTab, toggleStatsPanel } from './statistics.js';
+import { checkAchievements } from './achievements.js';
 
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
@@ -248,6 +250,10 @@ export function setupEventListeners() {
             addTimelineLog(`${bodyName}が${parentName}の周囲に誕生しました`, 'creation');
             
             saveGame();
+            
+            // 実績チェック
+            console.log(`[DEBUG] About to call checkAchievements from celestial body creation (${type})`);
+            checkAchievements();
 
             creationCount++;
 
@@ -300,6 +306,11 @@ export function setupEventListeners() {
         addTimelineLog(`恒星「${name}」が銀河に誕生しました`, 'creation');
         
         saveGame();
+        
+        // 実績チェック
+        console.log(`[DEBUG] About to call checkAchievements from star creation`);
+        checkAchievements();
+        
         return true;
     };
 
@@ -501,7 +512,7 @@ export function setupEventListeners() {
 
     if (ui.researchStarButton) {
         ui.researchStarButton.addEventListener('click', () => {
-            const cost = 5;
+            const cost = 3;
             if (gameState.darkMatter >= cost && !gameState.unlockedCelestialBodies.star) {
                 gameState.darkMatter -= cost;
                 gameState.unlockedCelestialBodies.star = true;
@@ -569,6 +580,93 @@ export function setupEventListeners() {
                 localStorage.removeItem('cosmicGardenerState');
                 location.reload();
             }
+        });
+    }
+
+    // 新しい思考ポイント研究のイベントハンドラー
+    const researchPopulationEfficiencyButton = document.getElementById('researchPopulationEfficiencyButton');
+    if (researchPopulationEfficiencyButton) {
+        researchPopulationEfficiencyButton.addEventListener('click', () => {
+            const cost = 100;
+            if (gameState.thoughtPoints >= cost && !gameState.researchPopulationEfficiency) {
+                gameState.thoughtPoints -= cost;
+                gameState.researchPopulationEfficiency = true;
+                updateUI();
+                saveGame();
+            }
+        });
+    }
+
+    const researchResourceMultiplierButton = document.getElementById('researchResourceMultiplierButton');
+    if (researchResourceMultiplierButton) {
+        researchResourceMultiplierButton.addEventListener('click', () => {
+            const cost = 500;
+            if (gameState.thoughtPoints >= cost && !gameState.researchResourceMultiplier) {
+                gameState.thoughtPoints -= cost;
+                gameState.researchResourceMultiplier = true;
+                updateUI();
+                saveGame();
+            }
+        });
+    }
+
+    const researchLifeSpawnRateButton = document.getElementById('researchLifeSpawnRateButton');
+    if (researchLifeSpawnRateButton) {
+        researchLifeSpawnRateButton.addEventListener('click', () => {
+            const cost = 200;
+            if (gameState.thoughtPoints >= cost && !gameState.researchLifeSpawnRate) {
+                gameState.thoughtPoints -= cost;
+                gameState.researchLifeSpawnRate = true;
+                updateUI();
+                saveGame();
+            }
+        });
+    }
+
+    const researchEvolutionSpeedButton = document.getElementById('researchEvolutionSpeedButton');
+    if (researchEvolutionSpeedButton) {
+        researchEvolutionSpeedButton.addEventListener('click', () => {
+            const cost = 300;
+            if (gameState.thoughtPoints >= cost && !gameState.researchEvolutionSpeed) {
+                gameState.thoughtPoints -= cost;
+                gameState.researchEvolutionSpeed = true;
+                updateUI();
+                saveGame();
+            }
+        });
+    }
+
+    // 実績タブのイベントリスナー
+    const achievementsTabButton = document.getElementById('achievements-tab-button');
+    if (achievementsTabButton) {
+        achievementsTabButton.addEventListener('click', () => {
+            switchStatsTab('achievements');
+        });
+    }
+
+    const statsTabButton = document.getElementById('stats-tab-button');
+    if (statsTabButton) {
+        statsTabButton.addEventListener('click', () => {
+            switchStatsTab('stats');
+        });
+    }
+
+    const logTabButton = document.getElementById('log-tab-button');
+    if (logTabButton) {
+        logTabButton.addEventListener('click', () => {
+            switchStatsTab('log');
+        });
+    }
+
+    // 統計・ログパネルの開閉機能
+    const statsLogTabs = document.getElementById('stats-log-tabs');
+    if (statsLogTabs) {
+        statsLogTabs.addEventListener('click', (event) => {
+            // タブボタンがクリックされた場合は開閉処理をしない
+            if ((event.target as HTMLElement).classList.contains('stats-log-tab')) {
+                return;
+            }
+            toggleStatsPanel();
         });
     }
 

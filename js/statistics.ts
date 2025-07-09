@@ -1,12 +1,19 @@
 
 import { gameState, PlanetUserData } from './state.js';
+import { getAchievementProgress } from './achievements.js';
 
 let currentChart = 'resources';
+let currentStatsTab = '';
 
 function updateStatisticsDisplay() {
     updateResourceStatistics();
     updateCosmicStatistics();
     updateStatisticsChart();
+    
+    // 実績タブが表示されている場合のみ実績を更新
+    if (currentStatsTab === 'achievements') {
+        updateAchievementsDisplay();
+    }
 }
 
 function updateResourceStatistics() {
@@ -30,8 +37,11 @@ function updateResourceStatistics() {
         
         const formatNumber = (num: number) => {
             const value = (typeof num === 'number' && isFinite(num)) ? num : 0;
-            if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M';
-            if (value >= 1000) return (value / 1000).toFixed(1) + 'K';
+            if (value >= 1e15) return (value / 1e15).toFixed(1) + 'P';
+            if (value >= 1e12) return (value / 1e12).toFixed(1) + 'T';
+            if (value >= 1e9) return (value / 1e9).toFixed(1) + 'B';
+            if (value >= 1e6) return (value / 1e6).toFixed(1) + 'M';
+            if (value >= 1e3) return (value / 1e3).toFixed(1) + 'K';
             return value.toFixed(1);
         };
         
@@ -515,4 +525,196 @@ export function updateStatistics() {
     
     gameState.statistics.lastUpdate = now;
     updateStatisticsDisplay();
+}
+
+function updateAchievementsDisplay() {
+    // 実績進捗の更新
+    const progress = getAchievementProgress();
+    const completedSpan = document.getElementById('achievements-completed');
+    const totalSpan = document.getElementById('achievements-total');
+    const progressFill = document.getElementById('achievements-progress-fill');
+
+    if (completedSpan) completedSpan.textContent = progress.completed.toString();
+    if (totalSpan) totalSpan.textContent = progress.total.toString();
+    if (progressFill) progressFill.style.width = `${progress.percentage}%`;
+
+    // 実績リストの更新
+    const achievementsList = document.getElementById('achievements-list');
+    if (!achievementsList) return;
+
+    achievementsList.innerHTML = '';
+
+    // カテゴリ別にグループ化
+    const categories: { [key: string]: any[] } = {};
+    gameState.achievements.forEach(achievement => {
+        if (!categories[achievement.category]) {
+            categories[achievement.category] = [];
+        }
+        categories[achievement.category].push(achievement);
+    });
+
+    // カテゴリ別に表示
+    Object.entries(categories).forEach(([category, achievements]) => {
+        const categoryDiv = document.createElement('div');
+        categoryDiv.className = 'achievement-category';
+        
+        const categoryHeader = document.createElement('h4');
+        categoryHeader.textContent = category;
+        categoryDiv.appendChild(categoryHeader);
+
+        achievements.forEach(achievement => {
+            const achievementDiv = document.createElement('div');
+            achievementDiv.className = `achievement-item ${achievement.isCompleted ? 'completed' : 'incomplete'}`;
+            
+            const progressPercentage = achievement.maxProgress ? 
+                Math.floor((achievement.progress || 0) / achievement.maxProgress * 100) : 0;
+            
+            achievementDiv.innerHTML = `
+                <div class="achievement-icon">${achievement.icon}</div>
+                <div class="achievement-info">
+                    <div class="achievement-name">${achievement.name}</div>
+                    <div class="achievement-description">${achievement.description}</div>
+                    ${achievement.maxProgress && achievement.maxProgress > 1 ? 
+                        `<div class="achievement-progress">
+                            進捗: ${achievement.progress || 0} / ${achievement.maxProgress} (${progressPercentage}%)
+                            <div class="achievement-progress-bar">
+                                <div class="achievement-progress-fill" style="width: ${progressPercentage}%"></div>
+                            </div>
+                        </div>` : ''
+                    }
+                    ${achievement.reward ? 
+                        `<div class="achievement-reward">
+                            報酬: ${achievement.reward.amount} ${getResourceName(achievement.reward.type)}
+                        </div>` : ''
+                    }
+                    ${achievement.isCompleted && achievement.unlockedAt ? 
+                        `<div class="achievement-unlocked">
+                            達成日時: ${new Date(achievement.unlockedAt).toLocaleDateString()}
+                        </div>` : ''
+                    }
+                </div>
+            `;
+            
+            categoryDiv.appendChild(achievementDiv);
+        });
+
+        achievementsList.appendChild(categoryDiv);
+    });
+}
+
+function getResourceName(type: string): string {
+    const names: { [key: string]: string } = {
+        cosmicDust: '宇宙の塵',
+        energy: 'エネルギー',
+        darkMatter: 'ダークマター',
+        thoughtPoints: '思考ポイント'
+    };
+    return names[type] || type;
+}
+
+export function switchStatsTab(tabType: string) {
+    console.log('switchStatsTab called with:', tabType);
+    currentStatsTab = tabType;
+    
+    // タブボタンのアクティブ状態を更新
+    document.querySelectorAll('.stats-log-tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    
+    const activeTabButton = document.getElementById(`${tabType}-tab-button`);
+    if (activeTabButton) {
+        activeTabButton.classList.add('active');
+        console.log('Active tab button found and activated:', activeTabButton);
+    } else {
+        console.log('Active tab button not found for:', tabType);
+    }
+    
+    // パネルの表示/非表示を切り替え
+    const statisticsPanel = document.getElementById('statistics-panel');
+    const timelineLogPanel = document.getElementById('timeline-log-panel');
+    const achievementsPanel = document.getElementById('achievements-panel');
+    const container = document.getElementById('stats-log-container');
+    
+    console.log('Panels found:', {
+        statisticsPanel: !!statisticsPanel,
+        timelineLogPanel: !!timelineLogPanel,
+        achievementsPanel: !!achievementsPanel,
+        container: !!container
+    });
+    
+    // 全てのパネルを非表示にする
+    if (statisticsPanel) {
+        statisticsPanel.style.display = 'none';
+        statisticsPanel.classList.remove('expanded');
+    }
+    if (timelineLogPanel) {
+        timelineLogPanel.style.display = 'none';
+        timelineLogPanel.classList.remove('expanded');
+    }
+    if (achievementsPanel) {
+        achievementsPanel.style.display = 'none';
+        achievementsPanel.classList.remove('expanded');
+    }
+    
+    // 選択されたパネルを表示
+    let targetPanel = null;
+    if (tabType === 'stats') targetPanel = statisticsPanel;
+    else if (tabType === 'log') targetPanel = timelineLogPanel;
+    else if (tabType === 'achievements') targetPanel = achievementsPanel;
+    
+    console.log('Target panel:', targetPanel);
+    
+    if (targetPanel) {
+        targetPanel.style.display = 'block';
+        targetPanel.classList.add('expanded');
+        
+        // コンテナに expanded クラスを追加
+        if (container) container.classList.add('expanded');
+        
+        console.log('Panel displayed and expanded');
+        
+        if (tabType === 'achievements') {
+            updateAchievementsDisplay();
+        }
+    }
+}
+
+export function toggleStatsPanel() {
+    const container = document.getElementById('stats-log-container');
+    const isExpanded = container?.classList.contains('expanded');
+    
+    console.log('toggleStatsPanel called, isExpanded:', isExpanded);
+    
+    if (isExpanded) {
+        // パネルを閉じる
+        console.log('Closing panel');
+        if (container) container.classList.remove('expanded');
+        
+        const statisticsPanel = document.getElementById('statistics-panel');
+        const timelineLogPanel = document.getElementById('timeline-log-panel');
+        const achievementsPanel = document.getElementById('achievements-panel');
+        
+        if (statisticsPanel) {
+            statisticsPanel.style.display = 'none';
+            statisticsPanel.classList.remove('expanded');
+        }
+        if (timelineLogPanel) {
+            timelineLogPanel.style.display = 'none';
+            timelineLogPanel.classList.remove('expanded');
+        }
+        if (achievementsPanel) {
+            achievementsPanel.style.display = 'none';
+            achievementsPanel.classList.remove('expanded');
+        }
+        
+        // タブの選択状態をリセット
+        currentStatsTab = '';
+        document.querySelectorAll('.stats-log-tab').forEach(tab => {
+            tab.classList.remove('active');
+        });
+    } else {
+        // パネルを開く（デフォルトで統計タブを表示）
+        console.log('Opening panel');
+        switchStatsTab('stats');
+    }
 }

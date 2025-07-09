@@ -161,7 +161,7 @@
                 <button id="researchPlanetButton">研究する</button>
             </div>
             <div class="research-item">
-                <p>恒星発生論 (恒星アンロック) (コスト: <span id="researchStarCost">5</span> DM)</p>
+                <p>恒星発生論 (恒星アンロック) (コスト: <span id="researchStarCost">3</span> DM)</p>
                 <p>状態: <span id="researchStarStatus"></span></p>
                 <button id="researchStarButton">研究する</button>
             </div>
@@ -214,6 +214,26 @@
                         <p>10x 加速アンロック (コスト: <span id="timeMultiplier10xCost">--</span> TP)</p>
                         <p>状態: <span id="timeMultiplier10xStatus">--</span></p>
                         <button id="timeMultiplier10xButton">アンロック</button>
+                    </div>
+                    <div class="research-item">
+                        <p>人口効率化 (人口増加率+50%) (コスト: 100 TP)</p>
+                        <p>状態: <span id="researchPopulationEfficiencyStatus">--</span></p>
+                        <button id="researchPopulationEfficiencyButton">研究する</button>
+                    </div>
+                    <div class="research-item">
+                        <p>リソース倍増 (全リソース生産+100%) (コスト: 500 TP)</p>
+                        <p>状態: <span id="researchResourceMultiplierStatus">--</span></p>
+                        <button id="researchResourceMultiplierButton">研究する</button>
+                    </div>
+                    <div class="research-item">
+                        <p>生命発生促進 (生命発生率+200%) (コスト: 200 TP)</p>
+                        <p>状態: <span id="researchLifeSpawnRateStatus">--</span></p>
+                        <button id="researchLifeSpawnRateButton">研究する</button>
+                    </div>
+                    <div class="research-item">
+                        <p>進化加速 (進化速度+100%) (コスト: 300 TP)</p>
+                        <p>状態: <span id="researchEvolutionSpeedStatus">--</span></p>
+                        <button id="researchEvolutionSpeedButton">研究する</button>
                     </div>
                 </div>
               </div>
@@ -310,8 +330,9 @@
     <div id="stats-log-container">
       <!-- タブボタン -->
       <div id="stats-log-tabs">
-        <button id="stats-tab-button" class="stats-log-tab active">統計</button>
+        <button id="stats-tab-button" class="stats-log-tab">統計</button>
         <button id="log-tab-button" class="stats-log-tab">ログ</button>
+        <button id="achievements-tab-button" class="stats-log-tab">実績</button>
         <span id="stats-log-toggle-icon">▲</span>
       </div>
       
@@ -346,6 +367,20 @@
       <div id="timeline-log-panel">
         <div id="timeline-log-content">
           <div id="timeline-log-entries"></div>
+        </div>
+      </div>
+      
+      <!-- 実績パネル -->
+      <div id="achievements-panel">
+        <div id="achievements-content">
+          <div id="achievements-summary">
+            <h3>実績進捗</h3>
+            <p>達成済み: <span id="achievements-completed">0</span> / <span id="achievements-total">0</span></p>
+            <div id="achievements-progress-bar">
+              <div id="achievements-progress-fill"></div>
+            </div>
+          </div>
+          <div id="achievements-list"></div>
         </div>
       </div>
     </div>

@@ -11,6 +11,7 @@ import { GALAXY_BOUNDARY } from './js/constants.js';
 import { mathCache } from './js/utils.js';
 import { setupEventListeners, keys } from './js/events.js';
 import { soundManager } from './js/sound.js';
+import { checkAchievements } from './js/achievements.js';
 
 const moveSpeed = 200;
 
@@ -127,13 +128,45 @@ function animate() {
                         case 'intelligent':
                             organicRate = 1.0; biomassRate = 0.5; populationGrowthRate = 0.5;
                             intelligentLifeCount++;
-                            let thoughtPointRate = (((body.userData as PlanetUserData).population || 0) / 1000000) * (1 + gameState.cosmicActivity / 10000);
+                            // 思考ポイント生成の段階化: 収穫逓減を実装
+                            const population = (body.userData as PlanetUserData).population || 0;
+                            const baseRate = population / 1000000;
+                            // 収穫逓減: 人口が多いほど効率が下がる
+                            const diminishingFactor = 1 / (1 + Math.log(Math.max(population / 1000000, 1)) / 10);
+                            const adjustedRate = baseRate * diminishingFactor;
+                            let thoughtPointRate = adjustedRate * (1 + gameState.cosmicActivity / 10000);
                             gameState.thoughtPoints += thoughtPointRate * deltaTime;
                             break;
                     }
-                    gameState.organicMatter += organicRate * deltaTime;
-                    gameState.biomass += biomassRate * deltaTime;
-                    (body.userData as PlanetUserData).population = ((body.userData as PlanetUserData).population || 0) + ((body.userData as PlanetUserData).population || 0) * populationGrowthRate * deltaTime;
+                    let finalOrganicRate = organicRate;
+                    let finalBiomassRate = biomassRate;
+                    
+                    // リソース倍増研究の効果
+                    if (gameState.researchResourceMultiplier) {
+                        finalOrganicRate *= 2;
+                        finalBiomassRate *= 2;
+                    }
+                    
+                    gameState.organicMatter += finalOrganicRate * deltaTime;
+                    gameState.biomass += finalBiomassRate * deltaTime;
+                    // 人口増加率の調整: 指数関数的→対数関数的に変更
+                    const currentPopulation = (body.userData as PlanetUserData).population || 0;
+                    const habitability = (body.userData as PlanetUserData).habitability || 50;
+                    const populationCap = habitability * 1000000; // 居住可能性に基づく人口上限
+                    
+                    // 対数関数的な増加（人口が多いほど増加率が減少）
+                    // 人口上限に近づくほど増加率が減少するロジスティック成長
+                    const populationRatio = currentPopulation / populationCap;
+                    const logGrowthFactor = Math.max(0.1, 1 - populationRatio); // 最低10%の増加率を保持
+                    let adjustedGrowthRate = populationGrowthRate * logGrowthFactor;
+                    
+                    // 人口効率化研究の効果
+                    if (gameState.researchPopulationEfficiency) {
+                        adjustedGrowthRate *= 1.5;
+                    }
+                    
+                    const newPopulation = currentPopulation + currentPopulation * adjustedGrowthRate * deltaTime;
+                    (body.userData as PlanetUserData).population = Math.min(newPopulation, populationCap);
                 }
                 break;
         }
@@ -142,6 +175,12 @@ function animate() {
     gameState.cachedTotalPopulation = totalPopulation;
 
     if (gameState.researchAdvancedEnergy) energyRate *= 2;
+    
+    // リソース倍増研究の効果
+    if (gameState.researchResourceMultiplier) {
+        dustRate *= 2;
+        energyRate *= 2;
+    }
     
     gameState.currentDustRate = dustRate;
 
@@ -191,6 +230,8 @@ function animate() {
     uiUpdateTimer += deltaTime;
     if (uiUpdateTimer >= uiUpdateInterval) {
         updateUI();
+        console.log(`[DEBUG] About to call checkAchievements from animation loop`);
+        checkAchievements(); // 実績チェックをUIアップデート時に実行
         uiUpdateTimer = 0;
     }
     
@@ -204,8 +245,13 @@ function animate() {
 }
 
 function init() {
+    console.log(`[DEBUG] init() started at ${new Date().toISOString()}`);
     createStarfield();
+    console.log(`[DEBUG] Setting isInitializing = true`);
+    gameState.isInitializing = true;
+    console.log(`[DEBUG] Loading game...`);
     loadGame();
+    console.log(`[DEBUG] Game loaded. Stars count: ${gameState.stars.length}`);
 
     const blackHoleExists = gameState.stars.some(star => star.userData.type === 'black_hole');
     if (!blackHoleExists) {
@@ -220,6 +266,31 @@ function init() {
         scene.add(blackHole);
     }
 
+    // 新規ゲームの場合、初期恒星を1つ付与
+    const hasStars = gameState.stars.some(star => star.userData.type === 'star');
+    if (!hasStars && gameState.gameYear === 0) {
+        const initialStar = createCelestialBody('star', {
+            name: 'Starter Star',
+            mass: 100,
+            radius: 10,
+            position: new THREE.Vector3(1500, 0, 0), // ブラックホール(半径500)から十分離れた位置
+            velocity: new THREE.Vector3(0, 0, 20)
+        });
+        gameState.stars.push(initialStar);
+        scene.add(initialStar);
+        
+        // 初期恒星作成後、「最初の恒星」実績を未完了にリセット
+        const firstStarAchievement = gameState.achievements.find(a => a.id === 'first_star');
+        if (firstStarAchievement) {
+            firstStarAchievement.isCompleted = false;
+            firstStarAchievement.progress = 0;
+            firstStarAchievement.unlockedAt = undefined;
+        }
+        
+        // 恒星の研究は自動的に解除しない（研究可能なまま残す）
+        // gameState.unlockedCelestialBodies.star = true;
+    }
+
     const blackHole = gameState.stars.find(s => s.userData.type === 'black_hole');
     if (blackHole) {
         gameState.focusedObject = blackHole;
@@ -227,6 +298,7 @@ function init() {
 
     // サウンドシステムの初期化（ユーザーインタラクション後）
     const initSound = async () => {
+        console.log(`[DEBUG] Initializing sound system`);
         await soundManager.init();
         // カメラ位置に基づいてリスナー位置を更新
         soundManager.updateListenerPosition(camera.position, {
@@ -237,8 +309,11 @@ function init() {
     // 最初のクリックでサウンドを初期化
     document.addEventListener('click', initSound, { once: true });
     document.addEventListener('keydown', initSound, { once: true });
+    
+    console.log(`[DEBUG] Sound event listeners added`);
 
     setupEventListeners();
+    gameState.isInitializing = false;
     animate();
 }
 
