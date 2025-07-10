@@ -3,6 +3,7 @@ import { gameState, GameState, CelestialBody, PlanetUserData } from './state.js'
 import { removeAndDispose, celestialObjectPools } from './utils.js';
 import { createCelestialBody } from './celestialBody.js';
 import { scene } from './threeSetup.js';
+import { conversionEngine } from './conversionEngine.js';
 
 export function saveGame() {
     const savableStars = gameState.stars.map(star => {
@@ -32,6 +33,16 @@ export function saveGame() {
         savableState.focusedObjectUUID = savableState.focusedObject.uuid;
     }
     delete savableState.focusedObject;
+    
+    // Convert Sets to Arrays for serialization
+    savableState.discoveredTechnologies = Array.from(gameState.discoveredTechnologies);
+    savableState.availableFacilities = Array.from(gameState.availableFacilities);
+    
+    // Save conversion engine state
+    savableState.conversionEngineState = conversionEngine.saveState();
+    
+    // Update save version for new resource system
+    savableState.saveVersion = '2.0-resource-system';
 
     localStorage.setItem('cosmicGardenerState', JSON.stringify(savableState));
 }
@@ -48,14 +59,38 @@ export function loadGame() {
         return;
     }
 
-    if (parsedState.saveVersion !== gameState.saveVersion) {
+    // Handle save version migration
+    if (parsedState.saveVersion === '1.6-accumulator' && gameState.saveVersion === '2.0-resource-system') {
+        // Migrate from old version to new version
+        parsedState.resources = {
+            cosmicDust: parsedState.cosmicDust || 0,
+            energy: parsedState.energy || 0,
+            organicMatter: parsedState.organicMatter || 0,
+            biomass: parsedState.biomass || 0,
+            darkMatter: parsedState.darkMatter || 0,
+            thoughtPoints: parsedState.thoughtPoints || 0
+        };
+        parsedState.advancedResources = {};
+        parsedState.discoveredTechnologies = [];
+        parsedState.availableFacilities = ['basic_converter'];
+        parsedState.saveVersion = '2.0-resource-system';
+    } else if (parsedState.saveVersion !== '2.0-resource-system') {
         console.warn(`Save version mismatch. Discarding save.`);
         localStorage.removeItem('cosmicGardenerState');
         return;
     }
 
-    const { stars, focusedObjectUUID, ...restOfState } = parsedState;
+    const { stars, focusedObjectUUID, discoveredTechnologies, availableFacilities, conversionEngineState, ...restOfState } = parsedState;
     Object.assign(gameState, restOfState);
+    
+    // Restore Sets from Arrays
+    gameState.discoveredTechnologies = new Set(discoveredTechnologies || []);
+    gameState.availableFacilities = new Set(availableFacilities || ['basic_converter']);
+    
+    // Restore conversion engine state
+    if (conversionEngineState) {
+        conversionEngine.loadState(conversionEngineState);
+    }
     
     gameState.focusedObject = null;
 

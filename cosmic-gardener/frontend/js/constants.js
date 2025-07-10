@@ -1,0 +1,1 @@
+export const GALAXY_BOUNDARY = 15000; // 銀河の境界

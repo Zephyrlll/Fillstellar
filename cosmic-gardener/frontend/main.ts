@@ -12,6 +12,9 @@ import { mathCache } from './js/utils.js';
 import { setupEventListeners, keys } from './js/events.js';
 import { soundManager } from './js/sound.js';
 import { createWebSocketClient } from './js/websocket.js';
+import { conversionEngine } from './js/conversionEngine.js';
+import { initProductionUI, updateProductionUI } from './js/productionUI.js';
+import { resourceParticleSystem } from './js/resourceParticles.js';
 
 const moveSpeed = 200;
 
@@ -133,10 +136,13 @@ function animate() {
                             intelligentLifeCount++;
                             let thoughtPointRate = (((body.userData as PlanetUserData).population || 0) / 1000000) * (1 + gameState.cosmicActivity / 10000);
                             gameState.thoughtPoints += thoughtPointRate * deltaTime;
+                            gameState.resources.thoughtPoints += thoughtPointRate * deltaTime;
                             break;
                     }
                     gameState.organicMatter += organicRate * deltaTime;
+                    gameState.resources.organicMatter += organicRate * deltaTime;
                     gameState.biomass += biomassRate * deltaTime;
+                    gameState.resources.biomass += biomassRate * deltaTime;
                     (body.userData as PlanetUserData).population = ((body.userData as PlanetUserData).population || 0) + ((body.userData as PlanetUserData).population || 0) * populationGrowthRate * deltaTime;
                 }
                 break;
@@ -157,13 +163,21 @@ function animate() {
     if (gameState.resourceAccumulators.cosmicDust >= 1) {
         const dustToAdd = Math.floor(gameState.resourceAccumulators.cosmicDust);
         gameState.cosmicDust += dustToAdd;
+        gameState.resources.cosmicDust += dustToAdd;
         gameState.resourceAccumulators.cosmicDust -= dustToAdd;
     }
     if (gameState.resourceAccumulators.energy >= 1) {
         const energyToAdd = Math.floor(gameState.resourceAccumulators.energy);
         gameState.energy += energyToAdd;
+        gameState.resources.energy += energyToAdd;
         gameState.resourceAccumulators.energy -= energyToAdd;
     }
+    
+    // Update conversion engine
+    conversionEngine.update();
+    
+    // Update resource particle effects
+    resourceParticleSystem.update(deltaTime);
 
     if (keys.w) camera.position.z -= moveSpeed * animationDeltaTime;
     if (keys.s) camera.position.z += moveSpeed * animationDeltaTime;
@@ -195,6 +209,7 @@ function animate() {
     uiUpdateTimer += deltaTime;
     if (uiUpdateTimer >= uiUpdateInterval) {
         updateUI();
+        updateProductionUI();
         uiUpdateTimer = 0;
     }
     
@@ -210,6 +225,9 @@ function animate() {
 function init() {
     createStarfield();
     loadGame();
+    
+    // Initialize production UI
+    initProductionUI();
 
     const blackHoleExists = gameState.stars.some(star => star.userData.type === 'black_hole');
     if (!blackHoleExists) {

@@ -5,6 +5,14 @@ import { gameState } from './state.js';
 
 export const starGeometry = new THREE.SphereGeometry(1, 32, 32);
 
+export function formatNumber(num: number): string {
+    const value = (typeof num === 'number' && isFinite(num)) ? num : 0;
+    if (value >= 1000000000) return (value / 1000000000).toFixed(1) + 'B';
+    if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M';
+    if (value >= 1000) return (value / 1000).toFixed(1) + 'K';
+    return Math.floor(value).toString();
+}
+
 export const vector3Pool = {
     pool: [] as THREE.Vector3[],
     get(): THREE.Vector3 {

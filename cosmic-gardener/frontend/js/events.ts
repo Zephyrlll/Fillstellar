@@ -105,6 +105,11 @@ export function setupEventListeners() {
         soundManager.playUISound('tab');
         switchTab('research');
     });
+    if (ui.productionTabButton) ui.productionTabButton.addEventListener('click', () => {
+        console.log('🎯 Production tab clicked!');
+        soundManager.playUISound('tab');
+        switchTab('production');
+    });
     if (ui.optionsTabButton) ui.optionsTabButton.addEventListener('click', () => {
         soundManager.playUISound('tab');
         switchTab('options');
@@ -196,6 +201,7 @@ export function setupEventListeners() {
             }
 
             gameState.cosmicDust -= cost;
+            gameState.resources.cosmicDust -= cost;
             const parentRadius = (focusedObject.children[0] ? (focusedObject.children[0] as THREE.Mesh).scale.x : (focusedObject as THREE.Mesh).scale.x) || 1;
             const orbitalRadius = parentRadius + 20 + Math.random() * (parentRadius * 5);
             const angle = Math.random() * Math.PI * 2;
@@ -282,6 +288,7 @@ export function setupEventListeners() {
         const name = starName || `恒星-${gameState.stars.filter(s => s.userData.type === 'star').length + 1}`;
         
         gameState.cosmicDust -= cost;
+        gameState.resources.cosmicDust -= cost;
         const radius = 5000 + Math.random() * 10000;
         const angle = Math.random() * Math.PI * 2;
         const position = new THREE.Vector3(radius * Math.cos(angle), (Math.random() - 0.5) * 100, radius * Math.sin(angle));
@@ -378,6 +385,7 @@ export function setupEventListeners() {
                 const cost = mathCache.getDustUpgradeCost();
                 if (gameState.energy >= cost) {
                     gameState.energy -= cost;
+                    gameState.resources.energy -= cost;
                     gameState.dustUpgradeLevel++;
                     updateUI();
                     saveGame();
@@ -415,8 +423,10 @@ export function setupEventListeners() {
                 const cost = mathCache.getConverterCost();
                 if (gameState.energy >= cost) {
                     gameState.energy -= cost;
+                    gameState.resources.energy -= cost;
                     gameState.darkMatterConverterLevel++;
                     gameState.darkMatter++;
+                    gameState.resources.darkMatter++;
                     updateUI();
                     saveGame();
                     soundManager.playUISound('success');
@@ -448,6 +458,7 @@ export function setupEventListeners() {
         ui.researchEnhancedDustButton.addEventListener('click', () => {
             if (gameState.darkMatter >= 1 && !gameState.researchEnhancedDust) {
                 gameState.darkMatter -= 1;
+                gameState.resources.darkMatter -= 1;
                 gameState.researchEnhancedDust = true;
                 updateUI();
                 saveGame();
@@ -459,6 +470,7 @@ export function setupEventListeners() {
         ui.researchAdvancedEnergyButton.addEventListener('click', () => {
             if (gameState.darkMatter >= 2 && !gameState.researchAdvancedEnergy) {
                 gameState.darkMatter -= 2;
+                gameState.resources.darkMatter -= 2;
                 gameState.researchAdvancedEnergy = true;
                 updateUI();
                 saveGame();
@@ -470,6 +482,7 @@ export function setupEventListeners() {
         ui.researchMoonButton.addEventListener('click', () => {
             if (gameState.darkMatter >= 1 && !gameState.unlockedCelestialBodies.moon) {
                 gameState.darkMatter -= 1;
+                gameState.resources.darkMatter -= 1;
                 gameState.unlockedCelestialBodies.moon = true;
                 updateUI();
                 saveGame();
@@ -481,6 +494,7 @@ export function setupEventListeners() {
         ui.researchDwarfPlanetButton.addEventListener('click', () => {
             if (gameState.darkMatter >= 2 && !gameState.unlockedCelestialBodies.dwarfPlanet) {
                 gameState.darkMatter -= 2;
+                gameState.resources.darkMatter -= 2;
                 gameState.unlockedCelestialBodies.dwarfPlanet = true;
                 updateUI();
                 saveGame();
@@ -492,6 +506,7 @@ export function setupEventListeners() {
         ui.researchPlanetButton.addEventListener('click', () => {
             if (gameState.darkMatter >= 3 && !gameState.unlockedCelestialBodies.planet) {
                 gameState.darkMatter -= 3;
+                gameState.resources.darkMatter -= 3;
                 gameState.unlockedCelestialBodies.planet = true;
                 updateUI();
                 saveGame();
@@ -504,6 +519,7 @@ export function setupEventListeners() {
             const cost = 5;
             if (gameState.darkMatter >= cost && !gameState.unlockedCelestialBodies.star) {
                 gameState.darkMatter -= cost;
+                gameState.resources.darkMatter -= cost;
                 gameState.unlockedCelestialBodies.star = true;
                 updateUI();
                 saveGame();
@@ -538,8 +554,17 @@ export function setupEventListeners() {
     if (ui.addAllResourcesButton) {
         ui.addAllResourcesButton.addEventListener('click', () => {
             gameState.cosmicDust += 100000000;
+            gameState.resources.cosmicDust += 100000000;
             gameState.energy += 1000000;
+            gameState.resources.energy += 1000000;
             gameState.darkMatter += 10;
+            gameState.resources.darkMatter += 10;
+            gameState.organicMatter += 10000;
+            gameState.resources.organicMatter += 10000;
+            gameState.biomass += 5000;
+            gameState.resources.biomass += 5000;
+            gameState.thoughtPoints += 1000;
+            gameState.resources.thoughtPoints += 1000;
             updateUI();
             showMessage('全リソースを追加しました。');
         });

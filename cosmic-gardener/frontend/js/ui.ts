@@ -1,6 +1,7 @@
 
 import { gameState, CelestialBody, StarUserData, PlanetUserData } from './state.js';
 import { mathCache } from './utils.js';
+import { updateProductionUI } from './productionUI.js';
 
 let messageTimeout: any;
 
@@ -88,8 +89,10 @@ export const ui: { [key: string]: HTMLElement | null } = {
     researchScreen: document.getElementById('research-screen'),
     optionsScreen: document.getElementById('options-screen'),
     starManagementScreen: document.getElementById('star-management-screen'),
+    productionScreen: document.getElementById('production-screen'),
     gameTabButton: document.getElementById('gameTabButton'),
     researchTabButton: document.getElementById('researchTabButton'),
+    productionTabButton: document.getElementById('productionTabButton'),
     optionsTabButton: document.getElementById('optionsTabButton'),
     starManagementTabButton: document.getElementById('starManagementTabButton'),
     closeOptionsButton: document.getElementById('closeOptionsButton'),
@@ -316,12 +319,16 @@ export function updateUI() {
 }
 
 export function switchTab(activeTab: string) {
+    console.log('📑 Switching to tab:', activeTab);
+    
     if (ui.gameScreen) ui.gameScreen.classList.add('hidden-screen');
     if (ui.researchScreen) ui.researchScreen.classList.add('hidden-screen');
+    if (ui.productionScreen) ui.productionScreen.classList.add('hidden-screen');
     if (ui.optionsScreen) ui.optionsScreen.classList.add('hidden-screen');
     if (ui.starManagementScreen) ui.starManagementScreen.classList.add('hidden-screen');
     if (ui.gameTabButton) ui.gameTabButton.classList.remove('active-tab');
     if (ui.researchTabButton) ui.researchTabButton.classList.remove('active-tab');
+    if (ui.productionTabButton) ui.productionTabButton.classList.remove('active-tab');
     if (ui.optionsTabButton) ui.optionsTabButton.classList.remove('active-tab');
     if (ui.starManagementTabButton) ui.starManagementTabButton.classList.remove('active-tab');
 
@@ -331,6 +338,10 @@ export function switchTab(activeTab: string) {
     } else if (activeTab === 'research') {
         if (ui.researchScreen) ui.researchScreen.classList.remove('hidden-screen');
         if (ui.researchTabButton) ui.researchTabButton.classList.add('active-tab');
+    } else if (activeTab === 'production') {
+        if (ui.productionScreen) ui.productionScreen.classList.remove('hidden-screen');
+        if (ui.productionTabButton) ui.productionTabButton.classList.add('active-tab');
+        updateProductionUI(true);
     } else if (activeTab === 'options') {
         if (ui.optionsScreen) ui.optionsScreen.classList.remove('hidden-screen');
         if (ui.optionsTabButton) ui.optionsTabButton.classList.add('active-tab');

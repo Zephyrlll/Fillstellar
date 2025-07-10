@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { ResourceStorage } from './resourceSystem.js';
 
 // --- Type Definitions ---
 
@@ -142,6 +143,19 @@ export interface GameState {
     statistics: StatisticsState;
     cachedTotalPopulation?: number;
     currentDustRate?: number;
+    // New resource system
+    resources: {
+        cosmicDust: number;
+        energy: number;
+        organicMatter: number;
+        biomass: number;
+        darkMatter: number;
+        thoughtPoints: number;
+    };
+    advancedResources?: ResourceStorage;
+    discoveredTechnologies: Set<string>;
+    availableFacilities: Set<string>;
+    conversionEngineState?: any;
 }
 
 // --- Game State Initialization ---
@@ -193,7 +207,7 @@ export const gameState: GameState = {
     currentTimeMultiplier: '1x',
     timeMultiplierCosts: { '2x': 500, '5x': 2000, '10x': 5000 },
     isMapVisible: true,
-    saveVersion: '1.6-accumulator',
+    saveVersion: '2.0-resource-system',
     focusedObject: null,
     timelineLog: [],
     maxLogEntries: 100,
@@ -220,5 +234,17 @@ export const gameState: GameState = {
         },
         lastUpdate: Date.now(),
         maxHistoryPoints: 60
-    }
+    },
+    // New resource system
+    resources: {
+        cosmicDust: 150000,
+        energy: 0,
+        organicMatter: 0,
+        biomass: 0,
+        darkMatter: 0,
+        thoughtPoints: 0
+    },
+    advancedResources: {},
+    discoveredTechnologies: new Set<string>(),
+    availableFacilities: new Set<string>(['basic_converter'])
 };

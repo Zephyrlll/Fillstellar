@@ -1,9 +1,10 @@
 <!DOCTYPE html>
+<!-- 🚀 Updated version with Production System 2024-07-10 -->
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cosmic Gardener</title>
+    <title>Cosmic Gardener - Production System Update</title>
     <link rel="stylesheet" href="style.css">
     <link rel="icon" href="favicon.png">
     <script type="importmap">
@@ -19,6 +20,10 @@
     </script>
 </head>
 <body>
+<script>
+    console.log('🌟 Cosmic Gardener with Production System loaded!');
+    console.log('📅 Version: 2024-07-10');
+</script>
 
   <!-- 上部中央の情報表示 -->
   <div id="info-container">
@@ -64,6 +69,7 @@
       <div id="tab-buttons">
         <button id="gameTabButton" class="active-tab">ゲーム</button>
         <button id="researchTabButton">研究</button>
+        <button id="productionTabButton">生産</button>
         <button id="optionsTabButton">オプション</button>
         <button id="starManagementTabButton">恒星管理</button>
       </div>
@@ -164,6 +170,53 @@
                 <p>恒星発生論 (恒星アンロック) (コスト: <span id="researchStarCost">5</span> DM)</p>
                 <p>状態: <span id="researchStarStatus"></span></p>
                 <button id="researchStarButton">研究する</button>
+            </div>
+        </div>
+      </div>
+
+      <!-- 生産タブ -->
+      <div id="production-screen" class="hidden-screen">
+        <div id="ui-panel-production">
+            <h1>資源生産</h1>
+            
+            <!-- 高度な資源在庫 -->
+            <div class="collapsible-section">
+              <div class="collapsible-header active" id="advancedResourcesHeader">高度な資源</div>
+              <div class="collapsible-content active" id="advancedResourcesContent">
+                <div id="advanced-resources-display">
+                  <!-- Dynamically populated -->
+                </div>
+              </div>
+            </div>
+            
+            <!-- 変換レシピ -->
+            <div class="collapsible-section">
+              <div class="collapsible-header active" id="conversionRecipesHeader">変換レシピ</div>
+              <div class="collapsible-content active" id="conversionRecipesContent">
+                <div id="conversion-recipes-list">
+                  <!-- Dynamically populated -->
+                </div>
+              </div>
+            </div>
+            
+            <!-- アクティブな変換 -->
+            <div class="collapsible-section">
+              <div class="collapsible-header" id="activeConversionsHeader">アクティブな変換</div>
+              <div class="collapsible-content" id="activeConversionsContent">
+                <div id="active-conversions-list">
+                  <!-- Dynamically populated -->
+                </div>
+              </div>
+            </div>
+            
+            <!-- 生産施設 -->
+            <div class="collapsible-section">
+              <div class="collapsible-header" id="productionFacilitiesHeader">生産施設</div>
+              <div class="collapsible-content" id="productionFacilitiesContent">
+                <div id="production-facilities-list">
+                  <!-- Dynamically populated -->
+                </div>
+              </div>
             </div>
         </div>
       </div>
