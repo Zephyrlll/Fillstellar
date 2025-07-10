@@ -1,9 +1,0 @@
-C:\AIagent\Space_Idle_Game\cosmic-gardener\backend\target\debug\deps\validator_derive-04897006753f90fe.d: C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\validator_derive-0.16.0\src\lib.rs C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\validator_derive-0.16.0\src\asserts.rs C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\validator_derive-0.16.0\src\lit.rs C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\validator_derive-0.16.0\src\quoting.rs C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\validator_derive-0.16.0\src\validation.rs
-
-C:\AIagent\Space_Idle_Game\cosmic-gardener\backend\target\debug\deps\validator_derive-04897006753f90fe.dll: C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\validator_derive-0.16.0\src\lib.rs C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\validator_derive-0.16.0\src\asserts.rs C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\validator_derive-0.16.0\src\lit.rs C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\validator_derive-0.16.0\src\quoting.rs C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\validator_derive-0.16.0\src\validation.rs
-
-C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\validator_derive-0.16.0\src\lib.rs:
-C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\validator_derive-0.16.0\src\asserts.rs:
-C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\validator_derive-0.16.0\src\lit.rs:
-C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\validator_derive-0.16.0\src\quoting.rs:
-C:\Users\admin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\validator_derive-0.16.0\src\validation.rs:
