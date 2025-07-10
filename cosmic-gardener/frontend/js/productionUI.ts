@@ -13,6 +13,7 @@ import { conversionEngine } from './conversionEngine.js';
 import { gameState } from './state.js';
 import { formatNumber } from './utils.js';
 import { resourceParticleSystem } from './resourceParticles.js';
+import { isProductionPanelVisible } from './ui.js';
 
 let lastProductionUIUpdate = 0;
 const PRODUCTION_UI_UPDATE_INTERVAL = 100; // 0.1 seconds
@@ -62,6 +63,11 @@ export function initProductionUI(): void {
 }
 
 export function updateProductionUI(force: boolean = false): void {
+    // Only update if panel is visible or force update
+    if (!force && !isProductionPanelVisible()) {
+        return;
+    }
+    
     const now = Date.now();
     if (!force && now - lastProductionUIUpdate < PRODUCTION_UI_UPDATE_INTERVAL) {
         return;

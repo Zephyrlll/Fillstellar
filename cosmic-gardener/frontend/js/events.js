@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { scene, camera, renderer, composer } from './threeSetup.js';
 import { gameState } from './state.js';
-import { ui, switchTab, showMessage, updateUI, debouncedUpdateGalaxyMap } from './ui.js';
+import { ui, switchTab, showMessage, updateUI, debouncedUpdateGalaxyMap, toggleProductionPanel, closeProductionPanel } from './ui.js';
 import { saveGame } from './saveload.js';
 import { createCelestialBody } from './celestialBody.js';
 import { mathCache } from './utils.js';
@@ -101,12 +101,23 @@ export function setupEventListeners() {
             soundManager.playUISound('tab');
             switchTab('research');
         });
-    if (ui.productionTabButton)
-        ui.productionTabButton.addEventListener('click', () => {
-            console.log('🎯 Production tab clicked!');
+    // Production panel toggle button (new slide-out panel)
+    const productionToggleButton = document.getElementById('productionToggleButton');
+    if (productionToggleButton) {
+        productionToggleButton.addEventListener('click', () => {
+            console.log('🎯 Production panel toggle clicked!');
             soundManager.playUISound('tab');
-            switchTab('production');
+            toggleProductionPanel();
         });
+    }
+    // Production panel close button
+    const productionPanelCloseButton = document.getElementById('productionPanelCloseButton');
+    if (productionPanelCloseButton) {
+        productionPanelCloseButton.addEventListener('click', () => {
+            soundManager.playUISound('click');
+            closeProductionPanel();
+        });
+    }
     if (ui.optionsTabButton)
         ui.optionsTabButton.addEventListener('click', () => {
             soundManager.playUISound('tab');

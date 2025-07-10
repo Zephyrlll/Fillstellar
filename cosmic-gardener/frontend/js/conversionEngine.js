@@ -12,7 +12,7 @@ export class ConversionEngine {
         // Initialize with basic facilities
         this.addFacility({
             id: 'basic_converter',
-            name: 'Basic Resource Converter',
+            name: '基本資源コンバーター',
             type: 'converter',
             recipes: ['processed_metal_basic', 'silicon_extraction', 'thermal_generation', 'electric_conversion', 'biomass_cultivation'],
             level: 1,
@@ -138,17 +138,17 @@ export class ConversionEngine {
     startConversion(recipeId, facilityId, manual = false) {
         const recipe = CONVERSION_RECIPES[recipeId];
         if (!recipe) {
-            showMessage('Invalid recipe!', 2000);
+            showMessage('無効なレシピです！', 2000);
             return false;
         }
         // Check if facility is already busy
         if (facilityId && this.isFacilityBusy(facilityId)) {
-            showMessage('Facility is already processing!', 2000);
+            showMessage('施設は既に稼働中です！', 2000);
             return false;
         }
         // Check and consume resources
         if (!this.consumeResources(recipe)) {
-            showMessage('Not enough resources!', 2000);
+            showMessage('資源が不足しています！', 2000);
             return false;
         }
         // Calculate duration based on facility efficiency
@@ -174,8 +174,8 @@ export class ConversionEngine {
             manualConversion: manual
         });
         // Add timeline log
-        addTimelineLog(`Started ${recipe.name} conversion`);
-        showMessage(`Started ${recipe.name}!`, 1500);
+        addTimelineLog(`${recipe.name}の変換を開始しました`);
+        showMessage(`${recipe.name}を開始しました！`, 1500);
         return true;
     }
     // Check if a facility is currently processing
@@ -234,8 +234,8 @@ export class ConversionEngine {
             // Remove from active conversions
             this.activeConversions.delete(id);
             // Add completion log
-            addTimelineLog(`Completed ${recipe.name} conversion`);
-            showMessage(`${recipe.name} complete!`, 1500);
+            addTimelineLog(`${recipe.name}の変換が完了しました`);
+            showMessage(`${recipe.name}が完了しました！`, 1500);
         });
         this.lastUpdate = now;
     }

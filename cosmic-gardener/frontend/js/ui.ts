@@ -551,3 +551,44 @@ export function debouncedUpdateGalaxyMap() {
         previousGalaxyMapState.blackHolePosition = currentBlackHolePos;
     }
 }
+
+// Production panel management
+let isProductionPanelOpen = false;
+
+export function toggleProductionPanel(): void {
+    const panel = document.getElementById('production-panel');
+    if (!panel) return;
+    
+    if (isProductionPanelOpen) {
+        closeProductionPanel();
+    } else {
+        openProductionPanel();
+    }
+}
+
+export function openProductionPanel(): void {
+    const panel = document.getElementById('production-panel');
+    if (!panel) return;
+    
+    panel.classList.add('active');
+    isProductionPanelOpen = true;
+    
+    // Force update production UI when panel opens
+    updateProductionUI(true);
+    
+    console.log('🏭 Production panel opened');
+}
+
+export function closeProductionPanel(): void {
+    const panel = document.getElementById('production-panel');
+    if (!panel) return;
+    
+    panel.classList.remove('active');
+    isProductionPanelOpen = false;
+    
+    console.log('🏭 Production panel closed');
+}
+
+export function isProductionPanelVisible(): boolean {
+    return isProductionPanelOpen;
+}

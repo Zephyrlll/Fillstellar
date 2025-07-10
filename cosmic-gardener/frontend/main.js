@@ -199,11 +199,9 @@ function animate() {
     }
 }
 function init() {
-    console.log('🎮 Game initializing...');
     createStarfield();
     loadGame();
     // Initialize production UI
-    console.log('🏭 About to initialize production UI...');
     initProductionUI();
     const blackHoleExists = gameState.stars.some(star => star.userData.type === 'black_hole');
     if (!blackHoleExists) {

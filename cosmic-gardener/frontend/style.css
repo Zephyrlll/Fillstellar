@@ -1,5 +1,110 @@
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Noto+Sans+JP:wght@400;700&display=swap');
 
+/* Production Panel Styles */
+.production-panel {
+  position: fixed;
+  top: 0;
+  right: -500px; /* Initially hidden */
+  width: 480px;
+  height: 100vh;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f1419 100%);
+  border-left: 2px solid #4a9eff;
+  box-shadow: -5px 0 25px rgba(0, 0, 0, 0.8);
+  z-index: 1000;
+  transition: right 0.3s ease-in-out;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #4a9eff #2a2a3e;
+}
+
+.production-panel::-webkit-scrollbar {
+  width: 8px;
+}
+
+.production-panel::-webkit-scrollbar-track {
+  background: #2a2a3e;
+}
+
+.production-panel::-webkit-scrollbar-thumb {
+  background: #4a9eff;
+  border-radius: 4px;
+}
+
+.production-panel.active {
+  right: 0;
+}
+
+.production-panel-header {
+  position: sticky;
+  top: 0;
+  background: rgba(26, 26, 46, 0.95);
+  padding: 15px 20px;
+  border-bottom: 1px solid #4a9eff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  backdrop-filter: blur(10px);
+  z-index: 1001;
+}
+
+.production-panel-header h1 {
+  color: #4a9eff;
+  font-size: 18px;
+  margin: 0;
+  text-shadow: 0 0 8px rgba(74, 158, 255, 0.5);
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: #ff6b6b;
+  font-size: 24px;
+  cursor: pointer;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.close-btn:hover {
+  background: rgba(255, 107, 107, 0.2);
+  transform: scale(1.1);
+}
+
+.production-panel-content {
+  padding: 20px;
+}
+
+.production-toggle-btn {
+  width: 100%;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #4a9eff 0%, #3d7bd6 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: 10px;
+  box-shadow: 0 4px 15px rgba(74, 158, 255, 0.3);
+}
+
+.production-toggle-btn:hover {
+  background: linear-gradient(135deg, #5ba6ff 0%, #4a8de8 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(74, 158, 255, 0.4);
+}
+
+#production-toggle-section {
+  padding: 10px 0;
+  border-top: 1px solid #333;
+  margin-top: 10px;
+}
+
 html, body {
   height: 100%;
   margin: 0;

@@ -69,9 +69,15 @@
       <div id="tab-buttons">
         <button id="gameTabButton" class="active-tab">ゲーム</button>
         <button id="researchTabButton">研究</button>
-        <button id="productionTabButton">生産</button>
         <button id="optionsTabButton">オプション</button>
         <button id="starManagementTabButton">恒星管理</button>
+      </div>
+      
+      <!-- 生産パネル切り替えボタン -->
+      <div id="production-toggle-section">
+        <button id="productionToggleButton" class="production-toggle-btn">
+          🏭 生産パネル
+        </button>
       </div>
 
       <!-- ゲームタブ -->
@@ -174,52 +180,6 @@
         </div>
       </div>
 
-      <!-- 生産タブ -->
-      <div id="production-screen" class="hidden-screen">
-        <div id="ui-panel-production">
-            <h1>資源生産</h1>
-            
-            <!-- 高度な資源在庫 -->
-            <div class="collapsible-section">
-              <div class="collapsible-header active" id="advancedResourcesHeader">高度な資源</div>
-              <div class="collapsible-content active" id="advancedResourcesContent">
-                <div id="advanced-resources-display">
-                  <!-- Dynamically populated -->
-                </div>
-              </div>
-            </div>
-            
-            <!-- 変換レシピ -->
-            <div class="collapsible-section">
-              <div class="collapsible-header active" id="conversionRecipesHeader">変換レシピ</div>
-              <div class="collapsible-content active" id="conversionRecipesContent">
-                <div id="conversion-recipes-list">
-                  <!-- Dynamically populated -->
-                </div>
-              </div>
-            </div>
-            
-            <!-- アクティブな変換 -->
-            <div class="collapsible-section">
-              <div class="collapsible-header" id="activeConversionsHeader">アクティブな変換</div>
-              <div class="collapsible-content" id="activeConversionsContent">
-                <div id="active-conversions-list">
-                  <!-- Dynamically populated -->
-                </div>
-              </div>
-            </div>
-            
-            <!-- 生産施設 -->
-            <div class="collapsible-section">
-              <div class="collapsible-header" id="productionFacilitiesHeader">生産施設</div>
-              <div class="collapsible-content" id="productionFacilitiesContent">
-                <div id="production-facilities-list">
-                  <!-- Dynamically populated -->
-                </div>
-              </div>
-            </div>
-        </div>
-      </div>
 
       <!-- オプションタブ -->
       <div id="options-screen" class="hidden-screen">
@@ -404,8 +364,77 @@
     </div>
   </div>
 
+  <!-- 生産パネル（スライドアウト） -->
+  <div id="production-panel" class="production-panel">
+    <div class="production-panel-header">
+      <h1>🏭 資源生産システム</h1>
+      <button id="productionPanelCloseButton" class="close-btn">×</button>
+    </div>
+    
+    <div class="production-panel-content">
+      <!-- 高度な資源在庫 -->
+      <div class="collapsible-section">
+        <div class="collapsible-header active" id="advancedResourcesHeader">高度な資源</div>
+        <div class="collapsible-content active" id="advancedResourcesContent">
+          <div id="advanced-resources-display">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+      </div>
+      
+      <!-- 変換レシピ -->
+      <div class="collapsible-section">
+        <div class="collapsible-header active" id="conversionRecipesHeader">変換レシピ</div>
+        <div class="collapsible-content active" id="conversionRecipesContent">
+          <div id="conversion-recipes-list">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+      </div>
+      
+      <!-- アクティブな変換 -->
+      <div class="collapsible-section">
+        <div class="collapsible-header" id="activeConversionsHeader">アクティブな変換</div>
+        <div class="collapsible-content" id="activeConversionsContent">
+          <div id="active-conversions-list">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+      </div>
+      
+      <!-- 生産施設 -->
+      <div class="collapsible-section">
+        <div class="collapsible-header" id="productionFacilitiesHeader">生産施設</div>
+        <div class="collapsible-content" id="productionFacilitiesContent">
+          <div id="production-facilities-list">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script type="module" src="dist/main.js"></script>
   <script>
+    // Quick debug: Direct panel test
+    document.addEventListener('DOMContentLoaded', () => {
+        console.log('🔧 DOM loaded, checking production panel...');
+        
+        const productionButton = document.getElementById('productionToggleButton');
+        const productionPanel = document.getElementById('production-panel');
+        
+        console.log('🔧 Button:', !!productionButton);
+        console.log('🔧 Panel:', !!productionPanel);
+        
+        if (productionButton && productionPanel) {
+            productionButton.addEventListener('click', () => {
+                console.log('🔧 Button clicked!');
+                productionPanel.classList.toggle('active');
+                console.log('🔧 Panel classes:', productionPanel.className);
+            });
+        }
+    });
+    
     document.addEventListener('DOMContentLoaded', () => {
         const iconMap = {
             'cosmicDust': 'icon/宇宙の塵.JPG',

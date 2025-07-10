@@ -1,9 +1,6 @@
 import { gameState } from './state.js';
 import { mathCache } from './utils.js';
 import { updateProductionUI } from './productionUI.js';
-
-console.log('📋 UI.js loading...');
-
 let messageTimeout;
 const previousUIValues = {
     gameYear: -1,
@@ -116,13 +113,6 @@ export const ui = {
     graphicsQualitySelect: document.getElementById('graphicsQualitySelect'),
     unitSystemSelect: document.getElementById('unitSystemSelect'),
 };
-
-console.log('🔍 UI elements initialized:', {
-    productionTabButton: !!ui.productionTabButton,
-    productionScreen: !!ui.productionScreen,
-    gameTabButton: !!ui.gameTabButton
-});
-
 function updateFocusedBodyUI() {
     const focusedBody = gameState.focusedObject;
     if (previousUIValues.focusedBody === focusedBody) {
@@ -617,4 +607,38 @@ export function debouncedUpdateGalaxyMap() {
         previousUIValues.isMapVisible = currentIsMapVisible;
         previousGalaxyMapState.blackHolePosition = currentBlackHolePos;
     }
+}
+// Production panel management
+let isProductionPanelOpen = false;
+export function toggleProductionPanel() {
+    const panel = document.getElementById('production-panel');
+    if (!panel)
+        return;
+    if (isProductionPanelOpen) {
+        closeProductionPanel();
+    }
+    else {
+        openProductionPanel();
+    }
+}
+export function openProductionPanel() {
+    const panel = document.getElementById('production-panel');
+    if (!panel)
+        return;
+    panel.classList.add('active');
+    isProductionPanelOpen = true;
+    // Force update production UI when panel opens
+    updateProductionUI(true);
+    console.log('🏭 Production panel opened');
+}
+export function closeProductionPanel() {
+    const panel = document.getElementById('production-panel');
+    if (!panel)
+        return;
+    panel.classList.remove('active');
+    isProductionPanelOpen = false;
+    console.log('🏭 Production panel closed');
+}
+export function isProductionPanelVisible() {
+    return isProductionPanelOpen;
 }

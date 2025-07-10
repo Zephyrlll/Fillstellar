@@ -4,8 +4,8 @@ export const CONVERSION_RECIPES = {
     // Basic Metal Processing
     'processed_metal_basic': {
         id: 'processed_metal_basic',
-        name: 'Basic Metal Processing',
-        description: 'Refine cosmic dust into processed metal using energy',
+        name: '基本金属加工',
+        description: 'エネルギーを使って宇宙の塵を加工金属に精製します',
         inputs: {
             resources: [
                 { type: ResourceType.COSMIC_DUST, amount: 100, quality: QualityTier.STANDARD },
@@ -24,8 +24,8 @@ export const CONVERSION_RECIPES = {
     // Silicon Extraction
     'silicon_extraction': {
         id: 'silicon_extraction',
-        name: 'Silicon Extraction',
-        description: 'Extract silicon from cosmic dust',
+        name: 'シリコン抽出',
+        description: '宇宙の塵からシリコンを抽出します',
         inputs: {
             resources: [
                 { type: ResourceType.COSMIC_DUST, amount: 150, quality: QualityTier.STANDARD }
@@ -43,8 +43,8 @@ export const CONVERSION_RECIPES = {
     // Dust Refinement
     'dust_separation': {
         id: 'dust_separation',
-        name: 'Dust Separation',
-        description: 'Separate cosmic dust into specialized components',
+        name: '宇宙塵分離',
+        description: '宇宙の塵を特化した成分に分離します',
         inputs: {
             resources: [
                 { type: ResourceType.COSMIC_DUST, amount: 1000, quality: QualityTier.STANDARD },
@@ -69,8 +69,8 @@ export const CONVERSION_RECIPES = {
     // Energy Conversion
     'thermal_generation': {
         id: 'thermal_generation',
-        name: 'Thermal Generation',
-        description: 'Convert raw energy into thermal energy',
+        name: '熱エネルギー生成',
+        description: '生エネルギーを熱エネルギーに変換します',
         inputs: {
             resources: [
                 { type: ResourceType.ENERGY, amount: 100, quality: QualityTier.STANDARD }
@@ -87,8 +87,8 @@ export const CONVERSION_RECIPES = {
     },
     'electric_conversion': {
         id: 'electric_conversion',
-        name: 'Electric Conversion',
-        description: 'Transform thermal energy into electricity',
+        name: '電気変換',
+        description: '熱エネルギーを電気に変換します',
         inputs: {
             resources: [
                 { type: ResourceType.THERMAL_ENERGY, amount: 100, quality: QualityTier.STANDARD }
@@ -106,8 +106,8 @@ export const CONVERSION_RECIPES = {
     // Organic Processing
     'organic_synthesis': {
         id: 'organic_synthesis',
-        name: 'Organic Synthesis',
-        description: 'Create complex organics from simple compounds',
+        name: '有機合成',
+        description: '単純な化合物から複合有機物を作成します',
         inputs: {
             resources: [
                 { type: ResourceType.CARBON_DUST, amount: 50, quality: QualityTier.STANDARD },
@@ -126,8 +126,8 @@ export const CONVERSION_RECIPES = {
     },
     'enzyme_cultivation': {
         id: 'enzyme_cultivation',
-        name: 'Enzyme Cultivation',
-        description: 'Cultivate enzymes from organic matter',
+        name: '酵素培養',
+        description: '有機物から酵素を培養します',
         inputs: {
             resources: [
                 { type: ResourceType.ORGANIC_MATTER, amount: 200, quality: QualityTier.STANDARD },
@@ -149,8 +149,8 @@ export const CONVERSION_RECIPES = {
     // Biomass Conversion
     'biomass_cultivation': {
         id: 'biomass_cultivation',
-        name: 'Biomass Cultivation',
-        description: 'Grow biomass from organic matter',
+        name: 'バイオマス培養',
+        description: '有機物からバイオマスを培養します',
         inputs: {
             resources: [
                 { type: ResourceType.ORGANIC_MATTER, amount: 100, quality: QualityTier.STANDARD },
@@ -168,8 +168,8 @@ export const CONVERSION_RECIPES = {
     },
     'biomass_evolution': {
         id: 'biomass_evolution',
-        name: 'Biomass Evolution',
-        description: 'Evolve microbial biomass into plant biomass',
+        name: 'バイオマス進化',
+        description: '微生物バイオマスを植物バイオマスに進化させます',
         inputs: {
             resources: [
                 { type: ResourceType.MICROBIAL_BIOMASS, amount: 100, quality: QualityTier.STANDARD },
@@ -191,8 +191,8 @@ export const CONVERSION_RECIPES = {
     // Dark Matter Processing
     'dark_matter_stabilization': {
         id: 'dark_matter_stabilization',
-        name: 'Dark Matter Stabilization',
-        description: 'Stabilize volatile dark matter particles',
+        name: 'ダークマター安定化',
+        description: '不安定なダークマター粒子を安定化します',
         inputs: {
             resources: [
                 { type: ResourceType.DARK_MATTER, amount: 100, quality: QualityTier.STANDARD },
@@ -214,8 +214,8 @@ export const CONVERSION_RECIPES = {
     // Thought Processing
     'thought_refinement': {
         id: 'thought_refinement',
-        name: 'Thought Refinement',
-        description: 'Refine basic thoughts into specialized forms',
+        name: '思考精製',
+        description: '基本思考を特化した形に精製します',
         inputs: {
             resources: [
                 { type: ResourceType.THOUGHT_POINTS, amount: 1000, quality: QualityTier.STANDARD }
@@ -239,8 +239,8 @@ export const CONVERSION_RECIPES = {
     // Advanced Alloy Creation
     'alloy_forging': {
         id: 'alloy_forging',
-        name: 'Alloy Forging',
-        description: 'Forge advanced alloys from processed metals',
+        name: '合金鍛造',
+        description: '加工金属から高度な合金を鍛造します',
         inputs: {
             resources: [
                 { type: ResourceType.PROCESSED_METAL, amount: 50, quality: QualityTier.STANDARD },
@@ -264,8 +264,8 @@ export const CONVERSION_RECIPES = {
     // Quality Enhancement
     'quality_enhancement_metal': {
         id: 'quality_enhancement_metal',
-        name: 'Metal Quality Enhancement',
-        description: 'Enhance the quality of processed metal',
+        name: '金属品質向上',
+        description: '加工金属の品質を向上させます',
         inputs: {
             resources: [
                 { type: ResourceType.PROCESSED_METAL, amount: 100, quality: QualityTier.STANDARD },
@@ -288,8 +288,8 @@ export const CONVERSION_RECIPES = {
     // Energy Fusion
     'nuclear_fusion': {
         id: 'nuclear_fusion',
-        name: 'Nuclear Fusion',
-        description: 'Fuse electric energy into nuclear energy',
+        name: '核融合',
+        description: '電気エネルギーを核エネルギーに融合します',
         inputs: {
             resources: [
                 { type: ResourceType.ELECTRIC_ENERGY, amount: 1000, quality: QualityTier.STANDARD },
@@ -312,8 +312,8 @@ export const CONVERSION_RECIPES = {
     // Genetic Engineering
     'genetic_extraction': {
         id: 'genetic_extraction',
-        name: 'Genetic Extraction',
-        description: 'Extract genetic material from complex organics',
+        name: '遺伝子抜出',
+        description: '複合有機物から遺伝物質を抜出します',
         inputs: {
             resources: [
                 { type: ResourceType.COMPLEX_ORGANICS, amount: 200, quality: QualityTier.STANDARD },
