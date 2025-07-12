@@ -18,6 +18,8 @@ import { resourceParticleSystem } from './js/resourceParticles.js';
 import { productionChainUI } from './js/productionChainUI.js';
 // @ts-ignore
 import { catalystManager, CatalystType } from './dist/js/catalystSystem.js';
+// @ts-ignore
+import { currencyManager } from './dist/js/currencySystem.js';
 
 const moveSpeed = 200;
 
@@ -254,6 +256,14 @@ function init() {
         // @ts-ignore
         gameState.catalystSystemInitialized = true;
     }
+    
+    // Initialize currency system
+    currencyManager.initializeCurrencies();
+    
+    // Debug: Check UI elements
+    console.log('🔧 Checking UI elements after initialization...');
+    console.log('🔧 overlayResourceSellButton:', ui.overlayResourceSellButton);
+    console.log('🔧 All UI keys with overlay:', Object.keys(ui).filter(key => key.includes('overlay')));
 
     const blackHoleExists = gameState.stars.some(star => star.userData.type === 'black_hole');
     if (!blackHoleExists) {
@@ -286,7 +296,16 @@ function init() {
     document.addEventListener('click', initSound, { once: true });
     document.addEventListener('keydown', initSound, { once: true });
 
-    setupEventListeners();
+    // Ensure DOM is fully loaded before setting up event listeners
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('🔧 DOM loaded, setting up event listeners...');
+            setupEventListeners();
+        });
+    } else {
+        console.log('🔧 DOM already loaded, setting up event listeners now...');
+        setupEventListeners();
+    }
     
     // WebSocket接続の初期化
     wsClient = createWebSocketClient();

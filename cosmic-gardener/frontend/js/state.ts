@@ -162,6 +162,12 @@ export interface GameState {
     productionEfficiencyModifier?: number;
     // Catalyst system
     catalystSystemInitialized?: boolean;
+    // Currency system
+    currencies?: {
+        cosmicDustCurrency: number;       // ソフトカレンシー（基本通貨）
+        galacticCredits: number;          // ハードカレンシー
+        ancientRelics: number;            // プレミアム通貨
+    };
 }
 
 // --- Game State Initialization ---

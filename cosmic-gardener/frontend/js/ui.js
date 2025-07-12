@@ -1,6 +1,7 @@
 import { gameState } from './state.js';
 import { mathCache } from './utils.js';
 import { updateProductionUI } from './productionUI.js';
+import { currencyManager, formatCurrency, CurrencyType } from './currencySystem.js';
 let messageTimeout;
 const previousUIValues = {
     gameYear: -1,
@@ -103,6 +104,11 @@ export const ui = {
     overlayThoughtPoints: document.getElementById('overlayThoughtPoints'),
     overlayCosmicActivity: document.getElementById('overlayCosmicActivity'),
     overlayPopulation: document.getElementById('overlayPopulation'),
+    // Overlay currency elements
+    overlayCurrencyCosmicDust: document.getElementById('overlayCurrencyCosmicDust'),
+    overlayCurrencyGalactic: document.getElementById('overlayCurrencyGalactic'),
+    overlayCurrencyAncient: document.getElementById('overlayCurrencyAncient'),
+    overlayResourceSellButton: document.getElementById('overlayResourceSellButton'),
     resetGameButton: document.getElementById('resetGameButton'),
     gravitySlider: document.getElementById('gravitySlider'),
     gravityValue: document.getElementById('gravityValue'),
@@ -375,6 +381,22 @@ export function updateUI() {
     // 総人口の表示
     if (ui.overlayPopulation)
         ui.overlayPopulation.textContent = String(cachedTotalPopulation || 0);
+    
+    // Update overlay currency display
+    const currentCosmicDustCurrency = currencyManager.getCurrency(CurrencyType.COSMIC_DUST_CURRENCY);
+    const currentGalacticCredits = currencyManager.getCurrency(CurrencyType.GALACTIC_CREDITS);
+    const currentAncientRelics = currencyManager.getCurrency(CurrencyType.ANCIENT_RELICS);
+    
+    if (ui.overlayCurrencyCosmicDust) {
+        ui.overlayCurrencyCosmicDust.textContent = formatCurrency(currentCosmicDustCurrency, CurrencyType.COSMIC_DUST_CURRENCY);
+    }
+    if (ui.overlayCurrencyGalactic) {
+        ui.overlayCurrencyGalactic.textContent = formatCurrency(currentGalacticCredits, CurrencyType.GALACTIC_CREDITS);
+    }
+    if (ui.overlayCurrencyAncient) {
+        ui.overlayCurrencyAncient.textContent = formatCurrency(currentAncientRelics, CurrencyType.ANCIENT_RELICS);
+    }
+    
     updateFocusedBodyUI();
 }
 export function switchTab(activeTab) {

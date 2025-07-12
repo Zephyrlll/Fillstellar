@@ -98,6 +98,7 @@
              <p>天体の数: <span id="starCount">0</span></p>
           </div>
 
+
           <div class="collapsible-section">
             <div class="collapsible-header active" id="coreActionsHeader">創造</div>
             <div class="collapsible-content active" id="coreActionsContent">
@@ -325,6 +326,13 @@
         <p>TP: <span id="overlayThoughtPoints">0</span></p>
         <p>活発度: <span id="overlayCosmicActivity">0</span></p>
         <p>人口: <span id="overlayPopulation">0</span></p>
+        <hr>
+        <div class="overlay-currency-section">
+            <p>💫 <span id="overlayCurrencyCosmicDust">0</span></p>
+            <p>💎 <span id="overlayCurrencyGalactic">0</span></p>
+            <p>🏺 <span id="overlayCurrencyAncient">0</span></p>
+        </div>
+        <button id="overlayResourceSellButton" class="overlay-sell-btn">📦</button>
     </div>
 
     <!-- 銀河マップコンテナ -->
@@ -436,6 +444,58 @@
   </div>
 
   <script type="module" src="dist/main.js"></script>
+  <script type="module">
+    console.log('🔧 Module script loaded');
+    try {
+      import('./dist/main.js').then(() => {
+        console.log('🔧 main.js imported successfully');
+      }).catch(error => {
+        console.error('🔧 Failed to import main.js:', error);
+      });
+    } catch (error) {
+      console.error('🔧 Error importing main.js:', error);
+    }
+  </script>
+  <script>
+    console.log('🔧 HTML loaded, checking basic functionality...');
+    document.addEventListener('DOMContentLoaded', () => {
+      console.log('🔧 DOM fully loaded');
+      const btn = document.getElementById('overlayResourceSellButton');
+      console.log('🔧 Button element:', btn);
+      
+      if (btn) {
+        btn.addEventListener('click', () => {
+          console.log('🔧 Button clicked via direct HTML listener!');
+          // Try to call the modal function directly
+          try {
+            if (window.showResourceSellModal) {
+              window.showResourceSellModal();
+            } else {
+              console.log('🔧 showResourceSellModal not available on window');
+              // Create a simple modal as fallback
+              const modal = document.createElement('div');
+              modal.style.position = 'fixed';
+              modal.style.top = '0';
+              modal.style.left = '0';
+              modal.style.width = '100%';
+              modal.style.height = '100%';
+              modal.style.background = 'rgba(0,0,0,0.8)';
+              modal.style.zIndex = '10000';
+              modal.style.display = 'flex';
+              modal.style.justifyContent = 'center';
+              modal.style.alignItems = 'center';
+              modal.innerHTML = '<div style="background:white; padding:20px; border-radius:10px;"><h3>資源販売</h3><p>通貨システムテスト</p><button onclick="this.parentElement.parentElement.remove()">閉じる</button></div>';
+              document.body.appendChild(modal);
+            }
+          } catch (error) {
+            console.error('🔧 Error calling modal:', error);
+            alert('モーダルエラー: ' + error.message);
+          }
+        });
+        console.log('🔧 Direct event listener added');
+      }
+    });
+  </script>
   <script>
     // Quick debug: Direct panel test
     document.addEventListener('DOMContentLoaded', () => {

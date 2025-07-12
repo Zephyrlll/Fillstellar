@@ -16,6 +16,8 @@ import { resourceParticleSystem } from './js/resourceParticles.js';
 import { productionChainUI } from './js/productionChainUI.js';
 // @ts-ignore
 import { catalystManager, CatalystType } from './dist/js/catalystSystem.js';
+// @ts-ignore
+import { currencyManager } from './dist/js/currencySystem.js';
 const moveSpeed = 200;
 let uiUpdateTimer = 0;
 const uiUpdateInterval = 0.1;
@@ -215,22 +217,20 @@ function init() {
     // Initialize catalyst system with some starter catalysts for testing
     // @ts-ignore
     if (!gameState.catalystSystemInitialized) {
-        console.log('🧪 Initializing catalyst system...');
-        console.log('🧪 Adding starter catalysts:');
-        console.log('  - CatalystType.EFFICIENCY_BOOSTER =', CatalystType.EFFICIENCY_BOOSTER);
-        console.log('  - CatalystType.SPEED_ACCELERATOR =', CatalystType.SPEED_ACCELERATOR);
+        // Add required technologies for catalyst system
+        gameState.discoveredTechnologies.add('advanced_processing');
+        gameState.discoveredTechnologies.add('quantum_manipulation');
         catalystManager.addCatalyst(CatalystType.EFFICIENCY_BOOSTER, 2);
         catalystManager.addCatalyst(CatalystType.SPEED_ACCELERATOR, 1);
         // @ts-ignore
-        console.log('🧪 Catalyst inventory after initialization:', Array.from(catalystManager.catalystInventory.entries()));
-        // @ts-ignore
         gameState.catalystSystemInitialized = true;
     }
-    else {
-        console.log('🧪 Catalyst system already initialized');
-        // @ts-ignore
-        console.log('🧪 Current catalyst inventory:', Array.from(catalystManager.catalystInventory.entries()));
-    }
+    // Initialize currency system
+    currencyManager.initializeCurrencies();
+    // Debug: Check UI elements
+    console.log('🔧 Checking UI elements after initialization...');
+    console.log('🔧 overlayResourceSellButton:', ui.overlayResourceSellButton);
+    console.log('🔧 All UI keys with overlay:', Object.keys(ui).filter(key => key.includes('overlay')));
     const blackHoleExists = gameState.stars.some(star => star.userData.type === 'black_hole');
     if (!blackHoleExists) {
         const blackHole = createCelestialBody('black_hole', {
@@ -258,7 +258,17 @@ function init() {
     // 最初のクリックでサウンドを初期化
     document.addEventListener('click', initSound, { once: true });
     document.addEventListener('keydown', initSound, { once: true });
-    setupEventListeners();
+    // Ensure DOM is fully loaded before setting up event listeners
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('🔧 DOM loaded, setting up event listeners...');
+            setupEventListeners();
+        });
+    }
+    else {
+        console.log('🔧 DOM already loaded, setting up event listeners now...');
+        setupEventListeners();
+    }
     // WebSocket接続の初期化
     wsClient = createWebSocketClient();
     // WebSocketイベントハンドラー

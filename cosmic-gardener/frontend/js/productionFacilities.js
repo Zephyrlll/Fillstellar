@@ -71,29 +71,6 @@ export const PRODUCTION_FACILITIES = {
         isActive: false,
         progress: 0,
         autoMode: false
-    },
-    // Catalyst Production Facilities
-    'catalyst_synthesizer': {
-        id: 'catalyst_synthesizer',
-        name: '触媒合成装置',
-        type: 'synthesizer',
-        recipes: ['efficiency_booster_creation', 'speed_accelerator_creation'],
-        level: 1,
-        efficiency: 1.0,
-        isActive: false,
-        progress: 0,
-        autoMode: false
-    },
-    'advanced_catalyst_synthesizer': {
-        id: 'advanced_catalyst_synthesizer',
-        name: '高度触媒合成装置',
-        type: 'synthesizer',
-        recipes: ['quality_enhancer_creation'],
-        level: 1,
-        efficiency: 1.0,
-        isActive: false,
-        progress: 0,
-        autoMode: false
     }
 };
 export const FACILITY_COSTS = {
@@ -146,25 +123,6 @@ export const FACILITY_COSTS = {
             { type: 'silicon', amount: 100 }
         ],
         buildTime: 150
-    },
-    'catalyst_synthesizer': {
-        resources: [
-            { type: 'cosmicDust', amount: 30000 },
-            { type: 'energy', amount: 20000 },
-            { type: 'processedMetal', amount: 500 },
-            { type: 'silicon', amount: 150 }
-        ],
-        buildTime: 180
-    },
-    'advanced_catalyst_synthesizer': {
-        resources: [
-            { type: 'cosmicDust', amount: 100000 },
-            { type: 'energy', amount: 50000 },
-            { type: 'processedMetal', amount: 1000 },
-            { type: 'silicon', amount: 500 },
-            { type: 'darkMatter', amount: 2000 }
-        ],
-        buildTime: 300
     }
 };
 // Facility effects
