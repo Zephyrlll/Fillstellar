@@ -215,10 +215,50 @@ export function setupEventListeners() {
 
             gameState.cosmicDust -= cost;
             gameState.resources.cosmicDust -= cost;
-            const parentRadius = (focusedObject.children[0] ? (focusedObject.children[0] as THREE.Mesh).scale.x : (focusedObject as THREE.Mesh).scale.x) || 1;
-            const orbitalRadius = parentRadius + 20 + Math.random() * (parentRadius * 5);
+            // Use actual radius from userData instead of visual scale
+            const parentRadius = focusedObject.userData.radius || 1;
+            const minSafeDistance = parentRadius * 3; // At least 3x parent radius for safety
+            const maxOrbitalRange = parentRadius * 8; // Up to 8x parent radius
+            const orbitalRadius = parentRadius + minSafeDistance + Math.random() * maxOrbitalRange;
             const angle = Math.random() * Math.PI * 2;
             const position = new THREE.Vector3(orbitalRadius * Math.cos(angle), (Math.random() - 0.5) * 20, orbitalRadius * Math.sin(angle));
+            const finalPosition = focusedObject.position.clone().add(position);
+            
+            // Check for collisions with existing bodies
+            let attempts = 0;
+            let tooClose = true;
+            while (tooClose && attempts < 10) {
+                tooClose = false;
+                for (const existingBody of gameState.stars) {
+                    if (existingBody === focusedObject) continue;
+                    
+                    const distance = finalPosition.distanceTo(existingBody.position);
+                    const existingRadius = existingBody.userData.radius || 1;
+                    const newBodyRadius = 5; // Estimated radius for new small body
+                    const safetyMargin = (existingRadius + newBodyRadius) * 2; // 2x safety margin
+                    
+                    if (distance < safetyMargin) {
+                        tooClose = true;
+                        // Try a new position
+                        const newAngle = Math.random() * Math.PI * 2;
+                        const newOrbitalRadius = parentRadius + minSafeDistance + Math.random() * maxOrbitalRange;
+                        position.set(
+                            newOrbitalRadius * Math.cos(newAngle), 
+                            (Math.random() - 0.5) * 20, 
+                            newOrbitalRadius * Math.sin(newAngle)
+                        );
+                        finalPosition.copy(focusedObject.position).add(position);
+                        break;
+                    }
+                }
+                attempts++;
+            }
+            
+            if (tooClose) {
+                console.warn(`[Creation Warning] Could not find safe position for ${type} after ${attempts} attempts`);
+                showMessage(`${type}の安全な配置場所が見つかりませんでした`);
+                return;
+            }
             
             if (orbitalRadius <= 0) {
                 console.error(`[Creation Error] Invalid orbitalRadius (${orbitalRadius}) for ${type}. Skipping creation.`);
@@ -236,7 +276,7 @@ export function setupEventListeners() {
 
             const relativeVelocity = new THREE.Vector3(-position.z, 0, position.x).normalize().multiplyScalar(orbitalSpeed);
             const finalVelocity = (focusedObject.userData.velocity as THREE.Vector3).clone().add(relativeVelocity);
-            const finalPosition = focusedObject.position.clone().add(position);
+            // finalPosition already calculated above after collision checking
             
             if (!isFinite(finalPosition.x) || !isFinite(finalVelocity.x)) {
                  console.error(`[Creation Error] Final position or velocity is not finite. Skipping creation.`);
@@ -583,6 +623,33 @@ export function setupEventListeners() {
         });
     }
 
+    const testCollisionButton = document.getElementById('testCollisionButton');
+    if (testCollisionButton) {
+        testCollisionButton.addEventListener('click', () => {
+            console.log('🔧 衝突テスト開始');
+            console.log(`衝突システム有効: ${gameState.physics.collisionDetectionEnabled}`);
+            console.log(`現在の天体数: ${gameState.stars.length}`);
+            
+            // 近くにある天体のペアを表示
+            for (let i = 0; i < gameState.stars.length; i++) {
+                for (let j = i + 1; j < gameState.stars.length; j++) {
+                    const body1 = gameState.stars[i];
+                    const body2 = gameState.stars[j];
+                    const distance = body1.position.distanceTo(body2.position);
+                    const combinedRadius = (body1.userData.radius || 1) + (body2.userData.radius || 1);
+                    
+                    if (distance < combinedRadius * 2) {
+                        console.log(`⚠️ 近接ペア: ${body1.userData.name} と ${body2.userData.name}`);
+                        console.log(`   距離: ${distance.toFixed(2)}, 合計半径: ${combinedRadius.toFixed(2)}`);
+                        console.log(`   質量: ${body1.userData.mass} vs ${body2.userData.mass}`);
+                    }
+                }
+            }
+            
+            showMessage('衝突テスト実行完了（コンソールを確認）');
+        });
+    }
+
     if (ui.graphicsQualitySelect) {
         ui.graphicsQualitySelect.addEventListener('change', (event) => {
             const target = event.target as HTMLSelectElement;
@@ -598,6 +665,16 @@ export function setupEventListeners() {
             gameState.currentUnitSystem = target.value;
             saveGame();
             updateUI();
+        });
+    }
+
+    const collisionDetectionCheckbox = document.getElementById('collisionDetectionCheckbox') as HTMLInputElement;
+    if (collisionDetectionCheckbox) {
+        collisionDetectionCheckbox.addEventListener('change', () => {
+            gameState.physics.collisionDetectionEnabled = collisionDetectionCheckbox.checked;
+            saveGame();
+            showMessage(collisionDetectionCheckbox.checked ? '天体衝突システムが有効になりました' : '天体衝突システムが無効になりました');
+            soundManager.playUISound('click');
         });
     }
 
@@ -669,6 +746,17 @@ export function setupEventListeners() {
             soundManager.updateSettings({ muted: !settings.muted });
             muteToggleButton.textContent = settings.muted ? 'ミュート解除' : 'ミュート';
             soundManager.playUISound('click');
+        });
+    }
+    
+    // Production chain button
+    const productionChainButton = document.getElementById('productionChainButton');
+    if (productionChainButton) {
+        productionChainButton.addEventListener('click', () => {
+            import('./productionChainUI.js').then(module => {
+                module.productionChainUI.toggle();
+                soundManager.playUISound('click');
+            });
         });
     }
 

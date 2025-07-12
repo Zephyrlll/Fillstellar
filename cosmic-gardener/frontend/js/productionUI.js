@@ -6,6 +6,7 @@ import { gameState } from './state.js';
 import { formatNumber } from './utils.js';
 import { resourceParticleSystem } from './resourceParticles.js';
 import { isProductionPanelVisible } from './ui.js';
+import { getResourceTier, getTierColor } from './resourceTiers.js';
 let lastProductionUIUpdate = 0;
 const PRODUCTION_UI_UPDATE_INTERVAL = 100; // 0.1 seconds
 // UI Elements
@@ -13,6 +14,7 @@ let advancedResourcesDisplay;
 let conversionRecipesList;
 let activeConversionsList;
 let productionFacilitiesList;
+let facilityConstructionList;
 export function initProductionUI() {
     console.log('🚀 Production UI initializing...');
     // Get UI elements
@@ -20,18 +22,21 @@ export function initProductionUI() {
     conversionRecipesList = document.getElementById('conversion-recipes-list');
     activeConversionsList = document.getElementById('active-conversions-list');
     productionFacilitiesList = document.getElementById('production-facilities-list');
+    facilityConstructionList = document.getElementById('facility-construction-list');
     console.log('📦 Production UI elements:', {
         advancedResourcesDisplay: !!advancedResourcesDisplay,
         conversionRecipesList: !!conversionRecipesList,
         activeConversionsList: !!activeConversionsList,
-        productionFacilitiesList: !!productionFacilitiesList
+        productionFacilitiesList: !!productionFacilitiesList,
+        facilityConstructionList: !!facilityConstructionList
     });
     // Add event listeners for collapsible sections
     const headers = [
         'advancedResourcesHeader',
         'conversionRecipesHeader',
         'activeConversionsHeader',
-        'productionFacilitiesHeader'
+        'productionFacilitiesHeader',
+        'facilityConstructionHeader'
     ];
     headers.forEach(headerId => {
         const header = document.getElementById(headerId);
@@ -60,6 +65,8 @@ export function updateProductionUI(force = false) {
     updateConversionRecipesList();
     updateActiveConversionsList();
     updateProductionFacilitiesList();
+    updateFacilityConstructionList();
+    updateWasteStatusDisplay();
 }
 function updateAdvancedResourcesDisplay() {
     if (!advancedResourcesDisplay || !gameState.advancedResources)
@@ -95,11 +102,14 @@ function updateAdvancedResourcesDisplay() {
             const metadata = RESOURCE_METADATA[type];
             const qualityColor = QUALITY_MULTIPLIERS[resource.quality].color;
             const qualityClass = `quality-${getQualityName(resource.quality).toLowerCase().replace(' ', '-')}`;
+            const tier = getResourceTier(type);
+            const tierColor = getTierColor(tier);
             html.push(`
                 <div class="advanced-resource-item ${qualityClass}" data-resource-type="${type}" data-quality="${resource.quality}">
                     <span class="resource-icon">${metadata.icon}</span>
                     <span class="resource-name" style="color: ${qualityColor}">
                         ${getResourceDisplayName(type, resource.quality)}
+                        <span class="resource-tier" style="color: ${tierColor}; font-size: 10px; margin-left: 5px;">[T${tier}]</span>
                     </span>
                     <span class="resource-amount">${formatNumber(resource.amount)}</span>
                 </div>
@@ -147,6 +157,21 @@ function updateConversionRecipesList() {
             return `<span style="color: ${qualityColor}">${meta.icon} ${formatNumber(r.amount)} ${meta.name}</span>`;
         }).join(', ')}
                     </div>
+                    ${recipe.byproducts ? `
+                        <div class="recipe-byproducts">
+                            <strong>副産物:</strong>
+                            ${recipe.byproducts.map(b => {
+            const meta = RESOURCE_METADATA[b.type];
+            return `<span style="color: #FFC107">${meta.icon} ${formatNumber(b.amount)} ${meta.name} (${Math.round(b.chance * 100)}%)</span>`;
+        }).join(', ')}
+                        </div>
+                    ` : ''}
+                    ${recipe.waste ? `
+                        <div class="recipe-waste">
+                            <strong>廃棄物:</strong>
+                            <span style="color: #f44336">${RESOURCE_METADATA[recipe.waste.type].icon} ${formatNumber(recipe.waste.amount)} ${RESOURCE_METADATA[recipe.waste.type].name}</span>
+                        </div>
+                    ` : ''}
                 </div>
                 <div class="recipe-stats">
                     <span>時間: ${recipe.time}秒</span>
@@ -258,7 +283,127 @@ function getCategoryDisplayName(category) {
         biomass: 'バイオマス派生',
         dark: 'ダークマター派生',
         thought: '思考派生',
-        processed: '加工資源'
+        processed: '加工資源',
+        tier2: 'Tier 2 資源',
+        waste: '廃棄物'
     };
     return names[category] || category;
+}
+// Update waste status display
+function updateWasteStatusDisplay() {
+    // Check if waste status element exists
+    let wasteStatusElement = document.getElementById('waste-status-display');
+    if (!wasteStatusElement) {
+        // Create waste status element if it doesn't exist
+        const productionPanel = document.getElementById('production-panel');
+        if (!productionPanel)
+            return;
+        wasteStatusElement = document.createElement('div');
+        wasteStatusElement.id = 'waste-status-display';
+        wasteStatusElement.className = 'waste-status-display';
+        productionPanel.appendChild(wasteStatusElement);
+    }
+    const wasteStatus = conversionEngine.getWasteStatus();
+    const percentage = wasteStatus.percentage;
+    let statusClass = 'normal';
+    let statusText = '正常';
+    if (percentage > 95) {
+        statusClass = 'critical';
+        statusText = '危険';
+    }
+    else if (percentage > 80) {
+        statusClass = 'warning';
+        statusText = '警告';
+    }
+    wasteStatusElement.innerHTML = `
+        <div class="waste-status-header">☢️ 廃棄物管理</div>
+        <div class="waste-status-bar">
+            <div class="waste-bar-fill ${statusClass}" style="width: ${percentage}%"></div>
+            <span class="waste-bar-text">${Math.round(percentage)}%</span>
+        </div>
+        <div class="waste-status-info">
+            <span>状態: <span class="${statusClass}">${statusText}</span></span>
+            <span>${formatNumber(wasteStatus.amount)} / ${formatNumber(wasteStatus.capacity)}</span>
+        </div>
+        ${percentage > 80 ? '<div class="waste-warning">生産効率が低下しています！廃棄物を処理してください。</div>' : ''}
+    `;
+}
+// Update facility construction list
+function updateFacilityConstructionList() {
+    if (!facilityConstructionList)
+        return;
+    // Import facility data
+    import('./productionFacilities.js').then(module => {
+        const { PRODUCTION_FACILITIES, FACILITY_COSTS, canAffordFacility, payForFacility, addFacilityToGame } = module;
+        const html = [];
+        // Filter facilities not yet built
+        const unbuiltFacilities = Object.entries(PRODUCTION_FACILITIES).filter(([id]) => {
+            return !gameState.availableFacilities.has(id);
+        });
+        unbuiltFacilities.forEach(([id, facility]) => {
+            const cost = FACILITY_COSTS[id];
+            if (!cost)
+                return;
+            const canAfford = canAffordFacility(id);
+            const buttonClass = canAfford ? 'build-button' : 'build-button disabled';
+            html.push(`
+                <div class="facility-card ${canAfford ? '' : 'unavailable'}">
+                    <h4>${facility.name}</h4>
+                    <p class="facility-type">タイプ: ${getFacilityTypeName(facility.type)}</p>
+                    <div class="facility-cost">
+                        <strong>建設コスト:</strong>
+                        ${cost.resources.map(r => {
+                const resourceName = getResourceNameFromKey(r.type);
+                return `<span>${resourceName}: ${formatNumber(r.amount)}</span>`;
+            }).join(', ')}
+                    </div>
+                    <div class="facility-time">
+                        <span>建設時間: ${cost.buildTime}秒</span>
+                    </div>
+                    ${id === 'waste_storage' ? '<div class="facility-effect">効果: 廃棄物貯蔵容量 +1000</div>' : ''}
+                    <button class="${buttonClass}" data-facility-id="${id}">
+                        ${canAfford ? '建設開始' : '資源不足'}
+                    </button>
+                </div>
+            `);
+        });
+        if (html.length === 0) {
+            html.push('<p class="no-facilities">建設可能な施設がありません</p>');
+        }
+        facilityConstructionList.innerHTML = html.join('');
+        // Add click handlers
+        facilityConstructionList.querySelectorAll('.build-button:not(.disabled)').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const facilityId = e.target.getAttribute('data-facility-id');
+                if (facilityId && payForFacility(facilityId)) {
+                    addFacilityToGame(facilityId);
+                    updateProductionUI(true);
+                }
+            });
+        });
+    });
+}
+// Get facility type display name
+function getFacilityTypeName(type) {
+    const typeNames = {
+        'converter': '変換施設',
+        'extractor': '抽出施設',
+        'refinery': '精製施設',
+        'synthesizer': '合成施設'
+    };
+    return typeNames[type] || type;
+}
+// Get resource name from key
+function getResourceNameFromKey(key) {
+    const resourceNames = {
+        'cosmicDust': '宇宙の塵',
+        'energy': 'エネルギー',
+        'organicMatter': '有機物',
+        'biomass': 'バイオマス',
+        'darkMatter': 'ダークマター',
+        'thoughtPoints': '思考ポイント',
+        'processedMetal': '加工金属',
+        'silicon': 'シリコン'
+    };
+    return resourceNames[key] || key;
 }

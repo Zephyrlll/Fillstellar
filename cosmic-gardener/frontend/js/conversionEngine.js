@@ -1,5 +1,5 @@
 // Resource Conversion Engine
-import { ResourceType, QualityTier } from './resourceSystem.js';
+import { ResourceType, QualityTier, RESOURCE_METADATA } from './resourceSystem.js';
 import { CONVERSION_RECIPES, calculateRecipeOutput } from './conversionRecipes.js';
 import { gameState } from './state.js';
 import { showMessage } from './ui.js';
@@ -91,9 +91,32 @@ export class ConversionEngine {
     // Produce resources from a recipe
     produceResources(recipe, inputQuality, facilityEfficiency) {
         const { outputs } = calculateRecipeOutput(recipe, inputQuality, facilityEfficiency);
+        // Produce main outputs
         outputs.forEach(output => {
             this.modifyResource(output.type, output.amount, output.quality);
         });
+        // Handle byproducts
+        if (recipe.byproducts) {
+            recipe.byproducts.forEach(byproduct => {
+                // Check if byproduct is produced (based on chance)
+                if (Math.random() < byproduct.chance) {
+                    const byproductAmount = Math.floor(byproduct.amount * facilityEfficiency);
+                    this.modifyResource(byproduct.type, byproductAmount, byproduct.quality);
+                    // Log byproduct generation
+                    const resourceInfo = RESOURCE_METADATA[byproduct.type];
+                    if (resourceInfo) {
+                        addTimelineLog(`副産物: ${resourceInfo.name} x${byproductAmount}を獲得しました！`);
+                    }
+                }
+            });
+        }
+        // Handle waste generation
+        if (recipe.waste) {
+            const wasteAmount = Math.floor(recipe.waste.amount * facilityEfficiency);
+            this.modifyResource(recipe.waste.type, wasteAmount, QualityTier.POOR);
+            // Check waste storage capacity and apply penalties
+            this.checkWasteCapacity();
+        }
     }
     // Modify resource amount (add or subtract)
     modifyResource(type, amount, quality) {
@@ -133,6 +156,47 @@ export class ConversionEngine {
             storage.quality = Math.round(weightedQuality);
         }
         storage.amount = Math.max(0, storage.amount + amount);
+    }
+    // Check waste capacity and apply penalties
+    checkWasteCapacity() {
+        const wasteType = ResourceType.RADIOACTIVE_WASTE;
+        const wasteStorage = gameState.advancedResources?.[wasteType];
+        if (!wasteStorage)
+            return;
+        // Default waste storage capacity (will be increased by waste storage facilities)
+        const baseCapacity = 1000;
+        const wasteCapacity = gameState.wasteStorageCapacity || baseCapacity;
+        // Calculate waste percentage
+        const wastePercentage = wasteStorage.amount / wasteCapacity;
+        // Apply production penalties based on waste levels
+        if (wastePercentage > 0.8) {
+            // Above 80% capacity: apply production penalty
+            const penaltyFactor = wastePercentage > 0.95 ? 0.5 : 0.9; // 50% penalty above 95%, 10% above 80%
+            // Apply penalty to all facilities
+            this.facilities.forEach(facility => {
+                facility.efficiency = facility.efficiency * penaltyFactor;
+            });
+            // Warning message
+            if (wastePercentage > 0.95) {
+                showMessage('⚠️ 廃棄物貯蔵庫が満杯に近づいています！生産効率が大幅に低下しています。', 3000);
+                addTimelineLog('廃棄物危機: 貯蔵庫が95%を超えました。生産効率-50%');
+            }
+            else if (wastePercentage > 0.8) {
+                showMessage('廃棄物レベルが高くなっています。生産効率が低下しています。', 2500);
+            }
+        }
+    }
+    // Get waste storage status
+    getWasteStatus() {
+        const wasteType = ResourceType.RADIOACTIVE_WASTE;
+        const wasteStorage = gameState.advancedResources?.[wasteType];
+        const amount = wasteStorage?.amount || 0;
+        const capacity = gameState.wasteStorageCapacity || 1000;
+        return {
+            amount,
+            capacity,
+            percentage: (amount / capacity) * 100
+        };
     }
     // Start a conversion process
     startConversion(recipeId, facilityId, manual = false) {

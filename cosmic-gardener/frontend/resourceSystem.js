@@ -42,13 +42,6 @@ export var ResourceType;
     ResourceType["PROCESSED_METAL"] = "processedMetal";
     ResourceType["SILICON"] = "silicon";
     ResourceType["ALLOY"] = "alloy";
-    // Tier 2 Resources
-    ResourceType["STABILIZED_ENERGY"] = "stabilizedEnergy";
-    ResourceType["REFINED_METAL"] = "refinedMetal";
-    ResourceType["RARE_ELEMENTS"] = "rareElements";
-    ResourceType["HIGH_POLYMER"] = "highPolymer";
-    ResourceType["QUANTUM_CRYSTAL"] = "quantumCrystal";
-    ResourceType["RADIOACTIVE_WASTE"] = "radioactiveWaste";
 })(ResourceType || (ResourceType = {}));
 export var QualityTier;
 (function (QualityTier) {
@@ -326,43 +319,6 @@ export const RESOURCE_METADATA = {
         icon: '⚙️',
         category: 'processed',
         description: 'Advanced composite materials'
-    },
-    // Tier 2 Resources
-    [ResourceType.STABILIZED_ENERGY]: {
-        name: '安定化エネルギー',
-        icon: '🔋',
-        category: 'tier2',
-        description: '貯蔵・転送可能な高密度エネルギー'
-    },
-    [ResourceType.REFINED_METAL]: {
-        name: '精製金属',
-        icon: '🏗️',
-        category: 'tier2',
-        description: '高純度の金属素材'
-    },
-    [ResourceType.RARE_ELEMENTS]: {
-        name: '希少元素',
-        icon: '💠',
-        category: 'tier2',
-        description: '特殊な性質を持つ希少な元素'
-    },
-    [ResourceType.HIGH_POLYMER]: {
-        name: '高分子ポリマー',
-        icon: '🧬',
-        category: 'tier2',
-        description: '高度な有機素材'
-    },
-    [ResourceType.QUANTUM_CRYSTAL]: {
-        name: '量子結晶',
-        icon: '🔮',
-        category: 'tier2',
-        description: '量子状態を保持する結晶'
-    },
-    [ResourceType.RADIOACTIVE_WASTE]: {
-        name: '放射性廃棄物',
-        icon: '☢️',
-        category: 'waste',
-        description: 'エネルギー生産の副産物として発生する危険な廃棄物'
     }
 };
 // Helper functions

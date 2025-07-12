@@ -331,6 +331,132 @@ export const CONVERSION_RECIPES = {
         requirements: {
             technology: ['genetic_engineering']
         }
+    },
+    // Tier 2 Resource Conversions
+    'energy_stabilization': {
+        id: 'energy_stabilization',
+        name: 'エネルギー安定化',
+        description: '生エネルギーを安定化エネルギーに変換します',
+        inputs: {
+            resources: [
+                { type: ResourceType.ENERGY, amount: 300, quality: QualityTier.STANDARD }
+            ]
+        },
+        outputs: {
+            resources: [
+                { type: ResourceType.STABILIZED_ENERGY, amount: 100, quality: QualityTier.STANDARD }
+            ]
+        },
+        time: 20,
+        efficiency: 0.9,
+        discovered: false,
+        requirements: {
+            technology: ['advanced_processing'],
+            facilities: ['energy_stabilizer']
+        },
+        waste: {
+            type: ResourceType.RADIOACTIVE_WASTE,
+            amount: 10
+        }
+    },
+    'metal_refinement': {
+        id: 'metal_refinement',
+        name: '金属精製',
+        description: '宇宙の塵から高純度の金属を精製します',
+        inputs: {
+            resources: [
+                { type: ResourceType.COSMIC_DUST, amount: 500, quality: QualityTier.STANDARD },
+                { type: ResourceType.ENERGY, amount: 100, quality: QualityTier.STANDARD }
+            ]
+        },
+        outputs: {
+            resources: [
+                { type: ResourceType.REFINED_METAL, amount: 100, quality: QualityTier.STANDARD }
+            ]
+        },
+        time: 30,
+        efficiency: 0.85,
+        discovered: false,
+        requirements: {
+            technology: ['advanced_processing'],
+            facilities: ['electromagnetic_separator']
+        },
+        byproducts: [{
+                type: ResourceType.RARE_ELEMENTS,
+                amount: 5,
+                chance: 0.1,
+                quality: QualityTier.STANDARD
+            }]
+    },
+    'polymer_synthesis': {
+        id: 'polymer_synthesis',
+        name: 'ポリマー合成',
+        description: '有機物から高分子ポリマーを合成します',
+        inputs: {
+            resources: [
+                { type: ResourceType.ORGANIC_MATTER, amount: 300, quality: QualityTier.STANDARD },
+                { type: ResourceType.STABILIZED_ENERGY, amount: 50, quality: QualityTier.STANDARD }
+            ]
+        },
+        outputs: {
+            resources: [
+                { type: ResourceType.HIGH_POLYMER, amount: 100, quality: QualityTier.STANDARD }
+            ]
+        },
+        time: 25,
+        efficiency: 0.8,
+        discovered: false,
+        requirements: {
+            technology: ['advanced_processing', 'organic_chemistry'],
+            facilities: ['high_pressure_synthesizer']
+        }
+    },
+    'quantum_crystallization': {
+        id: 'quantum_crystallization',
+        name: '量子結晶化',
+        description: 'ダークマターとエネルギーから量子結晶を生成します',
+        inputs: {
+            resources: [
+                { type: ResourceType.DARK_MATTER, amount: 200, quality: QualityTier.STANDARD },
+                { type: ResourceType.STABILIZED_ENERGY, amount: 100, quality: QualityTier.STANDARD }
+            ]
+        },
+        outputs: {
+            resources: [
+                { type: ResourceType.QUANTUM_CRYSTAL, amount: 50, quality: QualityTier.STANDARD }
+            ]
+        },
+        time: 40,
+        efficiency: 0.7,
+        discovered: false,
+        requirements: {
+            technology: ['quantum_manipulation', 'advanced_processing'],
+            facilities: ['quantum_condenser']
+        }
+    },
+    // Waste processing
+    'waste_recycling': {
+        id: 'waste_recycling',
+        name: '廃棄物リサイクル',
+        description: '放射性廃棄物を無害な物質に処理します',
+        inputs: {
+            resources: [
+                { type: ResourceType.RADIOACTIVE_WASTE, amount: 100, quality: QualityTier.POOR },
+                { type: ResourceType.ENERGY, amount: 200, quality: QualityTier.STANDARD }
+            ]
+        },
+        outputs: {
+            resources: [
+                { type: ResourceType.COSMIC_DUST, amount: 50, quality: QualityTier.POOR }
+            ]
+        },
+        time: 60,
+        efficiency: 0.5,
+        discovered: false,
+        requirements: {
+            technology: ['waste_management'],
+            facilities: ['recycling_facility']
+        }
     }
 };
 // Helper function to get available recipes based on current game state

@@ -1,12 +1,11 @@
 <!DOCTYPE html>
-<!-- 🚀 Updated version with Production System 2024-07-10 -->
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cosmic Gardener - Production System Update</title>
+    <title>Cosmic Gardener</title>
     <link rel="stylesheet" href="style.css">
-    <link rel="icon" href="favicon.png">
+    <link rel="icon" href="favicon.ico">
     <script type="importmap">
       {
         "imports": {
@@ -20,10 +19,6 @@
     </script>
 </head>
 <body>
-<script>
-    console.log('🌟 Cosmic Gardener with Production System loaded!');
-    console.log('📅 Version: 2024-07-10');
-</script>
 
   <!-- 上部中央の情報表示 -->
   <div id="info-container">
@@ -71,16 +66,6 @@
         <button id="researchTabButton">研究</button>
         <button id="optionsTabButton">オプション</button>
         <button id="starManagementTabButton">恒星管理</button>
-      </div>
-      
-      <!-- 生産パネル切り替えボタン -->
-      <div id="production-toggle-section">
-        <button id="productionToggleButton" class="production-toggle-btn">
-          🏭 生産パネル
-        </button>
-        <button id="productionChainButton" class="production-toggle-btn" style="margin-left: 10px;">
-          🔗 生産チェーン
-        </button>
       </div>
 
       <!-- ゲームタブ -->
@@ -183,7 +168,6 @@
         </div>
       </div>
 
-
       <!-- オプションタブ -->
       <div id="options-screen" class="hidden-screen">
           <h1>オプション</h1>
@@ -249,46 +233,6 @@
                         <label for="dragSlider">宇宙抵抗: <span id="dragValue">0.01</span></label>
                         <input type="range" id="dragSlider" min="0" max="0.1" value="0.01" step="0.001">
                     </div>
-                    <div class="option-item">
-                        <label for="collisionDetectionCheckbox">
-                            <input type="checkbox" id="collisionDetectionCheckbox" checked>
-                            天体衝突システムを有効にする
-                        </label>
-                    </div>
-                </div>
-              </div>
-
-              <div class="collapsible-section">
-                <div class="collapsible-header" id="soundHeader">サウンド設定</div>
-                <div class="collapsible-content" id="soundContent">
-                    <div class="option-item">
-                        <label for="masterVolumeSlider">マスター音量: <span id="masterVolumeValue">70</span>%</label>
-                        <input type="range" id="masterVolumeSlider" min="0" max="100" value="70" step="1">
-                    </div>
-                    <div class="option-item">
-                        <label for="ambientVolumeSlider">環境音: <span id="ambientVolumeValue">60</span>%</label>
-                        <input type="range" id="ambientVolumeSlider" min="0" max="100" value="60" step="1">
-                    </div>
-                    <div class="option-item">
-                        <label for="effectsVolumeSlider">効果音: <span id="effectsVolumeValue">80</span>%</label>
-                        <input type="range" id="effectsVolumeSlider" min="0" max="100" value="80" step="1">
-                    </div>
-                    <div class="option-item">
-                        <label for="uiVolumeSlider">UI音: <span id="uiVolumeValue">50</span>%</label>
-                        <input type="range" id="uiVolumeSlider" min="0" max="100" value="50" step="1">
-                    </div>
-                    <div class="option-item">
-                        <label for="spatialAudioCheckbox">
-                            <input type="checkbox" id="spatialAudioCheckbox" checked>
-                            3D空間音響を有効にする
-                        </label>
-                    </div>
-                    <div class="option-item">
-                        <button id="muteToggleButton">ミュート</button>
-                    </div>
-                    <div class="option-item">
-                        <button id="testSoundButton">サウンドテスト</button>
-                    </div>
                 </div>
               </div>
 
@@ -296,8 +240,6 @@
                   <div class="collapsible-header" id="debugHeader">デバッグ</div>
                   <div class="collapsible-content" id="debugContent">
                       <button id="addAllResourcesButton">全リソースを一括付与</button>
-                      <button id="testCollisionButton">衝突テスト</button>
-                      <button id="forceCollisionButton">強制衝突実行</button>
                       <!-- 
                       <button id="addCosmicDustButton">塵を10万追加</button>
                       <button id="addEnergyButton">エネルギーを10万追加</button>
@@ -329,133 +271,10 @@
 
     <!-- 銀河マップコンテナ -->
     <div id="galaxy-map-container"></div>
-
-    <!-- 統計・ログパネル -->
-    <div id="stats-log-container">
-      <!-- タブボタン -->
-      <div id="stats-log-tabs">
-        <button id="stats-tab-button" class="stats-log-tab active">統計</button>
-        <button id="log-tab-button" class="stats-log-tab">ログ</button>
-        <span id="stats-log-toggle-icon">▲</span>
-      </div>
-      
-      <!-- 統計パネル -->
-      <div id="statistics-panel">
-        <div id="statistics-content">
-          <!-- リソース統計セクション -->
-          <div id="resource-statistics" class="stats-section">
-            <h3>リソース統計</h3>
-            <div id="resource-stats-grid"></div>
-          </div>
-          
-          <!-- 宇宙統計セクション -->
-          <div id="cosmic-statistics" class="stats-section">
-            <h3>宇宙統計</h3>
-            <div id="cosmic-stats-grid"></div>
-          </div>
-          
-          <!-- グラフセクション -->
-          <div id="chart-section" class="stats-section">
-            <h3>グラフ</h3>
-            <div id="chart-tabs">
-              <button class="chart-tab active" data-chart="resources">リソース</button>
-              <button class="chart-tab" data-chart="cosmic">宇宙</button>
-            </div>
-            <canvas id="statistics-chart"></canvas>
-          </div>
-        </div>
-      </div>
-      
-      <!-- 時系列ログパネル -->
-      <div id="timeline-log-panel">
-        <div id="timeline-log-content">
-          <div id="timeline-log-entries"></div>
-        </div>
-      </div>
-    </div>
   </div>
 
-  <!-- 生産パネル（スライドアウト） -->
-  <div id="production-panel" class="production-panel">
-    <div class="production-panel-header">
-      <h1>🏭 資源生産システム</h1>
-      <button id="productionPanelCloseButton" class="close-btn">×</button>
-    </div>
-    
-    <div class="production-panel-content">
-      <!-- 高度な資源在庫 -->
-      <div class="collapsible-section">
-        <div class="collapsible-header active" id="advancedResourcesHeader">高度な資源</div>
-        <div class="collapsible-content active" id="advancedResourcesContent">
-          <div id="advanced-resources-display">
-            <!-- Dynamically populated -->
-          </div>
-        </div>
-      </div>
-      
-      <!-- 変換レシピ -->
-      <div class="collapsible-section">
-        <div class="collapsible-header active" id="conversionRecipesHeader">変換レシピ</div>
-        <div class="collapsible-content active" id="conversionRecipesContent">
-          <div id="conversion-recipes-list">
-            <!-- Dynamically populated -->
-          </div>
-        </div>
-      </div>
-      
-      <!-- アクティブな変換 -->
-      <div class="collapsible-section">
-        <div class="collapsible-header" id="activeConversionsHeader">アクティブな変換</div>
-        <div class="collapsible-content" id="activeConversionsContent">
-          <div id="active-conversions-list">
-            <!-- Dynamically populated -->
-          </div>
-        </div>
-      </div>
-      
-      <!-- 生産施設 -->
-      <div class="collapsible-section">
-        <div class="collapsible-header" id="productionFacilitiesHeader">生産施設</div>
-        <div class="collapsible-content" id="productionFacilitiesContent">
-          <div id="production-facilities-list">
-            <!-- Dynamically populated -->
-          </div>
-        </div>
-      </div>
-      
-      <!-- 施設建設 -->
-      <div class="collapsible-section">
-        <div class="collapsible-header" id="facilityConstructionHeader">施設建設</div>
-        <div class="collapsible-content" id="facilityConstructionContent">
-          <div id="facility-construction-list">
-            <!-- Dynamically populated -->
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <script type="module" src="dist/main.js"></script>
+  <script type="module" src="/main.js"></script>
   <script>
-    // Quick debug: Direct panel test
-    document.addEventListener('DOMContentLoaded', () => {
-        console.log('🔧 DOM loaded, checking production panel...');
-        
-        const productionButton = document.getElementById('productionToggleButton');
-        const productionPanel = document.getElementById('production-panel');
-        
-        console.log('🔧 Button:', !!productionButton);
-        console.log('🔧 Panel:', !!productionPanel);
-        
-        if (productionButton && productionPanel) {
-            productionButton.addEventListener('click', () => {
-                console.log('🔧 Button clicked!');
-                productionPanel.classList.toggle('active');
-                console.log('🔧 Panel classes:', productionPanel.className);
-            });
-        }
-    });
-    
     document.addEventListener('DOMContentLoaded', () => {
         const iconMap = {
             'cosmicDust': 'icon/宇宙の塵.JPG',
@@ -489,46 +308,6 @@
                 }
             }
         }
-    });
-
-    // Stats/Log Panel Logic
-    document.addEventListener('DOMContentLoaded', () => {
-      const statsLogContainer = document.getElementById('stats-log-container');
-      const toggleIcon = document.getElementById('stats-log-toggle-icon');
-      const statsTab = document.getElementById('stats-tab-button');
-      const logTab = document.getElementById('log-tab-button');
-      const statsPanel = document.getElementById('statistics-panel');
-      const logPanel = document.getElementById('timeline-log-panel');
-
-      // Toggle panel visibility
-      if (toggleIcon) {
-        toggleIcon.addEventListener('click', () => {
-          statsLogContainer.classList.toggle('expanded');
-          toggleIcon.textContent = statsLogContainer.classList.contains('expanded') ? '▼' : '▲';
-        });
-      }
-
-      // Switch between tabs
-      if (statsTab && logTab && statsPanel && logPanel) {
-        statsTab.addEventListener('click', () => {
-          statsTab.classList.add('active');
-          logTab.classList.remove('active');
-          statsPanel.style.display = 'block';
-          logPanel.style.display = 'none';
-        });
-
-        logTab.addEventListener('click', () => {
-          logTab.classList.add('active');
-          statsTab.classList.remove('active');
-          logPanel.style.display = 'block';
-          statsPanel.style.display = 'none';
-        });
-      }
-
-      // Set initial state
-      if (logPanel) {
-        logPanel.style.display = 'none';
-      }
     });
   </script>
 </body>

@@ -63,6 +63,7 @@ export interface PhysicsState {
     timeStep: number;
     accumulator: number;
     dragFactor: number;
+    collisionDetectionEnabled: boolean;
 }
 
 export interface ResourceStats {
@@ -156,6 +157,11 @@ export interface GameState {
     discoveredTechnologies: Set<string>;
     availableFacilities: Set<string>;
     conversionEngineState?: any;
+    // Waste management
+    wasteStorageCapacity?: number;
+    productionEfficiencyModifier?: number;
+    // Catalyst system
+    catalystSystemInitialized?: boolean;
 }
 
 // --- Game State Initialization ---
@@ -189,7 +195,8 @@ export const gameState: GameState = {
         simulationSpeed: 1,
         timeStep: 1 / 120,
         accumulator: 0,
-        dragFactor: 0.01
+        dragFactor: 0.01,
+        collisionDetectionEnabled: true
     },
     researchEnhancedDust: false,
     researchAdvancedEnergy: false,

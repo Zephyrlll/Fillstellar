@@ -13,6 +13,9 @@ import { createWebSocketClient } from './js/websocket.js';
 import { conversionEngine } from './js/conversionEngine.js';
 import { initProductionUI, updateProductionUI } from './js/productionUI.js';
 import { resourceParticleSystem } from './js/resourceParticles.js';
+import { productionChainUI } from './js/productionChainUI.js';
+// @ts-ignore
+import { catalystManager, CatalystType } from './dist/js/catalystSystem.js';
 const moveSpeed = 200;
 let uiUpdateTimer = 0;
 const uiUpdateInterval = 0.1;
@@ -189,6 +192,10 @@ function animate() {
     if (uiUpdateTimer >= uiUpdateInterval) {
         updateUI();
         updateProductionUI();
+        // Update production chain UI if visible
+        if (productionChainUI) {
+            productionChainUI.refresh();
+        }
         uiUpdateTimer = 0;
     }
     updateStatistics();
@@ -203,6 +210,27 @@ function init() {
     loadGame();
     // Initialize production UI
     initProductionUI();
+    // Initialize production chain UI (create UI elements)
+    productionChainUI.createUI();
+    // Initialize catalyst system with some starter catalysts for testing
+    // @ts-ignore
+    if (!gameState.catalystSystemInitialized) {
+        console.log('🧪 Initializing catalyst system...');
+        console.log('🧪 Adding starter catalysts:');
+        console.log('  - CatalystType.EFFICIENCY_BOOSTER =', CatalystType.EFFICIENCY_BOOSTER);
+        console.log('  - CatalystType.SPEED_ACCELERATOR =', CatalystType.SPEED_ACCELERATOR);
+        catalystManager.addCatalyst(CatalystType.EFFICIENCY_BOOSTER, 2);
+        catalystManager.addCatalyst(CatalystType.SPEED_ACCELERATOR, 1);
+        // @ts-ignore
+        console.log('🧪 Catalyst inventory after initialization:', Array.from(catalystManager.catalystInventory.entries()));
+        // @ts-ignore
+        gameState.catalystSystemInitialized = true;
+    }
+    else {
+        console.log('🧪 Catalyst system already initialized');
+        // @ts-ignore
+        console.log('🧪 Current catalyst inventory:', Array.from(catalystManager.catalystInventory.entries()));
+    }
     const blackHoleExists = gameState.stars.some(star => star.userData.type === 'black_hole');
     if (!blackHoleExists) {
         const blackHole = createCelestialBody('black_hole', {

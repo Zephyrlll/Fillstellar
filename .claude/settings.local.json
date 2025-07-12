@@ -16,7 +16,8 @@
       "WebFetch(domain:docs.anthropic.com)",
       "Bash(~/.cargo/bin/cargo check --no-default-features)",
       "Bash(npm install:*)",
-      "Bash(touch:*)"
+      "Bash(touch:*)",
+      "Bash(python:*)"
     ],
     "deny": []
   }

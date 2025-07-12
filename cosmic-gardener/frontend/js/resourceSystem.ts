@@ -48,7 +48,15 @@ export enum ResourceType {
     // Processed Resources
     PROCESSED_METAL = 'processedMetal',
     SILICON = 'silicon',
-    ALLOY = 'alloy'
+    ALLOY = 'alloy',
+    
+    // Tier 2 Resources
+    STABILIZED_ENERGY = 'stabilizedEnergy',
+    REFINED_METAL = 'refinedMetal',
+    RARE_ELEMENTS = 'rareElements',
+    HIGH_POLYMER = 'highPolymer',
+    QUANTUM_CRYSTAL = 'quantumCrystal',
+    RADIOACTIVE_WASTE = 'radioactiveWaste'
 }
 
 export enum QualityTier {
@@ -130,6 +138,17 @@ export interface ConversionRecipe {
         minQuality?: QualityTier;
     };
     discovered: boolean;
+    // New fields for byproducts and waste
+    byproducts?: {
+        type: ResourceType;
+        amount: number;
+        chance: number; // 0-1
+        quality: QualityTier;
+    }[];
+    waste?: {
+        type: ResourceType;
+        amount: number;
+    };
 }
 
 export interface ResourceStorage {
@@ -159,7 +178,7 @@ export interface ProductionFacility {
 export const RESOURCE_METADATA: Record<ResourceType, {
     name: string;
     icon: string;
-    category: 'basic' | 'dust' | 'energy' | 'organic' | 'biomass' | 'dark' | 'thought' | 'processed';
+    category: 'basic' | 'dust' | 'energy' | 'organic' | 'biomass' | 'dark' | 'thought' | 'processed' | 'tier2' | 'waste';
     baseResource?: ResourceType;
     description: string;
 }> = {
@@ -399,6 +418,44 @@ export const RESOURCE_METADATA: Record<ResourceType, {
         icon: '⚙️',
         category: 'processed',
         description: 'Advanced composite materials'
+    },
+    
+    // Tier 2 Resources
+    [ResourceType.STABILIZED_ENERGY]: {
+        name: '安定化エネルギー',
+        icon: '🔋',
+        category: 'tier2',
+        description: '貯蔵・転送可能な高密度エネルギー'
+    },
+    [ResourceType.REFINED_METAL]: {
+        name: '精製金属',
+        icon: '🏗️',
+        category: 'tier2',
+        description: '高純度の金属素材'
+    },
+    [ResourceType.RARE_ELEMENTS]: {
+        name: '希少元素',
+        icon: '💠',
+        category: 'tier2',
+        description: '特殊な性質を持つ希少な元素'
+    },
+    [ResourceType.HIGH_POLYMER]: {
+        name: '高分子ポリマー',
+        icon: '🧬',
+        category: 'tier2',
+        description: '高度な有機素材'
+    },
+    [ResourceType.QUANTUM_CRYSTAL]: {
+        name: '量子結晶',
+        icon: '🔮',
+        category: 'tier2',
+        description: '量子状態を保持する結晶'
+    },
+    [ResourceType.RADIOACTIVE_WASTE]: {
+        name: '放射性廃棄物',
+        icon: '☢️',
+        category: 'waste',
+        description: 'エネルギー生産の副産物として発生する危険な廃棄物'
     }
 };
 

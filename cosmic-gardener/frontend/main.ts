@@ -15,6 +15,9 @@ import { createWebSocketClient } from './js/websocket.js';
 import { conversionEngine } from './js/conversionEngine.js';
 import { initProductionUI, updateProductionUI } from './js/productionUI.js';
 import { resourceParticleSystem } from './js/resourceParticles.js';
+import { productionChainUI } from './js/productionChainUI.js';
+// @ts-ignore
+import { catalystManager, CatalystType } from './dist/js/catalystSystem.js';
 
 const moveSpeed = 200;
 
@@ -210,6 +213,12 @@ function animate() {
     if (uiUpdateTimer >= uiUpdateInterval) {
         updateUI();
         updateProductionUI();
+        
+        // Update production chain UI if visible
+        if (productionChainUI) {
+            productionChainUI.refresh();
+        }
+        
         uiUpdateTimer = 0;
     }
     
@@ -228,6 +237,23 @@ function init() {
     
     // Initialize production UI
     initProductionUI();
+    
+    // Initialize production chain UI (create UI elements)
+    productionChainUI.createUI();
+    
+    // Initialize catalyst system with some starter catalysts for testing
+    // @ts-ignore
+    if (!gameState.catalystSystemInitialized) {
+        // Add required technologies for catalyst system
+        gameState.discoveredTechnologies.add('advanced_processing');
+        gameState.discoveredTechnologies.add('quantum_manipulation');
+        
+        catalystManager.addCatalyst(CatalystType.EFFICIENCY_BOOSTER, 2);
+        catalystManager.addCatalyst(CatalystType.SPEED_ACCELERATOR, 1);
+        
+        // @ts-ignore
+        gameState.catalystSystemInitialized = true;
+    }
 
     const blackHoleExists = gameState.stars.some(star => star.userData.type === 'black_hole');
     if (!blackHoleExists) {
