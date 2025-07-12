@@ -7,7 +7,6 @@ import { createCelestialBody } from './celestialBody.js';
 import { mathCache } from './utils.js';
 import { addTimelineLog } from './timeline.js';
 import { soundManager } from './sound.js';
-import { currencyManager, CurrencyType, RESOURCE_EXCHANGE_RATES } from './currencySystem.js';
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 export const keys = { w: false, a: false, s: false, d: false };
@@ -752,40 +751,3 @@ export function setupEventListeners() {
     }
     const setupInfoPanel = createInfoPanel();
 }
-
-// Export functions to global window object for accessibility
-window.showResourceSellModal = showResourceSellModal;
-window.testResourceModal = function() {
-    console.log('🔧 Manual test function called');
-    showResourceSellModal();
-};
-
-window.testButtonFind = function() {
-    console.log('🔧 Testing button finding...');
-    const btn = document.getElementById('overlayResourceSellButton');
-    console.log('🔧 Button found:', btn);
-    console.log('🔧 Button style:', btn ? btn.style.cssText : 'No button');
-    console.log('🔧 Button classes:', btn ? btn.className : 'No button');
-    return btn;
-};
-
-console.log('🔧 events.js loaded and functions exported to window');
-
-// Additional setup for overlay elements
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('🔧 DOMContentLoaded - Setting up overlay button');
-    setTimeout(() => {
-        const overlayBtn = document.getElementById('overlayResourceSellButton');
-        console.log('🔧 Found overlay button:', overlayBtn);
-        
-        if (overlayBtn) {
-            overlayBtn.addEventListener('click', (e) => {
-                console.log('🔧 Overlay button clicked!');
-                e.preventDefault();
-                e.stopPropagation();
-                showResourceSellModal();
-            });
-            console.log('🔧 Event listener added to overlay button');
-        }
-    }, 100);
-});

@@ -73,15 +73,6 @@
         <button id="starManagementTabButton">恒星管理</button>
       </div>
       
-      <!-- 生産パネル切り替えボタン -->
-      <div id="production-toggle-section">
-        <button id="productionToggleButton" class="production-toggle-btn">
-          🏭 生産パネル
-        </button>
-        <button id="productionChainButton" class="production-toggle-btn" style="margin-left: 10px;">
-          🔗 生産チェーン
-        </button>
-      </div>
 
       <!-- ゲームタブ -->
       <div id="game-screen">
@@ -146,6 +137,7 @@
           </div>
         </div>
       </div>
+
 
       <!-- 研究タブ -->
       <div id="research-screen" class="hidden-screen">
@@ -332,7 +324,18 @@
             <p>💎 <span id="overlayCurrencyGalactic">0</span></p>
             <p>🏺 <span id="overlayCurrencyAncient">0</span></p>
         </div>
-        <button id="overlayResourceSellButton" class="overlay-sell-btn">📦</button>
+    </div>
+
+    <!-- モダンなフローティングコントロール -->
+    <div id="floating-controls">
+        <button id="productionToggleButton" class="floating-btn production-btn" title="生産システムを開く">
+            <div class="btn-icon">🏭</div>
+            <div class="btn-label">生産システム</div>
+        </button>
+        <button id="floatingResourceSellButton" class="floating-btn sell-btn" title="資源を販売">
+            <div class="btn-icon">💰</div>
+            <div class="btn-label">資源販売</div>
+        </button>
     </div>
 
     <!-- 銀河マップコンテナ -->
@@ -438,6 +441,91 @@
           <div id="facility-construction-list">
             <!-- Dynamically populated -->
           </div>
+        </div>
+      </div>
+      
+      <!-- 生産チェーン -->
+      <div class="collapsible-section">
+        <div class="collapsible-header" id="productionChainHeader">🔗 生産チェーン</div>
+        <div class="collapsible-content" id="productionChainContent">
+          <div class="production-subsection">
+            <div id="production-chain-controls">
+              <button id="productionChainToggleButton" class="production-chain-btn">
+                🔗 チェーン表示切り替え
+              </button>
+              <div id="production-chain-info">
+                <p>生産チェーンを可視化して効率的な資源フローを管理します</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 高度なモジュール -->
+      <div class="collapsible-section">
+        <div class="collapsible-header" id="moduleSystemHeader">🔧 高度なモジュール</div>
+        <div class="collapsible-content" id="moduleSystemContent">
+          
+          <!-- Module Shop -->
+          <div class="production-subsection">
+            <h4>📦 モジュール購入</h4>
+            <div id="module-shop-list">
+              <!-- Populated dynamically -->
+            </div>
+          </div>
+          
+          <!-- Available Modules -->
+          <div class="production-subsection">
+            <h4>💼 所有モジュール</h4>
+            <div id="available-modules-list">
+              <!-- Populated dynamically -->
+            </div>
+          </div>
+          
+          <!-- Facility Module Management -->
+          <div class="production-subsection">
+            <h4>⚙️ モジュール管理</h4>
+            <div id="facility-selector">
+              <select id="facilitySelect">
+                <option value="">施設を選択...</option>
+                <!-- Populated dynamically -->
+              </select>
+            </div>
+            <div id="selected-facility-info" class="hidden">
+              <div class="facility-info">
+                <h5 id="selectedFacilityName">施設名</h5>
+                <div class="facility-slots">
+                  スロット: <span id="usedSlots">0</span>/<span id="maxSlots">0</span>
+                  <div class="slot-indicator" id="slotIndicator">
+                    <!-- Slots populated dynamically -->
+                  </div>
+                </div>
+                
+                <div id="installed-modules-section">
+                  <h6>設置済みモジュール</h6>
+                  <div id="installed-modules-list">
+                    <!-- Populated dynamically -->
+                  </div>
+                </div>
+                
+                <div id="installable-modules-section">
+                  <h6>設置可能モジュール</h6>
+                  <div id="installable-modules-list">
+                    <!-- Populated dynamically -->
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Facility Upgrades -->
+          <div class="production-subsection">
+            <h4>🏭 施設アップグレード</h4>
+            <div id="facility-upgrades-list">
+              <!-- Populated dynamically -->
+            </div>
+          </div>
+          
         </div>
       </div>
     </div>
