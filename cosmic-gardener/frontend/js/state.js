@@ -86,16 +86,5 @@ export const gameState = {
     },
     advancedResources: {},
     discoveredTechnologies: new Set(),
-    availableFacilities: new Set(['basic_converter']),
-    
-    // NPC Trading System
-    npcTrading: {
-        initialized: false,
-        lastUpdate: 0,
-        activeVisits: [],
-        npcReputation: {},
-        tradingHistory: [],
-        discoveredNPCs: new Set(),
-        marketEvents: []
-    }
+    availableFacilities: new Set(['basic_converter'])
 };

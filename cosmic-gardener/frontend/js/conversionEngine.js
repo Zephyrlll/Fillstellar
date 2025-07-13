@@ -4,6 +4,7 @@ import { CONVERSION_RECIPES, calculateRecipeOutput } from './conversionRecipes.j
 import { gameState } from './state.js';
 import { showMessage } from './ui.js';
 import { addTimelineLog } from './timeline.js';
+import { resourceFlowDisplay } from './resourceFlowDisplay.js';
 export class ConversionEngine {
     constructor() {
         this.activeConversions = new Map();
@@ -240,6 +241,8 @@ export class ConversionEngine {
         // Add timeline log
         addTimelineLog(`${recipe.name}の変換を開始しました`);
         showMessage(`${recipe.name}を開始しました！`, 1500);
+        // Add to resource flow display
+        resourceFlowDisplay.addConversion(conversionId, recipeId, duration);
         return true;
     }
     // Check if a facility is currently processing
@@ -297,6 +300,8 @@ export class ConversionEngine {
             this.produceResources(recipe, inputQuality, facilityEfficiency);
             // Remove from active conversions
             this.activeConversions.delete(id);
+            // Remove from resource flow display
+            resourceFlowDisplay.removeConversion(id);
             // Add completion log
             addTimelineLog(`${recipe.name}の変換が完了しました`);
             showMessage(`${recipe.name}が完了しました！`, 1500);

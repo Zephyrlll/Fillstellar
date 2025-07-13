@@ -78,6 +78,129 @@
   padding: 20px;
 }
 
+/* Resource Flow Display Styles */
+#resource-flow-display {
+  background: rgba(16, 24, 40, 0.6);
+  border: 1px solid #4a9eff;
+  border-radius: 8px;
+  padding: 15px;
+  margin: 10px 0;
+}
+
+.flow-info {
+  text-align: center;
+  margin-bottom: 15px;
+  color: #b0c4de;
+  font-size: 0.9em;
+}
+
+#active-flows-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.resource-flow-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(74, 158, 255, 0.1);
+  border: 1px solid rgba(74, 158, 255, 0.3);
+  border-radius: 6px;
+  padding: 12px;
+  animation: flowGlow 2s ease-in-out infinite alternate;
+}
+
+.resource-flow-item.consuming {
+  border-left: 4px solid #ff6b6b;
+  background: rgba(255, 107, 107, 0.1);
+}
+
+.resource-flow-item.producing {
+  border-left: 4px solid #51cf66;
+  background: rgba(81, 207, 102, 0.1);
+}
+
+.flow-arrow {
+  font-size: 1.2em;
+  margin: 0 8px;
+  animation: flowPulse 1.5s ease-in-out infinite;
+}
+
+.flow-rate {
+  font-weight: bold;
+  font-size: 1.1em;
+}
+
+.consuming .flow-rate {
+  color: #ff6b6b;
+}
+
+.producing .flow-rate {
+  color: #51cf66;
+}
+
+@keyframes flowGlow {
+  0% { box-shadow: 0 0 5px rgba(74, 158, 255, 0.3); }
+  100% { box-shadow: 0 0 15px rgba(74, 158, 255, 0.6); }
+}
+
+@keyframes flowPulse {
+  0%, 100% { transform: scale(1); opacity: 0.7; }
+  50% { transform: scale(1.2); opacity: 1; }
+}
+
+.no-active-flows {
+  text-align: center;
+  padding: 20px;
+  color: #888;
+  font-style: italic;
+}
+
+.flow-resource-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.resource-name {
+  font-weight: bold;
+  font-size: 1em;
+}
+
+.current-amount {
+  font-size: 0.9em;
+  color: #b0c4de;
+}
+
+.flow-rate-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.flow-rate.positive {
+  color: #51cf66;
+}
+
+.flow-rate.negative {
+  color: #ff6b6b;
+}
+
+.rate-breakdown {
+  font-size: 0.8em;
+  opacity: 0.8;
+}
+
+.consuming-rate {
+  color: #ff6b6b;
+}
+
+.producing-rate {
+  color: #51cf66;
+}
+
 /* Floating Controls - Modern Design */
 #floating-controls {
   position: fixed;

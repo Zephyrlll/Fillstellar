@@ -17,7 +17,9 @@
       "Bash(~/.cargo/bin/cargo check --no-default-features)",
       "Bash(npm install:*)",
       "Bash(touch:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(cat:*)",
+      "Bash(ss:*)"
     ],
     "deny": []
   }

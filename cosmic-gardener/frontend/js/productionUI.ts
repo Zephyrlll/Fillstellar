@@ -109,6 +109,10 @@ function updateAdvancedResourcesDisplay(): void {
         const type = key as ResourceType;
         const metadata = RESOURCE_METADATA[type];
         if (metadata && resources[type] && resources[type].amount > 0) {
+            // Initialize category array if it doesn't exist
+            if (!categories[metadata.category]) {
+                categories[metadata.category] = [];
+            }
             categories[metadata.category].push(type);
         }
     });

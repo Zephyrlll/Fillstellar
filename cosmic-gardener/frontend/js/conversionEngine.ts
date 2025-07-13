@@ -15,6 +15,7 @@ import { CONVERSION_RECIPES, calculateRecipeOutput } from './conversionRecipes.j
 import { gameState } from './state.js';
 import { showMessage } from './ui.js';
 import { addTimelineLog } from './timeline.js';
+import { resourceFlowDisplay } from './resourceFlowDisplay.js';
 
 export interface ConversionQueue {
     recipeId: string;
@@ -301,6 +302,9 @@ export class ConversionEngine {
         addTimelineLog(`${recipe.name}の変換を開始しました`);
         showMessage(`${recipe.name}を開始しました！`, 1500);
         
+        // Add to resource flow display
+        resourceFlowDisplay.addConversion(conversionId, recipeId, duration);
+        
         return true;
     }
     
@@ -368,6 +372,9 @@ export class ConversionEngine {
             
             // Remove from active conversions
             this.activeConversions.delete(id);
+            
+            // Remove from resource flow display
+            resourceFlowDisplay.removeConversion(id);
             
             // Add completion log
             addTimelineLog(`${recipe.name}の変換が完了しました`);

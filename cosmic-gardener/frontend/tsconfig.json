@@ -12,12 +12,16 @@
     "forceConsistentCasingInFileNames": true,
     "allowJs": true,
     "checkJs": false,
-    "noEmitOnError": false
+    "noEmitOnError": false,
+    "outDir": "./dist",
+    "rootDir": "."
   },
   "include": [
-    "**/*.ts"
+    "js/*.ts",
+    "*.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "dist"
   ]
 }
