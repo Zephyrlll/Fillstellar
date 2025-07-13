@@ -177,7 +177,12 @@ export class WebSocketIntegration {
             
             // リソース更新
             if (state.resources) {
-                Object.assign(gameState, state.resources);
+                gameState.resources.cosmicDust = state.resources.cosmicDust as number;
+                gameState.resources.energy = state.resources.energy as number;
+                gameState.resources.organicMatter = state.resources.organicMatter as number;
+                gameState.resources.biomass = state.resources.biomass as number;
+                gameState.resources.darkMatter = state.resources.darkMatter as number;
+                gameState.resources.thoughtPoints = state.resources.thoughtPoints as number;
             }
             
             // 天体データ更新
@@ -220,7 +225,7 @@ export class WebSocketIntegration {
             },
             celestial_bodies: gameState.stars.map(star => ({
                 // TODO: 天体データの変換
-                id: star.userData.id || crypto.randomUUID(),
+                id: star.uuid,
                 type: star.userData.type,
                 position: star.position,
                 // その他のプロパティ

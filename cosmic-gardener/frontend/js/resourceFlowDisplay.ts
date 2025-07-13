@@ -45,31 +45,18 @@ export class ResourceFlowDisplay {
             });
         });
 
-        // Add output flows (production) - handle different recipe structures
-        if (recipe.outputs) {
-            if (recipe.outputs.primary && recipe.outputs.primary.resources) {
-                recipe.outputs.primary.resources.forEach(output => {
-                    flows.push({
-                        type: output.type,
-                        amount: output.amount,
-                        rate: output.amount / (duration / 1000), // per second
-                        isInput: false,
-                        conversionId,
-                        startTime: currentTime
-                    });
+        // Add output flows (production)
+        if (recipe.outputs && recipe.outputs.resources) {
+            recipe.outputs.resources.forEach((output: Resource) => {
+                flows.push({
+                    type: output.type,
+                    amount: output.amount,
+                    rate: output.amount / (duration / 1000), // per second
+                    isInput: false,
+                    conversionId,
+                    startTime: currentTime
                 });
-            } else if (Array.isArray(recipe.outputs)) {
-                recipe.outputs.forEach(output => {
-                    flows.push({
-                        type: output.type,
-                        amount: output.amount,
-                        rate: output.amount / (duration / 1000), // per second
-                        isInput: false,
-                        conversionId,
-                        startTime: currentTime
-                    });
-                });
-            }
+            });
         }
 
         this.activeFlows.set(conversionId, flows);

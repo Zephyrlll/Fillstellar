@@ -437,18 +437,22 @@ function updateFacilityConstructionList(): void {
             html.push('<p class="no-facilities">建設可能な施設がありません</p>');
         }
         
-        facilityConstructionList.innerHTML = html.join('');
+        if (facilityConstructionList) {
+            facilityConstructionList.innerHTML = html.join('');
+        }
         
         // Add click handlers
-        facilityConstructionList.querySelectorAll('.build-button:not(.disabled)').forEach(button => {
-            button.addEventListener('click', (e) => {
-                const facilityId = (e.target as HTMLElement).getAttribute('data-facility-id');
-                if (facilityId && payForFacility(facilityId)) {
-                    addFacilityToGame(facilityId);
-                    updateProductionUI(true);
-                }
+        if (facilityConstructionList) {
+            facilityConstructionList.querySelectorAll('.build-button:not(.disabled)').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const facilityId = (e.target as HTMLElement).getAttribute('data-facility-id');
+                    if (facilityId && payForFacility(facilityId)) {
+                        addFacilityToGame(facilityId);
+                        updateProductionUI(true);
+                    }
+                });
             });
-        });
+        }
     });
 }
 

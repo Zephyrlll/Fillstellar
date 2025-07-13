@@ -1713,9 +1713,9 @@ button:disabled {
     border: 2px solid #4a9eff;
     border-radius: 15px;
     padding: 20px;
-    max-width: 600px;
-    width: 90%;
-    max-height: 80vh;
+    max-width: 800px;
+    width: 95%;
+    max-height: 85vh;
     overflow-y: auto;
     box-shadow: 0 10px 30px rgba(74, 158, 255, 0.3);
 }
@@ -2115,5 +2115,305 @@ button:disabled {
 
 #production-chain-controls {
   text-align: center;
+}
+
+/* Advanced Market System Styles */
+.market-info-section {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: rgba(74, 158, 255, 0.1);
+    border-radius: 10px;
+    border: 1px solid rgba(74, 158, 255, 0.3);
+}
+
+.market-info-section h4 {
+    color: #4a9eff;
+    margin: 0 0 10px 0;
+    font-size: 16px;
+}
+
+.market-event {
+    background: rgba(255, 193, 7, 0.2);
+    border: 1px solid #ffc107;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 8px;
+}
+
+.event-description {
+    color: #ffc107;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.event-timer {
+    color: #ffeb3b;
+    font-size: 12px;
+}
+
+.no-events {
+    color: #888;
+    font-style: italic;
+    margin: 0;
+}
+
+.market-filters {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+    align-items: center;
+}
+
+.market-filters select {
+    background: rgba(74, 158, 255, 0.1);
+    border: 1px solid #4a9eff;
+    border-radius: 5px;
+    color: #fff;
+    padding: 8px 12px;
+}
+
+.market-btn {
+    background: linear-gradient(135deg, #4a9eff, #357abd);
+    border: none;
+    border-radius: 5px;
+    color: white;
+    padding: 8px 16px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.3s ease;
+}
+
+.market-btn:hover {
+    background: linear-gradient(135deg, #357abd, #4a9eff);
+    transform: translateY(-1px);
+}
+
+/* Enhanced Resource Sell Items */
+.resource-sell-item {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(74, 158, 255, 0.3);
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 12px;
+    transition: all 0.3s ease;
+}
+
+.resource-sell-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: #4a9eff;
+    transform: translateY(-2px);
+}
+
+.resource-sell-item.basic {
+    border-left: 4px solid #4caf50;
+}
+
+.resource-sell-item.advanced {
+    border-left: 4px solid #ff9800;
+}
+
+.resource-sell-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 10px;
+}
+
+.resource-sell-name {
+    font-size: 16px;
+    font-weight: bold;
+    color: #4a9eff;
+}
+
+.resource-category {
+    font-size: 10px;
+    color: #888;
+    font-weight: normal;
+    margin-left: 8px;
+}
+
+.market-indicators {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.price-change {
+    font-size: 12px;
+    font-weight: bold;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.price-change.price-up {
+    color: #4caf50;
+    background: rgba(76, 175, 80, 0.2);
+}
+
+.price-change.price-down {
+    color: #f44336;
+    background: rgba(244, 67, 54, 0.2);
+}
+
+.resource-stats {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+    font-size: 12px;
+}
+
+.resource-stats span {
+    color: #ccc;
+}
+
+.resource-stats strong {
+    color: #fff;
+}
+
+.volatility-bar {
+    margin-top: 8px;
+}
+
+.volatility-label {
+    font-size: 11px;
+    color: #888;
+    margin-bottom: 3px;
+}
+
+.volatility-meter {
+    width: 100%;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.volatility-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #4caf50, #ff9800, #f44336);
+    transition: width 0.3s ease;
+}
+
+.quick-sell-buttons {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+}
+
+.quick-sell-btn {
+    background: rgba(74, 158, 255, 0.2);
+    border: 1px solid #4a9eff;
+    border-radius: 5px;
+    color: #fff;
+    padding: 6px 10px;
+    cursor: pointer;
+    font-size: 11px;
+    transition: all 0.2s ease;
+    flex: 1;
+    min-width: 80px;
+}
+
+.quick-sell-btn:hover:not(:disabled) {
+    background: rgba(74, 158, 255, 0.4);
+    transform: translateY(-1px);
+}
+
+.quick-sell-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.quick-sell-btn small {
+    display: block;
+    font-size: 9px;
+    color: #bbb;
+}
+
+.custom-sell-section {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.market-impact-warning {
+    margin-top: 8px;
+    padding: 6px;
+    background: rgba(255, 152, 0, 0.2);
+    border: 1px solid #ff9800;
+    border-radius: 4px;
+    color: #ffb74d;
+    font-size: 11px;
+}
+
+/* Trading Summary Styles */
+.market-summary {
+    margin-top: 20px;
+    padding: 15px;
+    background: rgba(74, 158, 255, 0.05);
+    border-radius: 10px;
+    border: 1px solid rgba(74, 158, 255, 0.2);
+}
+
+.market-summary h4 {
+    color: #4a9eff;
+    margin: 0 0 15px 0;
+    font-size: 16px;
+}
+
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+    margin-bottom: 15px;
+}
+
+.summary-item {
+    text-align: center;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    border: 1px solid rgba(74, 158, 255, 0.2);
+}
+
+.summary-label {
+    font-size: 11px;
+    color: #888;
+    margin-bottom: 5px;
+}
+
+.summary-value {
+    font-size: 16px;
+    font-weight: bold;
+    color: #fff;
+    margin-bottom: 3px;
+}
+
+.summary-detail {
+    font-size: 10px;
+    color: #bbb;
+}
+
+.market-tips {
+    border-top: 1px solid rgba(74, 158, 255, 0.2);
+    padding-top: 15px;
+}
+
+.market-tips h5 {
+    color: #4a9eff;
+    margin: 0 0 10px 0;
+    font-size: 14px;
+}
+
+.market-tips ul {
+    margin: 0;
+    padding-left: 20px;
+    color: #ccc;
+}
+
+.market-tips li {
+    font-size: 12px;
+    margin-bottom: 4px;
 }
 

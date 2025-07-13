@@ -546,57 +546,97 @@
     </div>
   </div>
 
-  <script type="module" src="dist/main.js"></script>
-  <script type="module">
-    console.log('🔧 Module script loaded');
-    try {
-      import('./dist/main.js').then(() => {
-        console.log('🔧 main.js imported successfully');
-      }).catch(error => {
-        console.error('🔧 Failed to import main.js:', error);
-      });
-    } catch (error) {
-      console.error('🔧 Error importing main.js:', error);
-    }
-  </script>
+  <script type="module" src="./main.js"></script>
   <script>
-    console.log('🔧 HTML loaded, checking basic functionality...');
+    console.log('🔧 HTML loaded, market system will be handled by events.js');
+    
+    // Debug: Test currency button directly
     document.addEventListener('DOMContentLoaded', () => {
-      console.log('🔧 DOM fully loaded');
-      const btn = document.getElementById('overlayResourceSellButton');
-      console.log('🔧 Button element:', btn);
-      
-      if (btn) {
-        btn.addEventListener('click', () => {
-          console.log('🔧 Button clicked via direct HTML listener!');
-          // Try to call the modal function directly
-          try {
-            if (window.showResourceSellModal) {
-              window.showResourceSellModal();
-            } else {
-              console.log('🔧 showResourceSellModal not available on window');
-              // Create a simple modal as fallback
-              const modal = document.createElement('div');
-              modal.style.position = 'fixed';
-              modal.style.top = '0';
-              modal.style.left = '0';
-              modal.style.width = '100%';
-              modal.style.height = '100%';
-              modal.style.background = 'rgba(0,0,0,0.8)';
-              modal.style.zIndex = '10000';
-              modal.style.display = 'flex';
-              modal.style.justifyContent = 'center';
-              modal.style.alignItems = 'center';
-              modal.innerHTML = '<div style="background:white; padding:20px; border-radius:10px;"><h3>資源販売</h3><p>通貨システムテスト</p><button onclick="this.parentElement.parentElement.remove()">閉じる</button></div>';
-              document.body.appendChild(modal);
-            }
-          } catch (error) {
-            console.error('🔧 Error calling modal:', error);
-            alert('モーダルエラー: ' + error.message);
-          }
-        });
-        console.log('🔧 Direct event listener added');
-      }
+        const currencyBtn = document.getElementById('floatingResourceSellButton');
+        if (currencyBtn) {
+            console.log('🔧 Currency button found');
+            currencyBtn.addEventListener('click', () => {
+                console.log('🔧 Currency button clicked directly!');
+                
+                // Wait for modules to load and try multiple times
+                const tryShowModal = (attempts = 0) => {
+                    if (window.showResourceSellModal) {
+                        console.log('🔧 showResourceSellModal found, calling...');
+                        window.showResourceSellModal();
+                    } else if (attempts < 10) {
+                        console.log('🔧 showResourceSellModal NOT found, retrying...', attempts + 1);
+                        setTimeout(() => tryShowModal(attempts + 1), 100);
+                    } else {
+                        console.log('🔧 showResourceSellModal NOT found after retries, showing simple modal...');
+                        // Simple fallback modal
+                        const modal = document.createElement('div');
+                        modal.style.cssText = `
+                            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+                            background: rgba(0,0,0,0.8); display: flex; align-items: center; 
+                            justify-content: center; z-index: 10000;
+                        `;
+                        modal.innerHTML = `
+                            <div style="background: #1a1a2e; padding: 20px; border-radius: 10px; color: white; max-width: 400px;">
+                                <h3>🔧 デバッグ: 資源販売システム</h3>
+                                <p>モジュールが正しく読み込まれていません</p>
+                                <button onclick="this.parentElement.parentElement.remove()" style="padding: 10px; margin-top: 10px;">閉じる</button>
+                            </div>
+                        `;
+                        document.body.appendChild(modal);
+                    }
+                };
+                
+                tryShowModal();
+            });
+        } else {
+            console.log('🔧 Currency button NOT found');
+        }
+        
+        // Debug: Try to load all systems directly
+        setTimeout(() => {
+            console.log('🔧 Attempting direct module imports...');
+            
+            // Load currency system
+            import('./dist/js/currencySystem.js')
+                .then((currencyModule) => {
+                    console.log('🔧 currencySystem module loaded:', currencyModule);
+                    if (currencyModule.currencyManager) {
+                        window.currencyManager = currencyModule.currencyManager;
+                        window.currencyManager.initializeCurrencies();
+                        console.log('💰 currencyManager manually set and initialized');
+                    }
+                })
+                .catch((error) => {
+                    console.error('🔧 Failed to import currencySystem:', error);
+                });
+            
+            // Load market system
+            import('./dist/js/marketSystem.js')
+                .then((marketModule) => {
+                    console.log('🔧 marketSystem module loaded:', marketModule);
+                    if (marketModule.marketSystem) {
+                        window.marketSystem = marketModule.marketSystem;
+                        window.marketSystem.update();
+                        console.log('📈 marketSystem manually set and updated');
+                    }
+                })
+                .catch((error) => {
+                    console.error('🔧 Failed to import marketSystem:', error);
+                });
+            
+            // Load modal system
+            import('./dist/js/resourceSellModal.js')
+                .then((module) => {
+                    console.log('🔧 resourceSellModal module loaded:', module);
+                    if (module.showResourceSellModal) {
+                        window.showResourceSellModal = module.showResourceSellModal;
+                        console.log('🔧 showResourceSellModal manually set on window');
+                    }
+                })
+                .catch((error) => {
+                    console.error('🔧 Failed to import resourceSellModal:', error);
+                });
+        }, 2000);
     });
   </script>
   <script>

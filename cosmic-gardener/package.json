@@ -40,7 +40,7 @@
     "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
     "dev:frontend": "cd frontend && npm run dev",
     "dev:backend": "cd backend && make dev",
-    "build": "npm run build:frontend && npm run build:backend",
+    "build": "npm run build:frontend",
     "build:frontend": "cd frontend && npm run build",
     "build:backend": "cd backend && make build-release",
     "test": "npm run test:frontend && npm run test:backend",
@@ -82,8 +82,7 @@
     "release:tag": "git tag v$(node -p \"require('./package.json').version\") && git push --tags",
     "deploy:staging": "cd backend && make deploy-staging",
     "deploy:production": "cd backend && make deploy-production",
-    "health": "curl -f http://localhost:8080/health && echo '\\nBackend: OK' || echo '\\nBackend: FAIL'",
-    "postinstall": "npm run setup:frontend"
+              "health": "curl -f http://localhost:8080/health && echo '\nBackend: OK' || echo '\nBackend: FAIL'"
   },
   "devDependencies": {
     "concurrently": "^8.2.0",

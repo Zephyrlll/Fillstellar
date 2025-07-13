@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Market System Test</title>
+    <style>
+        body { background: #000; color: #fff; font-family: Arial, sans-serif; }
+        button { padding: 10px; margin: 10px; background: #4a9eff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>Market System Test</h1>
+    <button id="testMarket">Test Market System</button>
+    <button id="testCurrency">Test Currency System</button>
+    <button id="testModal">Test Modal</button>
+    
+    <div id="output"></div>
+
+    <script type="module">
+        // Simple test for market system
+        import { marketSystem } from './dist/js/marketSystem.js';
+        import { currencyManager } from './dist/js/currencySystem.js';
+        
+        document.getElementById('testMarket').addEventListener('click', () => {
+            console.log('Market System:', marketSystem);
+            document.getElementById('output').innerHTML = '<p>Market system loaded: ' + !!marketSystem + '</p>';
+        });
+        
+        document.getElementById('testCurrency').addEventListener('click', () => {
+            console.log('Currency Manager:', currencyManager);
+            currencyManager.initializeCurrencies();
+            const currencies = currencyManager.getAllCurrencies();
+            document.getElementById('output').innerHTML = '<p>Currencies: ' + JSON.stringify(currencies) + '</p>';
+        });
+        
+        document.getElementById('testModal').addEventListener('click', () => {
+            if (window.showResourceSellModal) {
+                console.log('Modal function found');
+                document.getElementById('output').innerHTML = '<p>Modal function exists</p>';
+            } else {
+                console.log('Modal function not found');
+                document.getElementById('output').innerHTML = '<p>Modal function NOT found</p>';
+            }
+        });
+        
+        // Mock gameState for testing
+        window.gameState = {
+            resources: {
+                cosmicDust: 1000,
+                energy: 500,
+                organicMatter: 200,
+                biomass: 100,
+                darkMatter: 10,
+                thoughtPoints: 50
+            },
+            advancedResources: {}
+        };
+        
+        // Import the modal after gameState is ready
+        import('./dist/js/resourceSellModal.js').then(() => {
+            console.log('Resource sell modal loaded');
+        });
+    </script>
+</body>
+</html>

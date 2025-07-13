@@ -12,7 +12,14 @@ export interface Vec3 {
 }
 
 export interface GameState {
-    resources: any;
+    resources: {
+        cosmicDust: number;
+        energy: number;
+        organicMatter: number;
+        biomass: number;
+        darkMatter: number;
+        thoughtPoints: number;
+    };
     celestial_bodies: any[];
     research: any;
     statistics: any;
@@ -29,7 +36,9 @@ export type ClientMessage =
     | { type: 'CreateBody'; body_type: string; position: [number, number, number] }
     | { type: 'RemoveBody'; body_id: string }
     | { type: 'SpendResources'; cosmic_dust: number; energy: number }
-    | { type: 'SetGameRunning'; running: boolean };
+    | { type: 'SetGameRunning'; running: boolean }
+    | { type: 'Heartbeat' }
+    | { type: 'SaveGame'; game_state: GameState };
 
 // サーバーメッセージ（バックエンドに合わせて更新）
 export type ServerMessage =
@@ -191,6 +200,16 @@ export class CosmicGardenerWebSocket {
         this.send({
             type: 'SetGameRunning',
             running: running
+        });
+    }
+
+    /**
+     * ゲーム状態を保存
+     */
+    public saveGame(gameState: GameState): void {
+        this.send({
+            type: 'SaveGame',
+            game_state: gameState
         });
     }
 

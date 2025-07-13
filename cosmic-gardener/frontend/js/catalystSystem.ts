@@ -2,34 +2,32 @@
 import { ResourceType, QualityTier } from './resourceSystem.js';
 
 // Catalyst Types
-export var CatalystType;
-(function (CatalystType) {
+export enum CatalystType {
     // Basic Catalysts
-    CatalystType["EFFICIENCY_BOOSTER"] = "efficiencyBooster";
-    CatalystType["SPEED_ACCELERATOR"] = "speedAccelerator";
-    CatalystType["QUALITY_ENHANCER"] = "qualityEnhancer";
-    CatalystType["YIELD_MULTIPLIER"] = "yieldMultiplier";
+    EFFICIENCY_BOOSTER = "efficiencyBooster",
+    SPEED_ACCELERATOR = "speedAccelerator",
+    QUALITY_ENHANCER = "qualityEnhancer",
+    YIELD_MULTIPLIER = "yieldMultiplier",
     // Advanced Catalysts
-    CatalystType["QUANTUM_STABILIZER"] = "quantumStabilizer";
-    CatalystType["ENTROPY_REDUCER"] = "entropyReducer";
-    CatalystType["TEMPORAL_ACCELERATOR"] = "temporalAccelerator";
-    CatalystType["DIMENSIONAL_RESONATOR"] = "dimensionalResonator";
-})(CatalystType || (CatalystType = {}));
+    QUANTUM_STABILIZER = "quantumStabilizer",
+    ENTROPY_REDUCER = "entropyReducer",
+    TEMPORAL_ACCELERATOR = "temporalAccelerator",
+    DIMENSIONAL_RESONATOR = "dimensionalResonator",
+}
 
 // Catalyst Effects
-export var CatalystEffect;
-(function (CatalystEffect) {
-    CatalystEffect["EFFICIENCY"] = "efficiency";
-    CatalystEffect["SPEED"] = "speed";
-    CatalystEffect["QUALITY"] = "quality";
-    CatalystEffect["YIELD"] = "yield";
-    CatalystEffect["WASTE_REDUCTION"] = "wasteReduction";
-    CatalystEffect["BYPRODUCT_CHANCE"] = "byproductChance";
-})(CatalystEffect || (CatalystEffect = {}));
+export enum CatalystEffect {
+    EFFICIENCY = "efficiency",
+    SPEED = "speed",
+    QUALITY = "quality",
+    YIELD = "yield",
+    WASTE_REDUCTION = "wasteReduction",
+    BYPRODUCT_CHANCE = "byproductChance",
+}
 
 // Catalyst Definitions
-export const CATALYST_DEFINITIONS = {
-    [CatalystType.EFFICIENCY_BOOSTER]: {
+export const CATALYST_DEFINITIONS: any = {
+    [CatalystType.EFFICIENCY_BOOSTER as string]: {
         id: CatalystType.EFFICIENCY_BOOSTER,
         name: '効率促進剤',
         description: '生産効率を一時的に向上させます',
@@ -50,7 +48,7 @@ export const CATALYST_DEFINITIONS = {
         }
     },
     
-    [CatalystType.SPEED_ACCELERATOR]: {
+    [CatalystType.SPEED_ACCELERATOR as string]: {
         id: CatalystType.SPEED_ACCELERATOR,
         name: '速度促進剤',
         description: '生産速度を一時的に向上させます',
@@ -71,7 +69,7 @@ export const CATALYST_DEFINITIONS = {
         }
     },
     
-    [CatalystType.QUALITY_ENHANCER]: {
+    [CatalystType.QUALITY_ENHANCER as string]: {
         id: CatalystType.QUALITY_ENHANCER,
         name: '品質向上剤',
         description: '生産物の品質を一時的に向上させます',
@@ -92,7 +90,7 @@ export const CATALYST_DEFINITIONS = {
         }
     },
     
-    [CatalystType.YIELD_MULTIPLIER]: {
+    [CatalystType.YIELD_MULTIPLIER as string]: {
         id: CatalystType.YIELD_MULTIPLIER,
         name: '収率増強剤',
         description: '生産量を一時的に増加させます',
@@ -113,7 +111,7 @@ export const CATALYST_DEFINITIONS = {
         }
     },
     
-    [CatalystType.QUANTUM_STABILIZER]: {
+    [CatalystType.QUANTUM_STABILIZER as string]: {
         id: CatalystType.QUANTUM_STABILIZER,
         name: '量子安定化剤',
         description: '廃棄物生成を大幅に削減します',
@@ -135,7 +133,7 @@ export const CATALYST_DEFINITIONS = {
         }
     },
     
-    [CatalystType.ENTROPY_REDUCER]: {
+    [CatalystType.ENTROPY_REDUCER as string]: {
         id: CatalystType.ENTROPY_REDUCER,
         name: 'エントロピー削減剤',
         description: '副産物の生成確率を大幅に向上させます',
@@ -157,7 +155,7 @@ export const CATALYST_DEFINITIONS = {
         }
     },
     
-    [CatalystType.TEMPORAL_ACCELERATOR]: {
+    [CatalystType.TEMPORAL_ACCELERATOR as string]: {
         id: CatalystType.TEMPORAL_ACCELERATOR,
         name: '時間加速剤',
         description: '極限の速度向上を提供しますが短時間のみ',
@@ -179,7 +177,7 @@ export const CATALYST_DEFINITIONS = {
         }
     },
     
-    [CatalystType.DIMENSIONAL_RESONATOR]: {
+    [CatalystType.DIMENSIONAL_RESONATOR as string]: {
         id: CatalystType.DIMENSIONAL_RESONATOR,
         name: '次元共鳴剤',
         description: '全ての効果を総合的に向上させる究極の触媒',
@@ -210,7 +208,13 @@ export const CATALYST_DEFINITIONS = {
 
 // Active Catalyst Instance
 export class CatalystInstance {
-    constructor(catalystType, facilityId, startTime) {
+    catalystType: CatalystType;
+    facilityId: string;
+    startTime: number;
+    definition: any; // TODO: Define CatalystDefinition interface
+    endTime: number;
+
+    constructor(catalystType: CatalystType, facilityId: string, startTime: number) {
         this.catalystType = catalystType;
         this.facilityId = facilityId;
         this.startTime = startTime;
@@ -242,25 +246,28 @@ export class CatalystInstance {
 
 // Catalyst Manager
 export class CatalystManager {
+    private activeCatalysts: Map<string, CatalystInstance>; // facilityId -> CatalystInstance
+    private catalystInventory: Map<CatalystType, number>; // catalystType -> amount
+
     constructor() {
-        this.activeCatalysts = new Map(); // facilityId -> CatalystInstance
-        this.catalystInventory = new Map(); // catalystType -> amount
+        this.activeCatalysts = new Map();
+        this.catalystInventory = new Map();
     }
     
     // Add catalyst to inventory
-    addCatalyst(catalystType, amount = 1) {
+    addCatalyst(catalystType: CatalystType, amount: number = 1) {
         const current = this.catalystInventory.get(catalystType) || 0;
         this.catalystInventory.set(catalystType, current + amount);
     }
     
     // Check if player has catalyst in inventory
-    hasCatalyst(catalystType, amount = 1) {
+    hasCatalyst(catalystType: CatalystType, amount: number = 1) {
         const current = this.catalystInventory.get(catalystType) || 0;
         return current >= amount;
     }
     
     // Use catalyst on facility
-    useCatalyst(catalystType, facilityId) {
+    useCatalyst(catalystType: CatalystType, facilityId: string) {
         if (!this.hasCatalyst(catalystType)) {
             return false;
         }
@@ -272,7 +279,9 @@ export class CatalystManager {
         
         // Consume catalyst from inventory
         const current = this.catalystInventory.get(catalystType);
-        this.catalystInventory.set(catalystType, current - 1);
+        if (current !== undefined) {
+            this.catalystInventory.set(catalystType, current - 1);
+        }
         
         // Apply catalyst to facility
         const instance = new CatalystInstance(catalystType, facilityId, Date.now());
@@ -282,18 +291,18 @@ export class CatalystManager {
     }
     
     // Get active catalyst for facility
-    getActiveCatalyst(facilityId) {
+    getActiveCatalyst(facilityId: string): CatalystInstance | null {
         const catalyst = this.activeCatalysts.get(facilityId);
         if (catalyst && !catalyst.isActive()) {
             this.activeCatalysts.delete(facilityId);
             return null;
         }
-        return catalyst;
+        return catalyst || null;
     }
     
     // Get all active catalysts
-    getActiveCatalysts() {
-        const active = [];
+    getActiveCatalysts(): CatalystInstance[] {
+        const active: CatalystInstance[] = [];
         for (const [facilityId, catalyst] of this.activeCatalysts.entries()) {
             if (catalyst.isActive()) {
                 active.push(catalyst);
@@ -305,7 +314,7 @@ export class CatalystManager {
     }
     
     // Apply catalyst effects to facility
-    applyCatalystEffects(facility, baseEffects) {
+    applyCatalystEffects(facility: any, baseEffects: any) {
         const catalyst = this.getActiveCatalyst(facility.id);
         if (!catalyst) {
             return baseEffects;
@@ -370,7 +379,7 @@ export class CatalystManager {
     }
     
     // Load state
-    loadState(state) {
+    loadState(state: { activeCatalysts?: any[]; catalystInventory?: [CatalystType, number][] }) {
         if (state.activeCatalysts) {
             this.activeCatalysts.clear();
             state.activeCatalysts.forEach(catalystData => {
@@ -397,26 +406,26 @@ export class CatalystManager {
 export const catalystManager = new CatalystManager();
 
 // Helper functions
-export function getCatalystDefinition(catalystType) {
+export function getCatalystDefinition(catalystType: CatalystType) {
     return CATALYST_DEFINITIONS[catalystType];
 }
 
-export function getAvailableCatalysts(discoveredTechnologies) {
+export function getAvailableCatalysts(discoveredTechnologies: Set<string>) {
     return Object.values(CATALYST_DEFINITIONS).filter(catalyst => {
         if (!catalyst.requirements?.technology) {
             return true;
         }
-        return catalyst.requirements.technology.every(tech => 
+        return catalyst.requirements.technology.every((tech: string) => 
             discoveredTechnologies.has(tech)
         );
     });
 }
 
-export function canAffordCatalyst(catalystType, gameState) {
+export function canAffordCatalyst(catalystType: CatalystType, gameState: any) {
     const catalyst = CATALYST_DEFINITIONS[catalystType];
     if (!catalyst) return false;
     
-    return catalyst.cost.resources.every(cost => {
+    return catalyst.cost.resources.every((cost: { type: ResourceType; amount: number }) => {
         const available = gameState.advancedResources?.[cost.type]?.amount || 0;
         return available >= cost.amount;
     });

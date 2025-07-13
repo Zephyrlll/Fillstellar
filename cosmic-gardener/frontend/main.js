@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { scene, camera, composer, controls } from './js/threeSetup.js';
 import { gameState } from './js/state.js';
 import { loadGame } from './js/saveload.js';
-import { updateUI, debouncedUpdateGalaxyMap } from './js/ui.js';
+import { updateUI, debouncedUpdateGalaxyMap, ui } from './js/ui.js';
 import { createCelestialBody, checkLifeSpawn, evolveLife } from './js/celestialBody.js';
 import { spatialGrid, updatePhysics } from './js/physics.js';
 import { updateStatistics } from './js/statistics.js';
@@ -15,9 +15,9 @@ import { initProductionUI, updateProductionUI } from './js/productionUI.js';
 import { resourceParticleSystem } from './js/resourceParticles.js';
 import { productionChainUI } from './js/productionChainUI.js';
 // @ts-ignore
-import { catalystManager, CatalystType } from './dist/js/catalystSystem.js';
+import { catalystManager, CatalystType } from './js/catalystSystem.js';
 // @ts-ignore
-import { currencyManager } from './dist/js/currencySystem.js';
+import { currencyManager } from './js/currencySystem.js';
 const moveSpeed = 200;
 let uiUpdateTimer = 0;
 const uiUpdateInterval = 0.1;
