@@ -140,14 +140,19 @@ export function setupEventListeners() {
     const collapsibleHeaders = document.querySelectorAll('.collapsible-header');
     collapsibleHeaders.forEach(header => {
         header.addEventListener('click', () => {
+            console.log('🔧 Collapsible header clicked:', header.textContent);
             header.classList.toggle('active');
             const content = header.nextElementSibling as HTMLElement;
-            if (content.style.maxHeight) {
-                content.style.maxHeight = ''
-                content.style.padding = '0 15px';
-            } else {
-                content.style.maxHeight = content.scrollHeight + "px";
-                content.style.padding = '15px';
+            if (content) {
+                // hidden と active を切り替え
+                if (content.classList.contains('hidden')) {
+                    content.classList.remove('hidden');
+                    content.classList.add('active');
+                } else {
+                    content.classList.remove('active');
+                    content.classList.add('hidden');
+                }
+                console.log('📋 Content toggled:', content.classList.contains('active') ? 'opened' : 'closed');
             }
         });
     });

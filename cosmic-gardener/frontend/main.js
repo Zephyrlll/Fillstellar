@@ -33,11 +33,13 @@ function createStarfield() {
     const starsGeometry = new THREE.BufferGeometry();
     const starsMaterial = new THREE.PointsMaterial({ 
         color: 0xffffff, 
-        size: 0.8, // Much smaller and more realistic
+        size: 0.8, // Base size - will be adjusted by graphics engine
         sizeAttenuation: true, // Let distance affect size for depth perception
         transparent: true,
-        alphaTest: 0.05, // Lower threshold for more subtle stars
-        opacity: 0.9 // Slightly transparent for more natural look
+        alphaTest: 0.02, // Very low threshold to reduce flickering at high resolution
+        opacity: 0.95, // High opacity for stability
+        depthWrite: false, // Prevent depth conflicts
+        blending: THREE.AdditiveBlending // Better blending for stars
     });
     
     const starsVertices = [];

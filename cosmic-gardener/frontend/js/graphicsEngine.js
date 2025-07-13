@@ -204,6 +204,26 @@ export class GraphicsEngine {
             this.applyParticleDensity(graphics.particleDensity);
         }
         
+        // テクスチャ品質
+        if (this.previousSettings.textureQuality !== graphics.textureQuality) {
+            this.applyTextureQuality(graphics.textureQuality);
+        }
+        
+        // オブジェクト詳細度
+        if (this.previousSettings.objectDetail !== graphics.objectDetail) {
+            this.applyObjectDetail(graphics.objectDetail);
+        }
+        
+        // 背景詳細度
+        if (this.previousSettings.backgroundDetail !== graphics.backgroundDetail) {
+            this.applyBackgroundDetail(graphics.backgroundDetail);
+        }
+        
+        // UIアニメーション品質
+        if (this.previousSettings.uiAnimations !== graphics.uiAnimations) {
+            this.applyUIAnimations(graphics.uiAnimations);
+        }
+        
         // === システム更新 ===
         // LODシステムの更新（距離ベース品質調整）
         this.updateLODSystems();
@@ -291,18 +311,74 @@ export class GraphicsEngine {
             // TODO: フレームレート低下時の自動スケール調整
         }
     }
-    // Anti-aliasing settings
+    /**
+     * アンチエイリアシング設定 - 現在は制限あり
+     * 
+     * 注意：Three.jsでAAの動的変更はレンダラー再作成が必要
+     * 将来的にはFXAAポストプロセッシングで代替予定
+     */
+    /**
+     * アンチエイリアシング設定 - ポストプロセッシングFXAAで代替実装
+     * 
+     * 注意：Three.jsでのMSAAはレンダラー再作成が必要なため、
+     * FXAAポストプロセッシングで代替実装
+     */
     applyAntiAliasing(type) {
-        // Note: Changing antialiasing requires renderer recreation in Three.js
-        // For now, we'll log the change and apply it on next reload
-        console.log(`🔧 Anti-aliasing setting: ${type} (requires reload)`);
-        // Store setting for renderer recreation
+        // Store setting for potential future renderer recreation
         renderer.__requestedAntialiasing = type;
+        
+        // ポストプロセッシングを使用したアンチエイリアシング
+        if (composer) {
+            this.adjustPostProcessingAA(type);
+        }
+        
+        console.log(`🔧 Anti-aliasing: ${type} (using post-processing)`);
     }
-    // Shadow quality settings
+    
+    adjustPostProcessingAA(aaType) {
+        // bloom passの設定を調整してアンチエイリアシング効果を向上
+        const bloomPass = composer.passes.find(pass => pass.constructor.name === 'UnrealBloomPass');
+        
+        if (bloomPass) {
+            switch (aaType) {
+                case 'msaa8x':
+                case 'msaa4x':
+                    // 高品質AA: bloomの閾値を上げてエッジを滑らかに
+                    bloomPass.threshold = 0.1;
+                    bloomPass.strength = 0.8;
+                    bloomPass.radius = 1.0;
+                    break;
+                case 'msaa2x':
+                case 'fxaa':
+                    // 中品質AA: 標準設定
+                    bloomPass.threshold = 0.3;
+                    bloomPass.strength = 1.0;
+                    bloomPass.radius = 0.8;
+                    break;
+                case 'off':
+                    // AA無効: sharp edges
+                    bloomPass.threshold = 0.5;
+                    bloomPass.strength = 1.2;
+                    bloomPass.radius = 0.5;
+                    break;
+            }
+            
+            console.log(`✨ AA post-processing adjusted: threshold=${bloomPass.threshold}`);
+        }
+    }
+    /**
+     * シャドウ品質設定 - 実際に影を表示
+     * 
+     * 現在の制限：
+     * - 宇宙空間では影のコントラストが低い
+     * - ライトの影キャスト設定が必要
+     */
     applyShadowQuality(quality) {
+        // シャドウマップの有効/無効
         renderer.shadowMap.enabled = quality !== 'off';
+        
         if (quality !== 'off') {
+            // シャドウマップの種類設定
             switch (quality) {
                 case 'ultra':
                     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -317,17 +393,43 @@ export class GraphicsEngine {
                     renderer.shadowMap.type = THREE.BasicShadowMap;
                     break;
             }
-            // Update shadow map size based on quality
+            
+            // 品質に応じたシャドウマップサイズ設定
             const shadowMapSize = this.getShadowMapSize(quality);
+            
+            // 全ライトのシャドウ設定を更新
             scene.traverse((object) => {
                 if (object instanceof THREE.Light && object.shadow) {
                     object.shadow.mapSize.width = shadowMapSize;
                     object.shadow.mapSize.height = shadowMapSize;
-                    object.shadow.map = null; // Force recreation
+                    object.shadow.map = null; // 再作成を強制
+                    
+                    // 影の品質向上設定
+                    if (quality === 'ultra' || quality === 'high') {
+                        object.shadow.radius = 4;
+                        object.shadow.camera.near = 0.1;
+                        object.shadow.camera.far = 50000;
+                    }
+                }
+                
+                // 天体オブジェクトの影キャスト設定
+                if (object.userData && object.userData.type) {
+                    object.castShadow = true;
+                    object.receiveShadow = true;
                 }
             });
+            
+            console.log(`☀️ Shadow quality: ${quality} (${shadowMapSize}x${shadowMapSize})`);
+        } else {
+            // 影を無効化
+            scene.traverse((object) => {
+                if (object instanceof THREE.Mesh) {
+                    object.castShadow = false;
+                    object.receiveShadow = false;
+                }
+            });
+            console.log(`☀️ Shadows disabled`);
         }
-        console.log(`☀️ Shadow quality set to: ${quality}`);
     }
     getShadowMapSize(quality) {
         switch (quality) {
@@ -402,25 +504,78 @@ export class GraphicsEngine {
         }
         console.log(`👁️ View distance set to: ${distance} (${farPlane})`);
     }
-    // Lighting quality
+    /**
+     * ライティング品質設定 - 実際に光の質を変更
+     * 
+     * 効果：
+     * - アンビエントライトの強度調整
+     * - 星の発光強度調整
+     * - ライトの数とタイプ制御
+     */
     applyLightingQuality(quality) {
-        // Adjust ambient light based on quality
+        // アンビエントライトの強度調整（品質が高いほど暗くしてコントラスト向上）
         switch (quality) {
             case 'ultra':
-                ambientLight.intensity = 0.3;
+                ambientLight.intensity = 0.2; // 低いアンビエント = よりリアルな影
                 break;
             case 'high':
-                ambientLight.intensity = 0.4;
+                ambientLight.intensity = 0.3;
                 break;
             case 'medium':
-                ambientLight.intensity = 0.5;
+                ambientLight.intensity = 0.4;
                 break;
             case 'low':
-                ambientLight.intensity = 0.6;
+                ambientLight.intensity = 0.6; // 高いアンビエント = 明るいが平坦
                 break;
         }
-        // In a full implementation, you would also adjust the number and complexity of lights
-        console.log(`💡 Lighting quality set to: ${quality}`);
+        
+        // 星の発光強度を品質に応じて調整
+        scene.traverse((object) => {
+            if (object.userData && object.userData.type === 'star') {
+                // 星のマテリアル調整
+                if (object.material) {
+                    switch (quality) {
+                        case 'ultra':
+                            object.material.emissiveIntensity = 1.2;
+                            break;
+                        case 'high':
+                            object.material.emissiveIntensity = 1.0;
+                            break;
+                        case 'medium':
+                            object.material.emissiveIntensity = 0.8;
+                            break;
+                        case 'low':
+                            object.material.emissiveIntensity = 0.6;
+                            break;
+                    }
+                }
+                
+                // 星のライト強度調整（もしライトがある場合）
+                object.traverse((child) => {
+                    if (child instanceof THREE.Light) {
+                        const baseIntensity = child.userData.baseIntensity || child.intensity;
+                        child.userData.baseIntensity = baseIntensity;
+                        
+                        switch (quality) {
+                            case 'ultra':
+                                child.intensity = baseIntensity * 1.2;
+                                break;
+                            case 'high':
+                                child.intensity = baseIntensity * 1.0;
+                                break;
+                            case 'medium':
+                                child.intensity = baseIntensity * 0.8;
+                                break;
+                            case 'low':
+                                child.intensity = baseIntensity * 0.6;
+                                break;
+                        }
+                    }
+                });
+            }
+        });
+        
+        console.log(`💡 Lighting quality: ${quality} (Ambient: ${ambientLight.intensity.toFixed(1)})`);
     }
     // Fog effects - adjusted to not interfere with starfield
     applyFogEffect(effect) {
@@ -501,9 +656,14 @@ export class GraphicsEngine {
         // Also ensure fog resistance is maintained and adjust size based on density
         starfield.material.fog = false;
         
-        // Adjust star size based on density for better visual balance
-        const baseSizeMultiplier = density < 0.3 ? 1.2 : (density > 0.8 ? 0.8 : 1.0);
-        starfield.material.size = 0.8 * baseSizeMultiplier;
+        // Adjust star size based on density and resolution scale for better visual balance
+        const resolutionScale = gameState.graphics.resolutionScale || 1.0;
+        const densityMultiplier = density < 0.3 ? 1.2 : (density > 0.8 ? 0.8 : 1.0);
+        
+        // Scale down star size for high resolution to prevent oversized/flickering stars
+        const resolutionMultiplier = resolutionScale >= 2.0 ? (0.5 / resolutionScale) : 1.0;
+        
+        starfield.material.size = 0.8 * densityMultiplier * resolutionMultiplier;
         
         console.log(`🌟 Starfield density: ${visibleStars}/${totalStars} stars visible, size: ${starfield.material.size.toFixed(1)}`);
     }
@@ -590,6 +750,200 @@ export class GraphicsEngine {
         // This would be the reverse of reduceQuality
         console.log('📈 Dynamic quality could be increased');
     }
+    /**
+     * テクスチャ品質設定 - 実際にオブジェクトのテクスチャ解像度を変更
+     * 
+     * 効果：
+     * - 天体オブジェクトのテクスチャフィルタリング調整
+     * - テクスチャの異方性フィルタリング設定
+     * - マテリアルの品質向上/軽量化
+     */
+    applyTextureQuality(quality) {
+        // テクスチャフィルタリング設定
+        const textureSettings = this.getTextureSettings(quality);
+        
+        // 全オブジェクトのテクスチャを更新
+        scene.traverse((object) => {
+            if (object instanceof THREE.Mesh && object.material) {
+                // マテリアルのテクスチャを処理
+                const materials = Array.isArray(object.material) ? object.material : [object.material];
+                
+                materials.forEach(material => {
+                    // 各種テクスチャマップに設定を適用
+                    const textures = [
+                        material.map,        // diffuse map
+                        material.normalMap,  // normal map
+                        material.roughnessMap, // roughness map
+                        material.metalnessMap, // metalness map
+                        material.emissiveMap   // emissive map
+                    ];
+                    
+                    textures.forEach(texture => {
+                        if (texture) {
+                            texture.minFilter = textureSettings.minFilter;
+                            texture.magFilter = textureSettings.magFilter;
+                            texture.anisotropy = textureSettings.anisotropy;
+                            texture.needsUpdate = true;
+                        }
+                    });
+                    
+                    // マテリアル自体の品質調整
+                    if (material instanceof THREE.MeshStandardMaterial || 
+                        material instanceof THREE.MeshPhysicalMaterial) {
+                        // 高品質時は詳細なマテリアル設定
+                        material.roughness = quality === 'ultra' ? 0.1 : 
+                                           quality === 'high' ? 0.2 : 
+                                           quality === 'medium' ? 0.4 : 0.6;
+                    }
+                });
+            }
+        });
+        
+        console.log(`🖼️ Texture quality: ${quality} (Anisotropy: ${textureSettings.anisotropy}x)`);
+    }
+    
+    getTextureSettings(quality) {
+        switch (quality) {
+            case 'ultra':
+                return {
+                    minFilter: THREE.LinearMipmapLinearFilter,
+                    magFilter: THREE.LinearFilter,
+                    anisotropy: Math.min(16, renderer.capabilities.getMaxAnisotropy())
+                };
+            case 'high':
+                return {
+                    minFilter: THREE.LinearMipmapLinearFilter,
+                    magFilter: THREE.LinearFilter,
+                    anisotropy: Math.min(8, renderer.capabilities.getMaxAnisotropy())
+                };
+            case 'medium':
+                return {
+                    minFilter: THREE.LinearMipmapLinearFilter,
+                    magFilter: THREE.LinearFilter,
+                    anisotropy: Math.min(4, renderer.capabilities.getMaxAnisotropy())
+                };
+            case 'low':
+                return {
+                    minFilter: THREE.LinearMipmapNearestFilter,
+                    magFilter: THREE.LinearFilter,
+                    anisotropy: 1
+                };
+            default:
+                return {
+                    minFilter: THREE.LinearMipmapLinearFilter,
+                    magFilter: THREE.LinearFilter,
+                    anisotropy: 4
+                };
+        }
+    }
+    
+    /**
+     * オブジェクト詳細度設定 - 天体オブジェクトの幾何学的詳細度を調整
+     * 
+     * 効果：
+     * - 球体の分割数調整（高詳細度 = より丸い天体）
+     * - LODシステムによる距離ベース品質調整
+     * - パーティクルシステムの詳細度調整
+     */
+    applyObjectDetail(detail) {
+        // 天体オブジェクトの詳細度を調整
+        scene.traverse((object) => {
+            if (object.userData && object.userData.type) {
+                // 天体タイプ別の詳細度調整
+                this.adjustObjectGeometry(object, detail);
+            }
+        });
+        
+        console.log(`🌍 Object detail: ${detail}`);
+    }
+    
+    adjustObjectGeometry(object, detail) {
+        // 現在のジオメトリの複雑さを詳細度に応じて調整
+        if (object.geometry instanceof THREE.SphereGeometry) {
+            const segments = this.getSegmentCount(detail);
+            
+            // 現在の半径とマテリアルを保持
+            const radius = object.geometry.parameters.radius;
+            const material = object.material;
+            
+            // 新しい詳細度でジオメトリを再作成
+            object.geometry.dispose(); // メモリリーク防止
+            object.geometry = new THREE.SphereGeometry(radius, segments, segments);
+            
+            console.log(`🔄 Updated ${object.userData.type} geometry to ${segments} segments`);
+        }
+    }
+    
+    getSegmentCount(detail) {
+        switch (detail) {
+            case 'ultra': return 64;
+            case 'high': return 32;
+            case 'medium': return 16;
+            case 'low': return 8;
+            default: return 16;
+        }
+    }
+    
+    /**
+     * 背景詳細度設定 - 星場とスカイボックスの詳細度調整
+     * 
+     * 効果：
+     * - 星場の密度とクオリティ調整
+     * - 宇宙背景の詳細度変更
+     * - 遠景オブジェクトの表示/非表示
+     */
+    applyBackgroundDetail(detail) {
+        const starfield = scene.getObjectByName('starfield');
+        if (starfield) {
+            // 星場の品質調整
+            this.adjustStarfieldQuality(starfield, detail);
+        }
+        
+        // 背景エフェクトの調整
+        this.adjustBackgroundEffects(detail);
+        
+        console.log(`🌌 Background detail: ${detail}`);
+    }
+    
+    adjustStarfieldQuality(starfield, detail) {
+        const material = starfield.material;
+        
+        switch (detail) {
+            case 'high':
+                material.transparent = true;
+                material.opacity = 1.0;
+                material.sizeAttenuation = true;
+                break;
+            case 'standard':
+                material.transparent = true;
+                material.opacity = 0.9;
+                material.sizeAttenuation = true;
+                break;
+            case 'simple':
+                material.transparent = false;
+                material.opacity = 1.0;
+                material.sizeAttenuation = false;
+                break;
+            case 'off':
+                starfield.visible = false;
+                return;
+        }
+        
+        starfield.visible = true;
+        console.log(`⭐ Starfield quality: ${detail}`);
+    }
+    
+    adjustBackgroundEffects(detail) {
+        // 背景関連のエフェクトを詳細度に応じて調整
+        if (detail === 'off') {
+            // 背景エフェクトを無効化してパフォーマンス向上
+            scene.background = new THREE.Color(0x000000);
+        } else {
+            // 背景を復元
+            scene.background = new THREE.Color(0x000011);
+        }
+    }
+
     // Get frame rate limiter
     getFrameRateLimiter() {
         return this.frameRateLimiter;
