@@ -7,6 +7,7 @@ import { createCelestialBody } from './celestialBody.js';
 import { mathCache } from './utils.js';
 import { addTimelineLog } from './timeline.js';
 import { soundManager } from './sound.js';
+import { graphicsEngine } from './graphicsEngine.js';
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 export const keys = { w: false, a: false, s: false, d: false };
@@ -604,12 +605,152 @@ export function setupEventListeners() {
             showMessage('衝突テスト実行完了（コンソールを確認）');
         });
     }
+    // === Graphics Settings Event Handlers === //
+    // Legacy graphics quality select (backward compatibility)
     if (ui.graphicsQualitySelect) {
         ui.graphicsQualitySelect.addEventListener('change', (event) => {
             const target = event.target;
             gameState.graphicsQuality = target.value;
-            // applyGraphicsQuality(); // この関数は存在しないためコメントアウト
+            // Update new graphics state for compatibility
+            gameState.graphics.preset = target.value === 'low' ? 'low' :
+                target.value === 'high' ? 'high' : 'medium';
             saveGame();
+        });
+    }
+    // Graphics preset selection
+    if (ui.graphicsPresetSelect) {
+        ui.graphicsPresetSelect.addEventListener('change', (event) => {
+            const target = event.target;
+            const presetName = target.value;
+            if (presetName !== 'custom') {
+                // Apply preset using graphics engine
+                graphicsEngine.applyPreset(presetName);
+                console.log(`🎨 Graphics preset applied: ${presetName}`);
+                // Update UI to reflect preset changes
+                import('./ui.js').then(({ updateGraphicsUI }) => {
+                    updateGraphicsUI();
+                });
+            }
+            gameState.graphics.preset = presetName;
+            saveGame();
+        });
+    }
+    // Resolution scale slider
+    if (ui.resolutionScaleRange) {
+        ui.resolutionScaleRange.addEventListener('input', (event) => {
+            const target = event.target;
+            const scalePercent = parseInt(target.value);
+            const scale = scalePercent / 100;
+            gameState.graphics.resolutionScale = scale;
+            gameState.graphics.preset = 'custom';
+            // Update display value
+            if (ui.resolutionScaleValue) {
+                ui.resolutionScaleValue.textContent = `${scalePercent}%`;
+            }
+            // Update preset selector to show custom
+            if (ui.graphicsPresetSelect) {
+                ui.graphicsPresetSelect.value = 'custom';
+            }
+            saveGame();
+        });
+    }
+    // Particle density slider
+    if (ui.particleDensityRange) {
+        ui.particleDensityRange.addEventListener('input', (event) => {
+            const target = event.target;
+            const densityPercent = parseInt(target.value);
+            const density = densityPercent / 100;
+            gameState.graphics.particleDensity = density;
+            gameState.graphics.preset = 'custom';
+            // Update display value
+            if (ui.particleDensityValue) {
+                ui.particleDensityValue.textContent = `${densityPercent}%`;
+            }
+            // Update preset selector to show custom
+            if (ui.graphicsPresetSelect) {
+                ui.graphicsPresetSelect.value = 'custom';
+            }
+            saveGame();
+        });
+    }
+    // Individual graphics setting selects
+    const graphicsSelects = [
+        { element: ui.textureQualitySelect, property: 'textureQuality' },
+        { element: ui.shadowQualitySelect, property: 'shadowQuality' },
+        { element: ui.antiAliasingSelect, property: 'antiAliasing' },
+        { element: ui.postProcessingSelect, property: 'postProcessing' },
+        { element: ui.viewDistanceSelect, property: 'viewDistance' },
+        { element: ui.lightingQualitySelect, property: 'lightingQuality' },
+        { element: ui.fogEffectSelect, property: 'fogEffect' },
+        { element: ui.objectDetailSelect, property: 'objectDetail' },
+        { element: ui.backgroundDetailSelect, property: 'backgroundDetail' },
+        { element: ui.uiAnimationsSelect, property: 'uiAnimations' }
+    ];
+    graphicsSelects.forEach(({ element, property }) => {
+        if (element) {
+            element.addEventListener('change', (event) => {
+                const target = event.target;
+                gameState.graphics[property] = target.value;
+                gameState.graphics.preset = 'custom';
+                // Update preset selector to show custom
+                if (ui.graphicsPresetSelect) {
+                    ui.graphicsPresetSelect.value = 'custom';
+                }
+                saveGame();
+            });
+        }
+    });
+    // Frame rate limit select
+    if (ui.frameRateLimitSelect) {
+        ui.frameRateLimitSelect.addEventListener('change', (event) => {
+            const target = event.target;
+            gameState.graphics.frameRateLimit = parseInt(target.value);
+            gameState.graphics.preset = 'custom';
+            // Update graphics engine frame rate limiter
+            graphicsEngine.getFrameRateLimiter().setTargetFPS(gameState.graphics.frameRateLimit);
+            console.log(`🎯 Frame rate changed to: ${gameState.graphics.frameRateLimit} FPS`);
+            // Update preset selector to show custom
+            if (ui.graphicsPresetSelect) {
+                ui.graphicsPresetSelect.value = 'custom';
+            }
+            saveGame();
+        });
+    }
+    // Dynamic quality adjustment checkbox
+    if (ui.dynamicQualityCheckbox) {
+        ui.dynamicQualityCheckbox.addEventListener('change', (event) => {
+            const target = event.target;
+            const enabled = target.checked;
+            // Enable/disable dynamic quality in graphics engine
+            graphicsEngine.enableDynamicQuality(enabled);
+            saveGame();
+        });
+    }
+    // Reset graphics button
+    if (ui.resetGraphicsButton) {
+        ui.resetGraphicsButton.addEventListener('click', () => {
+            import('./ui.js').then(({ resetGraphicsToDefaults }) => {
+                resetGraphicsToDefaults();
+                // Apply the reset settings through graphics engine
+                graphicsEngine.applyAllSettings();
+                saveGame();
+                showMessage('グラフィック設定をリセットしました');
+            });
+        });
+    }
+    // Collapsible sections for graphics settings
+    if (ui.graphicsHeader) {
+        ui.graphicsHeader.addEventListener('click', () => {
+            if (ui.graphicsContent) {
+                ui.graphicsContent.classList.toggle('expanded');
+            }
+        });
+    }
+    if (ui.generalSettingsHeader) {
+        ui.generalSettingsHeader.addEventListener('click', () => {
+            if (ui.generalSettingsContent) {
+                ui.generalSettingsContent.classList.toggle('expanded');
+            }
         });
     }
     if (ui.unitSystemSelect) {

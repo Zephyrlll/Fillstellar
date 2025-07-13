@@ -3,11 +3,11 @@ import { ResourceType } from './resourceSystem.js';
 import { CONVERSION_RECIPES } from './conversionRecipes.js';
 import { gameState } from './state.js';
 export class ResourceFlowDisplay {
+    activeFlows = new Map();
+    displayContainer = null;
+    updateInterval = 100; // Update every 100ms for smooth display
+    intervalId = null;
     constructor() {
-        this.activeFlows = new Map();
-        this.displayContainer = null;
-        this.updateInterval = 100; // Update every 100ms for smooth display
-        this.intervalId = null;
         this.displayContainer = document.getElementById('active-flows-container');
         this.startDisplayLoop();
     }
@@ -32,16 +32,18 @@ export class ResourceFlowDisplay {
             });
         });
         // Add output flows (production)
-        recipe.outputs.primary.resources.forEach(output => {
-            flows.push({
-                type: output.type,
-                amount: output.amount,
-                rate: output.amount / (duration / 1000), // per second
-                isInput: false,
-                conversionId,
-                startTime: currentTime
+        if (recipe.outputs && recipe.outputs.resources) {
+            recipe.outputs.resources.forEach((output) => {
+                flows.push({
+                    type: output.type,
+                    amount: output.amount,
+                    rate: output.amount / (duration / 1000), // per second
+                    isInput: false,
+                    conversionId,
+                    startTime: currentTime
+                });
             });
-        });
+        }
         this.activeFlows.set(conversionId, flows);
         this.updateDisplay();
     }

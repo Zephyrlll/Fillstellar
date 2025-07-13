@@ -1,24 +1,24 @@
 class SoundManager {
+    audioContext = null;
+    masterGain = null;
+    ambientGain = null;
+    effectsGain = null;
+    uiGain = null;
+    compressor = null;
+    reverb = null;
+    ambientNodes = new Map();
+    activeEffects = new Map();
+    settings = {
+        masterVolume: 0.7,
+        ambientVolume: 0.6,
+        effectsVolume: 0.8,
+        uiVolume: 0.5,
+        spatialAudio: true,
+        muted: false
+    };
+    listener = null;
+    initialized = false;
     constructor() {
-        this.audioContext = null;
-        this.masterGain = null;
-        this.ambientGain = null;
-        this.effectsGain = null;
-        this.uiGain = null;
-        this.compressor = null;
-        this.reverb = null;
-        this.ambientNodes = new Map();
-        this.activeEffects = new Map();
-        this.settings = {
-            masterVolume: 0.7,
-            ambientVolume: 0.6,
-            effectsVolume: 0.8,
-            uiVolume: 0.5,
-            spatialAudio: true,
-            muted: false
-        };
-        this.listener = null;
-        this.initialized = false;
         this.loadSettings();
     }
     async init(listener) {

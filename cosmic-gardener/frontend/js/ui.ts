@@ -115,6 +115,40 @@ export const ui: { [key: string]: HTMLElement | null } = {
     dragSlider: document.getElementById('dragSlider'),
     dragValue: document.getElementById('dragValue'),
     graphicsQualitySelect: document.getElementById('graphicsQualitySelect'),
+    
+    // New graphics settings UI elements
+    graphicsPresetSelect: document.getElementById('graphicsPresetSelect'),
+    resolutionScaleRange: document.getElementById('resolutionScaleRange'),
+    resolutionScaleValue: document.getElementById('resolutionScaleValue'),
+    textureQualitySelect: document.getElementById('textureQualitySelect'),
+    shadowQualitySelect: document.getElementById('shadowQualitySelect'),
+    antiAliasingSelect: document.getElementById('antiAliasingSelect'),
+    postProcessingSelect: document.getElementById('postProcessingSelect'),
+    particleDensityRange: document.getElementById('particleDensityRange'),
+    particleDensityValue: document.getElementById('particleDensityValue'),
+    viewDistanceSelect: document.getElementById('viewDistanceSelect'),
+    frameRateLimitSelect: document.getElementById('frameRateLimitSelect'),
+    lightingQualitySelect: document.getElementById('lightingQualitySelect'),
+    fogEffectSelect: document.getElementById('fogEffectSelect'),
+    objectDetailSelect: document.getElementById('objectDetailSelect'),
+    backgroundDetailSelect: document.getElementById('backgroundDetailSelect'),
+    uiAnimationsSelect: document.getElementById('uiAnimationsSelect'),
+    dynamicQualityCheckbox: document.getElementById('dynamicQualityCheckbox'),
+    resetGraphicsButton: document.getElementById('resetGraphicsButton'),
+    
+    // Performance display elements
+    fpsDisplay: document.getElementById('fpsDisplay'),
+    frameTimeDisplay: document.getElementById('frameTimeDisplay'),
+    memoryDisplay: document.getElementById('memoryDisplay'),
+    gpuDisplay: document.getElementById('gpuDisplay'),
+    recommendedPresetDisplay: document.getElementById('recommendedPresetDisplay'),
+    
+    // Collapsible sections
+    graphicsHeader: document.getElementById('graphicsHeader'),
+    graphicsContent: document.getElementById('graphicsContent'),
+    generalSettingsHeader: document.getElementById('generalSettingsHeader'),
+    generalSettingsContent: document.getElementById('generalSettingsContent'),
+    
     unitSystemSelect: document.getElementById('unitSystemSelect'),
 };
 
@@ -591,4 +625,174 @@ export function closeProductionPanel(): void {
 
 export function isProductionPanelVisible(): boolean {
     return isProductionPanelOpen;
+}
+
+// === Graphics Settings UI Management === //
+
+export function updateGraphicsUI(): void {
+    const graphics = gameState.graphics;
+    
+    // Update preset selection
+    if (ui.graphicsPresetSelect) {
+        (ui.graphicsPresetSelect as HTMLSelectElement).value = graphics.preset;
+    }
+    
+    // Update resolution scale
+    if (ui.resolutionScaleRange && ui.resolutionScaleValue) {
+        const scalePercent = Math.round(graphics.resolutionScale * 100);
+        (ui.resolutionScaleRange as HTMLInputElement).value = scalePercent.toString();
+        (ui.resolutionScaleValue as HTMLElement).textContent = `${scalePercent}%`;
+    }
+    
+    // Update particle density
+    if (ui.particleDensityRange && ui.particleDensityValue) {
+        const densityPercent = Math.round(graphics.particleDensity * 100);
+        (ui.particleDensityRange as HTMLInputElement).value = densityPercent.toString();
+        (ui.particleDensityValue as HTMLElement).textContent = `${densityPercent}%`;
+    }
+    
+    // Update all select elements
+    const selectElements = [
+        { element: ui.textureQualitySelect, value: graphics.textureQuality },
+        { element: ui.shadowQualitySelect, value: graphics.shadowQuality },
+        { element: ui.antiAliasingSelect, value: graphics.antiAliasing },
+        { element: ui.postProcessingSelect, value: graphics.postProcessing },
+        { element: ui.viewDistanceSelect, value: graphics.viewDistance },
+        { element: ui.frameRateLimitSelect, value: graphics.frameRateLimit.toString() },
+        { element: ui.lightingQualitySelect, value: graphics.lightingQuality },
+        { element: ui.fogEffectSelect, value: graphics.fogEffect },
+        { element: ui.objectDetailSelect, value: graphics.objectDetail },
+        { element: ui.backgroundDetailSelect, value: graphics.backgroundDetail },
+        { element: ui.uiAnimationsSelect, value: graphics.uiAnimations }
+    ];
+    
+    selectElements.forEach(({ element, value }) => {
+        if (element) {
+            (element as HTMLSelectElement).value = value;
+        }
+    });
+    
+    // Update performance display
+    updatePerformanceDisplay();
+    
+    // Update device info display
+    updateDeviceInfoDisplay();
+}
+
+export function updatePerformanceDisplay(): void {
+    const perf = gameState.graphics.performance;
+    
+    if (ui.fpsDisplay) {
+        ui.fpsDisplay.textContent = perf.fps.toString();
+        
+        // Apply color coding based on FPS
+        ui.fpsDisplay.className = '';
+        if (perf.fps < 30) {
+            ui.fpsDisplay.classList.add('fps-critical');
+        } else if (perf.fps < 50) {
+            ui.fpsDisplay.classList.add('fps-warning');
+        }
+    }
+    
+    if (ui.frameTimeDisplay) {
+        ui.frameTimeDisplay.textContent = perf.frameTime.toFixed(1);
+    }
+    
+    if (ui.memoryDisplay) {
+        ui.memoryDisplay.textContent = perf.memoryUsage.toString();
+        
+        // Apply color coding based on memory usage
+        ui.memoryDisplay.className = '';
+        if (perf.memoryUsage > 1000) {
+            ui.memoryDisplay.classList.add('memory-critical');
+        } else if (perf.memoryUsage > 500) {
+            ui.memoryDisplay.classList.add('memory-high');
+        }
+    }
+}
+
+export function updateDeviceInfoDisplay(): void {
+    const device = gameState.graphics.deviceInfo;
+    
+    if (ui.gpuDisplay) {
+        ui.gpuDisplay.textContent = device.gpu || '検出中...';
+    }
+    
+    if (ui.recommendedPresetDisplay) {
+        ui.recommendedPresetDisplay.textContent = device.recommendedPreset || '中';
+        
+        // Apply quality color class
+        ui.recommendedPresetDisplay.className = `quality-${device.recommendedPreset}`;
+    }
+}
+
+export function syncUIWithGraphicsState(): void {
+    // This function syncs the UI elements with the current graphics state
+    // Called when settings are loaded or when preset is applied
+    updateGraphicsUI();
+}
+
+export function resetGraphicsToDefaults(): void {
+    // Reset graphics settings to medium preset
+    const mediumPreset = {
+        preset: 'medium',
+        resolutionScale: 1.0,
+        textureQuality: 'medium',
+        shadowQuality: 'medium',
+        antiAliasing: 'fxaa',
+        postProcessing: 'medium',
+        particleDensity: 0.5,
+        viewDistance: 'medium',
+        frameRateLimit: 60,
+        vsync: 'adaptive',
+        lightingQuality: 'medium',
+        fogEffect: 'standard',
+        renderPrecision: 'standard',
+        objectDetail: 'medium',
+        backgroundDetail: 'standard',
+        uiAnimations: 'standard'
+    };
+    
+    // Apply settings to gameState
+    Object.assign(gameState.graphics, mediumPreset);
+    
+    // Update UI to reflect changes
+    updateGraphicsUI();
+    
+    console.log('🔄 Graphics settings reset to defaults');
+}
+
+export function getGraphicsSettingValue(settingName: string): any {
+    const element = ui[settingName + 'Select'] || ui[settingName + 'Range'];
+    if (!element) return null;
+    
+    if (element instanceof HTMLSelectElement) {
+        return element.value;
+    } else if (element instanceof HTMLInputElement) {
+        if (element.type === 'range') {
+            return parseFloat(element.value) / 100; // Convert percentage back to decimal
+        } else if (element.type === 'checkbox') {
+            return element.checked;
+        }
+        return element.value;
+    }
+    
+    return null;
+}
+
+export function setGraphicsSettingValue(settingName: string, value: any): void {
+    const element = ui[settingName + 'Select'] || ui[settingName + 'Range'] || ui[settingName + 'Checkbox'];
+    if (!element) return;
+    
+    if (element instanceof HTMLSelectElement) {
+        element.value = value.toString();
+    } else if (element instanceof HTMLInputElement) {
+        if (element.type === 'range') {
+            element.value = (value * 100).toString(); // Convert decimal to percentage
+        } else if (element.type === 'checkbox') {
+            element.checked = value;
+        } else {
+            element.value = value.toString();
+        }
+    }
 }

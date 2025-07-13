@@ -1,69 +1,63 @@
 // Enhanced Resource System Types and Structures
-export const ResourceType = {
+export var ResourceType;
+(function (ResourceType) {
     // Basic Resources
-    COSMIC_DUST: "cosmicDust",
-    ENERGY: "energy",
-    ORGANIC_MATTER: "organicMatter",
-    BIOMASS: "biomass",
-    DARK_MATTER: "darkMatter",
-    THOUGHT_POINTS: "thoughtPoints",
+    ResourceType["COSMIC_DUST"] = "cosmicDust";
+    ResourceType["ENERGY"] = "energy";
+    ResourceType["ORGANIC_MATTER"] = "organicMatter";
+    ResourceType["BIOMASS"] = "biomass";
+    ResourceType["DARK_MATTER"] = "darkMatter";
+    ResourceType["THOUGHT_POINTS"] = "thoughtPoints";
     // Cosmic Dust Subtypes
-    IRON_DUST: "ironDust",
-    CARBON_DUST: "carbonDust",
-    SILICON_DUST: "siliconDust",
-    RARE_EARTH_DUST: "rareEarthDust",
+    ResourceType["IRON_DUST"] = "ironDust";
+    ResourceType["CARBON_DUST"] = "carbonDust";
+    ResourceType["SILICON_DUST"] = "siliconDust";
+    ResourceType["RARE_EARTH_DUST"] = "rareEarthDust";
     // Energy Subtypes
-    THERMAL_ENERGY: "thermalEnergy",
-    ELECTRIC_ENERGY: "electricEnergy",
-    NUCLEAR_ENERGY: "nuclearEnergy",
-    QUANTUM_ENERGY: "quantumEnergy",
+    ResourceType["THERMAL_ENERGY"] = "thermalEnergy";
+    ResourceType["ELECTRIC_ENERGY"] = "electricEnergy";
+    ResourceType["NUCLEAR_ENERGY"] = "nuclearEnergy";
+    ResourceType["QUANTUM_ENERGY"] = "quantumEnergy";
     // Organic Matter Subtypes
-    SIMPLE_ORGANICS: "simpleOrganics",
-    COMPLEX_ORGANICS: "complexOrganics",
-    GENETIC_MATERIAL: "geneticMaterial",
-    ENZYMES: "enzymes",
+    ResourceType["SIMPLE_ORGANICS"] = "simpleOrganics";
+    ResourceType["COMPLEX_ORGANICS"] = "complexOrganics";
+    ResourceType["GENETIC_MATERIAL"] = "geneticMaterial";
+    ResourceType["ENZYMES"] = "enzymes";
     // Biomass Subtypes
-    MICROBIAL_BIOMASS: "microbialBiomass",
-    PLANT_BIOMASS: "plantBiomass",
-    ANIMAL_BIOMASS: "animalBiomass",
-    INTELLIGENT_BIOMASS: "intelligentBiomass",
+    ResourceType["MICROBIAL_BIOMASS"] = "microbialBiomass";
+    ResourceType["PLANT_BIOMASS"] = "plantBiomass";
+    ResourceType["ANIMAL_BIOMASS"] = "animalBiomass";
+    ResourceType["INTELLIGENT_BIOMASS"] = "intelligentBiomass";
     // Dark Matter Subtypes
-    STABLE_DARK_MATTER: "stableDarkMatter",
-    VOLATILE_DARK_MATTER: "volatileDarkMatter",
-    EXOTIC_DARK_MATTER: "exoticDarkMatter",
-    PRIMORDIAL_DARK_MATTER: "primordialDarkMatter",
+    ResourceType["STABLE_DARK_MATTER"] = "stableDarkMatter";
+    ResourceType["VOLATILE_DARK_MATTER"] = "volatileDarkMatter";
+    ResourceType["EXOTIC_DARK_MATTER"] = "exoticDarkMatter";
+    ResourceType["PRIMORDIAL_DARK_MATTER"] = "primordialDarkMatter";
     // Thought Points Subtypes
-    BASIC_THOUGHTS: "basicThoughts",
-    CREATIVE_THOUGHTS: "creativeThoughts",
-    SCIENTIFIC_THOUGHTS: "scientificThoughts",
-    PHILOSOPHICAL_THOUGHTS: "philosophicalThoughts",
+    ResourceType["BASIC_THOUGHTS"] = "basicThoughts";
+    ResourceType["CREATIVE_THOUGHTS"] = "creativeThoughts";
+    ResourceType["SCIENTIFIC_THOUGHTS"] = "scientificThoughts";
+    ResourceType["PHILOSOPHICAL_THOUGHTS"] = "philosophicalThoughts";
     // Processed Resources
-    PROCESSED_METAL: "processedMetal",
-    SILICON: "silicon",
-    ALLOY: "alloy",
+    ResourceType["PROCESSED_METAL"] = "processedMetal";
+    ResourceType["SILICON"] = "silicon";
+    ResourceType["ALLOY"] = "alloy";
     // Tier 2 Resources
-    STABILIZED_ENERGY: "stabilizedEnergy",
-    REFINED_METAL: "refinedMetal",
-    RARE_ELEMENTS: "rareElements",
-    HIGH_POLYMER: "highPolymer",
-    QUANTUM_CRYSTAL: "quantumCrystal",
-    RADIOACTIVE_WASTE: "radioactiveWaste",
-    // Tier 3 Resources
-    CONCENTRATED_ENERGY: "concentratedEnergy",
-    HYPER_CRYSTAL: "hyperCrystal",
-    DIMENSIONAL_ESSENCE: "dimensionalEssence",
-    ULTRA_ALLOY: "ultraAlloy",
-    QUANTUM_POLYMER: "quantumPolymer",
-    EXOTIC_MATTER: "exoticMatter"
-};
-
-export const QualityTier = {
-    POOR: 0,
-    STANDARD: 1,
-    HIGH_QUALITY: 2,
-    PERFECT: 3,
-    LEGENDARY: 4
-};
+    ResourceType["STABILIZED_ENERGY"] = "stabilizedEnergy";
+    ResourceType["REFINED_METAL"] = "refinedMetal";
+    ResourceType["RARE_ELEMENTS"] = "rareElements";
+    ResourceType["HIGH_POLYMER"] = "highPolymer";
+    ResourceType["QUANTUM_CRYSTAL"] = "quantumCrystal";
+    ResourceType["RADIOACTIVE_WASTE"] = "radioactiveWaste";
+})(ResourceType || (ResourceType = {}));
+export var QualityTier;
+(function (QualityTier) {
+    QualityTier[QualityTier["POOR"] = 0] = "POOR";
+    QualityTier[QualityTier["STANDARD"] = 1] = "STANDARD";
+    QualityTier[QualityTier["HIGH_QUALITY"] = 2] = "HIGH_QUALITY";
+    QualityTier[QualityTier["PERFECT"] = 3] = "PERFECT";
+    QualityTier[QualityTier["LEGENDARY"] = 4] = "LEGENDARY";
+})(QualityTier || (QualityTier = {}));
 export const QUALITY_MULTIPLIERS = {
     [QualityTier.POOR]: {
         efficiency: 0.5,
@@ -369,43 +363,6 @@ export const RESOURCE_METADATA = {
         icon: '☢️',
         category: 'waste',
         description: 'エネルギー生産の副産物として発生する危険な廃棄物'
-    },
-    // Tier 3 Resources
-    [ResourceType.CONCENTRATED_ENERGY]: {
-        name: '濃縮エネルギー',
-        icon: '💥',
-        category: 'tier3',
-        description: '極めて高密度に圧縮されたエネルギー'
-    },
-    [ResourceType.HYPER_CRYSTAL]: {
-        name: 'ハイパークリスタル',
-        icon: '💠',
-        category: 'tier3',
-        description: '超高純度で加工された結晶体'
-    },
-    [ResourceType.DIMENSIONAL_ESSENCE]: {
-        name: '次元エッセンス',
-        icon: '🌌',
-        category: 'tier3',
-        description: '異次元から抽出された神秘的な物質'
-    },
-    [ResourceType.ULTRA_ALLOY]: {
-        name: '超合金',
-        icon: '🛡️',
-        category: 'tier3',
-        description: '極限環境に耐えるように設計された特殊合金'
-    },
-    [ResourceType.QUANTUM_POLYMER]: {
-        name: '量子ポリマー',
-        icon: '🔗',
-        category: 'tier3',
-        description: '量子レベルで結合された高機能ポリマー'
-    },
-    [ResourceType.EXOTIC_MATTER]: {
-        name: 'エキゾチックマター',
-        icon: '⚛️',
-        category: 'tier3',
-        description: '宇宙の法則を歪める可能性を秘めた未知の物質'
     }
 };
 // Helper functions

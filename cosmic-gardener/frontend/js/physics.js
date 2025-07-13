@@ -4,6 +4,10 @@ import { mathCache } from './utils.js';
 import { gameState } from './state.js';
 import { addTimelineLog } from './timeline.js';
 export class SpatialGrid {
+    worldSize;
+    cellSize;
+    gridSize;
+    grid;
     constructor(worldSize, cellSize) {
         this.worldSize = worldSize;
         this.cellSize = cellSize;

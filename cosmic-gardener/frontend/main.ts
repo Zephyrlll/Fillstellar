@@ -21,6 +21,10 @@ import { productionChainUI } from './js/productionChainUI.js';
 import { catalystManager, CatalystType } from './dist/js/catalystSystem.js';
 // @ts-ignore
 import { currencyManager } from './dist/js/currencySystem.js';
+// Graphics system imports
+import { performanceMonitor } from './js/performanceMonitor.js';
+import { graphicsEngine } from './js/graphicsEngine.js';
+import { updatePerformanceDisplay } from './js/ui.js';
 
 const moveSpeed = 200;
 
@@ -50,6 +54,15 @@ function createStarfield() {
 
 function animate() {
     requestAnimationFrame(animate);
+    
+    // Update performance monitor
+    performanceMonitor.update();
+    
+    // Check frame rate limiter - skip rendering if limited
+    if (!graphicsEngine.getFrameRateLimiter().shouldRender()) {
+        return;
+    }
+    
     const now = Date.now();
     
     const rawDeltaTime = (now - gameState.lastTick) / 1000;
@@ -210,12 +223,18 @@ function animate() {
         z: camera.getWorldDirection(new THREE.Vector3()).z
     });
     
+    // Update graphics engine for setting changes
+    graphicsEngine.update();
+    
     composer.render();
 
     uiUpdateTimer += deltaTime;
     if (uiUpdateTimer >= uiUpdateInterval) {
         updateUI();
         updateProductionUI();
+        
+        // Update graphics performance display
+        updatePerformanceDisplay();
         
         // Update production chain UI if visible
         if (productionChainUI) {

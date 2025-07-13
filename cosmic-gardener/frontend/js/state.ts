@@ -104,6 +104,50 @@ export interface StatisticsState {
     maxHistoryPoints: number;
 }
 
+export interface PerformanceMetrics {
+    fps: number;
+    frameTime: number;
+    memoryUsage: number;
+    gpuUsage: number;
+    averageFps: number;
+    history: { time: number; fps: number; frameTime: number; memory: number }[];
+}
+
+export interface DeviceInfo {
+    gpu: string;
+    memory: number;
+    cores: number;
+    platform: string;
+    isHighEnd: boolean;
+    recommendedPreset: string;
+    webglVersion: string;
+}
+
+export interface GraphicsState {
+    preset: string; // 'ultra' | 'high' | 'medium' | 'low' | 'minimal' | 'custom'
+    resolutionScale: number;
+    textureQuality: string; // 'ultra' | 'high' | 'medium' | 'low'
+    shadowQuality: string; // 'ultra' | 'high' | 'medium' | 'low' | 'off'
+    antiAliasing: string; // 'msaa8x' | 'msaa4x' | 'msaa2x' | 'fxaa' | 'off'
+    postProcessing: string; // 'ultra' | 'high' | 'medium' | 'low' | 'off'
+    particleDensity: number;
+    viewDistance: string; // 'unlimited' | 'far' | 'medium' | 'near' | 'minimal'
+    frameRateLimit: number; // -1 for unlimited
+    vsync: string; // 'adaptive' | 'on' | 'off'
+    lightingQuality: string; // 'ultra' | 'high' | 'medium' | 'low'
+    fogEffect: string; // 'high' | 'standard' | 'simple' | 'off'
+    renderPrecision: string; // 'high' | 'standard' | 'performance'
+    objectDetail: string; // 'ultra' | 'high' | 'medium' | 'low'
+    backgroundDetail: string; // 'high' | 'standard' | 'simple' | 'off'
+    uiAnimations: string; // 'smooth' | 'standard' | 'simple' | 'off'
+    
+    // Performance monitoring
+    performance: PerformanceMetrics;
+    
+    // Device information
+    deviceInfo: DeviceInfo;
+}
+
 export interface GameState {
     gameYear: number;
     cosmicDust: number;
@@ -131,7 +175,8 @@ export interface GameState {
     researchEnhancedDust: boolean;
     researchAdvancedEnergy: boolean;
     unlockedCelestialBodies: { [key: string]: boolean };
-    graphicsQuality: string;
+    graphicsQuality: string; // Legacy field for backward compatibility
+    graphics: GraphicsState; // New detailed graphics settings
     currentUnitSystem: string;
     unlockedTimeMultipliers: { [key: string]: boolean };
     currentTimeMultiplier: string;
@@ -214,13 +259,50 @@ export const gameState: GameState = {
         planet: false,
         star: false
     },
-    graphicsQuality: 'medium',
+    graphicsQuality: 'medium', // Legacy field for backward compatibility
+    graphics: {
+        preset: 'medium',
+        resolutionScale: 1.0,
+        textureQuality: 'medium',
+        shadowQuality: 'medium',
+        antiAliasing: 'fxaa',
+        postProcessing: 'medium',
+        particleDensity: 0.5,
+        viewDistance: 'medium',
+        frameRateLimit: 60,
+        vsync: 'adaptive',
+        lightingQuality: 'medium',
+        fogEffect: 'standard',
+        renderPrecision: 'standard',
+        objectDetail: 'medium',
+        backgroundDetail: 'standard',
+        uiAnimations: 'standard',
+        
+        performance: {
+            fps: 0,
+            frameTime: 0,
+            memoryUsage: 0,
+            gpuUsage: 0,
+            averageFps: 60,
+            history: []
+        },
+        
+        deviceInfo: {
+            gpu: '',
+            memory: 0,
+            cores: 0,
+            platform: '',
+            isHighEnd: false,
+            recommendedPreset: 'medium',
+            webglVersion: ''
+        }
+    },
     currentUnitSystem: 'astronomical',
     unlockedTimeMultipliers: { '2x': false, '5x': false, '10x': false },
     currentTimeMultiplier: '1x',
     timeMultiplierCosts: { '2x': 500, '5x': 2000, '10x': 5000 },
     isMapVisible: true,
-    saveVersion: '2.0-resource-system',
+    saveVersion: '2.1-graphics-system',
     focusedObject: null,
     timelineLog: [],
     maxLogEntries: 100,
@@ -261,3 +343,117 @@ export const gameState: GameState = {
     discoveredTechnologies: new Set<string>(),
     availableFacilities: new Set<string>(['basic_converter'])
 };
+
+// --- Graphics Presets ---
+
+export const GRAPHICS_PRESETS = {
+    ultra: {
+        resolutionScale: 1.25,
+        textureQuality: 'ultra',
+        shadowQuality: 'ultra',
+        antiAliasing: 'msaa8x',
+        postProcessing: 'ultra',
+        particleDensity: 2.0,
+        viewDistance: 'unlimited',
+        frameRateLimit: -1,
+        vsync: 'adaptive',
+        lightingQuality: 'ultra',
+        fogEffect: 'high',
+        renderPrecision: 'high',
+        objectDetail: 'ultra',
+        backgroundDetail: 'high',
+        uiAnimations: 'smooth'
+    },
+    high: {
+        resolutionScale: 1.0,
+        textureQuality: 'high',
+        shadowQuality: 'high',
+        antiAliasing: 'msaa4x',
+        postProcessing: 'high',
+        particleDensity: 1.0,
+        viewDistance: 'far',
+        frameRateLimit: 144,
+        vsync: 'adaptive',
+        lightingQuality: 'high',
+        fogEffect: 'standard',
+        renderPrecision: 'standard',
+        objectDetail: 'high',
+        backgroundDetail: 'standard',
+        uiAnimations: 'smooth'
+    },
+    medium: {
+        resolutionScale: 1.0,
+        textureQuality: 'medium',
+        shadowQuality: 'medium',
+        antiAliasing: 'fxaa',
+        postProcessing: 'medium',
+        particleDensity: 0.5,
+        viewDistance: 'medium',
+        frameRateLimit: 60,
+        vsync: 'adaptive',
+        lightingQuality: 'medium',
+        fogEffect: 'standard',
+        renderPrecision: 'standard',
+        objectDetail: 'medium',
+        backgroundDetail: 'standard',
+        uiAnimations: 'standard'
+    },
+    low: {
+        resolutionScale: 0.75,
+        textureQuality: 'low',
+        shadowQuality: 'low',
+        antiAliasing: 'off',
+        postProcessing: 'low',
+        particleDensity: 0.25,
+        viewDistance: 'near',
+        frameRateLimit: 60,
+        vsync: 'off',
+        lightingQuality: 'low',
+        fogEffect: 'simple',
+        renderPrecision: 'performance',
+        objectDetail: 'low',
+        backgroundDetail: 'simple',
+        uiAnimations: 'simple'
+    },
+    minimal: {
+        resolutionScale: 0.5,
+        textureQuality: 'low',
+        shadowQuality: 'off',
+        antiAliasing: 'off',
+        postProcessing: 'off',
+        particleDensity: 0.1,
+        viewDistance: 'minimal',
+        frameRateLimit: 30,
+        vsync: 'off',
+        lightingQuality: 'low',
+        fogEffect: 'off',
+        renderPrecision: 'performance',
+        objectDetail: 'low',
+        backgroundDetail: 'off',
+        uiAnimations: 'off'
+    }
+} as const;
+
+// Helper function to apply preset to graphics state
+export function applyGraphicsPreset(graphics: GraphicsState, presetName: keyof typeof GRAPHICS_PRESETS): void {
+    const preset = GRAPHICS_PRESETS[presetName];
+    graphics.preset = presetName;
+    Object.assign(graphics, preset);
+}
+
+// Helper function to detect if current settings match a preset
+export function detectGraphicsPreset(graphics: GraphicsState): string {
+    for (const [presetName, preset] of Object.entries(GRAPHICS_PRESETS)) {
+        let matches = true;
+        for (const [key, value] of Object.entries(preset)) {
+            if (graphics[key as keyof GraphicsState] !== value) {
+                matches = false;
+                break;
+            }
+        }
+        if (matches) {
+            return presetName;
+        }
+    }
+    return 'custom';
+}

@@ -15,9 +15,13 @@ import { initProductionUI, updateProductionUI } from './js/productionUI.js';
 import { resourceParticleSystem } from './js/resourceParticles.js';
 import { productionChainUI } from './js/productionChainUI.js';
 // @ts-ignore
-import { catalystManager, CatalystType } from './js/catalystSystem.js';
+import { catalystManager, CatalystType } from './dist/js/catalystSystem.js';
 // @ts-ignore
-import { currencyManager } from './js/currencySystem.js';
+import { currencyManager } from './dist/js/currencySystem.js';
+// Graphics system imports
+import { performanceMonitor } from './js/performanceMonitor.js';
+import { graphicsEngine } from './js/graphicsEngine.js';
+import { updatePerformanceDisplay } from './js/ui.js';
 const moveSpeed = 200;
 let uiUpdateTimer = 0;
 const uiUpdateInterval = 0.1;
@@ -27,19 +31,97 @@ const galaxyMapUpdateInterval = 0.2;
 let wsClient = null;
 function createStarfield() {
     const starsGeometry = new THREE.BufferGeometry();
-    const starsMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 1, sizeAttenuation: true });
+    const starsMaterial = new THREE.PointsMaterial({ 
+        color: 0xffffff, 
+        size: 2,
+        sizeAttenuation: false, // Keep consistent size regardless of distance
+        transparent: true,
+        alphaTest: 0.1
+    });
+    
     const starsVertices = [];
-    for (let i = 0; i < 8000; i++) {
-        const x = (Math.random() - 0.5) * 20000;
-        const y = (Math.random() - 0.5) * 20000;
-        const z = (Math.random() - 0.5) * 20000;
-        starsVertices.push(x, y, z);
-    }
+    const starColors = [];
+    const starSizes = [];
+    
+    // Create multiple layers of stars at different distances
+    const layers = [
+        { count: 12000, distance: 100000, sizeMult: 1.0 },   // Far background stars
+        { count: 8000, distance: 50000, sizeMult: 1.2 },    // Mid-distance stars
+        { count: 4000, distance: 25000, sizeMult: 1.5 }     // Closer brighter stars
+    ];
+    
+    layers.forEach(layer => {
+        for (let i = 0; i < layer.count; i++) {
+            // Use spherical distribution instead of cubic
+            const phi = Math.random() * Math.PI * 2; // Azimuth angle
+            const cosTheta = Math.random() * 2 - 1;  // Uniform distribution on sphere
+            const theta = Math.acos(cosTheta);       // Polar angle
+            const radius = layer.distance * (0.8 + Math.random() * 0.4); // Vary distance slightly
+            
+            const x = radius * Math.sin(theta) * Math.cos(phi);
+            const y = radius * Math.sin(theta) * Math.sin(phi);
+            const z = radius * Math.cos(theta);
+            
+            starsVertices.push(x, y, z);
+            
+            // Add subtle color variation (blue to yellow-white)
+            const temp = 0.8 + Math.random() * 0.4; // Temperature factor
+            starColors.push(0.8 + temp * 0.2, 0.8 + temp * 0.15, 0.8 + temp * 0.1);
+            
+            // Vary star sizes
+            starSizes.push(layer.sizeMult * (0.5 + Math.random() * 1.5));
+        }
+    });
+    
     starsGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starsVertices, 3));
+    starsGeometry.setAttribute('color', new THREE.Float32BufferAttribute(starColors, 3));
+    starsGeometry.setAttribute('size', new THREE.Float32BufferAttribute(starSizes, 1));
+    
+    // Enable vertex colors
+    starsMaterial.vertexColors = true;
+    
     const starfield = new THREE.Points(starsGeometry, starsMaterial);
+    starfield.name = 'starfield'; // Add name for easy reference
     scene.add(starfield);
+    
+    console.log(`🌟 Created starfield with ${starsVertices.length / 3} stars in spherical distribution`);
+}
+
+// Update starfield scale based on camera position for better immersion
+function updateStarfieldScale() {
+    const starfield = scene.getObjectByName('starfield');
+    if (!starfield) return;
+    
+    // Calculate camera distance from origin
+    const cameraDistance = camera.position.length();
+    
+    // Adjust starfield scale to maintain consistent appearance
+    // When camera moves far from center, scale up the starfield slightly
+    const baseScale = 1.0;
+    const scaleMultiplier = Math.max(1.0, Math.log10(cameraDistance / 1000 + 1));
+    const targetScale = baseScale * scaleMultiplier;
+    
+    // Smoothly interpolate to new scale
+    starfield.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.01);
 }
 function animate() {
+    // Update performance monitor first
+    performanceMonitor.update();
+    
+    // Check frame rate limiter - use precise timing
+    const frameRateLimiter = graphicsEngine.getFrameRateLimiter();
+    if (!frameRateLimiter.shouldRender()) {
+        // Schedule next frame with precise timing if limited
+        const delay = frameRateLimiter.getNextFrameDelay();
+        if (delay > 0) {
+            setTimeout(() => requestAnimationFrame(animate), delay);
+        } else {
+            requestAnimationFrame(animate);
+        }
+        return;
+    }
+    
+    // Schedule the next frame
     requestAnimationFrame(animate);
     const now = Date.now();
     const rawDeltaTime = (now - gameState.lastTick) / 1000;
@@ -189,11 +271,18 @@ function animate() {
         y: camera.getWorldDirection(new THREE.Vector3()).y,
         z: camera.getWorldDirection(new THREE.Vector3()).z
     });
+    // Update graphics engine for setting changes
+    graphicsEngine.update();
+    
+    // Update starfield based on camera distance for better immersion
+    updateStarfieldScale();
     composer.render();
     uiUpdateTimer += deltaTime;
     if (uiUpdateTimer >= uiUpdateInterval) {
         updateUI();
         updateProductionUI();
+        // Update graphics performance display
+        updatePerformanceDisplay();
         // Update production chain UI if visible
         if (productionChainUI) {
             productionChainUI.refresh();

@@ -18,6 +18,11 @@
         }
       }
     </script>
+    <!-- Graphics System Debugging -->
+    <script>
+      console.log('🎮 Graphics system loading...');
+      window.graphicsDebug = true;
+    </script>
 </head>
 <body>
 <script>
@@ -181,20 +186,198 @@
       <div id="options-screen" class="hidden-screen">
           <h1>オプション</h1>
           <div id="options-content-wrapper">
-              <div class="option-item">
-                  <label for="graphicsQualitySelect">グラフィック品質:</label>
-                  <select id="graphicsQualitySelect">
-                      <option value="low">低</option>
-                      <option value="medium" selected>中</option>
-                      <option value="high">高</option>
-                  </select>
+              
+              <!-- グラフィック設定セクション -->
+              <div class="collapsible-section">
+                  <div class="collapsible-header" id="graphicsHeader">グラフィック設定</div>
+                  <div class="collapsible-content" id="graphicsContent">
+                      
+                      <!-- プリセット選択 -->
+                      <div class="option-item">
+                          <label for="graphicsPresetSelect">プリセット:</label>
+                          <select id="graphicsPresetSelect">
+                              <option value="ultra">ウルトラ</option>
+                              <option value="high">高</option>
+                              <option value="medium" selected>中</option>
+                              <option value="low">低</option>
+                              <option value="minimal">最小</option>
+                              <option value="custom">カスタム</option>
+                          </select>
+                      </div>
+                      
+                      <!-- パフォーマンス表示 -->
+                      <div class="option-item performance-display">
+                          <div class="performance-stats">
+                              <span>FPS: <span id="fpsDisplay">60</span></span>
+                              <span>フレーム時間: <span id="frameTimeDisplay">16.7</span>ms</span>
+                              <span>メモリ: <span id="memoryDisplay">0</span>MB</span>
+                          </div>
+                          <div class="device-info">
+                              <span>GPU: <span id="gpuDisplay">検出中...</span></span>
+                              <span>推奨: <span id="recommendedPresetDisplay">中</span></span>
+                          </div>
+                      </div>
+                      
+                      <!-- 詳細設定 -->
+                      <div class="graphics-settings-grid">
+                          
+                          <div class="option-item">
+                              <label for="resolutionScaleRange">解像度スケール: <span id="resolutionScaleValue">100%</span></label>
+                              <input type="range" id="resolutionScaleRange" min="25" max="125" step="25" value="100">
+                          </div>
+                          
+                          <div class="option-item">
+                              <label for="textureQualitySelect">テクスチャ品質:</label>
+                              <select id="textureQualitySelect">
+                                  <option value="ultra">ウルトラ</option>
+                                  <option value="high">高</option>
+                                  <option value="medium" selected>中</option>
+                                  <option value="low">低</option>
+                              </select>
+                          </div>
+                          
+                          <div class="option-item">
+                              <label for="shadowQualitySelect">シャドウ品質:</label>
+                              <select id="shadowQualitySelect">
+                                  <option value="ultra">ウルトラ</option>
+                                  <option value="high">高</option>
+                                  <option value="medium" selected>中</option>
+                                  <option value="low">低</option>
+                                  <option value="off">オフ</option>
+                              </select>
+                          </div>
+                          
+                          <div class="option-item">
+                              <label for="antiAliasingSelect">アンチエイリアシング:</label>
+                              <select id="antiAliasingSelect">
+                                  <option value="msaa8x">8x MSAA</option>
+                                  <option value="msaa4x">4x MSAA</option>
+                                  <option value="msaa2x">2x MSAA</option>
+                                  <option value="fxaa" selected>FXAA</option>
+                                  <option value="off">オフ</option>
+                              </select>
+                          </div>
+                          
+                          <div class="option-item">
+                              <label for="postProcessingSelect">ポストプロセッシング:</label>
+                              <select id="postProcessingSelect">
+                                  <option value="ultra">ウルトラ</option>
+                                  <option value="high">高</option>
+                                  <option value="medium" selected>中</option>
+                                  <option value="low">低</option>
+                                  <option value="off">オフ</option>
+                              </select>
+                          </div>
+                          
+                          <div class="option-item">
+                              <label for="particleDensityRange">パーティクル密度: <span id="particleDensityValue">50%</span></label>
+                              <input type="range" id="particleDensityRange" min="10" max="200" step="25" value="50">
+                          </div>
+                          
+                          <div class="option-item">
+                              <label for="viewDistanceSelect">描画距離:</label>
+                              <select id="viewDistanceSelect">
+                                  <option value="unlimited">無制限</option>
+                                  <option value="far">遠距離</option>
+                                  <option value="medium" selected>中距離</option>
+                                  <option value="near">近距離</option>
+                                  <option value="minimal">最小</option>
+                              </select>
+                          </div>
+                          
+                          <div class="option-item">
+                              <label for="frameRateLimitSelect">フレームレート制限:</label>
+                              <select id="frameRateLimitSelect">
+                                  <option value="-1">無制限</option>
+                                  <option value="144">144 FPS</option>
+                                  <option value="120">120 FPS</option>
+                                  <option value="60" selected>60 FPS</option>
+                                  <option value="30">30 FPS</option>
+                              </select>
+                          </div>
+                          
+                          <div class="option-item">
+                              <label for="lightingQualitySelect">ライティング品質:</label>
+                              <select id="lightingQualitySelect">
+                                  <option value="ultra">ウルトラ</option>
+                                  <option value="high">高</option>
+                                  <option value="medium" selected>中</option>
+                                  <option value="low">低</option>
+                              </select>
+                          </div>
+                          
+                          <div class="option-item">
+                              <label for="fogEffectSelect">フォグ効果:</label>
+                              <select id="fogEffectSelect">
+                                  <option value="high">高</option>
+                                  <option value="standard" selected>標準</option>
+                                  <option value="simple">シンプル</option>
+                                  <option value="off">オフ</option>
+                              </select>
+                          </div>
+                          
+                          <div class="option-item">
+                              <label for="objectDetailSelect">オブジェクト詳細度:</label>
+                              <select id="objectDetailSelect">
+                                  <option value="ultra">ウルトラ</option>
+                                  <option value="high">高</option>
+                                  <option value="medium" selected>中</option>
+                                  <option value="low">低</option>
+                              </select>
+                          </div>
+                          
+                          <div class="option-item">
+                              <label for="backgroundDetailSelect">背景詳細度:</label>
+                              <select id="backgroundDetailSelect">
+                                  <option value="high">高</option>
+                                  <option value="standard" selected>標準</option>
+                                  <option value="simple">シンプル</option>
+                                  <option value="off">オフ</option>
+                              </select>
+                          </div>
+                          
+                      </div>
+                      
+                      <!-- 動的品質調整 -->
+                      <div class="option-item">
+                          <label>
+                              <input type="checkbox" id="dynamicQualityCheckbox">
+                              動的品質調整 (FPS低下時に自動で設定を下げる)
+                          </label>
+                      </div>
+                      
+                      <!-- リセットボタン -->
+                      <div class="option-item">
+                          <button id="resetGraphicsButton" class="reset-button">設定をリセット</button>
+                      </div>
+                      
+                  </div>
               </div>
-              <div class="option-item">
-                  <label for="unitSystemSelect">単位系:</label>
-                  <select id="unitSystemSelect">
-                      <option value="astronomical">天文学単位</option>
-                      <option value="si">SI単位</option>
-                  </select>
+              
+              <!-- その他の設定 -->
+              <div class="collapsible-section">
+                  <div class="collapsible-header" id="generalSettingsHeader">一般設定</div>
+                  <div class="collapsible-content" id="generalSettingsContent">
+                      
+                      <div class="option-item">
+                          <label for="unitSystemSelect">単位系:</label>
+                          <select id="unitSystemSelect">
+                              <option value="astronomical">天文学単位</option>
+                              <option value="si">SI単位</option>
+                          </select>
+                      </div>
+                      
+                      <div class="option-item">
+                          <label for="uiAnimationsSelect">UIアニメーション:</label>
+                          <select id="uiAnimationsSelect">
+                              <option value="smooth">スムーズ</option>
+                              <option value="standard" selected>標準</option>
+                              <option value="simple">シンプル</option>
+                              <option value="off">オフ</option>
+                          </select>
+                      </div>
+                      
+                  </div>
               </div>
 
               <div class="collapsible-section">

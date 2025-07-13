@@ -16,14 +16,15 @@ export var ConnectionState;
  * WebSocketクライアント
  */
 export class CosmicGardenerWebSocket {
+    ws = null;
+    config;
+    state = ConnectionState.Disconnected;
+    retryCount = 0;
+    heartbeatTimer = null;
+    reconnectTimer = null;
+    // イベントハンドラー
+    eventHandlers = new Map();
     constructor(config = {}) {
-        this.ws = null;
-        this.state = ConnectionState.Disconnected;
-        this.retryCount = 0;
-        this.heartbeatTimer = null;
-        this.reconnectTimer = null;
-        // イベントハンドラー
-        this.eventHandlers = new Map();
         this.config = {
             url: 'ws://localhost:8080/ws',
             token: '',
@@ -126,6 +127,15 @@ export class CosmicGardenerWebSocket {
         this.send({
             type: 'SetGameRunning',
             running: running
+        });
+    }
+    /**
+     * ゲーム状態を保存
+     */
+    saveGame(gameState) {
+        this.send({
+            type: 'SaveGame',
+            game_state: gameState
         });
     }
     /**

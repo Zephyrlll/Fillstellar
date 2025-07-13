@@ -41,8 +41,8 @@ export function saveGame() {
     // Save conversion engine state
     savableState.conversionEngineState = conversionEngine.saveState();
     
-    // Update save version for new resource system
-    savableState.saveVersion = '2.0-resource-system';
+    // Update save version for new resource system and graphics settings
+    savableState.saveVersion = '2.1-graphics-system';
 
     localStorage.setItem('cosmicGardenerState', JSON.stringify(savableState));
 }
@@ -60,8 +60,8 @@ export function loadGame() {
     }
 
     // Handle save version migration
-    if (parsedState.saveVersion === '1.6-accumulator' && gameState.saveVersion === '2.0-resource-system') {
-        // Migrate from old version to new version
+    if (parsedState.saveVersion === '1.6-accumulator') {
+        // Migrate from old version to new version with resources
         parsedState.resources = {
             cosmicDust: parsedState.cosmicDust || 0,
             energy: parsedState.energy || 0,
@@ -74,8 +74,58 @@ export function loadGame() {
         parsedState.discoveredTechnologies = [];
         parsedState.availableFacilities = ['basic_converter'];
         parsedState.saveVersion = '2.0-resource-system';
-    } else if (parsedState.saveVersion !== '2.0-resource-system') {
-        console.warn(`Save version mismatch. Discarding save.`);
+    }
+    
+    if (parsedState.saveVersion === '2.0-resource-system') {
+        // Migrate to graphics system version
+        parsedState.graphics = {
+            preset: parsedState.graphicsQuality || 'medium',
+            resolutionScale: 1.0,
+            textureQuality: 'medium',
+            shadowQuality: 'medium',
+            antiAliasing: 'fxaa',
+            postProcessing: 'medium',
+            particleDensity: 0.5,
+            viewDistance: 'medium',
+            frameRateLimit: 60,
+            vsync: 'adaptive',
+            lightingQuality: 'medium',
+            fogEffect: 'standard',
+            renderPrecision: 'standard',
+            objectDetail: 'medium',
+            backgroundDetail: 'standard',
+            uiAnimations: 'standard',
+            performance: {
+                fps: 0,
+                frameTime: 0,
+                memoryUsage: 0,
+                gpuUsage: 0,
+                averageFps: 60,
+                history: []
+            },
+            deviceInfo: {
+                gpu: '',
+                memory: 0,
+                cores: 0,
+                platform: '',
+                isHighEnd: false,
+                recommendedPreset: 'medium',
+                webglVersion: ''
+            }
+        };
+        
+        // Map old graphics quality to new preset
+        if (parsedState.graphicsQuality === 'low') {
+            parsedState.graphics.preset = 'low';
+        } else if (parsedState.graphicsQuality === 'high') {
+            parsedState.graphics.preset = 'high';
+        }
+        
+        parsedState.saveVersion = '2.1-graphics-system';
+    }
+    
+    if (parsedState.saveVersion !== '2.1-graphics-system') {
+        console.warn(`Save version mismatch: ${parsedState.saveVersion}. Expected: 2.1-graphics-system. Discarding save.`);
         localStorage.removeItem('cosmicGardenerState');
         return;
     }
@@ -180,5 +230,27 @@ export function loadGame() {
                 }
             });
         }
+    }
+    
+    // Apply loaded graphics settings and initialize graphics systems
+    if (gameState.graphics) {
+        // Initialize graphics engine with loaded settings
+        import('./graphicsEngine.js').then(({ graphicsEngine }) => {
+            graphicsEngine.applyAllSettings();
+        });
+        
+        // Initialize performance monitor
+        import('./performanceMonitor.js').then(({ performanceMonitor }) => {
+            performanceMonitor.startMonitoring();
+        });
+        
+        // Update UI to reflect loaded settings
+        import('./ui.js').then(({ updateGraphicsUI }) => {
+            updateGraphicsUI();
+        });
+        
+        console.log(`📊 Graphics settings loaded: ${gameState.graphics.preset} preset`);
+    } else {
+        console.warn('⚠️ No graphics settings found in save data, using defaults');
     }
 }
