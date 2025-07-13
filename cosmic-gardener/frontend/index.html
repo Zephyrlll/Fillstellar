@@ -196,7 +196,8 @@
                       <div class="option-item">
                           <label for="graphicsPresetSelect">プリセット:</label>
                           <select id="graphicsPresetSelect">
-                              <option value="ultra">ウルトラ</option>
+                              <option value="extreme">エクストリーム (300%)</option>
+                              <option value="ultra">ウルトラ (200%)</option>
                               <option value="high">高</option>
                               <option value="medium" selected>中</option>
                               <option value="low">低</option>
@@ -222,8 +223,17 @@
                       <div class="graphics-settings-grid">
                           
                           <div class="option-item">
-                              <label for="resolutionScaleRange">解像度スケール: <span id="resolutionScaleValue">100%</span></label>
-                              <input type="range" id="resolutionScaleRange" min="25" max="125" step="25" value="100">
+                              <label for="resolutionScaleSelect">解像度スケール:</label>
+                              <select id="resolutionScaleSelect">
+                                  <option value="25">25% (最低品質)</option>
+                                  <option value="50">50% (低品質)</option>
+                                  <option value="75">75% (中品質)</option>
+                                  <option value="100" selected>100% (標準)</option>
+                                  <option value="125">125% (高品質)</option>
+                                  <option value="150">150% (超高品質)</option>
+                                  <option value="200">200% (ウルトラ高品質)</option>
+                                  <option value="300">300% (極限品質)</option>
+                              </select>
                           </div>
                           
                           <div class="option-item">
@@ -270,8 +280,15 @@
                           </div>
                           
                           <div class="option-item">
-                              <label for="particleDensityRange">パーティクル密度: <span id="particleDensityValue">50%</span></label>
-                              <input type="range" id="particleDensityRange" min="10" max="200" step="25" value="50">
+                              <label for="particleDensitySelect">パーティクル密度:</label>
+                              <select id="particleDensitySelect">
+                                  <option value="10">10% (極少)</option>
+                                  <option value="25">25% (少)</option>
+                                  <option value="50" selected>50% (標準)</option>
+                                  <option value="75">75% (多)</option>
+                                  <option value="100">100% (極多)</option>
+                                  <option value="125">125% (超高密度)</option>
+                              </select>
                           </div>
                           
                           <div class="option-item">
@@ -415,15 +432,21 @@
                 <div class="collapsible-content" id="physicsContent">
                     <div class="option-item">
                         <label for="gravitySlider">万有引力定数 G: <span id="gravityValue">100</span></label>
-                        <input type="range" id="gravitySlider" min="0" max="1000" value="100" step="1">
+                        <div class="slider-container">
+                            <input type="range" id="gravitySlider" min="0" max="1000" value="100" step="1">
+                        </div>
                     </div>
                     <div class="option-item">
                         <label for="simulationSpeedSlider">シミュレーション速度: <span id="simulationSpeedValue">1</span>x</label>
-                        <input type="range" id="simulationSpeedSlider" min="0.1" max="5" value="1" step="0.1">
+                        <div class="slider-container">
+                            <input type="range" id="simulationSpeedSlider" min="0.1" max="5" value="1" step="0.1">
+                        </div>
                     </div>
                     <div class="option-item">
                         <label for="dragSlider">宇宙抵抗: <span id="dragValue">0.01</span></label>
-                        <input type="range" id="dragSlider" min="0" max="0.1" value="0.01" step="0.001">
+                        <div class="slider-container">
+                            <input type="range" id="dragSlider" min="0" max="0.1" value="0.01" step="0.001">
+                        </div>
                     </div>
                     <div class="option-item">
                         <label for="collisionDetectionCheckbox">
@@ -439,19 +462,27 @@
                 <div class="collapsible-content" id="soundContent">
                     <div class="option-item">
                         <label for="masterVolumeSlider">マスター音量: <span id="masterVolumeValue">70</span>%</label>
-                        <input type="range" id="masterVolumeSlider" min="0" max="100" value="70" step="1">
+                        <div class="slider-container">
+                            <input type="range" id="masterVolumeSlider" min="0" max="100" value="70" step="1">
+                        </div>
                     </div>
                     <div class="option-item">
                         <label for="ambientVolumeSlider">環境音: <span id="ambientVolumeValue">60</span>%</label>
-                        <input type="range" id="ambientVolumeSlider" min="0" max="100" value="60" step="1">
+                        <div class="slider-container">
+                            <input type="range" id="ambientVolumeSlider" min="0" max="100" value="60" step="1">
+                        </div>
                     </div>
                     <div class="option-item">
                         <label for="effectsVolumeSlider">効果音: <span id="effectsVolumeValue">80</span>%</label>
-                        <input type="range" id="effectsVolumeSlider" min="0" max="100" value="80" step="1">
+                        <div class="slider-container">
+                            <input type="range" id="effectsVolumeSlider" min="0" max="100" value="80" step="1">
+                        </div>
                     </div>
                     <div class="option-item">
                         <label for="uiVolumeSlider">UI音: <span id="uiVolumeValue">50</span>%</label>
-                        <input type="range" id="uiVolumeSlider" min="0" max="100" value="50" step="1">
+                        <div class="slider-container">
+                            <input type="range" id="uiVolumeSlider" min="0" max="100" value="50" step="1">
+                        </div>
                     </div>
                     <div class="option-item">
                         <label for="spatialAudioCheckbox">

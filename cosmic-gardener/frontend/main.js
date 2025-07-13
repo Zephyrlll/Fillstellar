@@ -33,10 +33,11 @@ function createStarfield() {
     const starsGeometry = new THREE.BufferGeometry();
     const starsMaterial = new THREE.PointsMaterial({ 
         color: 0xffffff, 
-        size: 2,
-        sizeAttenuation: false, // Keep consistent size regardless of distance
+        size: 0.8, // Much smaller and more realistic
+        sizeAttenuation: true, // Let distance affect size for depth perception
         transparent: true,
-        alphaTest: 0.1
+        alphaTest: 0.05, // Lower threshold for more subtle stars
+        opacity: 0.9 // Slightly transparent for more natural look
     });
     
     const starsVertices = [];
@@ -45,9 +46,10 @@ function createStarfield() {
     
     // Create multiple layers of stars at different distances
     const layers = [
-        { count: 12000, distance: 100000, sizeMult: 1.0 },   // Far background stars
-        { count: 8000, distance: 50000, sizeMult: 1.2 },    // Mid-distance stars
-        { count: 4000, distance: 25000, sizeMult: 1.5 }     // Closer brighter stars
+        { count: 15000, distance: 120000, sizeMult: 0.6 },   // Very distant tiny stars
+        { count: 8000, distance: 60000, sizeMult: 0.8 },     // Far background stars  
+        { count: 3000, distance: 30000, sizeMult: 1.0 },     // Mid-distance stars
+        { count: 1000, distance: 15000, sizeMult: 1.4 }      // Few closer bright stars
     ];
     
     layers.forEach(layer => {
@@ -64,12 +66,45 @@ function createStarfield() {
             
             starsVertices.push(x, y, z);
             
-            // Add subtle color variation (blue to yellow-white)
-            const temp = 0.8 + Math.random() * 0.4; // Temperature factor
-            starColors.push(0.8 + temp * 0.2, 0.8 + temp * 0.15, 0.8 + temp * 0.1);
+            // Add subtle color variation (blue to yellow-white) with more realism
+            const temp = Math.random(); // Temperature factor 0-1
+            let r, g, b;
             
-            // Vary star sizes
-            starSizes.push(layer.sizeMult * (0.5 + Math.random() * 1.5));
+            if (temp < 0.1) {
+                // Blue giants (rare, very bright)
+                r = 0.7; g = 0.8; b = 1.0;
+            } else if (temp < 0.3) {
+                // Blue-white stars
+                r = 0.8; g = 0.9; b = 1.0;
+            } else if (temp < 0.7) {
+                // White/yellow-white stars (most common)
+                r = 1.0; g = 0.95; b = 0.9;
+            } else if (temp < 0.9) {
+                // Yellow stars
+                r = 1.0; g = 0.9; b = 0.7;
+            } else {
+                // Red stars (dim but common)
+                r = 1.0; g = 0.7; b = 0.5;
+            }
+            
+            // Adjust brightness based on distance
+            const brightness = layer.distance > 80000 ? 0.6 : (layer.distance > 40000 ? 0.8 : 1.0);
+            starColors.push(r * brightness, g * brightness, b * brightness);
+            
+            // More realistic size distribution (most stars are tiny)
+            let sizeVariation;
+            if (Math.random() < 0.85) {
+                // 85% tiny stars
+                sizeVariation = 0.3 + Math.random() * 0.4;
+            } else if (Math.random() < 0.95) {
+                // 10% medium stars  
+                sizeVariation = 0.7 + Math.random() * 0.6;
+            } else {
+                // 5% bright stars
+                sizeVariation = 1.2 + Math.random() * 0.8;
+            }
+            
+            starSizes.push(layer.sizeMult * sizeVariation);
         }
     });
     
@@ -80,8 +115,18 @@ function createStarfield() {
     // Enable vertex colors
     starsMaterial.vertexColors = true;
     
+    // Make starfield immune to fog effects (it's the background)
+    starsMaterial.fog = false;
+    
     const starfield = new THREE.Points(starsGeometry, starsMaterial);
     starfield.name = 'starfield'; // Add name for easy reference
+    
+    // Store initial settings
+    starfield.userData = {
+        originalPositions: null, // Will be set by graphics engine
+        isStarfield: true
+    };
+    
     scene.add(starfield);
     
     console.log(`🌟 Created starfield with ${starsVertices.length / 3} stars in spherical distribution`);

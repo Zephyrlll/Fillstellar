@@ -113,14 +113,12 @@ export const ui = {
     graphicsQualitySelect: document.getElementById('graphicsQualitySelect'),
     // New graphics settings UI elements
     graphicsPresetSelect: document.getElementById('graphicsPresetSelect'),
-    resolutionScaleRange: document.getElementById('resolutionScaleRange'),
-    resolutionScaleValue: document.getElementById('resolutionScaleValue'),
+    resolutionScaleSelect: document.getElementById('resolutionScaleSelect'),
     textureQualitySelect: document.getElementById('textureQualitySelect'),
     shadowQualitySelect: document.getElementById('shadowQualitySelect'),
     antiAliasingSelect: document.getElementById('antiAliasingSelect'),
     postProcessingSelect: document.getElementById('postProcessingSelect'),
-    particleDensityRange: document.getElementById('particleDensityRange'),
-    particleDensityValue: document.getElementById('particleDensityValue'),
+    particleDensitySelect: document.getElementById('particleDensitySelect'),
     viewDistanceSelect: document.getElementById('viewDistanceSelect'),
     frameRateLimitSelect: document.getElementById('frameRateLimitSelect'),
     lightingQualitySelect: document.getElementById('lightingQualitySelect'),
@@ -680,16 +678,14 @@ export function updateGraphicsUI() {
         ui.graphicsPresetSelect.value = graphics.preset;
     }
     // Update resolution scale
-    if (ui.resolutionScaleRange && ui.resolutionScaleValue) {
+    if (ui.resolutionScaleSelect) {
         const scalePercent = Math.round(graphics.resolutionScale * 100);
-        ui.resolutionScaleRange.value = scalePercent.toString();
-        ui.resolutionScaleValue.textContent = `${scalePercent}%`;
+        ui.resolutionScaleSelect.value = scalePercent.toString();
     }
     // Update particle density
-    if (ui.particleDensityRange && ui.particleDensityValue) {
+    if (ui.particleDensitySelect) {
         const densityPercent = Math.round(graphics.particleDensity * 100);
-        ui.particleDensityRange.value = densityPercent.toString();
-        ui.particleDensityValue.textContent = `${densityPercent}%`;
+        ui.particleDensitySelect.value = densityPercent.toString();
     }
     // Update all select elements
     const selectElements = [

@@ -1,79 +1,219 @@
+/**
+ * ========================================
+ * Cosmic Gardener - Graphics Engine System
+ * ========================================
+ * 
+ * ファイル概要：
+ * メインのグラフィック設定管理システム。14種類の設定項目を統合管理し、
+ * 動的品質調整、フレームレート制限、LODシステムを提供。
+ * 
+ * 主要クラス：
+ * - GraphicsEngine: メイン管理クラス
+ * - FrameRateLimiter: FPS制限システム  
+ * - LODSystem: 距離ベース品質調整
+ * 
+ * 設定項目（14種類）：
+ * 1. resolutionScale: 解像度スケール（25%-300%）★最重要
+ * 2. textureQuality: テクスチャ品質
+ * 3. shadowQuality: 影品質
+ * 4. antiAliasing: アンチエイリアシング
+ * 5. postProcessing: ポストプロセッシング
+ * 6. particleDensity: パーティクル密度（星場制御）
+ * 7. viewDistance: 描画距離
+ * 8. frameRateLimit: フレームレート制限★重要
+ * 9. vsync: V-Sync設定
+ * 10. lightingQuality: ライティング品質
+ * 11. fogEffect: フォグエフェクト（星場保護機能付き）
+ * 12. renderPrecision: レンダリング精度
+ * 13. objectDetail: オブジェクト詳細度
+ * 14. uiAnimations: UIアニメーション品質
+ * 
+ * 利用ファイル：
+ * - main.js: アニメーションループでupdate()を呼び出し
+ * - events.js: ユーザー操作イベント処理
+ * - ui.js: UI更新とプリセット表示
+ * - state.js: 設定値とプリセット定義
+ * 
+ * パフォーマンス影響度：
+ * - 高: resolutionScale, shadowQuality
+ * - 中: antiAliasing, postProcessing, viewDistance
+ * - 低: fogEffect, uiAnimations
+ * 
+ * 今後の改善予定：
+ * - TODO: GPU性能自動検出
+ * - TODO: 動的品質調整の改良
+ * - TODO: プリセットの自動推奨機能
+ * - TODO: 詳細なパフォーマンス統計
+ */
+
 import * as THREE from 'three';
 import { gameState, applyGraphicsPreset } from './state.js';
 import { scene, camera, renderer, composer, ambientLight } from './threeSetup.js';
 import { performanceMonitor } from './performanceMonitor.js';
+
+/**
+ * GraphicsEngine - メイングラフィック設定管理システム
+ * 
+ * 機能概要:
+ * - 解像度スケール、影品質、ポストプロセッシングなど14種類の設定管理
+ * - プリセット適用（minimal, low, medium, high, ultra, extreme）
+ * - フレームレート制限システム
+ * - LOD（Level of Detail）システム
+ * - 動的品質調整（パフォーマンス低下時の自動設定下げ）
+ * 
+ * 主要メソッド:
+ * - applyAllSettings(): 全設定を一括適用
+ * - update(): 変更検知と差分適用
+ * - applyPreset(): プリセット適用
+ * 
+ * 注意事項:
+ * - 200%以上の解像度スケールは高負荷
+ * - Anti-aliasing変更にはレンダラー再作成が必要
+ * - Fogの設定変更は星場に影響しないよう調整済み
+ */
 export class GraphicsEngine {
+    // 前回適用した設定値（変更検知用）
     previousSettings = {};
+    
+    // フレームレート制限システム
     frameRateLimiter;
+    
+    // LODシステム管理（オブジェクト距離による品質切り替え）
     lodSystems = new Map();
+    
+    // 動的品質調整システムの有効/無効
     dynamicQualityEnabled = false;
+    
+    // 動的品質調整のクールダウン（連続調整防止）
     qualityAdjustmentCooldown = 0;
+    
+    /**
+     * コンストラクタ
+     * フレームレート制限システムを初期化し、現在の設定を適用
+     */
     constructor() {
         this.frameRateLimiter = new FrameRateLimiter();
         this.applyAllSettings();
     }
-    // Apply all current graphics settings
+    /**
+     * 全グラフィック設定を一括適用
+     * 
+     * 実行順序が重要：
+     * 1. 基本レンダリング設定（解像度、AA、影）
+     * 2. エフェクト設定（ポストプロセッシング、フォグ）
+     * 3. パフォーマンス設定（フレームレート制限）
+     * 4. 星場・UI関連設定
+     * 
+     * 注意：この関数は初期化時とプリセット変更時のみ呼び出すこと
+     * 個別設定変更時はupdate()メソッドを使用
+     */
     applyAllSettings() {
         const graphics = gameState.graphics;
+        
+        // === 基本レンダリング設定 ===
         this.applyResolutionScale(graphics.resolutionScale);
         this.applyAntiAliasing(graphics.antiAliasing);
         this.applyShadowQuality(graphics.shadowQuality);
+        
+        // === エフェクト設定 ===
         this.applyPostProcessing(graphics.postProcessing);
         this.applyViewDistance(graphics.viewDistance);
         this.applyLightingQuality(graphics.lightingQuality);
-        this.applyFogEffect(graphics.fogEffect);
+        this.applyFogEffect(graphics.fogEffect); // 星場保護機能付き
+        
+        // === パフォーマンス・UI設定 ===
         this.applyRenderPrecision(graphics.renderPrecision);
         this.applyUIAnimations(graphics.uiAnimations);
-        // Update frame rate limiter
+        this.applyParticleDensity(graphics.particleDensity); // 星場密度制御
+        
+        // === フレームレート制限設定 ===
         this.frameRateLimiter.setTargetFPS(graphics.frameRateLimit);
         console.log(`🎯 Frame rate limit set to: ${graphics.frameRateLimit} FPS`);
-        // Store current settings for change detection
+        
+        // === 変更検知用に現在設定を保存 ===
         this.previousSettings = { ...graphics };
         console.log(`🎨 Graphics settings applied: ${graphics.preset} preset`);
     }
-    // Check for setting changes and apply only what's needed
+    /**
+     * 設定変更を検知して差分のみ適用（パフォーマンス最適化）
+     * 
+     * 処理フロー：
+     * 1. プリセット変更チェック（優先度最高）
+     * 2. 個別設定の変更検知
+     * 3. LODシステム更新
+     * 4. 動的品質調整
+     * 
+     * このメソッドは毎フレーム呼び出されるため、軽量性が重要
+     * 変更がない場合は何も実行しない
+     */
     update() {
         const graphics = gameState.graphics;
-        // Check for preset changes
+        
+        // === プリセット変更の優先チェック ===
+        // プリセット変更時は全設定を再適用
         if (this.previousSettings.preset !== graphics.preset && graphics.preset !== 'custom') {
             this.applyPreset(graphics.preset);
-            return;
+            return; // 他の処理をスキップ
         }
-        // Check individual setting changes
+        
+        // === 個別設定の変更検知と適用 ===
+        // 重要度の高い設定から順番にチェック
+        
+        // 解像度スケール（パフォーマンスに大きく影響）
         if (this.previousSettings.resolutionScale !== graphics.resolutionScale) {
             this.applyResolutionScale(graphics.resolutionScale);
         }
+        
+        // アンチエイリアシング（品質に大きく影響）
         if (this.previousSettings.antiAliasing !== graphics.antiAliasing) {
             this.applyAntiAliasing(graphics.antiAliasing);
         }
+        
+        // 影品質（パフォーマンスに中程度の影響）
         if (this.previousSettings.shadowQuality !== graphics.shadowQuality) {
             this.applyShadowQuality(graphics.shadowQuality);
         }
+        
+        // ポストプロセッシング（品質向上効果）
         if (this.previousSettings.postProcessing !== graphics.postProcessing) {
             this.applyPostProcessing(graphics.postProcessing);
         }
+        
+        // 描画距離（パフォーマンスに中程度の影響）
         if (this.previousSettings.viewDistance !== graphics.viewDistance) {
             this.applyViewDistance(graphics.viewDistance);
         }
+        
+        // ライティング品質
         if (this.previousSettings.lightingQuality !== graphics.lightingQuality) {
             this.applyLightingQuality(graphics.lightingQuality);
         }
+        
+        // フォグエフェクト（星場保護機能付き）
         if (this.previousSettings.fogEffect !== graphics.fogEffect) {
             this.applyFogEffect(graphics.fogEffect);
         }
+        
+        // フレームレート制限
         if (this.previousSettings.frameRateLimit !== graphics.frameRateLimit) {
             this.frameRateLimiter.setTargetFPS(graphics.frameRateLimit);
         }
+        
+        // パーティクル密度（星場密度）
         if (this.previousSettings.particleDensity !== graphics.particleDensity) {
             this.applyParticleDensity(graphics.particleDensity);
         }
-        // Update LOD systems
+        
+        // === システム更新 ===
+        // LODシステムの更新（距離ベース品質調整）
         this.updateLODSystems();
-        // Handle dynamic quality adjustment
+        
+        // 動的品質調整（パフォーマンス低下時の自動調整）
         if (this.dynamicQualityEnabled) {
             this.handleDynamicQuality();
         }
-        // Store current settings
+        
+        // === 変更検知用に現在設定を保存 ===
         this.previousSettings = { ...graphics };
     }
     // Apply a graphics preset
@@ -83,18 +223,73 @@ export class GraphicsEngine {
         performanceMonitor.resetHistory();
         console.log(`🎨 Applied graphics preset: ${presetName}`);
     }
-    // Resolution scaling
+    /**
+     * 解像度スケール適用 - 最重要機能の一つ
+     * 
+     * 仕組み：
+     * - 内部レンダリング解像度と表示サイズを分離
+     * - 50%: 内部解像度半分 → 画面サイズに拡大表示（軽量・荒い）
+     * - 100%: 標準解像度（1:1表示）
+     * - 200%: 内部解像度2倍 → 画面サイズに縮小表示（高品質・重い）
+     * 
+     * パフォーマンス影響度：
+     * - 25%: 約6.25倍軽い（0.25²）
+     * - 50%: 約4倍軽い（0.5²）
+     * - 200%: 約4倍重い（2²）
+     * - 300%: 約9倍重い（3²）
+     * 
+     * 注意事項：
+     * - setSize()の第3引数をfalseにしてCSS自動更新を無効化
+     * - カメラのアスペクト比は表示サイズ基準で設定
+     * - 2.0倍以上は高性能GPU推奨
+     */
     applyResolutionScale(scale) {
         const canvas = renderer.domElement;
         const pixelRatio = window.devicePixelRatio || 1;
-        const width = window.innerWidth;
-        const height = window.innerHeight;
-        renderer.setSize(width * scale, height * scale);
-        renderer.setPixelRatio(pixelRatio * scale);
+        
+        // 表示サイズ（常に画面いっぱい）
+        const displayWidth = window.innerWidth;
+        const displayHeight = window.innerHeight;
+        
+        // 内部レンダリング解像度（品質に影響）
+        const renderWidth = Math.round(displayWidth * scale);
+        const renderHeight = Math.round(displayHeight * scale);
+        
+        // === レンダラー設定更新 ===
+        // 第3引数false = CSS自動更新を無効化（手動制御）
+        renderer.setSize(renderWidth, renderHeight, false);
+        renderer.setPixelRatio(pixelRatio); // デバイスピクセル比は固定
+        
+        // === CSS表示サイズを強制設定 ===
+        // 解像度スケールに関係なく常に画面いっぱいに表示
+        canvas.style.width = displayWidth + 'px';
+        canvas.style.height = displayHeight + 'px';
+        
+        // === ポストプロセッシング対応 ===
         if (composer) {
-            composer.setSize(width * scale, height * scale);
+            composer.setSize(renderWidth, renderHeight);
         }
-        console.log(`📏 Resolution scale set to ${Math.round(scale * 100)}%`);
+        
+        // === カメラ設定更新 ===
+        // アスペクト比は表示サイズ基準（内部解像度ではない）
+        if (camera) {
+            camera.aspect = displayWidth / displayHeight;
+            camera.updateProjectionMatrix();
+        }
+        
+        // === ログ出力 ===
+        console.log(`📏 Resolution scale: ${Math.round(scale * 100)}% (${renderWidth}x${renderHeight} → ${displayWidth}x${displayHeight})`);
+        
+        // === パフォーマンス警告 ===
+        if (scale >= 2.0) {
+            console.warn(`⚠️ High resolution scale (${Math.round(scale * 100)}%) may impact performance significantly!`);
+            console.log(`💡 Consider monitoring FPS and reducing other settings if needed.`);
+            
+            // 将来の改善案をコメントとして残す
+            // TODO: 自動品質調整機能との連携
+            // TODO: GPU性能検出による推奨設定表示
+            // TODO: フレームレート低下時の自動スケール調整
+        }
     }
     // Anti-aliasing settings
     applyAntiAliasing(type) {
@@ -227,23 +422,39 @@ export class GraphicsEngine {
         // In a full implementation, you would also adjust the number and complexity of lights
         console.log(`💡 Lighting quality set to: ${quality}`);
     }
-    // Fog effects
+    // Fog effects - adjusted to not interfere with starfield
     applyFogEffect(effect) {
         switch (effect) {
             case 'off':
                 scene.fog = null;
                 break;
             case 'simple':
-                scene.fog = new THREE.Fog(0x000011, 5000, 15000);
+                // Fog only affects closer objects, not the distant starfield
+                scene.fog = new THREE.Fog(0x000011, 1000, 8000);
                 break;
             case 'standard':
-                scene.fog = new THREE.Fog(0x000011, 3000, camera.far * 0.8);
+                // Medium fog that doesn't reach the starfield
+                scene.fog = new THREE.Fog(0x000011, 800, 12000);
                 break;
             case 'high':
-                scene.fog = new THREE.FogExp2(0x000011, 0.00008);
+                // Exponential fog with very low density to not affect stars
+                scene.fog = new THREE.FogExp2(0x000011, 0.00002);
                 break;
         }
+        
+        // Update starfield material to be unaffected by fog
+        this.updateStarfieldFogResistance();
         console.log(`🌫️ Fog effect set to: ${effect}`);
+    }
+    
+    // Make starfield resistant to fog effects
+    updateStarfieldFogResistance() {
+        const starfield = scene.getObjectByName('starfield');
+        if (!starfield) return;
+        
+        // Starfield should not be affected by fog since it represents distant background
+        starfield.material.fog = false;
+        console.log('⭐ Starfield protected from fog effects');
     }
     // Render precision
     applyRenderPrecision(precision) {
@@ -264,30 +475,37 @@ export class GraphicsEngine {
         const starfield = scene.getObjectByName('starfield');
         if (!starfield) return;
         
-        // Adjust visibility based on density
-        const geometry = starfield.geometry;
-        const positions = geometry.attributes.position.array;
-        const colors = geometry.attributes.color.array;
-        
-        // Calculate how many stars to show
-        const totalStars = positions.length / 3;
-        const visibleStars = Math.floor(totalStars * density);
-        
-        // Update alpha values to hide/show stars
-        for (let i = 0; i < totalStars; i++) {
-            const alpha = i < visibleStars ? 1.0 : 0.0;
-            // Modify the alpha channel (if we had one) or just toggle visibility
-            if (i >= visibleStars) {
-                // Move invisible stars far away
-                positions[i * 3] = 999999;
-                positions[i * 3 + 1] = 999999;
-                positions[i * 3 + 2] = 999999;
-            }
+        // Store original positions if not already stored
+        if (!starfield.userData.originalPositions) {
+            const geometry = starfield.geometry;
+            starfield.userData.originalPositions = new Float32Array(geometry.attributes.position.array);
         }
         
+        const geometry = starfield.geometry;
+        const originalPositions = starfield.userData.originalPositions;
+        const currentPositions = geometry.attributes.position.array;
+        
+        // Calculate how many stars to show
+        const totalStars = originalPositions.length / 3;
+        const visibleStars = Math.floor(totalStars * density);
+        
+        // Restore original positions first
+        for (let i = 0; i < originalPositions.length; i++) {
+            currentPositions[i] = originalPositions[i];
+        }
+        
+        // Use drawRange to efficiently control visible stars instead of moving them
+        geometry.setDrawRange(0, visibleStars);
         geometry.attributes.position.needsUpdate = true;
         
-        console.log(`🌟 Starfield density: ${visibleStars}/${totalStars} stars visible`);
+        // Also ensure fog resistance is maintained and adjust size based on density
+        starfield.material.fog = false;
+        
+        // Adjust star size based on density for better visual balance
+        const baseSizeMultiplier = density < 0.3 ? 1.2 : (density > 0.8 ? 0.8 : 1.0);
+        starfield.material.size = 0.8 * baseSizeMultiplier;
+        
+        console.log(`🌟 Starfield density: ${visibleStars}/${totalStars} stars visible, size: ${starfield.material.size.toFixed(1)}`);
     }
     // UI animations
     applyUIAnimations(level) {
@@ -377,47 +595,98 @@ export class GraphicsEngine {
         return this.frameRateLimiter;
     }
 }
-// Frame rate limiting utility
+/**
+ * FrameRateLimiter - 精密なフレームレート制限システム
+ * 
+ * 機能：
+ * - 指定したFPS値でのフレームレート制限
+ * - requestAnimationFrame + setTimeout の組み合わせで精密制御
+ * - フレームドリフト補正機能
+ * 
+ * 使用例：
+ * - 30 FPS: バッテリー節約、低負荷
+ * - 60 FPS: 標準、バランス重視
+ * - 120 FPS: 高リフレッシュレートモニター対応
+ * - -1: 制限なし（モニターのリフレッシュレートに依存）
+ * 
+ * 注意：
+ * - main.js のアニメーションループと連携
+ * - パフォーマンス測定のため実際のFPSもログ出力
+ */
 class FrameRateLimiter {
-    targetFPS = -1; // -1 means unlimited
+    // 目標FPS値（-1 = 制限なし）
+    targetFPS = -1;
+    
+    // 最後にフレームを描画した時刻（performance.now()）
     lastFrameTime = 0;
+    
+    // フレーム間隔（ミリ秒）
     frameInterval = 0;
+    
+    // 描画フレーム数（デバッグ用カウンター）
     frameCount = 0;
     
+    /**
+     * 目標FPS設定
+     * @param {number} fps - 目標FPS（-1で制限なし、0で停止）
+     */
     setTargetFPS(fps) {
         this.targetFPS = fps;
         this.frameInterval = fps > 0 ? 1000 / fps : 0;
-        this.lastFrameTime = performance.now(); // Reset timing when changing FPS
+        this.lastFrameTime = performance.now(); // タイミングリセット
         console.log(`🎮 Frame rate limiter: Target ${fps} FPS, interval ${this.frameInterval.toFixed(1)}ms`);
     }
     
+    /**
+     * フレーム描画判定
+     * @returns {boolean} true=描画実行, false=スキップ
+     * 
+     * 処理フロー：
+     * 1. 制限なしの場合は常にtrue
+     * 2. 経過時間が目標間隔以上ならtrue
+     * 3. ドリフト補正で精度向上
+     */
     shouldRender() {
-        if (this.targetFPS <= 0) return true; // Unlimited
+        // 制限なしの場合は常に描画
+        if (this.targetFPS <= 0) return true;
         
         const now = performance.now();
         const elapsed = now - this.lastFrameTime;
         
-        // Use a more precise timing calculation
+        // 目標間隔に達したかチェック
         if (elapsed >= this.frameInterval) {
-            // Adjust for any drift by carrying over the excess time
+            // === ドリフト補正 ===
+            // 余分な時間を次回に繰り越して精度向上
             this.lastFrameTime = now - (elapsed % this.frameInterval);
             this.frameCount++;
             
-            // Debug output every 60 frames (1 second at 60fps)
+            // === パフォーマンス監視 ===
+            // 1秒間隔で実際のFPSをログ出力
             if (this.frameCount % 60 === 0) {
                 const actualFPS = Math.round(1000 / elapsed);
                 console.log(`🎯 Frame rendered: Target ${this.targetFPS} FPS, Actual ~${actualFPS} FPS`);
+                
+                // 大きな乖離がある場合は警告
+                if (Math.abs(actualFPS - this.targetFPS) > this.targetFPS * 0.1) {
+                    console.warn(`⚠️ FPS deviation detected: Target ${this.targetFPS}, Actual ${actualFPS}`);
+                }
             }
             
-            return true;
+            return true; // 描画実行
         }
         
-        return false;
+        return false; // 描画スキップ
     }
     
-    // Get the timeout needed for precise frame timing
+    /**
+     * 次フレームまでの待機時間取得
+     * @returns {number} 待機時間（ミリ秒）
+     * 
+     * setTimeout用の精密タイミング計算
+     * main.jsでrequestAnimationFrameと組み合わせて使用
+     */
     getNextFrameDelay() {
-        if (this.targetFPS <= 0) return 0;
+        if (this.targetFPS <= 0) return 0; // 制限なし
         
         const now = performance.now();
         const elapsed = now - this.lastFrameTime;
@@ -475,5 +744,45 @@ class LODSystem {
         }
     }
 }
-// Create global instance
+// === グローバルインスタンス作成 ===
 export const graphicsEngine = new GraphicsEngine();
+
+/**
+ * ========================================
+ * 開発者向けガイド
+ * ========================================
+ * 
+ * 【新しい設定項目を追加する場合】
+ * 1. state.js の GraphicsState インターフェースに追加
+ * 2. GRAPHICS_PRESETS の各プリセットに値を追加
+ * 3. このファイルに apply[設定名]() メソッドを作成
+ * 4. applyAllSettings() と update() に追加
+ * 5. events.js にイベントハンドラー追加
+ * 6. index.html にUI要素追加
+ * 7. ui.js にUI更新ロジック追加
+ * 
+ * 【パフォーマンス最適化のポイント】
+ * - update() は毎フレーム呼び出されるため軽量性重視
+ * - 重い処理は apply[設定名]() メソッド内で実行
+ * - 変更検知は厳密等価比較（===）を使用
+ * - console.log は本番環境では削除を検討
+ * 
+ * 【デバッグ方法】
+ * - ブラウザのコンソールで各種ログを確認
+ * - gameState.graphics で現在設定を確認
+ * - performanceMonitor.getCurrentFPS() でFPS監視
+ * - graphicsEngine.enableDynamicQuality(true) で自動調整テスト
+ * 
+ * 【既知の制限事項】
+ * - アンチエイリアシング変更にはレンダラー再作成が必要
+ * - 一部設定は即座に反映されない（要ページリロード）
+ * - 300%解像度は高性能GPU必須
+ * - フォグ設定は星場に影響しないよう特別対応済み
+ * 
+ * 【テスト環境での確認項目】
+ * - 各プリセットでのFPS変化
+ * - 解像度スケール変更時の表示確認
+ * - フレームレート制限の精度
+ * - 設定変更時のUI同期
+ * - 低スペック環境での動作確認
+ */

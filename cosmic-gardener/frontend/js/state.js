@@ -125,13 +125,30 @@ export const gameState = {
 };
 // --- Graphics Presets ---
 export const GRAPHICS_PRESETS = {
-    ultra: {
-        resolutionScale: 1.25,
+    extreme: {
+        resolutionScale: 3.0,
         textureQuality: 'ultra',
         shadowQuality: 'ultra',
         antiAliasing: 'msaa8x',
         postProcessing: 'ultra',
-        particleDensity: 2.0,
+        particleDensity: 1.25,
+        viewDistance: 'unlimited',
+        frameRateLimit: -1,
+        vsync: 'adaptive',
+        lightingQuality: 'ultra',
+        fogEffect: 'high',
+        renderPrecision: 'high',
+        objectDetail: 'ultra',
+        backgroundDetail: 'high',
+        uiAnimations: 'smooth'
+    },
+    ultra: {
+        resolutionScale: 2.0,
+        textureQuality: 'ultra',
+        shadowQuality: 'ultra',
+        antiAliasing: 'msaa8x',
+        postProcessing: 'ultra',
+        particleDensity: 1.0,
         viewDistance: 'unlimited',
         frameRateLimit: -1,
         vsync: 'adaptive',

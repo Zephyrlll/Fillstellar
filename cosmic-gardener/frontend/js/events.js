@@ -62,10 +62,8 @@ export function setupEventListeners() {
         return;
     eventListenersSetup = true;
     window.addEventListener('resize', () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        composer.setSize(window.innerWidth, window.innerHeight);
+        // Apply resolution scale instead of direct resize
+        graphicsEngine.applyResolutionScale(gameState.graphics.resolutionScale);
         debouncedUpdateGalaxyMap();
     });
     window.addEventListener('keydown', (event) => {
@@ -636,17 +634,13 @@ export function setupEventListeners() {
         });
     }
     // Resolution scale slider
-    if (ui.resolutionScaleRange) {
-        ui.resolutionScaleRange.addEventListener('input', (event) => {
+    if (ui.resolutionScaleSelect) {
+        ui.resolutionScaleSelect.addEventListener('change', (event) => {
             const target = event.target;
             const scalePercent = parseInt(target.value);
             const scale = scalePercent / 100;
             gameState.graphics.resolutionScale = scale;
             gameState.graphics.preset = 'custom';
-            // Update display value
-            if (ui.resolutionScaleValue) {
-                ui.resolutionScaleValue.textContent = `${scalePercent}%`;
-            }
             // Update preset selector to show custom
             if (ui.graphicsPresetSelect) {
                 ui.graphicsPresetSelect.value = 'custom';
@@ -655,17 +649,13 @@ export function setupEventListeners() {
         });
     }
     // Particle density slider
-    if (ui.particleDensityRange) {
-        ui.particleDensityRange.addEventListener('input', (event) => {
+    if (ui.particleDensitySelect) {
+        ui.particleDensitySelect.addEventListener('change', (event) => {
             const target = event.target;
             const densityPercent = parseInt(target.value);
             const density = densityPercent / 100;
             gameState.graphics.particleDensity = density;
             gameState.graphics.preset = 'custom';
-            // Update display value
-            if (ui.particleDensityValue) {
-                ui.particleDensityValue.textContent = `${densityPercent}%`;
-            }
             // Update preset selector to show custom
             if (ui.graphicsPresetSelect) {
                 ui.graphicsPresetSelect.value = 'custom';
