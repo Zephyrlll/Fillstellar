@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- 🚀 Updated version with All Settings Collapsible 2024-07-13 -->
+<!-- 🚀 CAMERA FIX v2024-07-13-15:30 -->
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
@@ -18,17 +18,27 @@
         }
       }
     </script>
-    <!-- Graphics System Debugging -->
+    <!-- Cache Busting Debug -->
     <script>
-      console.log('🎮 Graphics system loading...');
+      const timestamp = new Date().getTime();
+      console.log('🚀 CAMERA FIX VERSION LOADING:', timestamp);
       window.graphicsDebug = true;
+      window.cameraFixDebug = true;
     </script>
 </head>
 <body>
 <script>
-    console.log('🌟 Cosmic Gardener with Production System loaded!');
-    console.log('📅 Version: 2024-07-10');
+    console.log('🌟 Cosmic Gardener with CAMERA FIX loaded!');
+    console.log('📅 Version: 2024-07-13 CAMERA FIX');
+    console.log('🎯 Camera positioning bug fix active');
 </script>
+
+  <!-- 🔧 初期化フェードオーバーレイ -->
+  <div id="fade-overlay">
+    <div id="loading-content">
+      <h1>Cosmic Gardener</h1>
+    </div>
+  </div>
 
   <!-- 上部中央の情報表示 -->
   <div id="info-container">
@@ -765,7 +775,7 @@
     </div>
   </div>
 
-  <script type="module" src="./main.js"></script>
+  <script type="module" src="./main.js?v=20240713-SYNC-FIX-3"></script>
   <script>
     console.log('🔧 HTML loaded, market system will be handled by events.js');
     

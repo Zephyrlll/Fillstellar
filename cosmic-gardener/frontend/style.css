@@ -344,6 +344,62 @@ body {
     background-color: #000;
 }
 
+/* === 🔧 初期化フェードオーバーレイ === */
+#fade-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: #000000;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 1;
+    transition: opacity 1.5s ease-out;
+    /* ちらつき防止設定 */
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    will-change: opacity;
+}
+
+#fade-overlay.blackout {
+    opacity: 1;
+    background: #000000;
+}
+
+#fade-overlay.blackout #loading-content {
+    opacity: 0;
+    transition: opacity 0.5s ease-out;
+}
+
+#fade-overlay.fade-out {
+    opacity: 0;
+    pointer-events: none;
+}
+
+#loading-content {
+    text-align: center;
+    color: #ffffff;
+}
+
+#loading-content h1 {
+    font-size: 3em;
+    margin-bottom: 0.5em;
+    background: linear-gradient(45deg, #4a9eff, #00d4ff, #4a9eff);
+    background-size: 200% 200%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: shimmer 2s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
 #info-container {
   position: absolute;
   top: 10px;
@@ -429,8 +485,8 @@ body {
 
 #game-canvas {
     display: block;
-    width: 100% !important;
-    height: 100% !important;
+    width: 100%;
+    height: 100%;
     object-fit: fill;
 }
 

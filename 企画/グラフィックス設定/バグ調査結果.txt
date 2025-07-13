@@ -1,0 +1,31 @@
+【Cosmic Gardener グラフィックス解像度スケール バグ調査まとめ】
+
+■ 現象
+- ゲーム開始直後や1秒後に、解像度スケール（resolutionScale）が1.0（mediumプリセット）に勝手に戻る。
+- UIでカスタム値（例: 1.5）にしても、しばらくすると medium プリセットの値に上書きされる。
+- gameState.graphics.preset も custom → medium に戻る。
+
+■ ログから分かったこと
+- applyAllSettings, applyResolutionScale の直前で gameState.graphics が medium プリセットの内容に丸ごと上書きされている。
+- migrationやUI操作以外のタイミングで「mediumプリセットで全上書き」されている。
+- resetGraphicsToDefaults() などの初期化系関数が自動で呼ばれている可能性が高い。
+
+■ 直接的な原因候補
+1. resetGraphicsToDefaults() が「ボタン以外」で自動呼び出しされている。
+2. loadGame() や main.js などで Object.assign(gameState.graphics, GRAPHICS_PRESETS.medium) など medium プリセットで上書きされている。
+3. migration時に「既存のカスタム値」を無視して medium プリセットで初期化している。
+
+■ 今後やるべき修正ポイント
+1. resetGraphicsToDefaults() の呼び出し元を全て調査し、「ボタン以外で呼ばれていないか」確認・修正。
+2. gameState.graphics への medium プリセット全上書き箇所を全て調査し、不要な初期化を削除。
+3. loadGame() の migration で「既存のカスタム値」を優先し、なければ medium を使うように修正。
+4. UIでカスタム変更したら必ず preset: custom にし、saveGame() で保存。
+
+■ 具体的な修正案
+- resetGraphicsToDefaults() を「ボタン以外で絶対に呼ばない」ようにする。
+- migration時は「既存の graphics 設定があればそれを優先」し、なければ medium を使う。
+- UIでカスタム変更したら preset: custom を必ずセットし、saveGame() で保存。
+
+---
+
+このまとめを元に、該当箇所のコードを順に修正していくことで、必ずバグは解消できます。

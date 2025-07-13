@@ -19,7 +19,10 @@
       "Bash(touch:*)",
       "Bash(python:*)",
       "Bash(cat:*)",
-      "Bash(ss:*)"
+      "Bash(ss:*)",
+      "Bash(node:*)",
+      "WebFetch(domain:threejsfundamentals.org)",
+      "WebFetch(domain:webglfundamentals.org)"
     ],
     "deny": []
   }

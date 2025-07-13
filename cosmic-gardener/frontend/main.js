@@ -22,6 +22,104 @@ import { currencyManager } from './dist/js/currencySystem.js';
 import { performanceMonitor } from './js/performanceMonitor.js';
 import { graphicsEngine } from './js/graphicsEngine.js';
 import { updatePerformanceDisplay } from './js/ui.js';
+
+// Camera fix debugging
+console.log('🚀 MAIN.JS CAMERA FIX v2024-07-13 LOADED!');
+if (window.cameraFixDebug) {
+    console.log('🔍 Camera fix debug mode enabled');
+}
+
+// グローバルにgraphicsEngineを公開（saveload.jsで同期実行するため）
+window.graphicsEngine = graphicsEngine;
+console.log('✅ graphicsEngine exposed globally for synchronous access');
+
+// デバッグ用の解像度テスト機能を追加
+let resolutionTestObject = null;
+function createResolutionTestObject() {
+    if (resolutionTestObject) {
+        scene.remove(resolutionTestObject);
+    }
+    
+    // 詳細なテクスチャパターンを持つテストオブジェクト
+    const geometry = new THREE.PlaneGeometry(2000, 2000);
+    
+    // チェッカーボードパターンのcanvasテクスチャを作成
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 512;
+    const ctx = canvas.getContext('2d');
+    
+    // 高精細なパターンを描画
+    for (let i = 0; i < 32; i++) {
+        for (let j = 0; j < 32; j++) {
+            ctx.fillStyle = ((i + j) % 2) ? '#ffffff' : '#000000';
+            ctx.fillRect(i * 16, j * 16, 16, 16);
+        }
+    }
+    
+    // 解像度テスト用の細かいラインを追加（より細かく）
+    ctx.strokeStyle = '#ff0000';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 512; i += 4) {
+        ctx.beginPath();
+        ctx.moveTo(i, 0);
+        ctx.lineTo(i, 512);
+        ctx.stroke();
+    }
+    
+    // 垂直ラインも追加
+    for (let i = 0; i < 512; i += 4) {
+        ctx.beginPath();
+        ctx.moveTo(0, i);
+        ctx.lineTo(512, i);
+        ctx.stroke();
+    }
+    
+    // 中央に解像度テスト用のテキストを追加
+    ctx.fillStyle = '#00ff00';
+    ctx.font = '24px monospace';
+    ctx.fillText('RESOLUTION TEST', 150, 256);
+    ctx.font = '16px monospace';
+    ctx.fillText('Look for aliasing differences', 120, 280);
+    
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.minFilter = THREE.NearestFilter;
+    texture.magFilter = THREE.NearestFilter;
+    
+    const material = new THREE.MeshBasicMaterial({ 
+        map: texture,
+        transparent: true,
+        opacity: 0.8
+    });
+    
+    resolutionTestObject = new THREE.Mesh(geometry, material);
+    resolutionTestObject.position.set(0, 0, -100);
+    resolutionTestObject.name = 'resolutionTest';
+    scene.add(resolutionTestObject);
+    
+    console.log('🧪 Resolution test object created - change resolution scale to see the difference!');
+}
+
+// デバッグ機能をグローバルに公開
+window.createResolutionTestObject = createResolutionTestObject;
+window.removeResolutionTestObject = () => {
+    if (resolutionTestObject) {
+        scene.remove(resolutionTestObject);
+        resolutionTestObject = null;
+        console.log('🧪 Resolution test object removed');
+    }
+};
+
+// 🔍 星屑サイズ確認用デバッグ機能（init後に定義）
+
+// デバッグ: 1秒後のリセット問題テスト用
+window.testInitializationBug = () => {
+    console.log('🧪 Testing 1-second initialization reset bug...');
+    console.log('Setting 50% scale...');
+    gameState.graphics.resolutionScale = 0.5;
+    graphicsEngine.applyResolutionScale(0.5);
+    console.log('Wait 2 seconds to see if it gets reset by saveload...');
+};
 const moveSpeed = 200;
 let uiUpdateTimer = 0;
 const uiUpdateInterval = 0.1;
@@ -33,13 +131,13 @@ function createStarfield() {
     const starsGeometry = new THREE.BufferGeometry();
     const starsMaterial = new THREE.PointsMaterial({ 
         color: 0xffffff, 
-        size: 0.8, // Base size - will be adjusted by graphics engine
-        sizeAttenuation: true, // Let distance affect size for depth perception
+        size: 3.2, // Base size for 100% scale (will be adjusted by resolution)
+        sizeAttenuation: true, // 距離による自然なサイズ変化を維持
         transparent: true,
-        alphaTest: 0.02, // Very low threshold to reduce flickering at high resolution
-        opacity: 0.95, // High opacity for stability
+        alphaTest: 0.1, // Higher threshold to reduce flickering at 300% resolution
+        opacity: 1.0, // Full opacity for maximum stability
         depthWrite: false, // Prevent depth conflicts
-        blending: THREE.AdditiveBlending // Better blending for stars
+        blending: THREE.NormalBlending // More stable blending for high resolution
     });
     
     const starsVertices = [];
@@ -48,10 +146,10 @@ function createStarfield() {
     
     // Create multiple layers of stars at different distances
     const layers = [
-        { count: 15000, distance: 120000, sizeMult: 0.6 },   // Very distant tiny stars
-        { count: 8000, distance: 60000, sizeMult: 0.8 },     // Far background stars  
+        { count: 1000, distance: 15000, sizeMult: 1.4 },     // Few closer bright stars
         { count: 3000, distance: 30000, sizeMult: 1.0 },     // Mid-distance stars
-        { count: 1000, distance: 15000, sizeMult: 1.4 }      // Few closer bright stars
+        { count: 8000, distance: 60000, sizeMult: 0.8 },     // Far background stars (within view distance)
+        { count: 15000, distance: 25000, sizeMult: 0.6 }     // Background stars (adjusted to be within view range)
     ];
     
     layers.forEach(layer => {
@@ -123,6 +221,10 @@ function createStarfield() {
     const starfield = new THREE.Points(starsGeometry, starsMaterial);
     starfield.name = 'starfield'; // Add name for easy reference
     
+    // 🔧 描画距離設定の影響を受けないよう最背景に設定
+    starfield.renderOrder = -1000; // 最背景として描画
+    starfield.frustumCulled = false; // フラスタムカリングを無効化
+    
     // Store initial settings
     starfield.userData = {
         originalPositions: null, // Will be set by graphics engine
@@ -132,6 +234,15 @@ function createStarfield() {
     scene.add(starfield);
     
     console.log(`🌟 Created starfield with ${starsVertices.length / 3} stars in spherical distribution`);
+    console.log(`🌟 Initial star material size: ${starsMaterial.size}`);
+    
+    // デバッグ: 5秒後に星屑の状態をチェック
+    setTimeout(() => {
+        const starfield = scene.getObjectByName('starfield');
+        if (starfield && starfield.material) {
+            console.log(`🔍 Star debug after 5s: size=${starfield.material.size}, resolution=${gameState?.graphics?.resolutionScale || 'unknown'}`);
+        }
+    }, 5000);
 }
 
 // Update starfield scale based on camera position for better immersion
@@ -150,6 +261,9 @@ function updateStarfieldScale() {
     
     // Smoothly interpolate to new scale
     starfield.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.01);
+    
+    // 🔧 星屑サイズは解像度に関係なく一定に保つ
+    // （解像度スケール連動機能を削除）
 }
 function animate() {
     // Update performance monitor first
@@ -303,9 +417,20 @@ function animate() {
     if (keys.d)
         camera.position.x += moveSpeed * animationDeltaTime;
     if (gameState.focusedObject) {
-        const offset = camera.position.clone().sub(controls.target);
-        controls.target.lerp(gameState.focusedObject.position, 0.05);
-        camera.position.copy(controls.target).add(offset);
+        // ブラックホールの場合は、既にコントロールターゲットが（0,0,0）に設定されているため、
+        // カメラ位置を変更しない
+        if (gameState.focusedObject.userData.type === 'black_hole') {
+            // ブラックホールの場合はカメラ位置を維持（既に適切に設定済み）
+            // controls.target は既に (0,0,0) に設定されている
+            if (window.cameraFixDebug && Math.random() < 0.01) { // 1%の確率でログ出力
+                console.log('🎯 BLACK HOLE FOCUS: Camera movement prevented');
+            }
+        } else {
+            // 他の天体の場合は従来の動作
+            const offset = camera.position.clone().sub(controls.target);
+            controls.target.lerp(gameState.focusedObject.position, 0.05);
+            camera.position.copy(controls.target).add(offset);
+        }
     }
     const edgeGlow = scene.getObjectByName('black_hole_edge_glow');
     if (edgeGlow) {
@@ -346,6 +471,7 @@ function animate() {
 function init() {
     createStarfield();
     loadGame();
+    
     // Initialize production UI
     initProductionUI();
     // Initialize production chain UI (create UI elements)
@@ -381,7 +507,18 @@ function init() {
     }
     const blackHole = gameState.stars.find(s => s.userData.type === 'black_hole');
     if (blackHole) {
+        // グラフィックエンジンの初期化専用メソッドでカメラを設定
+        graphicsEngine.resetCameraForInitialization();
+        
+        console.log('📹 Camera positioned BEFORE setting focused object:', {
+            cameraPos: camera.position.clone(),
+            controlsTarget: controls.target.clone()
+        });
+        
+        // その後でフォーカスオブジェクトを設定（animate内の処理で位置が変わらないように）
         gameState.focusedObject = blackHole;
+        console.log('🎯 Camera initialized: focusing on black hole at center (camera will not move)');
+        console.log('🔍 Black hole position:', blackHole.position.clone());
     }
     // サウンドシステムの初期化（ユーザーインタラクション後）
     const initSound = async () => {
@@ -441,8 +578,151 @@ function init() {
     wsClient.on('disconnected', () => {
         console.log('バックエンドから切断されました');
     });
+    // 🔧 リサイズイベントリスナーを追加（解像度設定を再適用）
+    window.addEventListener('resize', () => {
+        if (gameState.graphics && window.graphicsEngine) {
+            console.log('🔧 Window resized, re-applying resolution scale:', gameState.graphics.resolutionScale);
+            window.graphicsEngine.applyResolutionScale(gameState.graphics.resolutionScale);
+        }
+    });
+    
     // 接続を開始
     wsClient.connect();
+    // 🔧 WORKAROUND: 解像度設定バグ対策として1.4~2秒の間に超集中的に微小リサイズを実行
+    setTimeout(() => {
+        console.log('🔧 Starting EXTREME intensive resize workaround (1.4-2.0s) - 0.5ms intervals!');
+        let resizeWorkaroundCount = 0;
+        const resizeWorkaroundInterval = setInterval(() => {
+            resizeWorkaroundCount++;
+            
+            // 微小なサイズ変更を発生させる（1px程度）
+            const canvas = document.querySelector('canvas');
+            if (canvas) {
+                const currentWidth = canvas.offsetWidth;
+                const currentHeight = canvas.offsetHeight;
+                
+                // わずかにサイズを変更してからすぐ戻す
+                canvas.style.width = (currentWidth + (resizeWorkaroundCount % 2 === 1 ? 1 : -1)) + 'px';
+                canvas.style.height = (currentHeight + (resizeWorkaroundCount % 2 === 1 ? 1 : -1)) + 'px';
+                
+                // 即座に元のサイズに戻す
+                setTimeout(() => {
+                    canvas.style.width = currentWidth + 'px';
+                    canvas.style.height = currentHeight + 'px';
+                    
+                    // リサイズイベントを手動発火
+                    window.dispatchEvent(new Event('resize'));
+                    
+                    // 解像度も毎回再適用
+                    if (window.graphicsEngine && gameState.graphics) {
+                        window.graphicsEngine.applyResolutionScale(gameState.graphics.resolutionScale);
+                    }
+                }, 1);
+            }
+            
+            // 1200回（0.6秒間、0.5msごと）実行したら停止
+            if (resizeWorkaroundCount >= 1200) {
+                clearInterval(resizeWorkaroundInterval);
+                console.log(`🔧 EXTREME intensive resize workaround completed (${resizeWorkaroundCount} times)`);
+                
+                // 最後に強制的に解像度を更新
+                if (window.graphicsEngine) {
+                    window.graphicsEngine.forceResolutionUpdate();
+                }
+            }
+            
+            if (resizeWorkaroundCount % 100 === 0) {
+                console.log(`🔧 Extreme intensive resize workaround ${resizeWorkaroundCount}/1200 executed`);
+            }
+        }, 0.5); // 0.5msごとに実行（極限頻度）
+    }, 1400); // 1.4秒後に開始
+
     animate();
+    
+    // 🔧 追加の解像度バグ対策：1.4-2秒の範囲で段階的に解像度を再適用
+    setTimeout(() => {
+        if (window.graphicsEngine && gameState.graphics) {
+            console.log('🔧 1.5秒後の解像度再適用:', gameState.graphics.resolutionScale);
+            window.graphicsEngine.applyResolutionScale(gameState.graphics.resolutionScale);
+        }
+    }, 1500);
+    
+    setTimeout(() => {
+        if (window.graphicsEngine && gameState.graphics) {
+            console.log('🔧 1.7秒後の解像度再適用:', gameState.graphics.resolutionScale);
+            window.graphicsEngine.applyResolutionScale(gameState.graphics.resolutionScale);
+        }
+    }, 1700);
+    
+    setTimeout(() => {
+        if (window.graphicsEngine && gameState.graphics) {
+            console.log('🔧 1.9秒後の解像度再適用:', gameState.graphics.resolutionScale);
+            window.graphicsEngine.applyResolutionScale(gameState.graphics.resolutionScale);
+        }
+    }, 1900);
+    
+    setTimeout(() => {
+        if (window.graphicsEngine && gameState.graphics) {
+            console.log('🔧 2.1秒後の最終解像度再適用:', gameState.graphics.resolutionScale);
+            window.graphicsEngine.forceResolutionUpdate();
+        }
+    }, 2100);
+    
+    // 🔧 3段階フェード処理：ロード画面 → ブラックアウト → ゲーム開始
+    setTimeout(() => {
+        const fadeOverlay = document.getElementById('fade-overlay');
+        if (fadeOverlay) {
+            console.log('🌟 Phase 1: Starting blackout transition (hiding loading content)');
+            fadeOverlay.classList.add('blackout');
+            
+            // ブラックアウト後、1秒待ってからゲーム画面をフェードイン
+            setTimeout(() => {
+                console.log('🌟 Phase 2: Starting game fade-in');
+                fadeOverlay.classList.add('fade-out');
+                
+                // フェードアウト完了後にDOM要素を削除
+                setTimeout(() => {
+                    if (fadeOverlay.parentNode) {
+                        fadeOverlay.parentNode.removeChild(fadeOverlay);
+                        console.log('🌟 Phase 3: Game fully loaded - fade overlay removed');
+                    }
+                }, 1500); // CSSトランジション時間と同期
+            }, 1000); // 1秒間のブラックアウト
+        }
+    }, 3000); // 3.0秒後にブラックアウト開始
+    
+    // Debug timer to catch the 1-second camera bug
+    if (window.cameraFixDebug) {
+        let debugInterval = 0;
+        const cameraDebugTimer = setInterval(() => {
+            debugInterval++;
+            const pos = camera.position.clone();
+            const target = controls.target.clone();
+            console.log(`🕐 Camera debug ${debugInterval}s:`, {
+                position: { x: pos.x.toFixed(1), y: pos.y.toFixed(1), z: pos.z.toFixed(1) },
+                target: { x: target.x.toFixed(1), y: target.y.toFixed(1), z: target.z.toFixed(1) },
+                focusedObject: gameState.focusedObject ? gameState.focusedObject.userData.type : 'none'
+            });
+            
+            // Stop after 5 seconds
+            if (debugInterval >= 5) {
+                clearInterval(cameraDebugTimer);
+                console.log('🏁 Camera debug timer stopped');
+            }
+        }, 1000);
+    }
+    
+    // 🔍 星屑サイズ確認用デバッグ機能
+    window.checkStarfieldSize = () => {
+        const starfield = scene.getObjectByName('starfield');
+        if (starfield && starfield.material) {
+            const currentScale = gameState?.graphics?.resolutionScale || 1.0;
+            console.log(`${Math.round(currentScale * 100)}% → Size: ${starfield.material.size} (Expected: ${(currentScale * 3.2).toFixed(1)})`);
+        } else {
+            console.log('Starfield not found');
+        }
+    };
+    
+    console.log('🔍 Debug function ready: checkStarfieldSize()');
 }
 init();

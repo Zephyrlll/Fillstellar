@@ -26,6 +26,9 @@ import { performanceMonitor } from './js/performanceMonitor.js';
 import { graphicsEngine } from './js/graphicsEngine.js';
 import { updatePerformanceDisplay } from './js/ui.js';
 
+// Expose graphicsEngine globally for synchronous access from saveload.ts
+(window as any).graphicsEngine = graphicsEngine;
+
 const moveSpeed = 200;
 
 let uiUpdateTimer = 0;
@@ -39,7 +42,16 @@ let wsClient: any = null;
 
 function createStarfield() {
     const starsGeometry = new THREE.BufferGeometry();
-    const starsMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 1, sizeAttenuation: true });
+    const starsMaterial = new THREE.PointsMaterial({ 
+        color: 0xffffff, 
+        size: 0.8, // Base size - will be adjusted by graphics engine
+        sizeAttenuation: true, // Let distance affect size for depth perception
+        transparent: true,
+        alphaTest: 0.1, // Higher threshold to reduce flickering at 300% resolution
+        opacity: 1.0, // Full opacity for maximum stability
+        depthWrite: false, // Prevent depth conflicts
+        blending: THREE.NormalBlending // More stable blending for high resolution
+    });
     const starsVertices = [];
     for (let i = 0; i < 8000; i++) {
         const x = (Math.random() - 0.5) * 20000;
@@ -49,6 +61,18 @@ function createStarfield() {
     }
     starsGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starsVertices, 3));
     const starfield = new THREE.Points(starsGeometry, starsMaterial);
+    starfield.name = 'starfield'; // Add name for easy reference
+    
+    // 🔧 描画距離設定の影響を受けないよう最背景に設定
+    starfield.renderOrder = -1000; // 最背景として描画
+    starfield.frustumCulled = false; // フラスタムカリングを無効化
+    
+    // Store initial settings
+    starfield.userData = {
+        originalPositions: null, // Will be set by graphics engine
+        isStarfield: true
+    };
+    
     scene.add(starfield);
 }
 

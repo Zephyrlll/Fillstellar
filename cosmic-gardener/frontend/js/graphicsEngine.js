@@ -48,7 +48,7 @@
 
 import * as THREE from 'three';
 import { gameState, applyGraphicsPreset } from './state.js';
-import { scene, camera, renderer, composer, ambientLight } from './threeSetup.js';
+import { scene, camera, renderer, composer, ambientLight, controls } from './threeSetup.js';
 import { performanceMonitor } from './performanceMonitor.js';
 
 /**
@@ -89,12 +89,28 @@ export class GraphicsEngine {
     
     /**
      * コンストラクタ
-     * フレームレート制限システムを初期化し、現在の設定を適用
+     * フレームレート制限システムを初期化
+     * 🔧 Note: Settings are NOT applied automatically to prevent overriding loaded settings
      */
     constructor() {
         this.frameRateLimiter = new FrameRateLimiter();
-        this.applyAllSettings();
+        console.log('🔧 GraphicsEngine: Constructor complete (settings NOT auto-applied)');
     }
+    /**
+     * 🔧 解像度設定バグ対策：強制的に解像度を再適用
+     */
+    forceResolutionUpdate() {
+        const currentScale = gameState.graphics.resolutionScale;
+        console.log(`🔧 Force resolution update: ${currentScale}`);
+        
+        // 一度違うスケールを設定してから戻す（内部状態をリセット）
+        this.applyResolutionScale(1.0);
+        setTimeout(() => {
+            this.applyResolutionScale(currentScale);
+            console.log(`🔧 Force resolution update completed: ${currentScale}`);
+        }, 100);
+    }
+    
     /**
      * 全グラフィック設定を一括適用
      * 
@@ -108,6 +124,8 @@ export class GraphicsEngine {
      * 個別設定変更時はupdate()メソッドを使用
      */
     applyAllSettings() {
+        console.log(`🧪 applyAllSettings called. Current scale: ${gameState.graphics.resolutionScale}`);
+        console.log('🧪 gameState.graphics:', JSON.stringify(gameState.graphics));
         const graphics = gameState.graphics;
         
         // === 基本レンダリング設定 ===
@@ -147,13 +165,19 @@ export class GraphicsEngine {
      * 変更がない場合は何も実行しない
      */
     update() {
+        console.log(`🧪 graphicsEngine.update called. Current scale: ${gameState.graphics.resolutionScale}`);
         const graphics = gameState.graphics;
         
         // === プリセット変更の優先チェック ===
         // プリセット変更時は全設定を再適用
+        // 🔧 FIX: Only apply preset if it's EXPLICITLY changed by user, not during auto-detection
         if (this.previousSettings.preset !== graphics.preset && graphics.preset !== 'custom') {
-            this.applyPreset(graphics.preset);
-            return; // 他の処理をスキップ
+            // 🔧 IMPORTANT: Only apply preset if this is a real user-initiated change
+            // Do not auto-apply presets during load or auto-detection
+            console.log(`🚨 PREVENTED auto-preset application: ${graphics.preset}`);
+            console.trace('Preset application prevented');
+            // Set preset to custom to prevent future auto-applications
+            graphics.preset = 'custom';
         }
         
         // === 個別設定の変更検知と適用 ===
@@ -241,6 +265,15 @@ export class GraphicsEngine {
         applyGraphicsPreset(gameState.graphics, presetName);
         this.applyAllSettings();
         performanceMonitor.resetHistory();
+        
+        // プリセット適用時もカメラをリセット
+        if (controls) {
+            camera.position.set(0, 0, 5000);
+            controls.target.set(0, 0, 0);
+            controls.update();
+            console.log('🎯 Camera reset after preset application');
+        }
+        
         console.log(`🎨 Applied graphics preset: ${presetName}`);
     }
     /**
@@ -264,6 +297,9 @@ export class GraphicsEngine {
      * - 2.0倍以上は高性能GPU推奨
      */
     applyResolutionScale(scale) {
+        console.log(`🧪 applyResolutionScale called with scale: ${scale}`);
+        console.log('🧪 gameState.graphics:', JSON.stringify(gameState.graphics));
+        console.trace('applyResolutionScale call stack');
         const canvas = renderer.domElement;
         const pixelRatio = window.devicePixelRatio || 1;
         
@@ -275,15 +311,23 @@ export class GraphicsEngine {
         const renderWidth = Math.round(displayWidth * scale);
         const renderHeight = Math.round(displayHeight * scale);
         
-        // === レンダラー設定更新 ===
-        // 第3引数false = CSS自動更新を無効化（手動制御）
-        renderer.setSize(renderWidth, renderHeight, false);
-        renderer.setPixelRatio(pixelRatio); // デバイスピクセル比は固定
+        // === Canvas DOM属性とCSS分離設定 ===
+        // Step 1: Canvas DOM属性（内部解像度）を直接設定
+        canvas.width = renderWidth;
+        canvas.height = renderHeight;
         
-        // === CSS表示サイズを強制設定 ===
-        // 解像度スケールに関係なく常に画面いっぱいに表示
-        canvas.style.width = displayWidth + 'px';
-        canvas.style.height = displayHeight + 'px';
+        // Step 2: CSS表示サイズを画面サイズに固定
+        canvas.style.setProperty('width', displayWidth + 'px', 'important');
+        canvas.style.setProperty('height', displayHeight + 'px', 'important');
+        
+        // Step 3: Three.jsレンダラーに変更を通知（ただしCSS更新はしない）
+        renderer.setSize(renderWidth, renderHeight, false);
+        // デバッグ: pixelRatioを1.0に固定してテスト
+        renderer.setPixelRatio(1.0);
+        console.log(`🧪 Pixel ratio forced to 1.0 (was ${pixelRatio})`);
+        
+        // CSS設定が正しく適用されているか確認
+        console.log(`🔧 Canvas DOM: ${canvas.width}x${canvas.height}, CSS: ${canvas.style.width} x ${canvas.style.height}`);
         
         // === ポストプロセッシング対応 ===
         if (composer) {
@@ -297,8 +341,40 @@ export class GraphicsEngine {
             camera.updateProjectionMatrix();
         }
         
-        // === ログ出力 ===
+        // === カメラ設定の更新（位置は保持） ===
+        // アスペクト比やコントロールの更新のみ行い、カメラ位置は保持
+        if (controls) {
+            controls.update(); // コントロールの更新のみ
+            console.log('🎯 Camera controls updated (position preserved)');
+        }
+        
+        // === 詳細デバッグ情報の出力 ===
         console.log(`📏 Resolution scale: ${Math.round(scale * 100)}% (${renderWidth}x${renderHeight} → ${displayWidth}x${displayHeight})`);
+        console.log(`🔍 Canvas actual size: ${canvas.width}x${canvas.height}`);
+        console.log(`🔍 Canvas style size: ${canvas.style.width} x ${canvas.style.height}`);
+        console.log(`🔍 Device pixel ratio: ${window.devicePixelRatio}`);
+        console.log(`🔍 Renderer pixel ratio: ${renderer.getPixelRatio()}`);
+        console.log(`🔍 Effective resolution: ${renderWidth * renderer.getPixelRatio()}x${renderHeight * renderer.getPixelRatio()}`);
+        
+        // WebGL描画バッファサイズの確認
+        const gl = renderer.getContext();
+        if (gl) {
+            console.log(`🔍 WebGL buffer size: ${gl.drawingBufferWidth}x${gl.drawingBufferHeight}`);
+        }
+        
+        // === 重要: WebGLビューポートの強制設定 ===
+        if (gl) {
+            gl.viewport(0, 0, renderWidth, renderHeight);
+            console.log(`🔍 WebGL viewport set to: ${renderWidth}x${renderHeight}`);
+        }
+        
+        // Three.jsの内部状態も確認
+        const rendererSize = new THREE.Vector2();
+        renderer.getSize(rendererSize);
+        console.log(`🔍 Three.js renderer size: ${rendererSize.x}x${rendererSize.y}`);
+        
+        // 画面上に一時的なデバッグ情報を表示
+        this.showResolutionDebugInfo(scale, renderWidth, renderHeight, displayWidth, displayHeight);
         
         // === パフォーマンス警告 ===
         if (scale >= 2.0) {
@@ -310,7 +386,129 @@ export class GraphicsEngine {
             // TODO: GPU性能検出による推奨設定表示
             // TODO: フレームレート低下時の自動スケール調整
         }
+        
+        // 🔧 星屑サイズを解像度スケールの影響から保護
+        this.protectStarfieldSize();
     }
+    
+    /**
+     * 星屑のサイズを解像度スケールに調整（調整済み仕様）
+     * 25%→0.1, 50%→1.3, 75%→2.5, 100%→4.0, 125%→10, 150%→40, 200%→50.0, 300%→60.0
+     */
+    protectStarfieldSize() {
+        const starfield = scene.getObjectByName('starfield');
+        if (starfield && starfield.material) {
+            const currentScale = gameState?.graphics?.resolutionScale || 1.0;
+            let starSize;
+            
+            // 調整済み仕様の正確な値マッピング
+            if (Math.abs(currentScale - 0.25) < 0.01) {
+                starSize = 0.1;
+            } else if (Math.abs(currentScale - 0.5) < 0.01) {
+                starSize = 1.3;
+            } else if (Math.abs(currentScale - 0.75) < 0.01) {
+                starSize = 2.5;
+            } else if (Math.abs(currentScale - 1.0) < 0.01) {
+                starSize = 4.0;
+            } else if (Math.abs(currentScale - 1.25) < 0.01) {
+                starSize = 10.0;
+            } else if (Math.abs(currentScale - 1.5) < 0.01) {
+                starSize = 40.0;
+            } else if (Math.abs(currentScale - 2.0) < 0.01) {
+                starSize = 50.0;
+            } else if (Math.abs(currentScale - 3.0) < 0.01) {
+                starSize = 60.0;
+            } else {
+                // 中間値は線形補間
+                if (currentScale < 0.25) {
+                    starSize = currentScale * 0.4; // 25%未満
+                } else if (currentScale < 0.5) {
+                    starSize = 0.1 + (currentScale - 0.25) * 4.8; // 25%-50%
+                } else if (currentScale < 0.75) {
+                    starSize = 1.3 + (currentScale - 0.5) * 4.8; // 50%-75%
+                } else if (currentScale < 1.0) {
+                    starSize = 2.5 + (currentScale - 0.75) * 6.0; // 75%-100%
+                } else if (currentScale < 1.25) {
+                    starSize = 4.0 + (currentScale - 1.0) * 24.0; // 100%-125%
+                } else if (currentScale < 1.5) {
+                    starSize = 10.0 + (currentScale - 1.25) * 120.0; // 125%-150%
+                } else if (currentScale < 2.0) {
+                    starSize = 40.0 + (currentScale - 1.5) * 20.0; // 150%-200%
+                } else {
+                    starSize = 50.0 + (currentScale - 2.0) * 10.0; // 200%以上
+                }
+            }
+            
+            starfield.material.size = starSize;
+            console.log(`🌟 protectStarfieldSize: Setting size to ${starSize.toFixed(1)} (resolution: ${Math.round(currentScale * 100)}%)`);
+        }
+    }
+    
+    /**
+     * 画面上に解像度デバッグ情報を表示
+     */
+    showResolutionDebugInfo(scale, renderWidth, renderHeight, displayWidth, displayHeight) {
+        // 既存のデバッグ表示を削除
+        const existingDebug = document.getElementById('resolution-debug-info');
+        if (existingDebug) {
+            existingDebug.remove();
+        }
+        
+        // デバッグ情報表示要素を作成
+        const debugDiv = document.createElement('div');
+        debugDiv.id = 'resolution-debug-info';
+        debugDiv.style.cssText = `
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: #00ff00;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            border: 1px solid #00ff00;
+            border-radius: 5px;
+            z-index: 10000;
+            max-width: 300px;
+        `;
+        
+        debugDiv.innerHTML = `
+            <div style="color: #ffffff; font-weight: bold; margin-bottom: 5px;">🔍 Resolution Debug</div>
+            <div>Scale: <span style="color: #ffff00;">${Math.round(scale * 100)}%</span></div>
+            <div>Render: <span style="color: #00ffff;">${renderWidth} x ${renderHeight}</span></div>
+            <div>Display: <span style="color: #ff00ff;">${displayWidth} x ${displayHeight}</span></div>
+            <div>Canvas DOM: <span style="color: #ffaa00;">${renderer.domElement.width} x ${renderer.domElement.height}</span></div>
+            <div>Canvas CSS: <span style="color: #00ff88;">${renderer.domElement.style.width} x ${renderer.domElement.style.height}</span></div>
+            <div style="margin-top: 5px; font-size: 10px; color: #aaaaaa;">
+                Console: createResolutionTestObject()<br>
+                Remove: removeResolutionTestObject()
+            </div>
+        `;
+        
+        document.body.appendChild(debugDiv);
+        
+        // 5秒後に自動で削除
+        setTimeout(() => {
+            if (debugDiv && debugDiv.parentNode) {
+                debugDiv.remove();
+            }
+        }, 5000);
+    }
+    
+    /**
+     * 初期化時専用のカメラリセット機能
+     * 解像度変更時とは別に、初期化時のみカメラ位置をリセットする
+     */
+    resetCameraForInitialization() {
+        if (controls) {
+            // カメラを適切な位置に配置（ブラックホールが画面中央に見えるように）
+            camera.position.set(0, 0, 5000); // 初期位置に戻す
+            controls.target.set(0, 0, 0); // ブラックホール（原点）をターゲットに
+            controls.update();
+            console.log('🎯 Camera position reset for initialization: pos(0,0,5000) target(0,0,0)');
+        }
+    }
+    
     /**
      * アンチエイリアシング設定 - 現在は制限あり
      * 
@@ -491,18 +689,37 @@ export class GraphicsEngine {
                 farPlane = 15000;
                 break;
             case 'minimal':
-                farPlane = 10000;
+                farPlane = 12000; // Increased from 10000 to prevent black hole disappearing
                 break;
             default:
                 farPlane = 20000;
         }
+        
+        // 元の設定通りにカメラのfar planeを設定
         camera.far = farPlane;
         camera.updateProjectionMatrix();
+        
+        // 🌟 星屑だけは描画距離制限を無視するよう特別処理
+        this.protectStarfieldFromViewDistance();
+        
         // Update fog far distance to match
         if (scene.fog && scene.fog instanceof THREE.Fog) {
             scene.fog.far = farPlane * 0.8;
         }
         console.log(`👁️ View distance set to: ${distance} (${farPlane})`);
+    }
+    
+    /**
+     * 星屑だけを描画距離制限から保護
+     */
+    protectStarfieldFromViewDistance() {
+        const starfield = scene.getObjectByName('starfield');
+        if (starfield && starfield.material) {
+            // 星屑は通常の深度テストを使用（距離は25000以下に調整済み）
+            starfield.material.depthTest = true; // 正常な深度テスト
+            starfield.renderOrder = -1000; // 最背景として描画
+            console.log('🌟 Starfield protection applied (normal depth test, background rendering)');
+        }
     }
     /**
      * ライティング品質設定 - 実際に光の質を変更
@@ -656,14 +873,51 @@ export class GraphicsEngine {
         // Also ensure fog resistance is maintained and adjust size based on density
         starfield.material.fog = false;
         
-        // Adjust star size based on density and resolution scale for better visual balance
+        // 🌟 調整済み星屑サイズスケーリング
+        // 25%→0.1, 50%→1.3, 75%→2.5, 100%→4.0, 125%→10, 150%→40, 200%→50.0, 300%→60.0
         const resolutionScale = gameState.graphics.resolutionScale || 1.0;
-        const densityMultiplier = density < 0.3 ? 1.2 : (density > 0.8 ? 0.8 : 1.0);
+        let starSize;
         
-        // Scale down star size for high resolution to prevent oversized/flickering stars
-        const resolutionMultiplier = resolutionScale >= 2.0 ? (0.5 / resolutionScale) : 1.0;
+        // 調整済み仕様の正確な値マッピング
+        if (Math.abs(resolutionScale - 0.25) < 0.01) {
+            starSize = 0.1;
+        } else if (Math.abs(resolutionScale - 0.5) < 0.01) {
+            starSize = 1.3;
+        } else if (Math.abs(resolutionScale - 0.75) < 0.01) {
+            starSize = 2.5;
+        } else if (Math.abs(resolutionScale - 1.0) < 0.01) {
+            starSize = 4.0;
+        } else if (Math.abs(resolutionScale - 1.25) < 0.01) {
+            starSize = 10.0;
+        } else if (Math.abs(resolutionScale - 1.5) < 0.01) {
+            starSize = 40.0;
+        } else if (Math.abs(resolutionScale - 2.0) < 0.01) {
+            starSize = 50.0;
+        } else if (Math.abs(resolutionScale - 3.0) < 0.01) {
+            starSize = 60.0;
+        } else {
+            // 中間値は線形補間
+            if (resolutionScale < 0.25) {
+                starSize = resolutionScale * 0.4; // 25%未満
+            } else if (resolutionScale < 0.5) {
+                starSize = 0.1 + (resolutionScale - 0.25) * 4.8; // 25%-50%
+            } else if (resolutionScale < 0.75) {
+                starSize = 1.3 + (resolutionScale - 0.5) * 4.8; // 50%-75%
+            } else if (resolutionScale < 1.0) {
+                starSize = 2.5 + (resolutionScale - 0.75) * 6.0; // 75%-100%
+            } else if (resolutionScale < 1.25) {
+                starSize = 4.0 + (resolutionScale - 1.0) * 24.0; // 100%-125%
+            } else if (resolutionScale < 1.5) {
+                starSize = 10.0 + (resolutionScale - 1.25) * 120.0; // 125%-150%
+            } else if (resolutionScale < 2.0) {
+                starSize = 40.0 + (resolutionScale - 1.5) * 20.0; // 150%-200%
+            } else {
+                starSize = 50.0 + (resolutionScale - 2.0) * 10.0; // 200%以上
+            }
+        }
         
-        starfield.material.size = 0.8 * densityMultiplier * resolutionMultiplier;
+        starfield.material.size = starSize;
+        console.log(`🌟 Setting starfield size to: ${starSize.toFixed(1)} (resolution: ${Math.round(resolutionScale * 100)}%)`);
         
         console.log(`🌟 Starfield density: ${visibleStars}/${totalStars} stars visible, size: ${starfield.material.size.toFixed(1)}`);
     }
@@ -728,11 +982,12 @@ export class GraphicsEngine {
         const graphics = gameState.graphics;
         let changed = false;
         // Reduce settings in order of performance impact
-        if (graphics.resolutionScale > 0.5) {
-            graphics.resolutionScale = Math.max(0.5, graphics.resolutionScale - 0.25);
-            changed = true;
-        }
-        else if (graphics.shadowQuality !== 'off') {
+        // 解像度スケールの自動変更を無効化（ユーザー設定を尊重）
+        // if (graphics.resolutionScale > 0.5) {
+        //     graphics.resolutionScale = Math.max(0.5, graphics.resolutionScale - 0.25);
+        //     changed = true;
+        // }
+        if (graphics.shadowQuality !== 'off') {
             graphics.shadowQuality = 'off';
             changed = true;
         }
@@ -742,7 +997,9 @@ export class GraphicsEngine {
         }
         if (changed) {
             graphics.preset = 'custom';
-            console.log('📉 Dynamic quality reduction applied');
+            console.log('📉 Dynamic quality reduction applied (resolution scale preserved)');
+        } else {
+            console.log('📉 Dynamic quality reduction triggered but no changes made (resolution scale protected)');
         }
     }
     increaseQuality() {

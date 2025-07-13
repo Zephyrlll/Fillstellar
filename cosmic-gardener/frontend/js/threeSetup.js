@@ -13,7 +13,11 @@ if (!canvas) {
     throw new Error("Could not find canvas element with id 'game-canvas'");
 }
 export const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
-renderer.setSize(window.innerWidth, window.innerHeight);
+// 初期サイズは仮設定 - graphicsEngineが適切に設定し直す（CSS更新を無効化）
+renderer.setSize(window.innerWidth, window.innerHeight, false);
+// CSS表示サイズを明示的に設定
+canvas.style.width = window.innerWidth + 'px';
+canvas.style.height = window.innerHeight + 'px';
 // --- ポストプロセッシング -----------------------------------------------------
 export const composer = new EffectComposer(renderer);
 const renderPass = new RenderPass(scene, camera);
@@ -28,6 +32,9 @@ controls.screenSpacePanning = false;
 controls.minDistance = 10;
 controls.maxDistance = 20000;
 controls.enablePan = false;
+// 常にブラックホール（原点）を中心に回転
+controls.target.set(0, 0, 0);
+controls.update();
 // --- 光源 ---------------------------------------------------------------------
 export const ambientLight = new THREE.AmbientLight(0x606060);
 scene.add(ambientLight);

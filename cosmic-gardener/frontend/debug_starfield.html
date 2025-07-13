@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>星屑サイズデバッグテスト</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #000;
+            color: #fff;
+            font-family: monospace;
+        }
+        #debug-panel {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.8);
+            padding: 20px;
+            border: 1px solid #4a9eff;
+            border-radius: 8px;
+            z-index: 1000;
+        }
+        button {
+            margin: 5px;
+            padding: 8px 16px;
+            background: #4a9eff;
+            border: none;
+            color: white;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        button:hover {
+            background: #6bb6ff;
+        }
+        #result {
+            margin-top: 15px;
+            padding: 10px;
+            background: rgba(74, 158, 255, 0.1);
+            border-radius: 4px;
+            font-family: monospace;
+            line-height: 1.5;
+        }
+    </style>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+        }
+      }
+    </script>
+</head>
+<body>
+    <div id="debug-panel">
+        <h3>🔍 星屑サイズテスト</h3>
+        
+        <div>
+            <label>解像度スケール:</label>
+            <button onclick="testStarfieldSize(0.25)">25%</button>
+            <button onclick="testStarfieldSize(0.50)">50%</button>
+            <button onclick="testStarfieldSize(0.75)">75%</button>
+            <button onclick="testStarfieldSize(1.00)">100%</button>
+            <button onclick="testStarfieldSize(1.25)">125%</button>
+            <button onclick="testStarfieldSize(1.50)">150%</button>
+            <button onclick="testStarfieldSize(2.00)">200%</button>
+            <button onclick="testStarfieldSize(3.00)">300%</button>
+        </div>
+        
+        <div style="margin-top: 10px;">
+            <button onclick="testCurrentGame()">実際のゲームから確認</button>
+            <button onclick="createTestStarfield()">テスト星屑作成</button>
+        </div>
+        
+        <div id="result">
+            クリックして星屑サイズをテストしてください
+        </div>
+    </div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        
+        // グローバルにThreeを設定
+        window.THREE = THREE;
+        
+        // Test scene setup
+        let scene, camera, renderer, starfield;
+        
+        function initTestScene() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setClearColor(0x000011);
+            document.body.appendChild(renderer.domElement);
+            
+            camera.position.z = 500;
+            
+            console.log('Test scene initialized');
+        }
+        
+        window.createTestStarfield = function() {
+            if (!scene) initTestScene();
+            
+            // Remove existing starfield
+            if (starfield) {
+                scene.remove(starfield);
+            }
+            
+            // Create simple test starfield
+            const starsGeometry = new THREE.BufferGeometry();
+            const starsMaterial = new THREE.PointsMaterial({ 
+                color: 0xffffff, 
+                size: 3.2, // Base size
+                sizeAttenuation: true,
+                transparent: true
+            });
+            
+            const starsVertices = [];
+            for (let i = 0; i < 1000; i++) {
+                starsVertices.push(
+                    (Math.random() - 0.5) * 2000,
+                    (Math.random() - 0.5) * 2000,
+                    (Math.random() - 0.5) * 2000
+                );
+            }
+            
+            starsGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starsVertices, 3));
+            
+            starfield = new THREE.Points(starsGeometry, starsMaterial);
+            starfield.name = 'starfield';
+            scene.add(starfield);
+            
+            renderer.render(scene, camera);
+            
+            updateResult(`テスト星屑作成完了<br>初期サイズ: ${starsMaterial.size}`);
+        }
+        
+        window.testStarfieldSize = function(scale) {
+            if (!starfield) {
+                window.createTestStarfield();
+            }
+            
+            const expectedSize = scale * 3.2;
+            starfield.material.size = expectedSize;
+            
+            renderer.render(scene, camera);
+            
+            updateResult(`
+                解像度スケール: ${Math.round(scale * 100)}%<br>
+                設定サイズ: ${expectedSize.toFixed(1)}<br>
+                実際のマテリアルサイズ: ${starfield.material.size}<br>
+                期待値との一致: ${starfield.material.size === expectedSize ? '✅' : '❌'}
+            `);
+        }
+        
+        window.testCurrentGame = function() {
+            // Try to access main game if in iframe or same origin
+            try {
+                if (window.parent && window.parent !== window) {
+                    // In iframe, try to access parent
+                    const parentScene = window.parent.scene;
+                    const parentGameState = window.parent.gameState;
+                    
+                    if (parentScene && parentGameState) {
+                        const starfield = parentScene.getObjectByName('starfield');
+                        if (starfield && starfield.material && parentGameState.graphics) {
+                            const currentScale = parentGameState.graphics.resolutionScale || 1.0;
+                            const actualSize = starfield.material.size;
+                            const expectedSize = currentScale * 3.2;
+                            
+                            updateResult(`
+                                【実際のゲームから取得】<br>
+                                現在の解像度スケール: ${Math.round(currentScale * 100)}%<br>
+                                星屑マテリアルサイズ: ${actualSize}<br>
+                                期待値: ${expectedSize.toFixed(1)}<br>
+                                正しく動作: ${Math.abs(actualSize - expectedSize) < 0.1 ? '✅' : '❌'}<br>
+                                差分: ${(actualSize - expectedSize).toFixed(2)}
+                            `);
+                            return;
+                        }
+                    }
+                }
+                
+                // Try to access via global window
+                if (window.top && window.top.scene && window.top.gameState) {
+                    const starfield = window.top.scene.getObjectByName('starfield');
+                    if (starfield && starfield.material && window.top.gameState.graphics) {
+                        const currentScale = window.top.gameState.graphics.resolutionScale || 1.0;
+                        const actualSize = starfield.material.size;
+                        const expectedSize = currentScale * 3.2;
+                        
+                        updateResult(`
+                            【実際のゲームから取得】<br>
+                            現在の解像度スケール: ${Math.round(currentScale * 100)}%<br>
+                            星屑マテリアルサイズ: ${actualSize}<br>
+                            期待値: ${expectedSize.toFixed(1)}<br>
+                            正しく動作: ${Math.abs(actualSize - expectedSize) < 0.1 ? '✅' : '❌'}<br>
+                            差分: ${(actualSize - expectedSize).toFixed(2)}
+                        `);
+                        return;
+                    }
+                }
+                
+                updateResult(`実際のゲームにアクセスできませんでした。<br>このページをゲームと同じタブで開くか、<br>ゲーム内でコンソールから直接 checkStarfieldSize() を実行してください。`);
+                
+            } catch (error) {
+                updateResult(`ゲームアクセスエラー: ${error.message}<br>セキュリティ制限により実際のゲームデータにアクセスできませんでした。`);
+            }
+        }
+        
+        function updateResult(text) {
+            document.getElementById('result').innerHTML = text;
+        }
+        
+        // Initialize on load
+        window.addEventListener('load', () => {
+            updateResult('テストツール準備完了');
+        });
+    </script>
+</body>
+</html>

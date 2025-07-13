@@ -67,9 +67,13 @@ export function loadGame() {
     }
     if (parsedState.saveVersion === '2.0-resource-system') {
         // Migrate to graphics system version
+        // 🔧 Preserve current resolution scale to fix 1-second reset bug
+        const currentResolutionScale = gameState.graphics?.resolutionScale || 1.0;
+        console.log(`🔧 Migration: preserving current resolutionScale = ${currentResolutionScale}`);
+        
         parsedState.graphics = {
-            preset: parsedState.graphicsQuality || 'medium',
-            resolutionScale: 1.0,
+            preset: 'custom', // 🔧 Always set to custom to prevent auto-preset overrides
+            resolutionScale: currentResolutionScale,
             textureQuality: 'medium',
             shadowQuality: 'medium',
             antiAliasing: 'fxaa',
@@ -209,21 +213,36 @@ export function loadGame() {
     }
     // Apply loaded graphics settings and initialize graphics systems
     if (gameState.graphics) {
-        // Initialize graphics engine with loaded settings
-        import('./graphicsEngine.js').then(({ graphicsEngine }) => {
-            graphicsEngine.applyAllSettings();
-        });
-        // Initialize performance monitor
+        // 🔧 Ensure preset is set to custom to prevent auto-overrides
+        if (gameState.graphics.preset !== 'custom') {
+            console.log(`🔧 Setting graphics preset to 'custom' to preserve loaded settings`);
+            gameState.graphics.preset = 'custom';
+        }
+        
+        // Use the global graphicsEngine (set in main.js) for synchronous application
+        if (window.graphicsEngine) {
+            console.log(`🎨 Using global graphicsEngine for synchronous settings application`);
+            window.graphicsEngine.applyAllSettings();
+        } else {
+            console.warn(`⚠️ graphicsEngine not available - settings application skipped`);
+        }
+        
+        // Initialize performance monitor (keep async as it's not critical for canvas sizing)
         import('./performanceMonitor.js').then(({ performanceMonitor }) => {
             performanceMonitor.startMonitoring();
         });
-        // Update UI to reflect loaded settings
+        // Update UI to reflect loaded settings (keep async as it's not critical for canvas sizing)
         import('./ui.js').then(({ updateGraphicsUI }) => {
             updateGraphicsUI();
         });
-        console.log(`📊 Graphics settings loaded: ${gameState.graphics.preset} preset`);
+        console.log(`📊 Graphics settings loaded: ${gameState.graphics.preset} preset, resolutionScale: ${gameState.graphics.resolutionScale}`);
     }
     else {
         console.warn('⚠️ No graphics settings found in save data, using defaults');
+        // 🔧 Apply default graphics settings for fresh start
+        if (window.graphicsEngine) {
+            console.log('🎨 Applying default graphics settings for fresh start');
+            window.graphicsEngine.applyAllSettings();
+        }
     }
 }

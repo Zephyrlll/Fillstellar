@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resolution Scaling Debug</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: #111;
+            color: #fff;
+        }
+        
+        .debug-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .canvas-container {
+            border: 2px solid #444;
+            margin: 20px 0;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .debug-info {
+            background: #222;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-family: monospace;
+        }
+        
+        canvas {
+            display: block;
+            border: 1px solid #666;
+        }
+        
+        .controls {
+            background: #333;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        
+        button {
+            background: #555;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            margin: 5px;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        
+        button:hover {
+            background: #666;
+        }
+        
+        .active {
+            background: #007acc !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="debug-container">
+        <h1>解像度スケーリング仕組み解析</h1>
+        
+        <div class="controls">
+            <label>画面サイズ (シミュレート):</label>
+            <button onclick="setViewportSize(1920, 1080)">1920x1080</button>
+            <button onclick="setViewportSize(1366, 768)">1366x768</button>
+            <button onclick="setViewportSize(800, 600)">800x600</button>
+            
+            <br><br>
+            
+            <label>解像度スケール:</label>
+            <button onclick="applyScale(0.25)" data-scale="0.25">25%</button>
+            <button onclick="applyScale(0.5)" data-scale="0.5">50%</button>
+            <button onclick="applyScale(1.0)" data-scale="1.0" class="active">100%</button>
+            <button onclick="applyScale(1.5)" data-scale="1.5">150%</button>
+            <button onclick="applyScale(2.0)" data-scale="2.0">200%</button>
+            <button onclick="applyScale(3.0)" data-scale="3.0">300%</button>
+        </div>
+        
+        <div class="debug-info" id="debug-info">
+            <strong>Debug情報:</strong><br>
+            <span id="debug-text">初期化中...</span>
+        </div>
+        
+        <div class="canvas-container" id="canvas-container">
+            <canvas id="test-canvas" width="800" height="600"></canvas>
+        </div>
+        
+        <div class="debug-info">
+            <h3>📊 解像度スケーリングの仕組み</h3>
+            <ul>
+                <li><strong>表示サイズ (displayWidth/Height):</strong> CSSで制御される視覚的なサイズ</li>
+                <li><strong>レンダーサイズ (renderWidth/Height):</strong> WebGLが内部で使用する解像度</li>
+                <li><strong>50%スケール:</strong> レンダー解像度を半分にして軽量化、表示は拡大</li>
+                <li><strong>200%スケール:</strong> レンダー解像度を倍にして高品質化、表示は縮小</li>
+                <li><strong>renderer.setSize(w, h, false):</strong> 第3引数falseでCSS自動更新を無効化</li>
+                <li><strong>canvas.style設定:</strong> 表示サイズを手動で制御</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        let currentScale = 1.0;
+        let viewportWidth = 1920;
+        let viewportHeight = 1080;
+        
+        const canvas = document.getElementById('test-canvas');
+        const container = document.getElementById('canvas-container');
+        const debugText = document.getElementById('debug-text');
+        
+        function setViewportSize(width, height) {
+            viewportWidth = width;
+            viewportHeight = height;
+            
+            // コンテナサイズを更新
+            container.style.width = width + 'px';
+            container.style.height = height + 'px';
+            
+            // 現在のスケールを再適用
+            applyScale(currentScale);
+        }
+        
+        function applyScale(scale) {
+            currentScale = scale;
+            
+            // ボタンのアクティブ状態を更新
+            document.querySelectorAll('button[data-scale]').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`button[data-scale="${scale}"]`)?.classList.add('active');
+            
+            // === Three.js applyResolutionScale() の実装を再現 ===
+            
+            // 1. 表示サイズ（常に画面いっぱい）
+            const displayWidth = viewportWidth;
+            const displayHeight = viewportHeight;
+            
+            // 2. 内部レンダリング解像度（品質に影響）
+            const renderWidth = Math.round(displayWidth * scale);
+            const renderHeight = Math.round(displayHeight * scale);
+            
+            // 3. Canvas内部解像度を設定（WebGLバッファサイズ）
+            canvas.width = renderWidth;
+            canvas.height = renderHeight;
+            
+            // 4. CSS表示サイズを強制設定（解像度スケールに関係なく常に画面いっぱい）
+            canvas.style.width = displayWidth + 'px';
+            canvas.style.height = displayHeight + 'px';
+            
+            // 5. 簡単な描画でテスト
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#000033';
+            ctx.fillRect(0, 0, renderWidth, renderHeight);
+            
+            // グリッド描画（解像度確認用）
+            ctx.strokeStyle = '#444444';
+            ctx.lineWidth = 1;
+            const gridSize = Math.max(50, renderWidth / 40);
+            
+            for (let x = 0; x < renderWidth; x += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, renderHeight);
+                ctx.stroke();
+            }
+            
+            for (let y = 0; y < renderHeight; y += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(renderWidth, y);
+                ctx.stroke();
+            }
+            
+            // 中央にテキスト表示
+            ctx.fillStyle = '#ffffff';
+            ctx.font = `${Math.max(16, renderWidth / 60)}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.fillText(
+                `${Math.round(scale * 100)}% Scale`,
+                renderWidth / 2,
+                renderHeight / 2 - 20
+            );
+            ctx.fillText(
+                `Render: ${renderWidth}x${renderHeight}`,
+                renderWidth / 2,
+                renderHeight / 2 + 10
+            );
+            ctx.fillText(
+                `Display: ${displayWidth}x${displayHeight}`,
+                renderWidth / 2,
+                renderHeight / 2 + 40
+            );
+            
+            // デバッグ情報を更新
+            updateDebugInfo(scale, displayWidth, displayHeight, renderWidth, renderHeight);
+        }
+        
+        function updateDebugInfo(scale, displayWidth, displayHeight, renderWidth, renderHeight) {
+            const pixelRatio = window.devicePixelRatio || 1;
+            const cssWidth = canvas.style.width;
+            const cssHeight = canvas.style.height;
+            const actualWidth = canvas.width;
+            const actualHeight = canvas.height;
+            const clientWidth = canvas.clientWidth;
+            const clientHeight = canvas.clientHeight;
+            
+            const debugInfo = `
+現在の設定: ${Math.round(scale * 100)}% スケール
+
+📏 サイズ計算:
+• 表示サイズ: ${displayWidth} x ${displayHeight} px
+• レンダーサイズ: ${renderWidth} x ${renderHeight} px
+• スケール倍率: ${scale} (${scale < 1 ? '軽量化' : scale > 1 ? '高品質化' : '標準'})
+
+🖥️ Canvas プロパティ:
+• canvas.width: ${actualWidth} (WebGL描画解像度)
+• canvas.height: ${actualHeight} (WebGL描画解像度)
+• canvas.style.width: ${cssWidth} (CSS表示幅)
+• canvas.style.height: ${cssHeight} (CSS表示高)
+• canvas.clientWidth: ${clientWidth} (実際の表示幅)
+• canvas.clientHeight: ${clientHeight} (実際の表示高)
+
+⚡ パフォーマンス影響:
+• ピクセル数: ${(renderWidth * renderHeight).toLocaleString()} (${Math.round(scale * scale * 100)}%の負荷)
+• devicePixelRatio: ${pixelRatio}
+
+${scale < 1 ? 
+  '🔽 アップスケーリング: 低解像度で描画→CSS拡大表示（軽量・画質劣化）' : 
+  scale > 1 ? 
+  '🔼 ダウンサンプリング: 高解像度で描画→CSS縮小表示（重い・高画質）' : 
+  '🎯 等倍: 解像度と表示サイズが一致（標準）'
+}
+
+${scale !== 1 ? 
+  `🎨 視覚効果: ${renderWidth}x${renderHeight}の画像を${displayWidth}x${displayHeight}に${scale < 1 ? '拡大' : '縮小'}表示` : 
+  ''
+}
+            `.trim();
+            
+            debugText.textContent = debugInfo;
+        }
+        
+        // 初期化
+        setViewportSize(1920, 1080);
+    </script>
+</body>
+</html>

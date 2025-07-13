@@ -756,6 +756,8 @@ export function syncUIWithGraphicsState() {
     updateGraphicsUI();
 }
 export function resetGraphicsToDefaults() {
+    console.log('🚨 resetGraphicsToDefaults() called!');
+    console.trace('resetGraphicsToDefaults call stack');
     // Reset graphics settings to medium preset
     const mediumPreset = {
         preset: 'medium',
@@ -776,6 +778,7 @@ export function resetGraphicsToDefaults() {
         uiAnimations: 'standard'
     };
     // Apply settings to gameState
+    console.log('🔧 resetGraphicsToDefaults: INTENTIONALLY applying medium preset');
     Object.assign(gameState.graphics, mediumPreset);
     // Update UI to reflect changes
     updateGraphicsUI();

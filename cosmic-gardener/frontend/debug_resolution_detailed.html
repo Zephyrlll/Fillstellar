@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>解像度スケーリング詳細デバッグ</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background-color: #000;
+            color: #fff;
+        }
+        
+        .debug-panel {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid #333;
+            z-index: 1000;
+            max-height: 80vh;
+            overflow-y: auto;
+            width: 400px;
+        }
+        
+        .section {
+            margin-bottom: 20px;
+            padding: 10px;
+            border: 1px solid #444;
+            border-radius: 5px;
+        }
+        
+        .section h3 {
+            margin-top: 0;
+            color: #4CAF50;
+        }
+        
+        .value {
+            color: #FFD700;
+            font-weight: bold;
+        }
+        
+        .controls {
+            margin: 10px 0;
+        }
+        
+        .controls select, .controls button {
+            margin: 5px;
+            padding: 5px 10px;
+            background: #333;
+            color: #fff;
+            border: 1px solid #666;
+            border-radius: 3px;
+        }
+        
+        .status {
+            padding: 5px;
+            margin: 5px 0;
+            border-radius: 3px;
+        }
+        
+        .status.success {
+            background-color: #2d5a2d;
+            border: 1px solid #4CAF50;
+        }
+        
+        .status.warning {
+            background-color: #5a4d2d;
+            border: 1px solid #FFA500;
+        }
+        
+        .status.error {
+            background-color: #5a2d2d;
+            border: 1px solid #F44336;
+        }
+        
+        #canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            background: #001122;
+            z-index: -1;
+        }
+        
+        .log {
+            max-height: 200px;
+            overflow-y: auto;
+            background: #222;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            border: 1px solid #444;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    
+    <div class="debug-panel">
+        <h2>🔍 解像度スケーリング詳細デバッグ</h2>
+        
+        <div class="section">
+            <h3>📐 Canvas状態</h3>
+            <div id="canvas-info"></div>
+        </div>
+        
+        <div class="section">
+            <h3>🎮 Three.js レンダラー状態</h3>
+            <div id="renderer-info"></div>
+        </div>
+        
+        <div class="section">
+            <h3>🖥️ ブラウザ情報</h3>
+            <div id="browser-info"></div>
+        </div>
+        
+        <div class="section">
+            <h3>⚙️ 解像度制御</h3>
+            <div class="controls">
+                <label>解像度スケール:</label>
+                <select id="resolutionSelect">
+                    <option value="0.25">25% (0.25x)</option>
+                    <option value="0.5">50% (0.5x)</option>
+                    <option value="0.75">75% (0.75x)</option>
+                    <option value="1.0" selected>100% (1.0x)</option>
+                    <option value="1.25">125% (1.25x)</option>
+                    <option value="1.5">150% (1.5x)</option>
+                    <option value="2.0">200% (2.0x)</option>
+                    <option value="3.0">300% (3.0x)</option>
+                </select>
+                <button id="applyButton">適用</button>
+            </div>
+            <div id="resolution-status"></div>
+        </div>
+        
+        <div class="section">
+            <h3>📊 実行ログ</h3>
+            <div class="log" id="execution-log"></div>
+        </div>
+        
+        <div class="section">
+            <h3>🧪 テスト結果</h3>
+            <div id="test-results"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import * as THREE from './node_modules/three/build/three.module.js';
+        
+        let scene, camera, renderer, currentScale = 1.0;
+        let executionLog = [];
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const entry = `[${timestamp}] ${message}`;
+            executionLog.push({ message: entry, type });
+            console.log(entry);
+            updateLogDisplay();
+            
+            // コンソールにも出力
+            if (type === 'error') {
+                console.error(entry);
+            } else if (type === 'warning') {
+                console.warn(entry);
+            } else {
+                console.log(entry);
+            }
+        }
+        
+        function updateLogDisplay() {
+            const logElement = document.getElementById('execution-log');
+            logElement.innerHTML = executionLog.slice(-10).map(entry => 
+                `<div style="color: ${entry.type === 'error' ? '#F44336' : entry.type === 'warning' ? '#FFA500' : '#4CAF50'}">${entry.message}</div>`
+            ).join('');
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+        
+        function init() {
+            log('🚀 デバッグシステム初期化開始');
+            
+            // Three.js 基本設定
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            
+            const canvas = document.getElementById('canvas');
+            renderer = new THREE.WebGLRenderer({ canvas });
+            
+            log('✅ Three.js基本コンポーネント作成完了');
+            
+            // 初期サイズ設定
+            applyResolutionScale(1.0);
+            
+            // テストシーン作成
+            createTestScene();
+            
+            // イベントリスナー設定
+            setupEventListeners();
+            
+            // アニメーションループ開始
+            animate();
+            
+            log('🎯 初期化完了');
+            updateAllInfo();
+        }
+        
+        function createTestScene() {
+            // 簡単なテストジオメトリ
+            const geometry = new THREE.BoxGeometry();
+            const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+            const cube = new THREE.Mesh(geometry, material);
+            scene.add(cube);
+            
+            camera.position.z = 5;
+            
+            log('🎲 テストシーン作成完了');
+        }
+        
+        function applyResolutionScale(scale) {
+            log(`📏 解像度スケール適用開始: ${Math.round(scale * 100)}%`);
+            
+            const canvas = renderer.domElement;
+            const pixelRatio = window.devicePixelRatio || 1;
+            
+            // 表示サイズ（常に画面いっぱい）
+            const displayWidth = window.innerWidth;
+            const displayHeight = window.innerHeight;
+            
+            // 内部レンダリング解像度（品質に影響）
+            const renderWidth = Math.round(displayWidth * scale);
+            const renderHeight = Math.round(displayHeight * scale);
+            
+            log(`💻 表示サイズ: ${displayWidth}x${displayHeight}`);
+            log(`🎨 レンダリングサイズ: ${renderWidth}x${renderHeight}`);
+            log(`📱 デバイスピクセル比: ${pixelRatio}`);
+            
+            try {
+                // レンダラー設定更新（第3引数false = CSS自動更新を無効化）
+                renderer.setSize(renderWidth, renderHeight, false);
+                renderer.setPixelRatio(pixelRatio);
+                log('✅ レンダラーサイズ設定完了');
+                
+                // CSS表示サイズを強制設定
+                canvas.style.width = displayWidth + 'px';
+                canvas.style.height = displayHeight + 'px';
+                log('✅ CSSサイズ設定完了');
+                
+                // カメラアスペクト比更新
+                camera.aspect = displayWidth / displayHeight;
+                camera.updateProjectionMatrix();
+                log('✅ カメラアスペクト比更新完了');
+                
+                currentScale = scale;
+                log(`🎯 解像度スケール適用完了: ${Math.round(scale * 100)}%`);
+                
+                // 実際の効果を測定
+                measureResolutionEffect();
+                
+            } catch (error) {
+                log(`❌ 解像度スケール適用エラー: ${error.message}`, 'error');
+            }
+            
+            updateAllInfo();
+        }
+        
+        function measureResolutionEffect() {
+            const canvas = renderer.domElement;
+            
+            // 実際のCanvas属性値
+            const actualWidth = canvas.width;
+            const actualHeight = canvas.height;
+            
+            // 期待される値
+            const expectedWidth = Math.round(window.innerWidth * currentScale);
+            const expectedHeight = Math.round(window.innerHeight * currentScale);
+            
+            // 効果の検証
+            const widthMatch = actualWidth === expectedWidth;
+            const heightMatch = actualHeight === expectedHeight;
+            
+            if (widthMatch && heightMatch) {
+                log(`✅ 解像度効果確認: 期待通りのサイズ (${actualWidth}x${actualHeight})`, 'success');
+            } else {
+                log(`⚠️ 解像度効果不一致: 期待値 ${expectedWidth}x${expectedHeight}, 実際値 ${actualWidth}x${actualHeight}`, 'warning');
+            }
+            
+            // CSS表示サイズの確認
+            const cssWidth = parseInt(canvas.style.width);
+            const cssHeight = parseInt(canvas.style.height);
+            const cssMatch = cssWidth === window.innerWidth && cssHeight === window.innerHeight;
+            
+            if (cssMatch) {
+                log(`✅ CSS表示サイズ確認: 画面サイズと一致 (${cssWidth}x${cssHeight})`, 'success');
+            } else {
+                log(`⚠️ CSS表示サイズ不一致: 期待値 ${window.innerWidth}x${window.innerHeight}, 実際値 ${cssWidth}x${cssHeight}`, 'warning');
+            }
+            
+            updateTestResults();
+        }
+        
+        function updateAllInfo() {
+            updateCanvasInfo();
+            updateRendererInfo();
+            updateBrowserInfo();
+            updateResolutionStatus();
+        }
+        
+        function updateCanvasInfo() {
+            const canvas = renderer.domElement;
+            const info = document.getElementById('canvas-info');
+            
+            info.innerHTML = `
+                <div><strong>DOM属性:</strong></div>
+                <div>width: <span class="value">${canvas.width}</span></div>
+                <div>height: <span class="value">${canvas.height}</span></div>
+                <div><strong>CSS Style:</strong></div>
+                <div>width: <span class="value">${canvas.style.width}</span></div>
+                <div>height: <span class="value">${canvas.style.height}</span></div>
+                <div><strong>クライアントサイズ:</strong></div>
+                <div>clientWidth: <span class="value">${canvas.clientWidth}</span></div>
+                <div>clientHeight: <span class="value">${canvas.clientHeight}</span></div>
+                <div><strong>境界ボックス:</strong></div>
+                <div>getBoundingClientRect(): <span class="value">${canvas.getBoundingClientRect().width}x${canvas.getBoundingClientRect().height}</span></div>
+            `;
+        }
+        
+        function updateRendererInfo() {
+            const info = document.getElementById('renderer-info');
+            const size = new THREE.Vector2();
+            renderer.getSize(size);
+            
+            info.innerHTML = `
+                <div><strong>レンダラーサイズ:</strong></div>
+                <div>getSize(): <span class="value">${size.x}x${size.y}</span></div>
+                <div>getPixelRatio(): <span class="value">${renderer.getPixelRatio()}</span></div>
+                <div><strong>WebGLコンテキスト:</strong></div>
+                <div>drawingBufferWidth: <span class="value">${renderer.getContext().drawingBufferWidth}</span></div>
+                <div>drawingBufferHeight: <span class="value">${renderer.getContext().drawingBufferHeight}</span></div>
+                <div><strong>カメラ:</strong></div>
+                <div>aspect: <span class="value">${camera.aspect.toFixed(3)}</span></div>
+            `;
+        }
+        
+        function updateBrowserInfo() {
+            const info = document.getElementById('browser-info');
+            
+            info.innerHTML = `
+                <div><strong>ウィンドウサイズ:</strong></div>
+                <div>innerWidth: <span class="value">${window.innerWidth}</span></div>
+                <div>innerHeight: <span class="value">${window.innerHeight}</span></div>
+                <div>devicePixelRatio: <span class="value">${window.devicePixelRatio || 1}</span></div>
+                <div><strong>画面情報:</strong></div>
+                <div>screen.width: <span class="value">${screen.width}</span></div>
+                <div>screen.height: <span class="value">${screen.height}</span></div>
+            `;
+        }
+        
+        function updateResolutionStatus() {
+            const status = document.getElementById('resolution-status');
+            const currentPercent = Math.round(currentScale * 100);
+            
+            status.innerHTML = `
+                <div class="status success">
+                    <strong>現在の設定:</strong> ${currentPercent}% (${currentScale}x)
+                </div>
+                <div class="status ${currentScale >= 2.0 ? 'warning' : 'success'}">
+                    <strong>パフォーマンス:</strong> ${currentScale >= 2.0 ? '高負荷' : currentScale >= 1.5 ? '中負荷' : '軽量'}
+                </div>
+            `;
+        }
+        
+        function updateTestResults() {
+            const results = document.getElementById('test-results');
+            const canvas = renderer.domElement;
+            
+            const tests = [
+                {
+                    name: "Canvas DOM width",
+                    expected: Math.round(window.innerWidth * currentScale),
+                    actual: canvas.width,
+                    critical: true
+                },
+                {
+                    name: "Canvas DOM height", 
+                    expected: Math.round(window.innerHeight * currentScale),
+                    actual: canvas.height,
+                    critical: true
+                },
+                {
+                    name: "CSS display width",
+                    expected: window.innerWidth,
+                    actual: parseInt(canvas.style.width),
+                    critical: true
+                },
+                {
+                    name: "CSS display height",
+                    expected: window.innerHeight,
+                    actual: parseInt(canvas.style.height),
+                    critical: true
+                }
+            ];
+            
+            let html = '<div style="font-size: 12px;">';
+            let allPassed = true;
+            
+            tests.forEach(test => {
+                const passed = test.actual === test.expected;
+                if (!passed && test.critical) allPassed = false;
+                
+                html += `
+                    <div class="status ${passed ? 'success' : 'error'}">
+                        ${passed ? '✅' : '❌'} ${test.name}: ${test.actual} ${passed ? '==' : '!='} ${test.expected}
+                    </div>
+                `;
+            });
+            
+            html += `
+                <div class="status ${allPassed ? 'success' : 'error'}" style="margin-top: 10px; font-weight: bold;">
+                    ${allPassed ? '🎉 全テスト合格!' : '⚠️ テスト失敗が検出されました'}
+                </div>
+            `;
+            html += '</div>';
+            
+            results.innerHTML = html;
+        }
+        
+        function setupEventListeners() {
+            document.getElementById('resolutionSelect').addEventListener('change', (e) => {
+                const scale = parseFloat(e.target.value);
+                log(`🎛️ ユーザーが解像度を変更: ${Math.round(scale * 100)}%`);
+            });
+            
+            document.getElementById('applyButton').addEventListener('click', () => {
+                const scale = parseFloat(document.getElementById('resolutionSelect').value);
+                applyResolutionScale(scale);
+            });
+            
+            window.addEventListener('resize', () => {
+                log('📐 ウィンドウリサイズ検出');
+                applyResolutionScale(currentScale);
+            });
+        }
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            // キューブを回転させてレンダリングが動作していることを確認
+            const cube = scene.children[0];
+            if (cube) {
+                cube.rotation.x += 0.01;
+                cube.rotation.y += 0.01;
+            }
+            
+            renderer.render(scene, camera);
+            
+            // 定期的に情報を更新（1秒間隔）
+            if (Math.floor(Date.now() / 1000) % 1 === 0) {
+                updateAllInfo();
+            }
+        }
+        
+        // 初期化
+        init();
+        
+        // グローバルに公開（デバッグ用）
+        window.debugResolution = {
+            applyResolutionScale,
+            log,
+            getCurrentScale: () => currentScale,
+            renderer,
+            camera,
+            scene
+        };
+    </script>
+</body>
+</html>

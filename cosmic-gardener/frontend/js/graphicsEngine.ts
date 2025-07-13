@@ -110,17 +110,38 @@ export class GraphicsEngine {
     private applyResolutionScale(scale: number): void {
         const canvas = renderer.domElement;
         const pixelRatio = window.devicePixelRatio || 1;
-        const width = window.innerWidth;
-        const height = window.innerHeight;
         
-        renderer.setSize(width * scale, height * scale);
-        renderer.setPixelRatio(pixelRatio * scale);
+        // 表示サイズ（常に画面いっぱい）
+        const displayWidth = window.innerWidth;
+        const displayHeight = window.innerHeight;
         
+        // 内部レンダリング解像度（品質に影響）
+        const renderWidth = Math.round(displayWidth * scale);
+        const renderHeight = Math.round(displayHeight * scale);
+        
+        // === レンダラー設定更新 ===
+        // 第3引数false = CSS自動更新を無効化（手動制御）
+        renderer.setSize(renderWidth, renderHeight, false);
+        renderer.setPixelRatio(pixelRatio); // デバイスピクセル比は固定
+        
+        // === CSS表示サイズを強制設定 ===
+        // 解像度スケールに関係なく常に画面いっぱいに表示
+        canvas.style.width = displayWidth + 'px';
+        canvas.style.height = displayHeight + 'px';
+        
+        // === ポストプロセッシング対応 ===
         if (composer) {
-            composer.setSize(width * scale, height * scale);
+            composer.setSize(renderWidth, renderHeight);
         }
         
-        console.log(`📏 Resolution scale set to ${Math.round(scale * 100)}%`);
+        // === カメラ設定更新 ===
+        // アスペクト比は表示サイズ基準（内部解像度ではない）
+        if (camera) {
+            camera.aspect = displayWidth / displayHeight;
+            camera.updateProjectionMatrix();
+        }
+        
+        console.log(`📏 Resolution scale: ${Math.round(scale * 100)}% (${renderWidth}x${renderHeight} → ${displayWidth}x${displayHeight})`);
     }
     
     // Anti-aliasing settings

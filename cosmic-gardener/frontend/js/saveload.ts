@@ -234,10 +234,17 @@ export function loadGame() {
     
     // Apply loaded graphics settings and initialize graphics systems
     if (gameState.graphics) {
-        // Initialize graphics engine with loaded settings
-        import('./graphicsEngine.js').then(({ graphicsEngine }) => {
-            graphicsEngine.applyAllSettings();
-        });
+        // Check if graphicsEngine is already available (synchronous path)
+        if ((window as any).graphicsEngine) {
+            console.log(`🎨 Using existing graphicsEngine for settings application`);
+            (window as any).graphicsEngine.applyAllSettings();
+        } else {
+            // Fallback to dynamic import (asynchronous path)
+            console.log(`🎨 Loading graphicsEngine via dynamic import`);
+            import('./graphicsEngine.js').then(({ graphicsEngine }) => {
+                graphicsEngine.applyAllSettings();
+            });
+        }
         
         // Initialize performance monitor
         import('./performanceMonitor.js').then(({ performanceMonitor }) => {
