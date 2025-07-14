@@ -374,7 +374,14 @@ export class GraphicsEngine {
         console.log(`🔍 Three.js renderer size: ${rendererSize.x}x${rendererSize.y}`);
         
         // 画面上に一時的なデバッグ情報を表示
-        this.showResolutionDebugInfo(scale, renderWidth, renderHeight, displayWidth, displayHeight);
+        if (gameState.graphics.showResolutionDebug) {
+            this.showPersistentResolutionDebugInfo(scale, renderWidth, renderHeight, displayWidth, displayHeight);
+        } else {
+            const existingDebug = document.getElementById('resolution-debug-info');
+            if (existingDebug) {
+                existingDebug.remove();
+            }
+        }
         
         // === パフォーマンス警告 ===
         if (scale >= 2.0) {
@@ -493,6 +500,50 @@ export class GraphicsEngine {
                 debugDiv.remove();
             }
         }, 5000);
+    }
+    
+    /**
+     * 画面上に恒久的な解像度デバッグ情報を表示（自動削除なし）
+     */
+    showPersistentResolutionDebugInfo(scale, renderWidth, renderHeight, displayWidth, displayHeight) {
+        // 既存のデバッグ表示を削除
+        const existingDebug = document.getElementById('resolution-debug-info');
+        if (existingDebug) {
+            existingDebug.remove();
+        }
+        
+        // デバッグ情報表示要素を作成
+        const debugDiv = document.createElement('div');
+        debugDiv.id = 'resolution-debug-info';
+        debugDiv.style.cssText = `
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: #00ff00;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            border: 1px solid #00ff00;
+            border-radius: 5px;
+            z-index: 10000;
+            max-width: 300px;
+        `;
+        
+        debugDiv.innerHTML = `
+            <div style="color: #ffffff; font-weight: bold; margin-bottom: 5px;">🔍 Resolution Debug</div>
+            <div>Scale: <span style="color: #ffff00;">${Math.round(scale * 100)}%</span></div>
+            <div>Render: <span style="color: #00ffff;">${renderWidth} x ${renderHeight}</span></div>
+            <div>Display: <span style="color: #ff00ff;">${displayWidth} x ${displayHeight}</span></div>
+            <div>Canvas DOM: <span style="color: #ffaa00;">${renderer.domElement.width} x ${renderer.domElement.height}</span></div>
+            <div>Canvas CSS: <span style="color: #00ff88;">${renderer.domElement.style.width} x ${renderer.domElement.style.height}</span></div>
+            <div style="margin-top: 5px; font-size: 10px; color: #aaaaaa;">
+                Console: createResolutionTestObject()<br>
+                Remove: removeResolutionTestObject()
+            </div>
+        `;
+        
+        document.body.appendChild(debugDiv);
     }
     
     /**

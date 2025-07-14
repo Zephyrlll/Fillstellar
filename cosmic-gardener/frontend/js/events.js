@@ -885,4 +885,16 @@ export function setupEventListeners() {
         });
     }
     const setupInfoPanel = createInfoPanel();
+
+    // Resolution debug toggle button
+    const toggleResolutionDebug = document.getElementById('toggleResolutionDebug');
+    const resolutionDebugStatus = document.getElementById('resolutionDebugStatus');
+    if (toggleResolutionDebug && resolutionDebugStatus) {
+        toggleResolutionDebug.addEventListener('click', () => {
+            gameState.graphics.showResolutionDebug = !gameState.graphics.showResolutionDebug;
+            resolutionDebugStatus.textContent = gameState.graphics.showResolutionDebug ? 'オン' : 'オフ';
+            graphicsEngine.applyResolutionScale(gameState.graphics.resolutionScale);
+            saveGame();
+        });
+    }
 }

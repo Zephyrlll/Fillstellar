@@ -59,6 +59,7 @@ export const gameState = {
         objectDetail: 'medium',
         backgroundDetail: 'standard',
         uiAnimations: 'standard',
+        showResolutionDebug: false,
         performance: {
             fps: 0,
             frameTime: 0,
