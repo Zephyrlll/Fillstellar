@@ -22,7 +22,7 @@ import { currencyManager } from './dist/js/currencySystem.js';
 import { performanceMonitor } from './js/performanceMonitor.js';
 import { graphicsEngine } from './js/graphicsEngine.js';
 import { updatePerformanceDisplay } from './js/ui.js';
-import { setupDeviceDetection, isMobileDevice, startMobileNavUpdates } from './js/deviceDetection.js';
+import { setupDeviceDetection, isMobileDevice, startMobileNavUpdates, startMobileGameUpdates, startMobileSettingsUpdates, startMobileStarManagementUpdates } from './js/deviceDetection.js';
 
 // Make graphicsEngine available globally
 window.graphicsEngine = graphicsEngine;
@@ -462,6 +462,15 @@ function init() {
     
     // Start mobile navigation updates
     startMobileNavUpdates();
+    
+    // Start mobile game updates
+    startMobileGameUpdates();
+    
+    // Start mobile settings updates
+    startMobileSettingsUpdates();
+    
+    // Start mobile star management updates
+    startMobileStarManagementUpdates();
     
     createStarfield();
     loadGame();

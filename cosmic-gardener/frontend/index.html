@@ -78,17 +78,99 @@
         <button class="mobile-close-btn" onclick="closeMobileModal()">×</button>
       </div>
       <div class="mobile-content-body">
-        <p style="text-align: center; color: #FFD700; font-size: 14px; margin: 20px;">
-          ゲーム機能はナビゲーションバーの 🏭 と 💰 ボタンから利用できます
-        </p>
-        <div style="padding: 20px;">
-          <h4 style="color: #4a9eff;">主要機能:</h4>
-          <ul style="color: #ccc; margin-left: 20px;">
-            <li>🏭 生産システム</li>
-            <li>💰 資源販売</li>
-            <li>⭐ 天体作成</li>
-            <li>🌌 宇宙探索</li>
-          </ul>
+        <!-- 天体創造セクション -->
+        <div class="mobile-section">
+          <h4 class="mobile-section-title">⭐ 天体創造</h4>
+          <div class="mobile-creation-grid">
+            <div class="mobile-creation-item">
+              <div class="creation-info">
+                <span class="creation-name">小惑星</span>
+                <span class="creation-cost">コスト: <span id="mobile-asteroidCost">100</span> 塵</span>
+              </div>
+              <button id="mobile-createAsteroidButton" class="mobile-create-btn">創造</button>
+            </div>
+            <div class="mobile-creation-item">
+              <div class="creation-info">
+                <span class="creation-name">彗星</span>
+                <span class="creation-cost">コスト: <span id="mobile-cometCost">500</span> 塵</span>
+              </div>
+              <button id="mobile-createCometButton" class="mobile-create-btn">創造</button>
+            </div>
+            <div class="mobile-creation-item" id="mobile-moonCreation" style="display: none;">
+              <div class="creation-info">
+                <span class="creation-name">衛星</span>
+                <span class="creation-cost">コスト: <span id="mobile-moonCost">1000</span> 塵</span>
+              </div>
+              <button id="mobile-createMoonButton" class="mobile-create-btn">創造</button>
+            </div>
+            <div class="mobile-creation-item" id="mobile-dwarfPlanetCreation" style="display: none;">
+              <div class="creation-info">
+                <span class="creation-name">準惑星</span>
+                <span class="creation-cost">コスト: <span id="mobile-dwarfPlanetCost">2500</span> 塵</span>
+              </div>
+              <button id="mobile-createDwarfPlanetButton" class="mobile-create-btn">創造</button>
+            </div>
+            <div class="mobile-creation-item" id="mobile-planetCreation" style="display: none;">
+              <div class="creation-info">
+                <span class="creation-name">惑星</span>
+                <span class="creation-cost">コスト: <span id="mobile-planetCost">10000</span> 塵</span>
+              </div>
+              <button id="mobile-createPlanetButton" class="mobile-create-btn">創造</button>
+            </div>
+            <div class="mobile-creation-item" id="mobile-starCreation" style="display: none;">
+              <div class="creation-info">
+                <span class="creation-name">恒星</span>
+                <span class="creation-cost">コスト: <span id="mobile-starCost">100000</span> 塵</span>
+              </div>
+              <button id="mobile-createStarButton" class="mobile-create-btn">創造</button>
+            </div>
+          </div>
+        </div>
+        
+        <!-- アップグレードセクション -->
+        <div class="mobile-section">
+          <h4 class="mobile-section-title">🔧 アップグレード</h4>
+          <div class="mobile-upgrade-grid">
+            <div class="mobile-upgrade-item">
+              <div class="upgrade-info">
+                <span class="upgrade-name">塵生成</span>
+                <span class="upgrade-level">Lv: <span id="mobile-dustUpgradeLevel">0</span></span>
+                <span class="upgrade-cost">コスト: <span id="mobile-dustUpgradeCost">100</span> エネルギー</span>
+              </div>
+              <button id="mobile-upgradeDustButton" class="mobile-upgrade-btn">アップグレード</button>
+            </div>
+            <div class="mobile-upgrade-item">
+              <div class="upgrade-info">
+                <span class="upgrade-name">ダークマター変換器</span>
+                <span class="upgrade-level">Lv: <span id="mobile-darkMatterConverterLevel">0</span></span>
+                <span class="upgrade-cost">コスト: <span id="mobile-darkMatterConverterCost">500</span> エネルギー</span>
+              </div>
+              <button id="mobile-upgradeDarkMatterConverterButton" class="mobile-upgrade-btn">変換</button>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 天体情報セクション -->
+        <div class="mobile-section">
+          <h4 class="mobile-section-title">🌌 天体情報</h4>
+          <div class="mobile-stats-grid">
+            <div class="mobile-stat-item">
+              <span class="stat-label">天体数:</span>
+              <span class="stat-value" id="mobile-celestialBodyCount">0</span>
+            </div>
+            <div class="mobile-stat-item">
+              <span class="stat-label">恒星数:</span>
+              <span class="stat-value" id="mobile-starCountDisplay">0</span>
+            </div>
+            <div class="mobile-stat-item">
+              <span class="stat-label">惑星数:</span>
+              <span class="stat-value" id="mobile-planetCountDisplay">0</span>
+            </div>
+            <div class="mobile-stat-item">
+              <span class="stat-label">生命体数:</span>
+              <span class="stat-value" id="mobile-lifeCountDisplay">0</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -98,17 +180,136 @@
         <button class="mobile-close-btn" onclick="closeMobileModal()">×</button>
       </div>
       <div class="mobile-content-body">
-        <p style="text-align: center; color: #FFD700; font-size: 14px; margin: 20px;">
-          研究システム（開発中）
-        </p>
-        <div style="padding: 20px;">
-          <h4 style="color: #4a9eff;">予定機能:</h4>
-          <ul style="color: #ccc; margin-left: 20px;">
-            <li>🧬 生命進化研究</li>
-            <li>⚛️ 物理法則研究</li>
-            <li>🌟 恒星技術研究</li>
-            <li>🚀 宇宙航行技術</li>
-          </ul>
+        <div id="mobile-research-items">
+          <!-- 基礎研究 -->
+          <div class="mobile-research-category">
+            <h4 class="research-category-title">基礎研究</h4>
+            
+            <div class="mobile-research-item" data-research="enhancedDust">
+              <div class="research-item-header">
+                <div class="research-item-icon">💫</div>
+                <div class="research-item-info">
+                  <h5 class="research-item-title">強化された塵生成</h5>
+                  <p class="research-item-description">宇宙の塵の生成効率を向上させる</p>
+                </div>
+                <div class="research-item-status">
+                  <span id="mobile-researchEnhancedDustStatus" class="research-status-badge">未完了</span>
+                </div>
+              </div>
+              <div class="research-item-footer">
+                <div class="research-cost">
+                  <img src="icon/ダークマター.JPG" class="cost-icon" alt="DM">
+                  <span class="cost-amount">1</span>
+                </div>
+                <button id="mobile-researchEnhancedDustButton" class="research-button">研究する</button>
+              </div>
+            </div>
+
+            <div class="mobile-research-item" data-research="advancedEnergy">
+              <div class="research-item-header">
+                <div class="research-item-icon">⚡</div>
+                <div class="research-item-info">
+                  <h5 class="research-item-title">高度なエネルギー変換</h5>
+                  <p class="research-item-description">エネルギー変換効率を2倍に向上</p>
+                </div>
+                <div class="research-item-status">
+                  <span id="mobile-researchAdvancedEnergyStatus" class="research-status-badge">未完了</span>
+                </div>
+              </div>
+              <div class="research-item-footer">
+                <div class="research-cost">
+                  <img src="icon/ダークマター.JPG" class="cost-icon" alt="DM">
+                  <span class="cost-amount">2</span>
+                </div>
+                <button id="mobile-researchAdvancedEnergyButton" class="research-button">研究する</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 天体研究 -->
+          <div class="mobile-research-category">
+            <h4 class="research-category-title">天体研究</h4>
+            
+            <div class="mobile-research-item" data-research="moon">
+              <div class="research-item-header">
+                <div class="research-item-icon">🌙</div>
+                <div class="research-item-info">
+                  <h5 class="research-item-title">軌道力学</h5>
+                  <p class="research-item-description">衛星の作成をアンロック</p>
+                </div>
+                <div class="research-item-status">
+                  <span id="mobile-researchMoonStatus" class="research-status-badge">未完了</span>
+                </div>
+              </div>
+              <div class="research-item-footer">
+                <div class="research-cost">
+                  <img src="icon/ダークマター.JPG" class="cost-icon" alt="DM">
+                  <span class="cost-amount">1</span>
+                </div>
+                <button id="mobile-researchMoonButton" class="research-button">研究する</button>
+              </div>
+            </div>
+
+            <div class="mobile-research-item" data-research="dwarfPlanet">
+              <div class="research-item-header">
+                <div class="research-item-icon">🪨</div>
+                <div class="research-item-info">
+                  <h5 class="research-item-title">準惑星学</h5>
+                  <p class="research-item-description">準惑星の作成をアンロック</p>
+                </div>
+                <div class="research-item-status">
+                  <span id="mobile-researchDwarfPlanetStatus" class="research-status-badge">未完了</span>
+                </div>
+              </div>
+              <div class="research-item-footer">
+                <div class="research-cost">
+                  <img src="icon/ダークマター.JPG" class="cost-icon" alt="DM">
+                  <span class="cost-amount">2</span>
+                </div>
+                <button id="mobile-researchDwarfPlanetButton" class="research-button">研究する</button>
+              </div>
+            </div>
+
+            <div class="mobile-research-item" data-research="planet">
+              <div class="research-item-header">
+                <div class="research-item-icon">🪐</div>
+                <div class="research-item-info">
+                  <h5 class="research-item-title">惑星形成論</h5>
+                  <p class="research-item-description">惑星の作成をアンロック</p>
+                </div>
+                <div class="research-item-status">
+                  <span id="mobile-researchPlanetStatus" class="research-status-badge">未完了</span>
+                </div>
+              </div>
+              <div class="research-item-footer">
+                <div class="research-cost">
+                  <img src="icon/ダークマター.JPG" class="cost-icon" alt="DM">
+                  <span class="cost-amount">3</span>
+                </div>
+                <button id="mobile-researchPlanetButton" class="research-button">研究する</button>
+              </div>
+            </div>
+
+            <div class="mobile-research-item" data-research="star">
+              <div class="research-item-header">
+                <div class="research-item-icon">⭐</div>
+                <div class="research-item-info">
+                  <h5 class="research-item-title">恒星発生論</h5>
+                  <p class="research-item-description">恒星の作成をアンロック</p>
+                </div>
+                <div class="research-item-status">
+                  <span id="mobile-researchStarStatus" class="research-status-badge">未完了</span>
+                </div>
+              </div>
+              <div class="research-item-footer">
+                <div class="research-cost">
+                  <img src="icon/ダークマター.JPG" class="cost-icon" alt="DM">
+                  <span class="cost-amount">5</span>
+                </div>
+                <button id="mobile-researchStarButton" class="research-button">研究する</button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -118,19 +319,178 @@
         <button class="mobile-close-btn" onclick="closeMobileModal()">×</button>
       </div>
       <div class="mobile-content-body">
-        <div style="padding: 20px;">
-          <h4 style="color: #4a9eff;">グラフィック設定:</h4>
-          <ul style="color: #ccc; margin-left: 20px;">
-            <li>🎨 解像度スケール</li>
-            <li>⭐ パーティクル密度</li>
-            <li>🌟 エフェクト品質</li>
-          </ul>
-          <h4 style="color: #4a9eff; margin-top: 20px;">ゲーム設定:</h4>
-          <ul style="color: #ccc; margin-left: 20px;">
-            <li>🔊 サウンド音量</li>
-            <li>⏰ 自動セーブ</li>
-            <li>🎮 操作設定</li>
-          </ul>
+        <!-- グラフィック設定セクション -->
+        <div class="mobile-section">
+          <h4 class="mobile-section-title">🎮 グラフィック設定</h4>
+          
+          <!-- パフォーマンス表示 -->
+          <div class="mobile-performance-display">
+            <div class="performance-row">
+              <span class="perf-label">FPS:</span>
+              <span class="perf-value" id="mobile-fpsDisplay">60</span>
+            </div>
+            <div class="performance-row">
+              <span class="perf-label">フレーム時間:</span>
+              <span class="perf-value" id="mobile-frameTimeDisplay">16.7ms</span>
+            </div>
+            <div class="performance-row">
+              <span class="perf-label">メモリ:</span>
+              <span class="perf-value" id="mobile-memoryDisplay">0MB</span>
+            </div>
+          </div>
+          
+          <!-- プリセット選択 -->
+          <div class="mobile-setting-item">
+            <label class="setting-label">品質プリセット:</label>
+            <select id="mobile-graphicsPresetSelect" class="mobile-select">
+              <option value="high">高品質</option>
+              <option value="medium" selected>標準</option>
+              <option value="low">低品質</option>
+              <option value="minimal">最小</option>
+            </select>
+          </div>
+          
+          <!-- 解像度スケール -->
+          <div class="mobile-setting-item">
+            <label class="setting-label">解像度スケール:</label>
+            <select id="mobile-resolutionScaleSelect" class="mobile-select">
+              <option value="50">50% (軽い)</option>
+              <option value="75">75% (標準)</option>
+              <option value="100" selected>100% (高品質)</option>
+              <option value="125">125% (超高品質)</option>
+            </select>
+          </div>
+          
+          <!-- パーティクル密度 -->
+          <div class="mobile-setting-item">
+            <label class="setting-label">パーティクル密度:</label>
+            <select id="mobile-particleDensitySelect" class="mobile-select">
+              <option value="25">25% (軽い)</option>
+              <option value="50" selected>50% (標準)</option>
+              <option value="75">75% (重い)</option>
+              <option value="100">100% (最高)</option>
+            </select>
+          </div>
+          
+          <!-- フレームレート制限 -->
+          <div class="mobile-setting-item">
+            <label class="setting-label">フレームレート制限:</label>
+            <select id="mobile-frameRateLimitSelect" class="mobile-select">
+              <option value="30">30 FPS</option>
+              <option value="60" selected>60 FPS</option>
+              <option value="-1">無制限</option>
+            </select>
+          </div>
+          
+          <!-- ポストプロセッシング -->
+          <div class="mobile-setting-item">
+            <label class="setting-label">ポストプロセッシング:</label>
+            <select id="mobile-postProcessingSelect" class="mobile-select">
+              <option value="ultra">ウルトラ</option>
+              <option value="high">高</option>
+              <option value="medium" selected>中</option>
+              <option value="low">低</option>
+              <option value="off">オフ</option>
+            </select>
+          </div>
+          
+          <!-- 描画距離 -->
+          <div class="mobile-setting-item">
+            <label class="setting-label">描画距離:</label>
+            <select id="mobile-viewDistanceSelect" class="mobile-select">
+              <option value="unlimited">無制限</option>
+              <option value="far">遠距離</option>
+              <option value="medium" selected>中距離</option>
+              <option value="near">近距離</option>
+              <option value="minimal">最小</option>
+            </select>
+          </div>
+        </div>
+        
+        <!-- サウンド設定セクション -->
+        <div class="mobile-section">
+          <h4 class="mobile-section-title">🔊 サウンド設定</h4>
+          
+          <!-- マスター音量 -->
+          <div class="mobile-setting-item">
+            <label class="setting-label">マスター音量: <span id="mobile-masterVolumeValue">70</span>%</label>
+            <div class="mobile-slider-container">
+              <input type="range" id="mobile-masterVolumeSlider" class="mobile-slider" min="0" max="100" value="70" step="1">
+            </div>
+          </div>
+          
+          <!-- 環境音 -->
+          <div class="mobile-setting-item">
+            <label class="setting-label">環境音: <span id="mobile-ambientVolumeValue">60</span>%</label>
+            <div class="mobile-slider-container">
+              <input type="range" id="mobile-ambientVolumeSlider" class="mobile-slider" min="0" max="100" value="60" step="1">
+            </div>
+          </div>
+          
+          <!-- 効果音 -->
+          <div class="mobile-setting-item">
+            <label class="setting-label">効果音: <span id="mobile-effectsVolumeValue">80</span>%</label>
+            <div class="mobile-slider-container">
+              <input type="range" id="mobile-effectsVolumeSlider" class="mobile-slider" min="0" max="100" value="80" step="1">
+            </div>
+          </div>
+          
+          <!-- 3D音響 -->
+          <div class="mobile-setting-item">
+            <label class="setting-label checkbox-label">
+              <input type="checkbox" id="mobile-spatialAudioCheckbox" class="mobile-checkbox" checked>
+              3D空間音響を有効にする
+            </label>
+          </div>
+          
+          <!-- ミュートボタン -->
+          <div class="mobile-setting-item">
+            <button id="mobile-muteToggleButton" class="mobile-action-btn">ミュート</button>
+          </div>
+        </div>
+        
+        <!-- ゲーム設定セクション -->
+        <div class="mobile-section">
+          <h4 class="mobile-section-title">⚙️ ゲーム設定</h4>
+          
+          <!-- 時間加速 -->
+          <div class="mobile-setting-item">
+            <label class="setting-label">時間倍率:</label>
+            <select id="mobile-timeMultiplierSelect" class="mobile-select">
+              <option value="1">1x</option>
+              <option value="2" disabled>2x (要アンロック)</option>
+              <option value="5" disabled>5x (要アンロック)</option>
+              <option value="10" disabled>10x (要アンロック)</option>
+            </select>
+          </div>
+          
+          <!-- UIアニメーション -->
+          <div class="mobile-setting-item">
+            <label class="setting-label">UIアニメーション:</label>
+            <select id="mobile-uiAnimationsSelect" class="mobile-select">
+              <option value="standard" selected>標準</option>
+              <option value="simple">シンプル</option>
+              <option value="off">オフ</option>
+            </select>
+          </div>
+          
+          <!-- 動的品質調整 -->
+          <div class="mobile-setting-item">
+            <label class="setting-label checkbox-label">
+              <input type="checkbox" id="mobile-dynamicQualityCheckbox" class="mobile-checkbox">
+              動的品質調整 (FPS低下時に自動調整)
+            </label>
+          </div>
+          
+          <!-- カメラリセット -->
+          <div class="mobile-setting-item">
+            <button id="mobile-resetCameraButton" class="mobile-action-btn">カメラ位置をリセット</button>
+          </div>
+          
+          <!-- 設定リセット -->
+          <div class="mobile-setting-item">
+            <button id="mobile-resetGraphicsButton" class="mobile-action-btn secondary">グラフィック設定をリセット</button>
+          </div>
         </div>
       </div>
     </div>
@@ -140,14 +500,96 @@
         <button class="mobile-close-btn" onclick="closeMobileModal()">×</button>
       </div>
       <div class="mobile-content-body">
-        <div style="padding: 20px;">
-          <h4 style="color: #4a9eff;">管理機能:</h4>
-          <ul style="color: #ccc; margin-left: 20px;">
-            <li>🌟 恒星作成・削除</li>
-            <li>🪐 惑星軌道調整</li>
-            <li>⚡ エネルギー出力制御</li>
-            <li>🔥 恒星進化管理</li>
-          </ul>
+        <!-- 恒星統計セクション -->
+        <div class="mobile-section">
+          <h4 class="mobile-section-title">📊 恒星統計</h4>
+          <div class="mobile-stats-grid">
+            <div class="mobile-stat-item">
+              <span class="stat-label">恒星数:</span>
+              <span class="stat-value" id="mobile-star-management-count">0</span>
+            </div>
+            <div class="mobile-stat-item">
+              <span class="stat-label">ブラックホール数:</span>
+              <span class="stat-value" id="mobile-blackhole-count">0</span>
+            </div>
+            <div class="mobile-stat-item">
+              <span class="stat-label">総質量:</span>
+              <span class="stat-value" id="mobile-total-mass">0</span>
+            </div>
+            <div class="mobile-stat-item">
+              <span class="stat-label">平均温度:</span>
+              <span class="stat-value" id="mobile-avg-temperature">0K</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 恒星一覧セクション -->
+        <div class="mobile-section">
+          <h4 class="mobile-section-title">🌟 恒星一覧</h4>
+          
+          <!-- ソート設定 -->
+          <div class="mobile-setting-item">
+            <label class="setting-label">ソート:</label>
+            <select id="mobile-star-sort-select" class="mobile-select">
+              <option value="name">名前</option>
+              <option value="type">種類</option>
+              <option value="mass">質量</option>
+              <option value="temperature">温度</option>
+              <option value="age">年齢</option>
+              <option value="lifespan">寿命</option>
+            </select>
+          </div>
+          
+          <!-- 恒星リスト -->
+          <div id="mobile-star-list" class="mobile-star-list">
+            <div class="mobile-star-empty">
+              <p>現在、管理対象の恒星はありません。</p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 恒星管理機能セクション -->
+        <div class="mobile-section">
+          <h4 class="mobile-section-title">🔧 管理機能</h4>
+          
+          <!-- フォーカス情報 -->
+          <div class="mobile-focus-info" id="mobile-focus-info">
+            <div class="focus-header">
+              <span class="focus-title">選択中の恒星</span>
+              <span class="focus-name" id="mobile-focus-name">なし</span>
+            </div>
+            <div class="focus-details" id="mobile-focus-details" style="display: none;">
+              <div class="focus-row">
+                <span class="focus-label">種類:</span>
+                <span class="focus-value" id="mobile-focus-type">-</span>
+              </div>
+              <div class="focus-row">
+                <span class="focus-label">質量:</span>
+                <span class="focus-value" id="mobile-focus-mass">-</span>
+              </div>
+              <div class="focus-row">
+                <span class="focus-label">温度:</span>
+                <span class="focus-value" id="mobile-focus-temperature">-</span>
+              </div>
+              <div class="focus-row">
+                <span class="focus-label">年齢:</span>
+                <span class="focus-value" id="mobile-focus-age">-</span>
+              </div>
+              <div class="focus-row">
+                <span class="focus-label">寿命:</span>
+                <span class="focus-value" id="mobile-focus-lifespan">-</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- アクションボタン -->
+          <div class="mobile-setting-item">
+            <button id="mobile-focus-star-button" class="mobile-action-btn" disabled>選択した恒星に移動</button>
+          </div>
+          
+          <div class="mobile-setting-item">
+            <button id="mobile-refresh-star-list" class="mobile-action-btn secondary">リストを更新</button>
+          </div>
         </div>
       </div>
     </div>
