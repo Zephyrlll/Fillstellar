@@ -807,16 +807,12 @@ function setupMobileSettingsSystem() {
 
 // モバイルグラフィック設定のセットアップ
 function setupMobileGraphicsSettings() {
-    // プリセット選択
-    const presetSelect = document.getElementById('mobile-graphicsPresetSelect');
-    if (presetSelect) {
-        presetSelect.addEventListener('change', (e) => {
-            const originalSelect = document.getElementById('graphicsPresetSelect');
-            if (originalSelect) {
-                originalSelect.value = e.target.value;
-                originalSelect.dispatchEvent(new Event('change'));
-                console.log('📱 Graphics preset changed to:', e.target.value);
-            }
+    // デフォルト設定ボタン
+    const defaultButton = document.getElementById('mobile-setDefaultGraphicsButton');
+    if (defaultButton) {
+        defaultButton.addEventListener('click', () => {
+            setMobileDefaultGraphicsSettings();
+            console.log('📱 Default graphics settings applied');
         });
     }
     
@@ -1063,7 +1059,6 @@ function updateMobileSettingsDisplay() {
 // モバイル設定を元の設定と同期
 function syncMobileSettingsWithOriginal() {
     const settingMappings = [
-        { mobileId: 'mobile-graphicsPresetSelect', originalId: 'graphicsPresetSelect' },
         { mobileId: 'mobile-resolutionScaleSelect', originalId: 'resolutionScaleSelect' },
         { mobileId: 'mobile-particleDensitySelect', originalId: 'particleDensitySelect' },
         { mobileId: 'mobile-frameRateLimitSelect', originalId: 'frameRateLimitSelect' },
@@ -1379,4 +1374,52 @@ export function startMobileStarManagementUpdates() {
     
     // 2秒ごとに恒星リストを更新
     setInterval(updateMobileStarList, 2000);
+}
+
+// モバイルデフォルトグラフィック設定を適用
+function setMobileDefaultGraphicsSettings() {
+    if (!isMobileDevice()) return;
+    
+    // デフォルト設定値
+    const defaultSettings = {
+        resolutionScale: '100',
+        particleDensity: '75',
+        frameRateLimit: '30',
+        postProcessing: 'high',
+        viewDistance: 'far'
+    };
+    
+    // モバイル設定を更新
+    const mobileResolutionSelect = document.getElementById('mobile-resolutionScaleSelect');
+    const mobileParticleSelect = document.getElementById('mobile-particleDensitySelect');
+    const mobileFrameRateSelect = document.getElementById('mobile-frameRateLimitSelect');
+    const mobilePostProcessingSelect = document.getElementById('mobile-postProcessingSelect');
+    const mobileViewDistanceSelect = document.getElementById('mobile-viewDistanceSelect');
+    
+    if (mobileResolutionSelect) {
+        mobileResolutionSelect.value = defaultSettings.resolutionScale;
+        mobileResolutionSelect.dispatchEvent(new Event('change'));
+    }
+    
+    if (mobileParticleSelect) {
+        mobileParticleSelect.value = defaultSettings.particleDensity;
+        mobileParticleSelect.dispatchEvent(new Event('change'));
+    }
+    
+    if (mobileFrameRateSelect) {
+        mobileFrameRateSelect.value = defaultSettings.frameRateLimit;
+        mobileFrameRateSelect.dispatchEvent(new Event('change'));
+    }
+    
+    if (mobilePostProcessingSelect) {
+        mobilePostProcessingSelect.value = defaultSettings.postProcessing;
+        mobilePostProcessingSelect.dispatchEvent(new Event('change'));
+    }
+    
+    if (mobileViewDistanceSelect) {
+        mobileViewDistanceSelect.value = defaultSettings.viewDistance;
+        mobileViewDistanceSelect.dispatchEvent(new Event('change'));
+    }
+    
+    console.log('📱 Default graphics settings applied:', defaultSettings);
 }

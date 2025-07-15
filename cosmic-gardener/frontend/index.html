@@ -339,15 +339,9 @@
             </div>
           </div>
           
-          <!-- プリセット選択 -->
+          <!-- デフォルト設定ボタン -->
           <div class="mobile-setting-item">
-            <label class="setting-label">品質プリセット:</label>
-            <select id="mobile-graphicsPresetSelect" class="mobile-select">
-              <option value="high">高品質</option>
-              <option value="medium" selected>標準</option>
-              <option value="low">低品質</option>
-              <option value="minimal">最小</option>
-            </select>
+            <button id="mobile-setDefaultGraphicsButton" class="mobile-action-btn secondary">デフォルト設定を適用</button>
           </div>
           
           <!-- 解像度スケール -->
@@ -358,6 +352,7 @@
               <option value="75">75% (標準)</option>
               <option value="100" selected>100% (高品質)</option>
               <option value="125">125% (超高品質)</option>
+              <option value="150">150% (最高品質)</option>
             </select>
           </div>
           
@@ -366,8 +361,8 @@
             <label class="setting-label">パーティクル密度:</label>
             <select id="mobile-particleDensitySelect" class="mobile-select">
               <option value="25">25% (軽い)</option>
-              <option value="50" selected>50% (標準)</option>
-              <option value="75">75% (重い)</option>
+              <option value="50">50% (標準)</option>
+              <option value="75" selected>75% (重い)</option>
               <option value="100">100% (最高)</option>
             </select>
           </div>
@@ -376,8 +371,8 @@
           <div class="mobile-setting-item">
             <label class="setting-label">フレームレート制限:</label>
             <select id="mobile-frameRateLimitSelect" class="mobile-select">
-              <option value="30">30 FPS</option>
-              <option value="60" selected>60 FPS</option>
+              <option value="30" selected>30 FPS</option>
+              <option value="60">60 FPS</option>
               <option value="-1">無制限</option>
             </select>
           </div>
@@ -387,8 +382,8 @@
             <label class="setting-label">ポストプロセッシング:</label>
             <select id="mobile-postProcessingSelect" class="mobile-select">
               <option value="ultra">ウルトラ</option>
-              <option value="high">高</option>
-              <option value="medium" selected>中</option>
+              <option value="high" selected>高</option>
+              <option value="medium">中</option>
               <option value="low">低</option>
               <option value="off">オフ</option>
             </select>
@@ -399,8 +394,8 @@
             <label class="setting-label">描画距離:</label>
             <select id="mobile-viewDistanceSelect" class="mobile-select">
               <option value="unlimited">無制限</option>
-              <option value="far">遠距離</option>
-              <option value="medium" selected>中距離</option>
+              <option value="far" selected>遠距離</option>
+              <option value="medium">中距離</option>
               <option value="near">近距離</option>
               <option value="minimal">最小</option>
             </select>
