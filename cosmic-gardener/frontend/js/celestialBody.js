@@ -426,7 +426,9 @@ export function createCelestialBody(type, options = {}) {
             const starColor = starColors[starParams.spectralType] || new THREE.Color(0xffffff);
             materialParams.color.set(starColor);
             materialParams.emissive.set(starColor);
-            materialParams.emissiveIntensity = 2.0;
+            materialParams.emissiveIntensity = 1.8;
+            materialParams.metalness = 0.0;
+            materialParams.roughness = 1.0;
             const starSphereGeometry = celestialObjectPools.getSphereGeometry(radius);
             const starMaterial = celestialObjectPools.getMaterial('star', materialParams);
             body = new THREE.Mesh(starSphereGeometry, starMaterial);
@@ -442,10 +444,12 @@ export function createCelestialBody(type, options = {}) {
                 const planetMaterial = celestialObjectPools.getMaterial('planet', {
                     map: maps.map,
                     normalMap: maps.normalMap,
-                    normalScale: new THREE.Vector2(0.5, 0.5),
-                    emissive: new THREE.Color(0xffffff),
-                    emissiveIntensity: 0.1,
-                    roughness: 0.7
+                    normalScale: new THREE.Vector2(0.8, 0.8),
+                    emissive: new THREE.Color(0x001133),
+                    emissiveIntensity: 0.15,
+                    roughness: 0.6,
+                    metalness: 0.1,
+                    envMapIntensity: 0.5
                 });
                 const planetGeometry = celestialObjectPools.getSphereGeometry(radius);
                 const planetMesh = new THREE.Mesh(planetGeometry, planetMaterial);

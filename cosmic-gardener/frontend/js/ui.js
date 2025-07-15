@@ -104,6 +104,7 @@ export const ui = {
     overlayCosmicActivity: document.getElementById('overlayCosmicActivity'),
     overlayPopulation: document.getElementById('overlayPopulation'),
     resetGameButton: document.getElementById('resetGameButton'),
+    resetCameraButton: document.getElementById('resetCameraButton'),
     gravitySlider: document.getElementById('gravitySlider'),
     gravityValue: document.getElementById('gravityValue'),
     simulationSpeedSlider: document.getElementById('simulationSpeedSlider'),
@@ -113,12 +114,14 @@ export const ui = {
     graphicsQualitySelect: document.getElementById('graphicsQualitySelect'),
     // New graphics settings UI elements
     graphicsPresetSelect: document.getElementById('graphicsPresetSelect'),
-    resolutionScaleSelect: document.getElementById('resolutionScaleSelect'),
+    resolutionScaleRange: document.getElementById('resolutionScaleRange'),
+    resolutionScaleValue: document.getElementById('resolutionScaleValue'),
     textureQualitySelect: document.getElementById('textureQualitySelect'),
     shadowQualitySelect: document.getElementById('shadowQualitySelect'),
     antiAliasingSelect: document.getElementById('antiAliasingSelect'),
     postProcessingSelect: document.getElementById('postProcessingSelect'),
-    particleDensitySelect: document.getElementById('particleDensitySelect'),
+    particleDensityRange: document.getElementById('particleDensityRange'),
+    particleDensityValue: document.getElementById('particleDensityValue'),
     viewDistanceSelect: document.getElementById('viewDistanceSelect'),
     frameRateLimitSelect: document.getElementById('frameRateLimitSelect'),
     lightingQualitySelect: document.getElementById('lightingQualitySelect'),
@@ -387,6 +390,8 @@ export function updateUI() {
             ui.createStarButton.style.display = unlockedCelestialBodies.star ? 'inline-block' : 'none';
         previousUIValues.unlockedBodies.star = unlockedCelestialBodies.star;
     }
+    // Update time acceleration UI
+    updateTimeAccelerationUI();
     // 右下のオーバーレイパネルの更新
     if (ui.overlayCosmicDust)
         ui.overlayCosmicDust.textContent = String(currentCosmicDust);
@@ -402,8 +407,52 @@ export function updateUI() {
         ui.overlayCosmicActivity.textContent = String(cosmicActivity);
     // 総人口の表示
     if (ui.overlayPopulation)
-        ui.overlayPopulation.textContent = String(cachedTotalPopulation || 0);
+        ui.overlayPopulation.textContent = Math.floor(cachedTotalPopulation || 0).toLocaleString();
     updateFocusedBodyUI();
+}
+function updateTimeAccelerationUI() {
+    const timeMultiplierSelect = document.getElementById('timeMultiplierSelect');
+    const timeMultiplier2xCost = document.getElementById('timeMultiplier2xCost');
+    const timeMultiplier5xCost = document.getElementById('timeMultiplier5xCost');
+    const timeMultiplier10xCost = document.getElementById('timeMultiplier10xCost');
+    const timeMultiplier2xStatus = document.getElementById('timeMultiplier2xStatus');
+    const timeMultiplier5xStatus = document.getElementById('timeMultiplier5xStatus');
+    const timeMultiplier10xStatus = document.getElementById('timeMultiplier10xStatus');
+    const timeMultiplier2xButton = document.getElementById('timeMultiplier2xButton');
+    const timeMultiplier5xButton = document.getElementById('timeMultiplier5xButton');
+    const timeMultiplier10xButton = document.getElementById('timeMultiplier10xButton');
+    if (timeMultiplierSelect) {
+        timeMultiplierSelect.value = gameState.currentTimeMultiplier.replace('x', '');
+        // Enable/disable options based on unlocked status
+        const options = timeMultiplierSelect.querySelectorAll('option');
+        options.forEach(option => {
+            const value = option.value + 'x';
+            if (value === '1x' || gameState.unlockedTimeMultipliers[value]) {
+                option.disabled = false;
+            }
+            else {
+                option.disabled = true;
+            }
+        });
+    }
+    if (timeMultiplier2xCost)
+        timeMultiplier2xCost.textContent = String(gameState.timeMultiplierCosts['2x']);
+    if (timeMultiplier5xCost)
+        timeMultiplier5xCost.textContent = String(gameState.timeMultiplierCosts['5x']);
+    if (timeMultiplier10xCost)
+        timeMultiplier10xCost.textContent = String(gameState.timeMultiplierCosts['10x']);
+    if (timeMultiplier2xStatus)
+        timeMultiplier2xStatus.textContent = gameState.unlockedTimeMultipliers['2x'] ? '完了' : '未完了';
+    if (timeMultiplier5xStatus)
+        timeMultiplier5xStatus.textContent = gameState.unlockedTimeMultipliers['5x'] ? '完了' : '未完了';
+    if (timeMultiplier10xStatus)
+        timeMultiplier10xStatus.textContent = gameState.unlockedTimeMultipliers['10x'] ? '完了' : '未完了';
+    if (timeMultiplier2xButton)
+        timeMultiplier2xButton.disabled = gameState.unlockedTimeMultipliers['2x'] || gameState.thoughtPoints < gameState.timeMultiplierCosts['2x'];
+    if (timeMultiplier5xButton)
+        timeMultiplier5xButton.disabled = gameState.unlockedTimeMultipliers['5x'] || gameState.thoughtPoints < gameState.timeMultiplierCosts['5x'];
+    if (timeMultiplier10xButton)
+        timeMultiplier10xButton.disabled = gameState.unlockedTimeMultipliers['10x'] || gameState.thoughtPoints < gameState.timeMultiplierCosts['10x'];
 }
 export function switchTab(activeTab) {
     console.log('📑 Switching to tab:', activeTab);
@@ -678,14 +727,16 @@ export function updateGraphicsUI() {
         ui.graphicsPresetSelect.value = graphics.preset;
     }
     // Update resolution scale
-    if (ui.resolutionScaleSelect) {
+    if (ui.resolutionScaleRange && ui.resolutionScaleValue) {
         const scalePercent = Math.round(graphics.resolutionScale * 100);
-        ui.resolutionScaleSelect.value = scalePercent.toString();
+        ui.resolutionScaleRange.value = scalePercent.toString();
+        ui.resolutionScaleValue.textContent = `${scalePercent}%`;
     }
     // Update particle density
-    if (ui.particleDensitySelect) {
+    if (ui.particleDensityRange && ui.particleDensityValue) {
         const densityPercent = Math.round(graphics.particleDensity * 100);
-        ui.particleDensitySelect.value = densityPercent.toString();
+        ui.particleDensityRange.value = densityPercent.toString();
+        ui.particleDensityValue.textContent = `${densityPercent}%`;
     }
     // Update all select elements
     const selectElements = [
@@ -756,8 +807,6 @@ export function syncUIWithGraphicsState() {
     updateGraphicsUI();
 }
 export function resetGraphicsToDefaults() {
-    console.log('🚨 resetGraphicsToDefaults() called!');
-    console.trace('resetGraphicsToDefaults call stack');
     // Reset graphics settings to medium preset
     const mediumPreset = {
         preset: 'medium',
@@ -778,7 +827,6 @@ export function resetGraphicsToDefaults() {
         uiAnimations: 'standard'
     };
     // Apply settings to gameState
-    console.log('🔧 resetGraphicsToDefaults: INTENTIONALLY applying medium preset');
     Object.assign(gameState.graphics, mediumPreset);
     // Update UI to reflect changes
     updateGraphicsUI();

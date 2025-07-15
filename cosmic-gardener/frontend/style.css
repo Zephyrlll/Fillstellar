@@ -740,44 +740,638 @@ button:disabled {
     font-weight: bold;
 }
 
+/* Mobile device styles (applied when body has mobile-device class) */
+.mobile-device #ui-area {
+    width: 100%;
+    height: auto;
+    max-height: 60%;
+    bottom: 0;
+    top: auto;
+    flex-direction: column-reverse;
+    border-right: none;
+    border-top: 1px solid #FFB700;
+    box-shadow: 0 0 15px rgba(255, 183, 0, 0.6), 0 0 35px rgba(255, 183, 0, 0.4), inset 0 0 25px 8px rgba(255, 215, 0, 0.9);
+    transition: height 0.3s ease, max-height 0.3s ease;
+}
+
+/* Mobile collapsed state */
+.mobile-device #ui-area.collapsed {
+    height: 60px;
+    max-height: 60px;
+    overflow: hidden;
+}
+
+.mobile-device #game-canvas {
+    height: calc(100vh - 60px);
+    transition: height 0.3s ease;
+}
+
+.mobile-device #ui-area:not(.collapsed) ~ #game-canvas {
+    height: 40vh;
+}
+
+/* Mobile Navigation Bar */
+#mobile-nav-bar {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 50px;
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.4) 0%, rgba(26, 26, 46, 0.4) 100%);
+    border-bottom: 2px solid rgba(255, 183, 0, 0.6);
+    z-index: 1000;
+    padding: 0 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+}
+
+.mobile-device #mobile-nav-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+#mobile-nav-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+}
+
+#mobile-nav-center {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 0 0 auto;
+}
+
+#mobile-nav-right {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex: 1;
+}
+
+#mobile-toggle-btn-nav {
+    width: 35px;
+    height: 35px;
+    background: rgba(255, 183, 0, 0.8);
+    border: none;
+    border-radius: 50%;
+    color: #000;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+#mobile-toggle-btn-nav:hover {
+    background: rgba(255, 183, 0, 1);
+    transform: scale(1.1);
+}
+
+#year-display-nav {
+    color: #FFD700;
+    font-size: 14px;
+    font-weight: bold;
+    background: rgba(255, 183, 0, 0.1);
+    padding: 4px 8px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 183, 0, 0.3);
+}
+
+#resource-summary-nav {
+    display: flex;
+    gap: 8px;
+    font-size: 12px;
+    color: #FFD700;
+}
+
+#resource-summary-nav span {
+    background: rgba(255, 183, 0, 0.1);
+    padding: 3px 6px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 183, 0, 0.3);
+    white-space: nowrap;
+}
+
+.mobile-info-btn {
+    background: rgba(74, 158, 255, 0.8);
+    border: 1px solid rgba(74, 158, 255, 0.8);
+    border-radius: 50%;
+    color: #fff;
+    font-size: 12px;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    margin-left: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.mobile-info-btn:hover {
+    background: rgba(74, 158, 255, 1);
+    transform: scale(1.1);
+}
+
+.mobile-nav-btn {
+    background: linear-gradient(135deg, rgba(74, 158, 255, 0.8) 0%, rgba(255, 183, 0, 0.6) 100%);
+    border: 1px solid rgba(255, 183, 0, 0.8);
+    border-radius: 15px;
+    color: #fff;
+    font-size: 16px;
+    font-weight: bold;
+    padding: 6px 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    min-width: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mobile-nav-btn:hover {
+    background: linear-gradient(135deg, rgba(74, 158, 255, 1) 0%, rgba(255, 183, 0, 0.8) 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.4);
+}
+
+.mobile-nav-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* Mobile-specific hiding */
+.mobile-device #thought-speed-display {
+    display: none !important;
+}
+
+.mobile-device #info-container {
+    display: none !important;
+}
+
+.mobile-device #mobile-toggle-btn {
+    display: none !important;
+}
+
+.mobile-device #focused-celestial-body-details {
+    display: none !important;
+}
+
+.mobile-device #message-overlay {
+    top: 60px !important;
+    z-index: 1100 !important;
+}
+
+.mobile-device #floating-controls {
+    display: none !important;
+}
+
+.mobile-device #compact-info-message p:first-child {
+    display: none !important;
+}
+
+.mobile-device #ui-panel {
+    display: none !important;
+}
+
+.mobile-device #ui-panel-research {
+    display: none !important;
+}
+
+.mobile-device #options-screen {
+    display: none !important;
+}
+
+.mobile-device #star-management-screen {
+    display: none !important;
+}
+
+.mobile-device #ui-area {
+    display: none !important;
+}
+
+.mobile-device #game-stats-overlay {
+    display: none !important;
+}
+
+/* Mobile Tab Navigation */
+#mobile-tab-nav {
+    display: none;
+    position: fixed;
+    top: 50px;
+    left: 0;
+    right: 0;
+    background: rgba(26, 26, 46, 0.3);
+    border-bottom: 1px solid rgba(74, 158, 255, 0.5);
+    z-index: 990;
+    padding: 0;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+}
+
+.mobile-device #mobile-tab-nav {
+    display: flex;
+}
+
+.mobile-tab {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: #ccc;
+    font-size: 12px;
+    font-weight: bold;
+    padding: 10px 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-bottom: 3px solid transparent;
+}
+
+.mobile-tab:hover {
+    background: rgba(74, 158, 255, 0.2);
+    color: #4a9eff;
+}
+
+.mobile-tab.active-mobile-tab {
+    color: #4a9eff;
+    background: rgba(74, 158, 255, 0.1);
+    border-bottom-color: #4a9eff;
+}
+
+/* Mobile Content Area - Modal Style */
+#mobile-content-area {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 990;
+    backdrop-filter: blur(5px);
+    animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+#mobile-content-area.active {
+    display: block;
+}
+
+/* Content Modal */
+.mobile-content {
+    display: none;
+    position: absolute;
+    top: 20%;
+    left: 10px;
+    right: 10px;
+    max-height: 60vh;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(74, 158, 255, 0.5);
+    border-radius: 16px;
+    overflow-y: auto;
+    backdrop-filter: blur(20px);
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
+    transform: translateY(-20px);
+    animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Mobile content area is hidden by default, shown via .active class */
+
+.mobile-content {
+    display: none;
+    padding: 20px;
+}
+
+.mobile-content.active-mobile-content {
+    display: block;
+}
+
+.mobile-content-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    background: rgba(74, 158, 255, 0.2);
+    border-bottom: 1px solid rgba(74, 158, 255, 0.3);
+    border-radius: 16px 16px 0 0;
+}
+
+.mobile-content-header h3 {
+    margin: 0;
+    color: #4a9eff;
+    font-size: 18px;
+}
+
+.mobile-close-btn {
+    background: none;
+    border: none;
+    color: #ff6b6b;
+    font-size: 24px;
+    cursor: pointer;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+}
+
+.mobile-close-btn:hover {
+    background: rgba(255, 107, 107, 0.2);
+    transform: scale(1.1);
+}
+
+.mobile-content-body {
+    padding: 10px;
+    max-height: calc(60vh - 60px);
+    overflow-y: auto;
+}
+
+/* Mobile Compact Info Panel */
+.mobile-compact-panel {
+    display: none;
+    position: fixed;
+    top: 55px;
+    right: 10px;
+    width: 200px;
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.95) 0%, rgba(26, 26, 46, 0.95) 100%);
+    border: 2px solid #4a9eff;
+    border-radius: 12px;
+    z-index: 1200;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.mobile-device .mobile-compact-panel.active {
+    display: block;
+}
+
+.compact-info-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: rgba(74, 158, 255, 0.2);
+    border-radius: 10px 10px 0 0;
+    border-bottom: 1px solid #4a9eff;
+    color: #4a9eff;
+    font-size: 13px;
+    font-weight: bold;
+}
+
+#mobile-compact-close {
+    background: none;
+    border: none;
+    color: #ff6b6b;
+    font-size: 16px;
+    cursor: pointer;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+}
+
+#mobile-compact-close:hover {
+    background: rgba(255, 107, 107, 0.2);
+}
+
+.compact-info-content {
+    padding: 8px 12px;
+}
+
+.compact-info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 3px 0;
+    border-bottom: 1px solid rgba(255, 183, 0, 0.1);
+}
+
+.compact-info-row:last-child {
+    border-bottom: none;
+}
+
+.info-label {
+    color: #FFD700;
+    font-size: 11px;
+    font-weight: bold;
+}
+
+.compact-info-row span:last-child {
+    color: #fff;
+    font-size: 11px;
+    font-weight: normal;
+}
+
+/* Compact info message styling */
+#compact-info-message {
+    background: linear-gradient(135deg, rgba(74, 158, 255, 0.1) 0%, rgba(255, 183, 0, 0.1) 100%);
+    border: 1px solid rgba(255, 183, 0, 0.3);
+    border-radius: 8px;
+    padding: 10px;
+    margin: 10px 0;
+    text-align: center;
+}
+
+#compact-info-message p {
+    margin: 5px 0;
+    font-size: 12px;
+    color: #FFD700;
+}
+
+#compact-info-message p:first-child {
+    font-style: italic;
+    color: #4a9eff;
+}
+
+/* Mobile UI positioning adjustments - removed, ui-area is now hidden on mobile */
+
+.mobile-device #stats-log-container {
+    bottom: 10px; /* 底部に配置 */
+    width: calc(100% - 20px) !important;
+    max-width: none !important;
+    left: 10px !important;
+    transform: none !important;
+    background: rgba(0, 0, 0, 0.3) !important;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 183, 0, 0.4) !important;
+}
+
+.mobile-device #tab-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.mobile-device #tab-buttons button {
+    flex: 1;
+    min-width: 70px;
+    font-size: 11px;
+    padding: 6px 8px;
+}
+
+/* Mobile toggle button */
+.mobile-device #mobile-toggle-btn {
+    display: block;
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 183, 0, 0.8);
+    border: none;
+    border-radius: 50%;
+    color: #000;
+    font-size: 18px;
+    cursor: pointer;
+    z-index: 1001;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(255, 183, 0, 0.5);
+}
+
+.mobile-device #mobile-toggle-btn:hover {
+    background: rgba(255, 183, 0, 1);
+    transform: scale(1.1);
+}
+
+.desktop-device #mobile-toggle-btn {
+    display: none;
+}
+
+.mobile-device #ui-panel, 
+.mobile-device #ui-panel-research, 
+.mobile-device #options-screen, 
+.mobile-device #star-management-screen {
+    padding: 10px;
+}
+
+.mobile-device h1 {
+    font-size: 1.8em;
+}
+
+.mobile-device #resource-display p {
+    font-size: 0.9em;
+}
+
+.mobile-device button {
+    padding: 8px;
+    font-size: 0.9em;
+}
+
+.mobile-device .collapsible-header {
+    font-size: 1.1em;
+}
+
+.mobile-device #game-stats-overlay {
+    top: 10px;
+    bottom: auto;
+    left: 10px;
+    right: auto;
+    text-align: left;
+}
+
+/* Desktop device styles (applied when body has desktop-device class) */
+.desktop-device #ui-area {
+    width: 300px;
+    height: calc(100% - 230px);
+    bottom: auto;
+    top: 0;
+    flex-direction: column;
+    border-right: 1px solid #FFB700;
+    border-top: none;
+    box-shadow: 0 0 15px rgba(255, 183, 0, 0.6), 0 0 35px rgba(255, 183, 0, 0.4), inset 0 0 15px 3px rgba(255, 230, 150, 0.6);
+}
+
+.desktop-device #game-canvas {
+    height: 100%;
+}
+
+.desktop-device #game-stats-overlay {
+    bottom: 10px;
+    top: auto;
+    right: 10px;
+    left: auto;
+    text-align: right;
+}
+
+/* Legacy media query support for fallback */
 @media (max-width: 768px) {
-    #ui-area {
+    body:not(.desktop-device) #ui-area {
         width: 100%;
         height: 40%;
         bottom: 0;
         top: auto;
         flex-direction: column-reverse;
         border-right: none;
-        border-top: 1px solid #FFB700; /* オレンジゴールドの軸 */
+        border-top: 1px solid #FFB700;
         box-shadow: 0 0 15px rgba(255, 183, 0, 0.6), 0 0 35px rgba(255, 183, 0, 0.4), inset 0 0 25px 8px rgba(255, 215, 0, 0.9);
     }
 
-    #game-canvas {
+    body:not(.desktop-device) #game-canvas {
         height: 60%;
     }
 
-    #ui-panel, #ui-panel-research, #options-screen, #star-management-screen {
+    body:not(.desktop-device) #ui-panel, 
+    body:not(.desktop-device) #ui-panel-research, 
+    body:not(.desktop-device) #options-screen, 
+    body:not(.desktop-device) #star-management-screen {
         padding: 10px;
     }
 
-    h1 {
+    body:not(.desktop-device) h1 {
         font-size: 1.8em;
     }
 
-    #resource-display p {
+    body:not(.desktop-device) #resource-display p {
         font-size: 0.9em;
     }
 
-    button {
+    body:not(.desktop-device) button {
         padding: 8px;
         font-size: 0.9em;
     }
 
-    .collapsible-header {
+    body:not(.desktop-device) .collapsible-header {
         font-size: 1.1em;
     }
 
-    #game-stats-overlay {
+    body:not(.desktop-device) #game-stats-overlay {
         top: 10px;
         bottom: auto;
         left: 10px;
@@ -869,6 +1463,20 @@ button:disabled {
     width: 600px;
     z-index: 50;
     pointer-events: auto;
+}
+
+/* モバイルでの統計ログパネル調整 */
+.mobile-device #stats-log-container {
+    width: calc(100% - 20px);
+    max-width: 400px;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: 70px; /* UIパネルの高さ分上げる */
+    transition: bottom 0.3s ease;
+}
+
+.mobile-device #ui-area.collapsed ~ #stats-log-container {
+    bottom: 10px; /* パネルが閉じた時は元の位置 */
 }
 
 #stats-log-tabs {

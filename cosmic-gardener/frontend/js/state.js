@@ -59,7 +59,6 @@ export const gameState = {
         objectDetail: 'medium',
         backgroundDetail: 'standard',
         uiAnimations: 'standard',
-        showResolutionDebug: false,
         performance: {
             fps: 0,
             frameTime: 0,
@@ -122,34 +121,26 @@ export const gameState = {
     },
     advancedResources: {},
     discoveredTechnologies: new Set(),
-    availableFacilities: new Set(['basic_converter'])
+    availableFacilities: new Set(['basic_converter']),
+    deviceInfo: {
+        isMobile: false,
+        isDesktop: true,
+        screenWidth: 0,
+        screenHeight: 0,
+        userAgent: '',
+        hasTouchSupport: false,
+        lastDetectionTime: 0
+    }
 };
 // --- Graphics Presets ---
 export const GRAPHICS_PRESETS = {
-    extreme: {
-        resolutionScale: 3.0,
-        textureQuality: 'ultra',
-        shadowQuality: 'ultra',
-        antiAliasing: 'msaa8x',
-        postProcessing: 'ultra',
-        particleDensity: 1.25,
-        viewDistance: 'unlimited',
-        frameRateLimit: -1,
-        vsync: 'adaptive',
-        lightingQuality: 'ultra',
-        fogEffect: 'high',
-        renderPrecision: 'high',
-        objectDetail: 'ultra',
-        backgroundDetail: 'high',
-        uiAnimations: 'smooth'
-    },
     ultra: {
-        resolutionScale: 2.0,
+        resolutionScale: 1.25,
         textureQuality: 'ultra',
         shadowQuality: 'ultra',
         antiAliasing: 'msaa8x',
         postProcessing: 'ultra',
-        particleDensity: 1.0,
+        particleDensity: 2.0,
         viewDistance: 'unlimited',
         frameRateLimit: -1,
         vsync: 'adaptive',

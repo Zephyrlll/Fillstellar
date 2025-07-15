@@ -6,10 +6,10 @@ import { showMessage } from './ui.js';
 import { addTimelineLog } from './timeline.js';
 import { resourceFlowDisplay } from './resourceFlowDisplay.js';
 export class ConversionEngine {
-    activeConversions = new Map();
-    facilities = new Map();
-    lastUpdate = Date.now();
     constructor() {
+        this.activeConversions = new Map();
+        this.facilities = new Map();
+        this.lastUpdate = Date.now();
         // Initialize with basic facilities
         this.addFacility({
             id: 'basic_converter',

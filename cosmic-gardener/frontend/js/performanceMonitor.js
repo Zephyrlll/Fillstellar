@@ -1,15 +1,15 @@
 import { gameState } from './state.js';
 export class PerformanceMonitor {
-    lastFrameTime = 0;
-    frameCount = 0;
-    fpsUpdateInterval = 1000; // 1 second
-    lastFpsUpdate = 0;
-    maxHistoryPoints = 60; // Store last 60 seconds of data
-    memoryUpdateInterval = 5000; // 5 seconds
-    lastMemoryUpdate = 0;
-    frameTimeHistory = [];
-    maxFrameTimeHistory = 120; // Store last 120 frames
     constructor() {
+        this.lastFrameTime = 0;
+        this.frameCount = 0;
+        this.fpsUpdateInterval = 1000; // 1 second
+        this.lastFpsUpdate = 0;
+        this.maxHistoryPoints = 60; // Store last 60 seconds of data
+        this.memoryUpdateInterval = 5000; // 5 seconds
+        this.lastMemoryUpdate = 0;
+        this.frameTimeHistory = [];
+        this.maxFrameTimeHistory = 120; // Store last 120 frames
         this.detectDeviceInfo();
         this.startMonitoring();
     }

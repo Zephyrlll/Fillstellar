@@ -22,6 +22,12 @@ import { currencyManager } from './dist/js/currencySystem.js';
 import { performanceMonitor } from './js/performanceMonitor.js';
 import { graphicsEngine } from './js/graphicsEngine.js';
 import { updatePerformanceDisplay } from './js/ui.js';
+import { setupDeviceDetection, isMobileDevice, startMobileNavUpdates } from './js/deviceDetection.js';
+
+// Make graphicsEngine available globally
+window.graphicsEngine = graphicsEngine;
+console.log('🔧 Graphics engine loaded:', graphicsEngine);
+console.log('🔧 Available methods:', Object.getOwnPropertyNames(Object.getPrototypeOf(graphicsEngine)));
 
 // Camera fix debugging
 console.log('🚀 MAIN.JS CAMERA FIX v2024-07-13 LOADED!');
@@ -269,18 +275,9 @@ function animate() {
     // Update performance monitor first
     performanceMonitor.update();
     
-    // Check frame rate limiter - use precise timing
-    const frameRateLimiter = graphicsEngine.getFrameRateLimiter();
-    if (!frameRateLimiter.shouldRender()) {
-        // Schedule next frame with precise timing if limited
-        const delay = frameRateLimiter.getNextFrameDelay();
-        if (delay > 0) {
-            setTimeout(() => requestAnimationFrame(animate), delay);
-        } else {
-            requestAnimationFrame(animate);
-        }
-        return;
-    }
+    // Frame rate limiting (simplified approach)
+    // Note: Advanced frame rate limiting temporarily disabled for stability
+    // Will be re-enabled when FrameRateLimiter is properly integrated
     
     // Schedule the next frame
     requestAnimationFrame(animate);
@@ -408,29 +405,20 @@ function animate() {
     conversionEngine.update();
     // Update resource particle effects
     resourceParticleSystem.update(deltaTime);
-    if (keys.w)
-        camera.position.z -= moveSpeed * animationDeltaTime;
-    if (keys.s)
-        camera.position.z += moveSpeed * animationDeltaTime;
-    if (keys.a)
-        camera.position.x -= moveSpeed * animationDeltaTime;
-    if (keys.d)
-        camera.position.x += moveSpeed * animationDeltaTime;
+    // WASD移動を無効化（OrbitControlsとの競合を防ぐため）
+    // if (keys.w)
+    //     camera.position.z -= moveSpeed * animationDeltaTime;
+    // if (keys.s)
+    //     camera.position.z += moveSpeed * animationDeltaTime;
+    // if (keys.a)
+    //     camera.position.x -= moveSpeed * animationDeltaTime;
+    // if (keys.d)
+    //     camera.position.x += moveSpeed * animationDeltaTime;
     if (gameState.focusedObject) {
-        // ブラックホールの場合は、既にコントロールターゲットが（0,0,0）に設定されているため、
-        // カメラ位置を変更しない
-        if (gameState.focusedObject.userData.type === 'black_hole') {
-            // ブラックホールの場合はカメラ位置を維持（既に適切に設定済み）
-            // controls.target は既に (0,0,0) に設定されている
-            if (window.cameraFixDebug && Math.random() < 0.01) { // 1%の確率でログ出力
-                console.log('🎯 BLACK HOLE FOCUS: Camera movement prevented');
-            }
-        } else {
-            // 他の天体の場合は従来の動作
-            const offset = camera.position.clone().sub(controls.target);
-            controls.target.lerp(gameState.focusedObject.position, 0.05);
-            camera.position.copy(controls.target).add(offset);
-        }
+        const targetPosition = gameState.focusedObject.position.clone();
+        
+        // フォーカス対象への滑らかな移動のみ（距離調整は行わない）
+        controls.target.lerp(targetPosition, 0.05);
     }
     const edgeGlow = scene.getObjectByName('black_hole_edge_glow');
     if (edgeGlow) {
@@ -469,6 +457,12 @@ function animate() {
     }
 }
 function init() {
+    // Setup device detection system
+    setupDeviceDetection();
+    
+    // Start mobile navigation updates
+    startMobileNavUpdates();
+    
     createStarfield();
     loadGame();
     
@@ -507,8 +501,15 @@ function init() {
     }
     const blackHole = gameState.stars.find(s => s.userData.type === 'black_hole');
     if (blackHole) {
-        // グラフィックエンジンの初期化専用メソッドでカメラを設定
-        graphicsEngine.resetCameraForInitialization();
+        // グラフィックエンジンの初期化（カメラリセットは不要、解像度スケールのみ適用）
+        console.log('📹 Initializing graphics engine for black hole focus');
+        
+        // 解像度スケールの適用（カメラリセットの代わり）
+        if (window.graphicsEngine && window.graphicsEngine.applyResolutionScale) {
+            window.graphicsEngine.applyResolutionScale(gameState.graphics.resolutionScale);
+        } else if (graphicsEngine && graphicsEngine.applyResolutionScale) {
+            graphicsEngine.applyResolutionScale(gameState.graphics.resolutionScale);
+        }
         
         console.log('📹 Camera positioned BEFORE setting focused object:', {
             cameraPos: camera.position.clone(),
@@ -588,54 +589,48 @@ function init() {
     
     // 接続を開始
     wsClient.connect();
-    // 🔧 WORKAROUND: 解像度設定バグ対策として1.4~2秒の間に超集中的に微小リサイズを実行
+    // 🔧 WORKAROUND: 解像度設定バグ対策（デバイス検出システム使用）
     setTimeout(() => {
-        console.log('🔧 Starting EXTREME intensive resize workaround (1.4-2.0s) - 0.5ms intervals!');
-        let resizeWorkaroundCount = 0;
-        const resizeWorkaroundInterval = setInterval(() => {
-            resizeWorkaroundCount++;
-            
-            // 微小なサイズ変更を発生させる（1px程度）
-            const canvas = document.querySelector('canvas');
-            if (canvas) {
-                const currentWidth = canvas.offsetWidth;
-                const currentHeight = canvas.offsetHeight;
-                
-                // わずかにサイズを変更してからすぐ戻す
-                canvas.style.width = (currentWidth + (resizeWorkaroundCount % 2 === 1 ? 1 : -1)) + 'px';
-                canvas.style.height = (currentHeight + (resizeWorkaroundCount % 2 === 1 ? 1 : -1)) + 'px';
-                
-                // 即座に元のサイズに戻す
+        if (isMobileDevice()) {
+            console.log('🔧 Mobile device detected, using gentle resize approach');
+            // モバイル向けの軽量な解像度調整
+            if (window.graphicsEngine && gameState.graphics) {
+                window.graphicsEngine.applyResolutionScale(gameState.graphics.resolutionScale);
                 setTimeout(() => {
-                    canvas.style.width = currentWidth + 'px';
-                    canvas.style.height = currentHeight + 'px';
-                    
-                    // リサイズイベントを手動発火
-                    window.dispatchEvent(new Event('resize'));
-                    
-                    // 解像度も毎回再適用
-                    if (window.graphicsEngine && gameState.graphics) {
+                    if (typeof window.graphicsEngine.forceResolutionUpdate === 'function') {
+                        window.graphicsEngine.forceResolutionUpdate();
+                    } else if (typeof window.graphicsEngine.applyResolutionScale === 'function') {
                         window.graphicsEngine.applyResolutionScale(gameState.graphics.resolutionScale);
                     }
-                }, 1);
+                }, 500);
             }
-            
-            // 1200回（0.6秒間、0.5msごと）実行したら停止
-            if (resizeWorkaroundCount >= 1200) {
-                clearInterval(resizeWorkaroundInterval);
-                console.log(`🔧 EXTREME intensive resize workaround completed (${resizeWorkaroundCount} times)`);
+        } else {
+            console.log('🔧 Desktop device detected, using moderate resize workaround');
+            // デスクトップ向けの適度な解像度調整
+            let resizeWorkaroundCount = 0;
+            const resizeWorkaroundInterval = setInterval(() => {
+                resizeWorkaroundCount++;
                 
-                // 最後に強制的に解像度を更新
-                if (window.graphicsEngine) {
-                    window.graphicsEngine.forceResolutionUpdate();
+                if (window.graphicsEngine && gameState.graphics) {
+                    window.graphicsEngine.applyResolutionScale(gameState.graphics.resolutionScale);
                 }
-            }
-            
-            if (resizeWorkaroundCount % 100 === 0) {
-                console.log(`🔧 Extreme intensive resize workaround ${resizeWorkaroundCount}/1200 executed`);
-            }
-        }, 0.5); // 0.5msごとに実行（極限頻度）
-    }, 1400); // 1.4秒後に開始
+                
+                // 5回で停止（さらに削減）
+                if (resizeWorkaroundCount >= 5) {
+                    clearInterval(resizeWorkaroundInterval);
+                    console.log(`🔧 Moderate resize workaround completed (${resizeWorkaroundCount} times)`);
+                    
+                    if (window.graphicsEngine) {
+                        if (typeof window.graphicsEngine.forceResolutionUpdate === 'function') {
+                            window.graphicsEngine.forceResolutionUpdate();
+                        } else if (typeof window.graphicsEngine.applyResolutionScale === 'function') {
+                            window.graphicsEngine.applyResolutionScale(gameState.graphics.resolutionScale);
+                        }
+                    }
+                }
+            }, 200); // 200msごと（さらに緩和）
+        }
+    }, 1000); // 1秒後に開始（短縮）
 
     animate();
     
@@ -664,7 +659,11 @@ function init() {
     setTimeout(() => {
         if (window.graphicsEngine && gameState.graphics) {
             console.log('🔧 2.1秒後の最終解像度再適用:', gameState.graphics.resolutionScale);
-            window.graphicsEngine.forceResolutionUpdate();
+            if (typeof window.graphicsEngine.forceResolutionUpdate === 'function') {
+                window.graphicsEngine.forceResolutionUpdate();
+            } else if (typeof window.graphicsEngine.applyResolutionScale === 'function') {
+                window.graphicsEngine.applyResolutionScale(gameState.graphics.resolutionScale);
+            }
         }
     }, 2100);
     

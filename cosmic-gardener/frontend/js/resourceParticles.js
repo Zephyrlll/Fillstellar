@@ -3,10 +3,9 @@ import * as THREE from 'three';
 import { QualityTier, QUALITY_MULTIPLIERS } from './resourceSystem.js';
 import { scene } from './threeSetup.js';
 class ResourceParticleSystem {
-    particles = [];
-    particlePool = [];
-    particleGeometry;
     constructor() {
+        this.particles = [];
+        this.particlePool = [];
         // Create reusable particle geometry
         this.particleGeometry = new THREE.BufferGeometry();
         const vertices = new Float32Array(30); // 10 particles * 3 coordinates

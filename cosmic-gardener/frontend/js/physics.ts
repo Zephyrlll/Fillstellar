@@ -273,9 +273,26 @@ export function updatePhysics(deltaTime: number) {
         body.position.add(userData.velocity.clone().multiplyScalar(deltaTime));
 
         const boundary = GALAXY_BOUNDARY;
-        if (body.position.length() > boundary) {
-            body.position.normalize().multiplyScalar(boundary);
-            userData.velocity.multiplyScalar(0.5);
+        const distance = body.position.length();
+        
+        // Gradual boundary with soft bounce
+        if (distance > boundary * 0.9) {
+            const softnessZone = boundary * 0.1;
+            const penetration = distance - (boundary * 0.9);
+            const bounceForce = Math.min(penetration / softnessZone, 1.0);
+            
+            // Apply gradual velocity reduction and gentle push back
+            const pushDirection = body.position.clone().normalize().multiplyScalar(-1);
+            const pushForce = bounceForce * 0.1;
+            
+            userData.velocity.add(pushDirection.multiplyScalar(pushForce));
+            userData.velocity.multiplyScalar(1 - bounceForce * 0.02);
+            
+            // Hard boundary as last resort
+            if (distance > boundary) {
+                body.position.normalize().multiplyScalar(boundary);
+                userData.velocity.multiplyScalar(0.3);
+            }
         }
     });
 }

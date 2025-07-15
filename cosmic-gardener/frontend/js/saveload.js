@@ -34,7 +34,7 @@ export function saveGame() {
     // Save conversion engine state
     savableState.conversionEngineState = conversionEngine.saveState();
     // Update save version for new resource system and graphics settings
-    savableState.saveVersion = '2.1-graphics-system';
+    savableState.saveVersion = '2.2-device-detection';
     localStorage.setItem('cosmicGardenerState', JSON.stringify(savableState));
 }
 export function loadGame() {
@@ -67,13 +67,9 @@ export function loadGame() {
     }
     if (parsedState.saveVersion === '2.0-resource-system') {
         // Migrate to graphics system version
-        // 🔧 Preserve current resolution scale to fix 1-second reset bug
-        const currentResolutionScale = gameState.graphics?.resolutionScale || 1.0;
-        console.log(`🔧 Migration: preserving current resolutionScale = ${currentResolutionScale}`);
-        
         parsedState.graphics = {
-            preset: 'custom', // 🔧 Always set to custom to prevent auto-preset overrides
-            resolutionScale: currentResolutionScale,
+            preset: parsedState.graphicsQuality || 'medium',
+            resolutionScale: 1.0,
             textureQuality: 'medium',
             shadowQuality: 'medium',
             antiAliasing: 'fxaa',
@@ -115,8 +111,21 @@ export function loadGame() {
         }
         parsedState.saveVersion = '2.1-graphics-system';
     }
-    if (parsedState.saveVersion !== '2.1-graphics-system') {
-        console.warn(`Save version mismatch: ${parsedState.saveVersion}. Expected: 2.1-graphics-system. Discarding save.`);
+    if (parsedState.saveVersion === '2.1-graphics-system') {
+        // Migrate to device detection version
+        parsedState.deviceInfo = {
+            isMobile: false,
+            isDesktop: true,
+            screenWidth: 0,
+            screenHeight: 0,
+            userAgent: '',
+            hasTouchSupport: false,
+            lastDetectionTime: 0
+        };
+        parsedState.saveVersion = '2.2-device-detection';
+    }
+    if (parsedState.saveVersion !== '2.2-device-detection') {
+        console.warn(`Save version mismatch: ${parsedState.saveVersion}. Expected: 2.2-device-detection. Discarding save.`);
         localStorage.removeItem('cosmicGardenerState');
         return;
     }
@@ -213,36 +222,29 @@ export function loadGame() {
     }
     // Apply loaded graphics settings and initialize graphics systems
     if (gameState.graphics) {
-        // 🔧 Ensure preset is set to custom to prevent auto-overrides
-        if (gameState.graphics.preset !== 'custom') {
-            console.log(`🔧 Setting graphics preset to 'custom' to preserve loaded settings`);
-            gameState.graphics.preset = 'custom';
-        }
-        
-        // Use the global graphicsEngine (set in main.js) for synchronous application
+        // Check if graphicsEngine is already available (synchronous path)
         if (window.graphicsEngine) {
-            console.log(`🎨 Using global graphicsEngine for synchronous settings application`);
+            console.log(`🎨 Using existing graphicsEngine for settings application`);
             window.graphicsEngine.applyAllSettings();
-        } else {
-            console.warn(`⚠️ graphicsEngine not available - settings application skipped`);
         }
-        
-        // Initialize performance monitor (keep async as it's not critical for canvas sizing)
+        else {
+            // Fallback to dynamic import (asynchronous path)
+            console.log(`🎨 Loading graphicsEngine via dynamic import`);
+            import('./graphicsEngine.js').then(({ graphicsEngine }) => {
+                graphicsEngine.applyAllSettings();
+            });
+        }
+        // Initialize performance monitor
         import('./performanceMonitor.js').then(({ performanceMonitor }) => {
             performanceMonitor.startMonitoring();
         });
-        // Update UI to reflect loaded settings (keep async as it's not critical for canvas sizing)
+        // Update UI to reflect loaded settings
         import('./ui.js').then(({ updateGraphicsUI }) => {
             updateGraphicsUI();
         });
-        console.log(`📊 Graphics settings loaded: ${gameState.graphics.preset} preset, resolutionScale: ${gameState.graphics.resolutionScale}`);
+        console.log(`📊 Graphics settings loaded: ${gameState.graphics.preset} preset`);
     }
     else {
         console.warn('⚠️ No graphics settings found in save data, using defaults');
-        // 🔧 Apply default graphics settings for fresh start
-        if (window.graphicsEngine) {
-            console.log('🎨 Applying default graphics settings for fresh start');
-            window.graphicsEngine.applyAllSettings();
-        }
     }
 }

@@ -104,7 +104,7 @@ function animate() {
     }
     
     const deltaTime = rawDeltaTime * timeMultiplier;
-    const animationDeltaTime = deltaTime * 0.05;
+    const animationDeltaTime = deltaTime * 0.2;
     
     if (!isFinite(animationDeltaTime) || animationDeltaTime <= 0) {
         console.warn('Invalid animationDeltaTime:', { rawDeltaTime, timeMultiplier, deltaTime, animationDeltaTime, currentTimeMultiplier: gameState.currentTimeMultiplier });
@@ -228,9 +228,10 @@ function animate() {
     if (keys.d) camera.position.x += moveSpeed * animationDeltaTime;
 
     if (gameState.focusedObject) {
-        const offset = camera.position.clone().sub(controls.target);
-        controls.target.lerp(gameState.focusedObject.position, 0.05);
-        camera.position.copy(controls.target).add(offset);
+        const targetPosition = gameState.focusedObject.position.clone();
+        
+        // フォーカス対象への滑らかな移動のみ（距離調整は行わない）
+        controls.target.lerp(targetPosition, 0.05);
     }
 
     const edgeGlow = scene.getObjectByName('black_hole_edge_glow');

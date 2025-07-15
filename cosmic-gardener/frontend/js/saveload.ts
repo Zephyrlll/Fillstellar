@@ -42,7 +42,7 @@ export function saveGame() {
     savableState.conversionEngineState = conversionEngine.saveState();
     
     // Update save version for new resource system and graphics settings
-    savableState.saveVersion = '2.1-graphics-system';
+    savableState.saveVersion = '2.2-device-detection';
 
     localStorage.setItem('cosmicGardenerState', JSON.stringify(savableState));
 }
@@ -124,8 +124,22 @@ export function loadGame() {
         parsedState.saveVersion = '2.1-graphics-system';
     }
     
-    if (parsedState.saveVersion !== '2.1-graphics-system') {
-        console.warn(`Save version mismatch: ${parsedState.saveVersion}. Expected: 2.1-graphics-system. Discarding save.`);
+    if (parsedState.saveVersion === '2.1-graphics-system') {
+        // Migrate to device detection version
+        parsedState.deviceInfo = {
+            isMobile: false,
+            isDesktop: true,
+            screenWidth: 0,
+            screenHeight: 0,
+            userAgent: '',
+            hasTouchSupport: false,
+            lastDetectionTime: 0
+        };
+        parsedState.saveVersion = '2.2-device-detection';
+    }
+    
+    if (parsedState.saveVersion !== '2.2-device-detection') {
+        console.warn(`Save version mismatch: ${parsedState.saveVersion}. Expected: 2.2-device-detection. Discarding save.`);
         localStorage.removeItem('cosmicGardenerState');
         return;
     }

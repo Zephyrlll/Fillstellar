@@ -132,3 +132,5 @@ Services run on:
 - PostgreSQL: Port 5432
 - Redis: Port 6379
 - Monitoring: Grafana (3001), Prometheus (9090)
+
+あなたは絶対git操作をしないでください。

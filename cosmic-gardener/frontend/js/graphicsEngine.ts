@@ -522,6 +522,20 @@ class LODSystem {
             default: return 1.0;
         }
     }
+    
+    // Force resolution update (used by resize workaround)
+    forceResolutionUpdate(): void {
+        console.log('🔧 Force resolution update called');
+        this.applyResolutionScale(gameState.graphics.resolutionScale);
+    }
+    
+    // Reset camera for initialization (used during startup)
+    resetCameraForInitialization(): void {
+        console.log('📹 Camera reset for initialization called');
+        // This is a placeholder - actual camera reset logic would go here
+        // For now, we'll just ensure resolution is applied
+        this.applyResolutionScale(gameState.graphics.resolutionScale);
+    }
 }
 
 // Create global instance

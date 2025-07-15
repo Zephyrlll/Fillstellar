@@ -991,5 +991,87 @@ export function setupEventListeners() {
         });
     }
 
+    // Time acceleration event handlers
+    const timeMultiplierSelect = document.getElementById('timeMultiplierSelect') as HTMLSelectElement;
+    const timeMultiplier2xButton = document.getElementById('timeMultiplier2xButton') as HTMLButtonElement;
+    const timeMultiplier5xButton = document.getElementById('timeMultiplier5xButton') as HTMLButtonElement;
+    const timeMultiplier10xButton = document.getElementById('timeMultiplier10xButton') as HTMLButtonElement;
+    
+    if (timeMultiplierSelect) {
+        timeMultiplierSelect.addEventListener('change', (event) => {
+            const target = event.target as HTMLSelectElement;
+            const selectedMultiplier = target.value + 'x';
+            if (gameState.unlockedTimeMultipliers[selectedMultiplier] || selectedMultiplier === '1x') {
+                gameState.currentTimeMultiplier = selectedMultiplier;
+                saveGame();
+                updateUI();
+                showMessage(`時間倍率を${selectedMultiplier}に設定しました`);
+            }
+        });
+    }
+    
+    if (timeMultiplier2xButton) {
+        timeMultiplier2xButton.addEventListener('click', () => {
+            const cost = gameState.timeMultiplierCosts['2x'];
+            if (gameState.thoughtPoints >= cost && !gameState.unlockedTimeMultipliers['2x']) {
+                gameState.thoughtPoints -= cost;
+                gameState.resources.thoughtPoints -= cost;
+                gameState.unlockedTimeMultipliers['2x'] = true;
+                updateUI();
+                saveGame();
+                showMessage('2x時間加速をアンロックしました！');
+            }
+        });
+    }
+    
+    if (timeMultiplier5xButton) {
+        timeMultiplier5xButton.addEventListener('click', () => {
+            const cost = gameState.timeMultiplierCosts['5x'];
+            if (gameState.thoughtPoints >= cost && !gameState.unlockedTimeMultipliers['5x']) {
+                gameState.thoughtPoints -= cost;
+                gameState.resources.thoughtPoints -= cost;
+                gameState.unlockedTimeMultipliers['5x'] = true;
+                updateUI();
+                saveGame();
+                showMessage('5x時間加速をアンロックしました！');
+            }
+        });
+    }
+    
+    if (timeMultiplier10xButton) {
+        timeMultiplier10xButton.addEventListener('click', () => {
+            const cost = gameState.timeMultiplierCosts['10x'];
+            if (gameState.thoughtPoints >= cost && !gameState.unlockedTimeMultipliers['10x']) {
+                gameState.thoughtPoints -= cost;
+                gameState.resources.thoughtPoints -= cost;
+                gameState.unlockedTimeMultipliers['10x'] = true;
+                updateUI();
+                saveGame();
+                showMessage('10x時間加速をアンロックしました！');
+            }
+        });
+    }
+
+    // Camera reset button
+    const resetCameraButton = document.getElementById('resetCameraButton') as HTMLButtonElement;
+    if (resetCameraButton) {
+        resetCameraButton.addEventListener('click', () => {
+            // Import controls from threeSetup
+            import('./threeSetup.js').then(({ camera, controls }) => {
+                // Reset camera to default position
+                camera.position.set(0, 0, 2000);
+                controls.target.set(0, 0, 0);
+                
+                // Reset focused object
+                gameState.focusedObject = null;
+                
+                // Update controls
+                controls.update();
+                
+                showMessage('カメラ位置をリセットしました');
+            });
+        });
+    }
+
     const setupInfoPanel = createInfoPanel();
 }

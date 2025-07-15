@@ -108,6 +108,7 @@ export const ui: { [key: string]: HTMLElement | null } = {
     overlayCosmicActivity: document.getElementById('overlayCosmicActivity'),
     overlayPopulation: document.getElementById('overlayPopulation'),
     resetGameButton: document.getElementById('resetGameButton'),
+    resetCameraButton: document.getElementById('resetCameraButton'),
     gravitySlider: document.getElementById('gravitySlider'),
     gravityValue: document.getElementById('gravityValue'),
     simulationSpeedSlider: document.getElementById('simulationSpeedSlider'),
@@ -336,6 +337,9 @@ export function updateUI() {
         previousUIValues.unlockedBodies.star = unlockedCelestialBodies.star;
     }
 
+    // Update time acceleration UI
+    updateTimeAccelerationUI();
+
     // 右下のオーバーレイパネルの更新
     if (ui.overlayCosmicDust) ui.overlayCosmicDust.textContent = String(currentCosmicDust);
     if (ui.overlayEnergy) ui.overlayEnergy.textContent = String(currentEnergy);
@@ -347,9 +351,49 @@ export function updateUI() {
     if (ui.overlayCosmicActivity) ui.overlayCosmicActivity.textContent = String(cosmicActivity);
     
     // 総人口の表示
-    if (ui.overlayPopulation) ui.overlayPopulation.textContent = String(cachedTotalPopulation || 0);
+    if (ui.overlayPopulation) ui.overlayPopulation.textContent = Math.floor(cachedTotalPopulation || 0).toLocaleString();
     
     updateFocusedBodyUI();
+}
+
+function updateTimeAccelerationUI() {
+    const timeMultiplierSelect = document.getElementById('timeMultiplierSelect') as HTMLSelectElement;
+    const timeMultiplier2xCost = document.getElementById('timeMultiplier2xCost') as HTMLSpanElement;
+    const timeMultiplier5xCost = document.getElementById('timeMultiplier5xCost') as HTMLSpanElement;
+    const timeMultiplier10xCost = document.getElementById('timeMultiplier10xCost') as HTMLSpanElement;
+    const timeMultiplier2xStatus = document.getElementById('timeMultiplier2xStatus') as HTMLSpanElement;
+    const timeMultiplier5xStatus = document.getElementById('timeMultiplier5xStatus') as HTMLSpanElement;
+    const timeMultiplier10xStatus = document.getElementById('timeMultiplier10xStatus') as HTMLSpanElement;
+    const timeMultiplier2xButton = document.getElementById('timeMultiplier2xButton') as HTMLButtonElement;
+    const timeMultiplier5xButton = document.getElementById('timeMultiplier5xButton') as HTMLButtonElement;
+    const timeMultiplier10xButton = document.getElementById('timeMultiplier10xButton') as HTMLButtonElement;
+    
+    if (timeMultiplierSelect) {
+        timeMultiplierSelect.value = gameState.currentTimeMultiplier.replace('x', '');
+        
+        // Enable/disable options based on unlocked status
+        const options = timeMultiplierSelect.querySelectorAll('option');
+        options.forEach(option => {
+            const value = option.value + 'x';
+            if (value === '1x' || gameState.unlockedTimeMultipliers[value]) {
+                option.disabled = false;
+            } else {
+                option.disabled = true;
+            }
+        });
+    }
+    
+    if (timeMultiplier2xCost) timeMultiplier2xCost.textContent = String(gameState.timeMultiplierCosts['2x']);
+    if (timeMultiplier5xCost) timeMultiplier5xCost.textContent = String(gameState.timeMultiplierCosts['5x']);
+    if (timeMultiplier10xCost) timeMultiplier10xCost.textContent = String(gameState.timeMultiplierCosts['10x']);
+    
+    if (timeMultiplier2xStatus) timeMultiplier2xStatus.textContent = gameState.unlockedTimeMultipliers['2x'] ? '完了' : '未完了';
+    if (timeMultiplier5xStatus) timeMultiplier5xStatus.textContent = gameState.unlockedTimeMultipliers['5x'] ? '完了' : '未完了';
+    if (timeMultiplier10xStatus) timeMultiplier10xStatus.textContent = gameState.unlockedTimeMultipliers['10x'] ? '完了' : '未完了';
+    
+    if (timeMultiplier2xButton) timeMultiplier2xButton.disabled = gameState.unlockedTimeMultipliers['2x'] || gameState.thoughtPoints < gameState.timeMultiplierCosts['2x'];
+    if (timeMultiplier5xButton) timeMultiplier5xButton.disabled = gameState.unlockedTimeMultipliers['5x'] || gameState.thoughtPoints < gameState.timeMultiplierCosts['5x'];
+    if (timeMultiplier10xButton) timeMultiplier10xButton.disabled = gameState.unlockedTimeMultipliers['10x'] || gameState.thoughtPoints < gameState.timeMultiplierCosts['10x'];
 }
 
 export function switchTab(activeTab: string) {

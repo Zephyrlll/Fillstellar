@@ -213,6 +213,16 @@ export interface GameState {
         galacticCredits: number;          // ハードカレンシー
         ancientRelics: number;            // プレミアム通貨
     };
+    // Device detection
+    deviceInfo?: {
+        isMobile: boolean;
+        isDesktop: boolean;
+        screenWidth: number;
+        screenHeight: number;
+        userAgent: string;
+        hasTouchSupport: boolean;
+        lastDetectionTime: number;
+    };
 }
 
 // --- Game State Initialization ---
@@ -341,7 +351,16 @@ export const gameState: GameState = {
     },
     advancedResources: {},
     discoveredTechnologies: new Set<string>(),
-    availableFacilities: new Set<string>(['basic_converter'])
+    availableFacilities: new Set<string>(['basic_converter']),
+    deviceInfo: {
+        isMobile: false,
+        isDesktop: true,
+        screenWidth: 0,
+        screenHeight: 0,
+        userAgent: '',
+        hasTouchSupport: false,
+        lastDetectionTime: 0
+    }
 };
 
 // --- Graphics Presets ---

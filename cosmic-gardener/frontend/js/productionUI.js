@@ -8,7 +8,7 @@ import { resourceParticleSystem } from './resourceParticles.js';
 import { isProductionPanelVisible } from './ui.js';
 import { getResourceTier, getTierColor } from './resourceTiers.js';
 let lastProductionUIUpdate = 0;
-const PRODUCTION_UI_UPDATE_INTERVAL = 100; // 0.1 seconds
+const PRODUCTION_UI_UPDATE_INTERVAL = 500; // 0.5 seconds for better performance
 // UI Elements
 let advancedResourcesDisplay;
 let conversionRecipesList;

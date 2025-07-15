@@ -40,6 +40,153 @@
     </div>
   </div>
 
+  <!-- モバイル専用ナビゲーションバー -->
+  <div id="mobile-nav-bar">
+    <div id="mobile-nav-left">
+      <div id="year-display-nav">年: <span id="gameYear-nav">0</span></div>
+    </div>
+    <div id="mobile-nav-center">
+      <button id="productionToggleButton-mobile" class="mobile-nav-btn production-btn" title="生産システムを開く">
+        🏭
+      </button>
+      <button id="floatingResourceSellButton-mobile" class="mobile-nav-btn sell-btn" title="資源を販売">
+        💰
+      </button>
+    </div>
+    <div id="mobile-nav-right">
+      <div id="resource-summary-nav">
+        <span id="dust-nav">塵: <span id="dust-value-nav">0</span></span>
+        <span id="energy-nav">E: <span id="energy-value-nav">0</span></span>
+        <button id="mobile-info-toggle" class="mobile-info-btn">ℹ️</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- モバイル専用タブナビゲーション -->
+  <div id="mobile-tab-nav">
+    <button id="gameTab-mobile" class="mobile-tab active-mobile-tab">ゲーム</button>
+    <button id="researchTab-mobile" class="mobile-tab">研究</button>
+    <button id="optionsTab-mobile" class="mobile-tab">設定</button>
+    <button id="starTab-mobile" class="mobile-tab">恒星</button>
+  </div>
+
+  <!-- モバイル専用コンテンツエリア -->
+  <div id="mobile-content-area">
+    <div id="mobile-game-content" class="mobile-content active-mobile-content">
+      <div class="mobile-content-header">
+        <h3>🎮 ゲーム</h3>
+        <button class="mobile-close-btn" onclick="closeMobileModal()">×</button>
+      </div>
+      <div class="mobile-content-body">
+        <p style="text-align: center; color: #FFD700; font-size: 14px; margin: 20px;">
+          ゲーム機能はナビゲーションバーの 🏭 と 💰 ボタンから利用できます
+        </p>
+        <div style="padding: 20px;">
+          <h4 style="color: #4a9eff;">主要機能:</h4>
+          <ul style="color: #ccc; margin-left: 20px;">
+            <li>🏭 生産システム</li>
+            <li>💰 資源販売</li>
+            <li>⭐ 天体作成</li>
+            <li>🌌 宇宙探索</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div id="mobile-research-content" class="mobile-content">
+      <div class="mobile-content-header">
+        <h3>🔬 研究</h3>
+        <button class="mobile-close-btn" onclick="closeMobileModal()">×</button>
+      </div>
+      <div class="mobile-content-body">
+        <p style="text-align: center; color: #FFD700; font-size: 14px; margin: 20px;">
+          研究システム（開発中）
+        </p>
+        <div style="padding: 20px;">
+          <h4 style="color: #4a9eff;">予定機能:</h4>
+          <ul style="color: #ccc; margin-left: 20px;">
+            <li>🧬 生命進化研究</li>
+            <li>⚛️ 物理法則研究</li>
+            <li>🌟 恒星技術研究</li>
+            <li>🚀 宇宙航行技術</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div id="mobile-options-content" class="mobile-content">
+      <div class="mobile-content-header">
+        <h3>⚙️ 設定</h3>
+        <button class="mobile-close-btn" onclick="closeMobileModal()">×</button>
+      </div>
+      <div class="mobile-content-body">
+        <div style="padding: 20px;">
+          <h4 style="color: #4a9eff;">グラフィック設定:</h4>
+          <ul style="color: #ccc; margin-left: 20px;">
+            <li>🎨 解像度スケール</li>
+            <li>⭐ パーティクル密度</li>
+            <li>🌟 エフェクト品質</li>
+          </ul>
+          <h4 style="color: #4a9eff; margin-top: 20px;">ゲーム設定:</h4>
+          <ul style="color: #ccc; margin-left: 20px;">
+            <li>🔊 サウンド音量</li>
+            <li>⏰ 自動セーブ</li>
+            <li>🎮 操作設定</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div id="mobile-star-content" class="mobile-content">
+      <div class="mobile-content-header">
+        <h3>⭐ 恒星管理</h3>
+        <button class="mobile-close-btn" onclick="closeMobileModal()">×</button>
+      </div>
+      <div class="mobile-content-body">
+        <div style="padding: 20px;">
+          <h4 style="color: #4a9eff;">管理機能:</h4>
+          <ul style="color: #ccc; margin-left: 20px;">
+            <li>🌟 恒星作成・削除</li>
+            <li>🪐 惑星軌道調整</li>
+            <li>⚡ エネルギー出力制御</li>
+            <li>🔥 恒星進化管理</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- モバイル専用コンパクト情報パネル -->
+  <div id="mobile-compact-info" class="mobile-compact-panel">
+    <div class="compact-info-header">
+      <span>詳細情報</span>
+      <button id="mobile-compact-close">×</button>
+    </div>
+    <div class="compact-info-content">
+      <div class="compact-info-row">
+        <span class="info-label">人口:</span>
+        <span id="mobile-population-value">0</span>
+      </div>
+      <div class="compact-info-row">
+        <span class="info-label">有機物:</span>
+        <span id="mobile-organic-value">0</span>
+      </div>
+      <div class="compact-info-row">
+        <span class="info-label">バイオマス:</span>
+        <span id="mobile-biomass-value">0</span>
+      </div>
+      <div class="compact-info-row">
+        <span class="info-label">思考P:</span>
+        <span id="mobile-thought-value">0</span>
+      </div>
+      <div class="compact-info-row">
+        <span class="info-label">ダーク:</span>
+        <span id="mobile-dark-value">0</span>
+      </div>
+      <div class="compact-info-row">
+        <span class="info-label">天体数:</span>
+        <span id="mobile-star-count">0</span>
+      </div>
+    </div>
+  </div>
+
   <!-- 上部中央の情報表示 -->
   <div id="info-container">
     <div id="year-display">年: <span id="gameYear">0</span></div>
@@ -81,6 +228,9 @@
 
     <!-- 左側のUIエリア -->
     <div id="ui-area">
+      <!-- モバイル用開閉ボタン -->
+      <button id="mobile-toggle-btn">▼</button>
+      
       <div id="tab-buttons">
         <button id="gameTabButton" class="active-tab">ゲーム</button>
         <button id="researchTabButton">研究</button>
@@ -93,15 +243,9 @@
       <div id="game-screen">
         <div id="ui-panel">
           <h1>Cosmic Gardener</h1>
-          <div id="resource-display">
-             <p>宇宙の塵: <span id="resource-cosmicDust">0</span></p>
-             <p class="dust-rate">入手速度: <span id="dustRate">0</span>/秒</p>
-             <p>エネルギー: <span id="resource-energy">0</span></p>
-             <p>有機物: <span id="resource-organicMatter">0</span></p>
-             <p>バイオマス: <span id="resource-biomass">0</span></p>
-             <p>ダークマター: <span id="resource-darkMatter">0</span></p>
-             <p>思考ポイント: <span id="resource-thoughtPoints">0</span></p>
-             <p>天体の数: <span id="starCount">0</span></p>
+          <div id="compact-info-message">
+            <p>リソース情報は右上の ℹ️ ボタンで確認できます</p>
+            <p>天体の数: <span id="starCount">0</span></p>
           </div>
 
 
@@ -402,11 +546,15 @@
                       <div class="option-item">
                           <label for="uiAnimationsSelect">UIアニメーション:</label>
                           <select id="uiAnimationsSelect">
-                              <option value="smooth">スムーズ</option>
-                              <option value="standard" selected>標準</option>
-                              <option value="simple">シンプル</option>
-                              <option value="off">オフ</option>
+                              <option value="smooth">スムーズ - 高品質なアニメーション（重い）</option>
+                              <option value="standard" selected>標準 - バランスの取れた品質（推奨）</option>
+                              <option value="simple">シンプル - 基本的なアニメーションのみ（軽い）</option>
+                              <option value="off">オフ - アニメーションなし（最軽量）</option>
                           </select>
+                      </div>
+                      
+                      <div class="option-item">
+                          <button id="resetCameraButton" class="reset-button">カメラ位置をリセット</button>
                       </div>
                       
                   </div>
@@ -442,35 +590,6 @@
                 </div>
               </div>
 
-              <div class="collapsible-section">
-                <div class="collapsible-header" id="physicsHeader">🌌 物理設定</div>
-                <div class="collapsible-content hidden" id="physicsContent">
-                    <div class="option-item">
-                        <label for="gravitySlider">万有引力定数 G: <span id="gravityValue">100</span></label>
-                        <div class="slider-container">
-                            <input type="range" id="gravitySlider" min="0" max="1000" value="100" step="1">
-                        </div>
-                    </div>
-                    <div class="option-item">
-                        <label for="simulationSpeedSlider">シミュレーション速度: <span id="simulationSpeedValue">1</span>x</label>
-                        <div class="slider-container">
-                            <input type="range" id="simulationSpeedSlider" min="0.1" max="5" value="1" step="0.1">
-                        </div>
-                    </div>
-                    <div class="option-item">
-                        <label for="dragSlider">宇宙抵抗: <span id="dragValue">0.01</span></label>
-                        <div class="slider-container">
-                            <input type="range" id="dragSlider" min="0" max="0.1" value="0.01" step="0.001">
-                        </div>
-                    </div>
-                    <div class="option-item">
-                        <label for="collisionDetectionCheckbox">
-                            <input type="checkbox" id="collisionDetectionCheckbox" checked>
-                            天体衝突システムを有効にする
-                        </label>
-                    </div>
-                </div>
-              </div>
 
               <div class="collapsible-section">
                 <div class="collapsible-header" id="soundHeader">🔊 サウンド設定</div>

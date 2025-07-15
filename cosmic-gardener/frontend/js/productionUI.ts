@@ -18,7 +18,7 @@ import { getResourceTier, getTierColor, RESOURCE_TIERS } from './resourceTiers.j
 import { productionChainUI } from './productionChainUI.js';
 
 let lastProductionUIUpdate = 0;
-const PRODUCTION_UI_UPDATE_INTERVAL = 100; // 0.1 seconds
+const PRODUCTION_UI_UPDATE_INTERVAL = 500; // 0.5 seconds for better performance
 
 // UI Elements
 let advancedResourcesDisplay: HTMLElement | null;
