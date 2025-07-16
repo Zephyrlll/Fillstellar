@@ -4,12 +4,13 @@
     "target": "ESNext",
     "module": "ESNext",
     "lib": ["ESNext", "DOM", "DOM.Iterable"],
-    "outDir": "./dist",
+    "outDir": "./",
     "strict": true,
     "moduleResolution": "node",
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "rootDir": "./"
   },
-  "include": ["**/*.ts"]
+  "include": ["js/**/*.ts"]
 }

@@ -25,8 +25,26 @@ export enum CatalystEffect {
     BYPRODUCT_CHANCE = "byproductChance",
 }
 
+// Catalyst Definition Interface
+export interface CatalystDefinition {
+    id: CatalystType;
+    name: string;
+    description: string;
+    icon: string;
+    tier: number;
+    duration: number;
+    effects: Partial<Record<CatalystEffect, number>>;
+    cost: {
+        resources: Array<{ type: ResourceType; amount: number }>;
+    };
+    requirements?: {
+        technology?: string[];
+        facilities?: string[];
+    };
+}
+
 // Catalyst Definitions
-export const CATALYST_DEFINITIONS: any = {
+export const CATALYST_DEFINITIONS: Record<string, CatalystDefinition> = {
     [CatalystType.EFFICIENCY_BOOSTER as string]: {
         id: CatalystType.EFFICIENCY_BOOSTER,
         name: '効率促進剤',
@@ -410,12 +428,12 @@ export function getCatalystDefinition(catalystType: CatalystType) {
     return CATALYST_DEFINITIONS[catalystType];
 }
 
-export function getAvailableCatalysts(discoveredTechnologies: Set<string>) {
+export function getAvailableCatalysts(discoveredTechnologies: Set<string>): CatalystDefinition[] {
     return Object.values(CATALYST_DEFINITIONS).filter(catalyst => {
         if (!catalyst.requirements?.technology) {
             return true;
         }
-        return catalyst.requirements.technology.every((tech: string) => 
+        return catalyst.requirements.technology.every(tech => 
             discoveredTechnologies.has(tech)
         );
     });

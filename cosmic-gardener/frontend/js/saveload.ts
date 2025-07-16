@@ -5,9 +5,30 @@ import { createCelestialBody } from './celestialBody.js';
 import { scene } from './threeSetup.js';
 import { conversionEngine } from './conversionEngine.js';
 
-export function saveGame() {
-    const savableStars = gameState.stars.map(star => {
-        const { tail, ...serializableUserData } = star.userData as any;
+interface SavedStar {
+    position: number[];
+    uuid: string;
+    userData: Partial<any>;
+}
+
+interface SavedGameState extends Omit<GameState, 'stars' | 'focusedObject' | 'discoveredTechnologies' | 'availableFacilities'> {
+    stars: SavedStar[];
+    focusedObjectUUID?: string;
+    discoveredTechnologies: string[];
+    availableFacilities: string[];
+    conversionEngineState?: any;
+    saveVersion: string;
+}
+
+export function saveGame(): void {
+    try {
+        const savableStars = gameState.stars.map(star => {
+            if (!star || !star.userData) {
+                console.warn('[SAVELOAD] Skipping invalid star');
+                return null;
+            }
+            
+            const { tail, ...serializableUserData } = star.userData as Record<string, any>;
 
         const safeVelocity = serializableUserData.velocity && isFinite(serializableUserData.velocity.x) && isFinite(serializableUserData.velocity.y) && isFinite(serializableUserData.velocity.z) 
             ? serializableUserData.velocity.toArray() 
@@ -16,51 +37,66 @@ export function saveGame() {
             ? serializableUserData.acceleration.toArray()
             : [0, 0, 0];
 
-        return {
-            position: star.position.toArray(),
-            uuid: star.uuid,
-            userData: {
-                ...serializableUserData,
-                velocity: safeVelocity,
-                acceleration: safeAcceleration
-            }
+            return {
+                position: star.position.toArray(),
+                uuid: star.uuid,
+                userData: {
+                    ...serializableUserData,
+                    velocity: safeVelocity,
+                    acceleration: safeAcceleration
+                }
+            };
+        }).filter(star => star !== null) as SavedStar[];
+
+        const savableState: SavedGameState = { 
+            ...gameState, 
+            stars: savableStars,
+            discoveredTechnologies: [],
+            availableFacilities: [],
+            saveVersion: '2.2-device-detection'
         };
-    });
 
-    const savableState: any = { ...gameState, stars: savableStars };
-
-    if (savableState.focusedObject && savableState.focusedObject.uuid) {
-        savableState.focusedObjectUUID = savableState.focusedObject.uuid;
+        if (gameState.focusedObject && gameState.focusedObject.uuid) {
+            savableState.focusedObjectUUID = gameState.focusedObject.uuid;
+        }
+    
+        // Convert Sets to Arrays for serialization
+        savableState.discoveredTechnologies = Array.from(gameState.discoveredTechnologies);
+        savableState.availableFacilities = Array.from(gameState.availableFacilities);
+        
+        // Save conversion engine state
+        savableState.conversionEngineState = conversionEngine.saveState();
+        
+        localStorage.setItem('cosmicGardenerState', JSON.stringify(savableState));
+        console.log('[SAVELOAD] Game saved successfully');
+    } catch (error) {
+        console.error('[SAVELOAD] Failed to save game:', error);
     }
-    delete savableState.focusedObject;
-    
-    // Convert Sets to Arrays for serialization
-    savableState.discoveredTechnologies = Array.from(gameState.discoveredTechnologies);
-    savableState.availableFacilities = Array.from(gameState.availableFacilities);
-    
-    // Save conversion engine state
-    savableState.conversionEngineState = conversionEngine.saveState();
-    
-    // Update save version for new resource system and graphics settings
-    savableState.saveVersion = '2.2-device-detection';
-
-    localStorage.setItem('cosmicGardenerState', JSON.stringify(savableState));
 }
 
-export function loadGame() {
+export function loadGame(): void {
     const savedState = localStorage.getItem('cosmicGardenerState');
-    if (!savedState) return;
-
-    let parsedState: any;
-    try {
-        parsedState = JSON.parse(savedState);
-    } catch (e) {
-        console.error("Failed to parse saved state:", e);
+    if (!savedState) {
+        console.log('[SAVELOAD] No saved game found');
         return;
     }
 
-    // Handle save version migration
-    if (parsedState.saveVersion === '1.6-accumulator') {
+    let parsedState: SavedGameState;
+    try {
+        parsedState = JSON.parse(savedState);
+    } catch (e) {
+        console.error('[SAVELOAD] Failed to parse saved state:', e);
+        return;
+    }
+    
+    if (!parsedState) {
+        console.error('[SAVELOAD] Parsed state is null');
+        return;
+    }
+
+    try {
+        // Handle save version migration
+        if (parsedState.saveVersion === '1.6-accumulator') {
         // Migrate from old version to new version with resources
         parsedState.resources = {
             cosmicDust: parsedState.cosmicDust || 0,
@@ -138,28 +174,36 @@ export function loadGame() {
         parsedState.saveVersion = '2.2-device-detection';
     }
     
-    if (parsedState.saveVersion !== '2.2-device-detection') {
-        console.warn(`Save version mismatch: ${parsedState.saveVersion}. Expected: 2.2-device-detection. Discarding save.`);
-        localStorage.removeItem('cosmicGardenerState');
-        return;
-    }
+        if (parsedState.saveVersion !== '2.2-device-detection') {
+            console.warn('[SAVELOAD] Save version mismatch:', parsedState.saveVersion, 'Expected: 2.2-device-detection. Discarding save.');
+            localStorage.removeItem('cosmicGardenerState');
+            return;
+        }
 
-    const { stars, focusedObjectUUID, discoveredTechnologies, availableFacilities, conversionEngineState, ...restOfState } = parsedState;
-    Object.assign(gameState, restOfState);
-    
-    // Restore Sets from Arrays
-    gameState.discoveredTechnologies = new Set(discoveredTechnologies || []);
-    gameState.availableFacilities = new Set(availableFacilities || ['basic_converter']);
-    
-    // Restore conversion engine state
-    if (conversionEngineState) {
-        conversionEngine.loadState(conversionEngineState);
-    }
-    
-    gameState.focusedObject = null;
+        const { stars, focusedObjectUUID, discoveredTechnologies, availableFacilities, conversionEngineState, ...restOfState } = parsedState;
+        Object.assign(gameState, restOfState);
+        
+        // Restore Sets from Arrays
+        gameState.discoveredTechnologies = new Set(discoveredTechnologies || []);
+        gameState.availableFacilities = new Set(availableFacilities || ['basic_converter']);
+        
+        // Restore conversion engine state
+        if (conversionEngineState) {
+            conversionEngine.loadState(conversionEngineState);
+        }
+        
+        gameState.focusedObject = null;
 
-    gameState.stars.forEach(star => removeAndDispose(star));
-    gameState.stars = stars.map((starData: any) => {
+        // Clear existing stars
+        gameState.stars.forEach(star => {
+            if (star) removeAndDispose(star);
+        });
+        
+        gameState.stars = stars.map((starData: SavedStar) => {
+            if (!starData || !starData.userData) {
+                console.warn('[SAVELOAD] Skipping invalid star data');
+                return null;
+            }
         const safePosition = starData.position && Array.isArray(starData.position) && starData.position.length >= 3
             ? starData.position
             : [0, 0, 0];
@@ -184,14 +228,19 @@ export function loadGame() {
             acceleration.set(0, 0, 0);
         }
         
-        const body = createCelestialBody(starData.userData.type, {
-            position: position,
-            velocity: velocity,
-            isLoading: true,
-            userData: { ...starData.userData, acceleration: acceleration }
-        });
-        
-        if(starData.uuid) body.uuid = starData.uuid;
+            const body = createCelestialBody(starData.userData.type, {
+                position: position,
+                velocity: velocity,
+                isLoading: true,
+                userData: { ...starData.userData, acceleration: acceleration }
+            });
+            
+            if (!body) {
+                console.error('[SAVELOAD] Failed to create celestial body');
+                return null;
+            }
+            
+            if(starData.uuid) body.uuid = starData.uuid;
 
         if (starData.userData.type === 'planet' && (starData.userData as PlanetUserData).hasLife) {
             const auraMaterial = celestialObjectPools.getMaterial('lifeAura');
@@ -200,8 +249,9 @@ export function loadGame() {
             const auraSphere = new THREE.Mesh(auraGeometry, auraMaterial);
             auraSphere.scale.set(radius * 1.1, radius * 1.1, radius * 1.1);
             auraSphere.name = 'life_aura';
-            (auraSphere.userData as any).originalRadius = radius * 1.1;
-            (auraSphere.userData as any).materialType = 'lifeAura';
+            if (!auraSphere.userData) auraSphere.userData = {};
+            auraSphere.userData.originalRadius = radius * 1.1;
+            auraSphere.userData.materialType = 'lifeAura';
             body.add(auraSphere);
         }
         if (starData.userData.type === 'planet' && (starData.userData as PlanetUserData).lifeStage === 'intelligent') {
@@ -211,67 +261,82 @@ export function loadGame() {
                 const canvas = texture.image;
                 const context = canvas.getContext('2d');
                 if (context) {
-                    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-                    const data = imageData.data;
-                    for (let i = 0; i < data.length; i += 4) {
-                        const brightness = (data[i] + data[i+1] + data[i+2]) / 3;
-                        if (brightness < 80 && Math.random() < 0.1) {
-                            data[i] = 255; data[i + 1] = 220; data[i + 2] = 180;
+                    try {
+                        const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+                        const data = imageData.data;
+                        for (let i = 0; i < data.length; i += 4) {
+                            const brightness = (data[i] + data[i+1] + data[i+2]) / 3;
+                            if (brightness < 80 && Math.random() < 0.1) {
+                                data[i] = 255; data[i + 1] = 220; data[i + 2] = 180;
+                            }
                         }
+                        context.putImageData(imageData, 0, 0);
+                        texture.needsUpdate = true;
+                    } catch (error) {
+                        console.error('[SAVELOAD] Failed to update planet texture:', error);
                     }
-                    context.putImageData(imageData, 0, 0);
-                    texture.needsUpdate = true;
                 }
             }
         }
         
-        scene.add(body);
-        return body;
-    });
+            scene.add(body);
+            return body;
+        }).filter(body => body !== null) as CelestialBody[];
     
     if (focusedObjectUUID) {
         gameState.focusedObject = gameState.stars.find(s => s.uuid === focusedObjectUUID) || null;
     }
 
-    if (gameState.statistics) {
-        gameState.statistics.lastUpdate = Date.now();
-        
-        if (gameState.statistics.resources) {
-            Object.keys(gameState.statistics.resources).forEach(resource => {
-                const stats = (gameState.statistics.resources as any)[resource];
-                if (stats) {
-                    stats.previousValue = (gameState as any)[resource] || 0;
-                }
-            });
+        if (gameState.statistics) {
+            gameState.statistics.lastUpdate = Date.now();
+            
+            if (gameState.statistics.resources) {
+                Object.keys(gameState.statistics.resources).forEach(resource => {
+                    const stats = gameState.statistics.resources[resource as keyof typeof gameState.statistics.resources];
+                    if (stats && 'previousValue' in stats) {
+                        stats.previousValue = gameState[resource as keyof GameState] as number || 0;
+                    }
+                });
+            }
         }
-    }
     
-    // Apply loaded graphics settings and initialize graphics systems
-    if (gameState.graphics) {
-        // Check if graphicsEngine is already available (synchronous path)
-        if ((window as any).graphicsEngine) {
-            console.log(`🎨 Using existing graphicsEngine for settings application`);
-            (window as any).graphicsEngine.applyAllSettings();
-        } else {
-            // Fallback to dynamic import (asynchronous path)
-            console.log(`🎨 Loading graphicsEngine via dynamic import`);
-            import('./graphicsEngine.js').then(({ graphicsEngine }) => {
-                graphicsEngine.applyAllSettings();
+        // Apply loaded graphics settings and initialize graphics systems
+        if (gameState.graphics) {
+            // Check if graphicsEngine is already available (synchronous path)
+            if ((window as any).graphicsEngine) {
+                console.log('[SAVELOAD] Using existing graphicsEngine for settings application');
+                (window as any).graphicsEngine.applyAllSettings();
+            } else {
+                // Fallback to dynamic import (asynchronous path)
+                console.log('[SAVELOAD] Loading graphicsEngine via dynamic import');
+                import('./graphicsEngine.js').then(({ graphicsEngine }) => {
+                    graphicsEngine.applyAllSettings();
+                }).catch(error => {
+                    console.error('[SAVELOAD] Failed to load graphics engine:', error);
+                });
+            }
+            
+            // Initialize performance monitor
+            import('./performanceMonitor.js').then(({ performanceMonitor }) => {
+                performanceMonitor.startMonitoring();
+            }).catch(error => {
+                console.error('[SAVELOAD] Failed to load performance monitor:', error);
             });
+            
+            // Update UI to reflect loaded settings
+            import('./ui.js').then(({ updateGraphicsUI }) => {
+                updateGraphicsUI();
+            }).catch(error => {
+                console.error('[SAVELOAD] Failed to update graphics UI:', error);
+            });
+            
+            console.log('[SAVELOAD] Graphics settings loaded:', gameState.graphics.preset, 'preset');
+        } else {
+            console.warn('[SAVELOAD] No graphics settings found in save data, using defaults');
         }
         
-        // Initialize performance monitor
-        import('./performanceMonitor.js').then(({ performanceMonitor }) => {
-            performanceMonitor.startMonitoring();
-        });
-        
-        // Update UI to reflect loaded settings
-        import('./ui.js').then(({ updateGraphicsUI }) => {
-            updateGraphicsUI();
-        });
-        
-        console.log(`📊 Graphics settings loaded: ${gameState.graphics.preset} preset`);
-    } else {
-        console.warn('⚠️ No graphics settings found in save data, using defaults');
+        console.log('[SAVELOAD] Game loaded successfully');
+    } catch (error) {
+        console.error('[SAVELOAD] Failed to load game:', error);
     }
 }

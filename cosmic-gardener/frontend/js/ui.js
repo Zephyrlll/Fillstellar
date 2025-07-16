@@ -115,7 +115,6 @@ export const ui = {
     graphicsQualitySelect: document.getElementById('graphicsQualitySelect'),
     // New graphics settings UI elements
     graphicsPresetSelect: document.getElementById('graphicsPresetSelect'),
-    resolutionScaleSelect: document.getElementById('resolutionScaleSelect'),
     resolutionScaleRange: document.getElementById('resolutionScaleRange'),
     resolutionScaleValue: document.getElementById('resolutionScaleValue'),
     textureQualitySelect: document.getElementById('textureQualitySelect'),
@@ -458,16 +457,15 @@ function updateTimeAccelerationUI() {
 }
 export function switchTab(activeTab) {
     console.log('📑 Switching to tab:', activeTab);
-    
     // Hide/show galaxy map toggle based on active tab
     if (ui.galaxyMapToggle) {
         if (activeTab === 'options' || activeTab === 'research' || activeTab === 'starManagement') {
             ui.galaxyMapToggle.style.display = 'none';
-        } else {
+        }
+        else {
             ui.galaxyMapToggle.style.display = 'flex';
         }
     }
-    
     if (ui.gameScreen)
         ui.gameScreen.classList.add('hidden-screen');
     if (ui.researchScreen)
@@ -603,7 +601,28 @@ function updateStarList() {
     };
     renderTable();
 }
-export function showMessage(message, duration = 2000) {
+export function showMessage(message, typeOrDuration = 2000) {
+    let duration = 2000;
+    let messageType = 'info';
+    if (typeof typeOrDuration === 'number') {
+        duration = typeOrDuration;
+    }
+    else {
+        messageType = typeOrDuration;
+        // Set duration based on message type
+        switch (messageType) {
+            case 'error':
+                duration = 5000;
+                break;
+            case 'warning':
+                duration = 3000;
+                break;
+            case 'success':
+                duration = 2000;
+                break;
+            default: duration = 2000;
+        }
+    }
     clearTimeout(messageTimeout);
     if (ui.messageText)
         ui.messageText.textContent = message;
@@ -747,10 +766,6 @@ export function updateGraphicsUI() {
         ui.graphicsPresetSelect.value = graphics.preset;
     }
     // Update resolution scale
-    if (ui.resolutionScaleSelect) {
-        const scalePercent = Math.round(graphics.resolutionScale * 100);
-        ui.resolutionScaleSelect.value = scalePercent.toString();
-    }
     if (ui.resolutionScaleRange && ui.resolutionScaleValue) {
         const scalePercent = Math.round(graphics.resolutionScale * 100);
         ui.resolutionScaleRange.value = scalePercent.toString();

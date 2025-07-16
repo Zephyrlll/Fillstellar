@@ -1,33 +1,27 @@
 // Advanced Resource Sell Modal System
-import { currencyManager, formatCurrency, CurrencyType } from './currencySystem.js';
+import { currencyManager, formatCurrency } from './currencySystem.js';
 import { marketSystem } from './marketSystem.js';
 import { gameState } from './state.js';
 import { showMessage } from './ui.js';
-
 // Show resource sell modal
 export function showResourceSellModal() {
     console.log('💰 Opening resource sell modal...');
-    
     // Create modal if it doesn't exist
     let modal = document.getElementById('resourceSellModal');
     if (!modal) {
         modal = createResourceSellModal();
         document.body.appendChild(modal);
     }
-    
     // Update modal content with current resources
     updateModalContent(modal);
-    
     // Show modal
     modal.style.display = 'flex';
 }
-
 // Create the modal HTML structure
 function createResourceSellModal() {
     const modal = document.createElement('div');
     modal.id = 'resourceSellModal';
     modal.className = 'resource-sell-modal';
-    
     modal.innerHTML = `
         <div class="resource-sell-modal-content">
             <div class="resource-sell-modal-header">
@@ -66,21 +60,18 @@ function createResourceSellModal() {
             </div>
         </div>
     `;
-    
     // Add click outside to close
     modal.addEventListener('click', (e) => {
         if (e.target === modal) {
             closeResourceSellModal();
         }
     });
-    
     // Add event listeners
     modal.addEventListener('change', (e) => {
         if (e.target.id === 'resourceTypeFilter') {
             updateResourceSellList(modal);
         }
     });
-    
     modal.addEventListener('click', (e) => {
         if (e.target.id === 'refreshMarketButton') {
             marketSystem.update();
@@ -88,10 +79,8 @@ function createResourceSellModal() {
             showMessage('市場情報を更新しました', 2000);
         }
     });
-    
     return modal;
 }
-
 // Update modal content with current resources and currencies
 function updateModalContent(modal) {
     updateMarketEvents(modal);
@@ -99,22 +88,20 @@ function updateModalContent(modal) {
     updateResourceSellList(modal);
     updateTradingSummary(modal);
 }
-
 // Update market events display
 function updateMarketEvents(modal) {
     const eventsContainer = modal.querySelector('#marketEventsDisplay');
+    if (!eventsContainer)
+        return;
     const activeEvents = Array.from(marketSystem.activeEvents);
-    
     if (activeEvents.length === 0) {
         eventsContainer.innerHTML = '<p class="no-events">現在、市場イベントは発生していません</p>';
         return;
     }
-    
     const html = activeEvents.map(event => {
-        const timeLeft = Math.max(0, event.endTime - Date.now());
+        const timeLeft = Math.max(0, (event.endTime || 0) - Date.now());
         const minutesLeft = Math.floor(timeLeft / 60000);
         const secondsLeft = Math.floor((timeLeft % 60000) / 1000);
-        
         return `
             <div class="market-event">
                 <div class="event-description">${event.description}</div>
@@ -122,19 +109,18 @@ function updateMarketEvents(modal) {
             </div>
         `;
     }).join('');
-    
     eventsContainer.innerHTML = html;
 }
-
 // Update currency display
 function updateCurrencyDisplay(modal) {
     const currencyGrid = modal.querySelector('#currencyDisplayGrid');
+    if (!currencyGrid)
+        return;
     const currencies = currencyManager.getAllCurrencies();
-    
     const html = Object.entries(currencies).map(([currencyType, amount]) => {
         const definition = currencyManager.constructor.CURRENCY_DEFINITIONS?.[currencyType];
-        if (!definition) return '';
-        
+        if (!definition)
+            return '';
         return `
             <div class="currency-item">
                 <span class="currency-icon">${definition.icon}</span>
@@ -143,19 +129,18 @@ function updateCurrencyDisplay(modal) {
             </div>
         `;
     }).join('');
-    
     currencyGrid.innerHTML = html;
 }
-
 // Update resource sell list
 function updateResourceSellList(modal) {
     const resourceList = modal.querySelector('#resourceSellList');
-    const filter = modal.querySelector('#resourceTypeFilter')?.value || 'all';
+    if (!resourceList)
+        return;
+    const filterElement = modal.querySelector('#resourceTypeFilter');
+    const filter = (filterElement?.value || 'all');
     const html = [];
-    
     // Get all tradeable resources
     const allResources = [];
-    
     // Basic resources
     const basicResources = ['cosmicDust', 'energy', 'organicMatter', 'biomass', 'darkMatter', 'thoughtPoints'];
     basicResources.forEach(resourceType => {
@@ -164,53 +149,51 @@ function updateResourceSellList(modal) {
             allResources.push({ type: resourceType, amount: amount, category: 'basic' });
         }
     });
-    
     // Advanced resources
     if (gameState.advancedResources) {
         Object.entries(gameState.advancedResources).forEach(([resourceType, resourceData]) => {
             if (resourceData && resourceData.amount > 0) {
-                allResources.push({ 
-                    type: resourceType, 
-                    amount: resourceData.amount, 
-                    category: 'advanced' 
+                allResources.push({
+                    type: resourceType,
+                    amount: resourceData.amount,
+                    category: 'advanced'
                 });
             }
         });
     }
-    
     // Filter resources
     const filteredResources = allResources.filter(resource => {
-        if (filter === 'all') return true;
-        if (filter === 'basic') return resource.category === 'basic';
-        if (filter === 'advanced') return resource.category === 'advanced';
+        if (filter === 'all')
+            return true;
+        if (filter === 'basic')
+            return resource.category === 'basic';
+        if (filter === 'advanced')
+            return resource.category === 'advanced';
         if (filter === 'profitable') {
             const marketInfo = marketSystem.getMarketInfo(resource.type);
             return marketInfo && marketInfo.priceChange > 0;
         }
         return true;
     });
-    
     // Sort by profitability
     filteredResources.sort((a, b) => {
         const aInfo = marketSystem.getMarketInfo(a.type);
         const bInfo = marketSystem.getMarketInfo(b.type);
-        if (!aInfo || !bInfo) return 0;
+        if (!aInfo || !bInfo)
+            return 0;
         return bInfo.currentPrice - aInfo.currentPrice;
     });
-    
     filteredResources.forEach(resource => {
         const marketInfo = marketSystem.getMarketInfo(resource.type);
-        if (!marketInfo) return;
-        
+        if (!marketInfo)
+            return;
         const resourceName = getResourceDisplayName(resource.type);
         const priceChangeClass = marketInfo.priceChange >= 0 ? 'price-up' : 'price-down';
         const priceChangeIcon = marketInfo.priceChange >= 0 ? '📈' : '📉';
         const trendIcon = marketInfo.trend > 0.2 ? '🔥' : marketInfo.trend < -0.2 ? '❄️' : '';
-        
         // Calculate potential earnings for different amounts
         const maxSellable = Math.min(Math.floor(resource.amount), marketInfo.remaining);
         const amounts = [1, 10, 100, maxSellable].filter(amt => amt > 0 && amt <= maxSellable);
-        
         html.push(`
             <div class="resource-sell-item ${resource.category}">
                 <div class="resource-sell-header">
@@ -273,99 +256,82 @@ function updateResourceSellList(modal) {
             </div>
         `);
     });
-    
     if (html.length === 0) {
         html.push('<p class="no-resources">選択されたカテゴリに販売可能な資源がありません</p>');
     }
-    
     resourceList.innerHTML = html.join('');
-    
     // Add input event listeners for market impact warnings
     filteredResources.forEach(resource => {
         const input = modal.querySelector(`#sell-${resource.type}`);
         const warning = input?.parentElement?.nextElementSibling;
-        
         if (input && warning) {
             input.addEventListener('input', () => {
                 const amount = parseInt(input.value) || 0;
                 const marketInfo = marketSystem.getMarketInfo(resource.type);
                 const impact = marketSystem.calculateMarketImpact(resource.type, amount);
-                
                 if (impact > 0.1) { // Show warning if impact > 10%
                     warning.style.display = 'block';
                     warning.textContent = `⚠️ 価格下落予想: -${(impact * 100).toFixed(1)}%`;
-                } else {
+                }
+                else {
                     warning.style.display = 'none';
                 }
             });
         }
     });
 }
-
 // Sell a specific resource using market system
 export function sellResource(resourceType, amount) {
-    const sellAmount = parseInt(amount);
-    
+    const sellAmount = parseInt(amount.toString());
     if (!sellAmount || sellAmount <= 0) {
         showMessage('販売量を正しく入力してください', 2000);
         return;
     }
-    
     // Use the market system for selling
     const result = marketSystem.sellResource(resourceType, sellAmount);
-    
     if (!result.success) {
-        showMessage(result.message, 3000);
+        showMessage(result.message || '販売に失敗しました', 3000);
         return;
     }
-    
     // Show detailed success message
     const resourceName = getResourceDisplayName(resourceType);
-    const impactText = result.marketImpact > 0.05 ? 
+    const impactText = result.marketImpact && result.marketImpact > 0.05 ?
         ` (価格影響: -${(result.marketImpact * 100).toFixed(1)}%)` : '';
-    
     showMessage(`${resourceName} x${sellAmount} を販売！ +${result.totalValue} CD${impactText}`, 4000);
-    
     // Update modal content
     const modal = document.getElementById('resourceSellModal');
     if (modal) {
         updateModalContent(modal);
     }
 }
-
 // Update trading summary
 function updateTradingSummary(modal) {
     const summaryContainer = modal.querySelector('#tradingSummary');
+    if (!summaryContainer)
+        return;
     const marketData = marketSystem.getAllMarketInfo();
-    
     // Calculate summary statistics
     let totalDailyLimit = 0;
     let totalDailySold = 0;
     let highestPriceChange = { resource: '', change: -Infinity };
     let lowestPriceChange = { resource: '', change: Infinity };
     let mostVolatile = { resource: '', volatility: 0 };
-    
     Object.entries(marketData).forEach(([resourceType, info]) => {
-        if (!info) return;
-        
+        if (!info)
+            return;
         totalDailyLimit += info.dailyLimit;
         totalDailySold += info.dailySold;
-        
         if (info.priceChange > highestPriceChange.change) {
             highestPriceChange = { resource: resourceType, change: info.priceChange };
         }
-        
         if (info.priceChange < lowestPriceChange.change) {
             lowestPriceChange = { resource: resourceType, change: info.priceChange };
         }
-        
         if (info.volatility > mostVolatile.volatility) {
             mostVolatile = { resource: resourceType, volatility: info.volatility };
         }
     });
-    
     const utilizationRate = totalDailyLimit > 0 ? (totalDailySold / totalDailyLimit * 100) : 0;
-    
     const html = `
         <div class="summary-grid">
             <div class="summary-item">
@@ -403,10 +369,8 @@ function updateTradingSummary(modal) {
             </ul>
         </div>
     `;
-    
     summaryContainer.innerHTML = html;
 }
-
 // Close modal
 export function closeResourceSellModal() {
     const modal = document.getElementById('resourceSellModal');
@@ -414,7 +378,6 @@ export function closeResourceSellModal() {
         modal.style.display = 'none';
     }
 }
-
 // Get display name for resource
 function getResourceDisplayName(resourceType) {
     const names = {
@@ -435,10 +398,8 @@ function getResourceDisplayName(resourceType) {
     };
     return names[resourceType] || resourceType;
 }
-
 // Export functions to window for HTML onclick handlers
 window.showResourceSellModal = showResourceSellModal;
 window.closeResourceSellModal = closeResourceSellModal;
 window.sellResource = sellResource;
-
 console.log('💰 Resource sell modal system loaded');

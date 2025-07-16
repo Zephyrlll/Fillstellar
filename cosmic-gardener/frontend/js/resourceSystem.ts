@@ -56,7 +56,15 @@ export enum ResourceType {
     RARE_ELEMENTS = 'rareElements',
     HIGH_POLYMER = 'highPolymer',
     QUANTUM_CRYSTAL = 'quantumCrystal',
-    RADIOACTIVE_WASTE = 'radioactiveWaste'
+    RADIOACTIVE_WASTE = 'radioactiveWaste',
+    
+    // Advanced Resources (used in catalyst system)
+    CONCENTRATED_ENERGY = 'concentratedEnergy',
+    HYPER_CRYSTAL = 'hyperCrystal',
+    DIMENSIONAL_ESSENCE = 'dimensionalEssence',
+    ULTRA_ALLOY = 'ultraAlloy',
+    QUANTUM_POLYMER = 'quantumPolymer',
+    EXOTIC_MATTER = 'exoticMatter'
 }
 
 export enum QualityTier {
@@ -456,6 +464,44 @@ export const RESOURCE_METADATA: Record<ResourceType, {
         icon: '☢️',
         category: 'waste',
         description: 'エネルギー生産の副産物として発生する危険な廃棄物'
+    },
+    
+    // Advanced Resources (used in catalyst system)
+    [ResourceType.CONCENTRATED_ENERGY]: {
+        name: '濃縮エネルギー',
+        icon: '⚡',
+        category: 'tier2',
+        description: '高度に濃縮されたエネルギー'
+    },
+    [ResourceType.HYPER_CRYSTAL]: {
+        name: 'ハイパークリスタル',
+        icon: '💎',
+        category: 'tier2',
+        description: '超高密度の結晶構造'
+    },
+    [ResourceType.DIMENSIONAL_ESSENCE]: {
+        name: '次元エッセンス',
+        icon: '🌌',
+        category: 'tier2',
+        description: '別次元から抽出された物質'
+    },
+    [ResourceType.ULTRA_ALLOY]: {
+        name: 'ウルトラ合金',
+        icon: '🛡️',
+        category: 'tier2',
+        description: '超高強度の特殊合金'
+    },
+    [ResourceType.QUANTUM_POLYMER]: {
+        name: '量子ポリマー',
+        icon: '🧪',
+        category: 'tier2',
+        description: '量子状態を保持する高分子'
+    },
+    [ResourceType.EXOTIC_MATTER]: {
+        name: 'エキゾチック物質',
+        icon: '🌀',
+        category: 'tier2',
+        description: '通常の物理法則に従わない物質'
     }
 };
 

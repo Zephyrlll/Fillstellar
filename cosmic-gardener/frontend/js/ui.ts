@@ -533,7 +533,22 @@ function updateStarList() {
     renderTable();
 }
 
-export function showMessage(message: string, duration = 2000) {
+export function showMessage(message: string, typeOrDuration: string | number = 2000) {
+    let duration = 2000;
+    let messageType = 'info';
+    
+    if (typeof typeOrDuration === 'number') {
+        duration = typeOrDuration;
+    } else {
+        messageType = typeOrDuration;
+        // Set duration based on message type
+        switch(messageType) {
+            case 'error': duration = 5000; break;
+            case 'warning': duration = 3000; break;
+            case 'success': duration = 2000; break;
+            default: duration = 2000;
+        }
+    }
     clearTimeout(messageTimeout);
     if (ui.messageText) ui.messageText.textContent = message;
     if (ui.messageOverlay) {

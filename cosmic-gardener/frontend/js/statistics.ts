@@ -1,141 +1,209 @@
 
 import { gameState, PlanetUserData } from './state.js';
 
+// Type definitions for statistics
+interface StatisticsHistory {
+    time: number;
+    value: number;
+    rate?: number;
+}
+
+interface ResourceStatistics {
+    total: number;
+    perSecond: number;
+    perHour: number;
+    previousValue: number;
+    history: StatisticsHistory[];
+}
+
+interface CosmicStatistics {
+    current: number;
+    history: StatisticsHistory[];
+}
+
+type ResourceKey = 'cosmicDust' | 'energy' | 'organicMatter' | 'biomass' | 'darkMatter' | 'thoughtPoints';
+type CosmicKey = 'starCount' | 'planetCount' | 'asteroidCount' | 'cometCount' | 'moonCount' | 'cosmicActivity' | 'totalPopulation' | 'intelligentLifeCount' | 'averageStarAge' | 'totalMass';
+
 let currentChart = 'resources';
 
-function updateStatisticsDisplay() {
-    updateResourceStatistics();
-    updateCosmicStatistics();
-    updateStatisticsChart();
-}
-
-function updateResourceStatistics() {
-    const container = document.getElementById('resource-stats-grid');
-    if (!container) return;
-    
-    container.innerHTML = '';
-    
-    const resourceNames: { [key: string]: string } = {
-        cosmicDust: '宇宙の塵',
-        energy: 'エネルギー',
-        organicMatter: '有機物',
-        biomass: 'バイオマス',
-        darkMatter: 'ダークマター',
-        thoughtPoints: '思考ポイント'
-    };
-    
-    Object.entries(gameState.statistics.resources).forEach(([key, stats]) => {
-        const item = document.createElement('div');
-        item.className = 'stat-item';
-        
-        const formatNumber = (num: number) => {
-            const value = (typeof num === 'number' && isFinite(num)) ? num : 0;
-            if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M';
-            if (value >= 1000) return (value / 1000).toFixed(1) + 'K';
-            return value.toFixed(1);
-        };
-        
-        item.innerHTML = `
-            <span class="stat-name">${resourceNames[key]}</span>
-            <div class="stat-values">
-                <span class="stat-value">累計: ${formatNumber(stats.total)}</span>
-                <span class="stat-value">/秒: ${formatNumber(stats.perSecond)}</span>
-                <span class="stat-value">/時: ${formatNumber(stats.perHour)}</span>
-            </div>
-        `;
-        
-        container.appendChild(item);
-    });
-}
-
-function updateCosmicStatistics() {
-    const container = document.getElementById('cosmic-stats-grid');
-    if (!container) return;
-    
-    container.innerHTML = '';
-    
-    const cosmicNames: { [key: string]: string } = {
-        starCount: '恒星数',
-        planetCount: '惑星数',
-        asteroidCount: '小惑星数',
-        cometCount: '彗星数',
-        moonCount: '衛星数',
-        cosmicActivity: '宇宙活発度',
-        totalPopulation: '総人口',
-        intelligentLifeCount: '知的文明数',
-        averageStarAge: '平均恒星年齢',
-        totalMass: '総質量'
-    };
-    
-    Object.entries(gameState.statistics.cosmic).forEach(([key, stats]) => {
-        const item = document.createElement('div');
-        item.className = 'stat-item';
-        
-        const formatNumber = (num: number, type: string) => {
-            const value = (typeof num === 'number' && isFinite(num)) ? num : 0;
-            
-            if (type === 'averageStarAge') {
-                return value.toFixed(1) + ' 億年';
-            } else if (type === 'totalMass') {
-                if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M 太陽質量';
-                if (value >= 1000) return (value / 1000).toFixed(1) + 'K 太陽質量';
-                return value.toFixed(0) + ' 太陽質量';
-            } else if (type === 'cosmicActivity') {
-                return value.toFixed(2);
-            } else {
-                if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M';
-                if (value >= 1000) return (value / 1000).toFixed(1) + 'K';
-                return Math.floor(value).toLocaleString();
-            }
-        };
-        
-        item.innerHTML = `
-            <span class="stat-name">${cosmicNames[key]}</span>
-            <div class="stat-values">
-                <span class="stat-value">現在: ${formatNumber(stats.current, key)}</span>
-            </div>
-        `;
-        
-        container.appendChild(item);
-    });
-}
-
-function updateStatisticsChart() {
-    const canvas = document.getElementById('statistics-chart') as HTMLCanvasElement;
-    if (!canvas) return;
-    
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const width = canvas.width = canvas.offsetWidth * window.devicePixelRatio;
-    const height = canvas.height = canvas.offsetHeight * window.devicePixelRatio;
-    
-    ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
-    ctx.clearRect(0, 0, canvas.offsetWidth, canvas.offsetHeight);
-    
-    if (currentChart === 'resources') {
-        drawResourceChart(ctx, canvas.offsetWidth, canvas.offsetHeight);
-    } else {
-        drawCosmicChart(ctx, canvas.offsetWidth, canvas.offsetHeight);
+function updateStatisticsDisplay(): void {
+    try {
+        updateResourceStatistics();
+        updateCosmicStatistics();
+        updateStatisticsChart();
+    } catch (error) {
+        console.error('[STATISTICS] Failed to update display:', error);
     }
 }
 
-function drawResourceChart(ctx: CanvasRenderingContext2D, width: number, height: number) {
-    const padding = 40;
-    const legendHeight = 60;
-    const chartWidth = width - padding * 2;
-    const chartHeight = height - padding * 2 - legendHeight;
+function updateResourceStatistics(): void {
+    const container = document.getElementById('resource-stats-grid');
+    if (!container) {
+        console.warn('[STATISTICS] Resource stats grid not found');
+        return;
+    }
     
-    const resources = ['cosmicDust', 'energy', 'organicMatter', 'biomass', 'darkMatter', 'thoughtPoints'];
-    const colors = ['#FFD700', '#00FFFF', '#00FF00', '#8A2BE2', '#FF69B4', '#FFA500'];
-    const resourceNames: { [key: string]: string } = {
-        cosmicDust: '宇宙の塵',
-        energy: 'エネルギー',
-        organicMatter: '有機物',
-        biomass: 'バイオマス',
-        darkMatter: 'ダークマター',
-        thoughtPoints: '思考ポイント'
-    };
+    try {
+        container.innerHTML = '';
+        
+        const resourceNames: Record<ResourceKey, string> = {
+            cosmicDust: '宇宙の塵',
+            energy: 'エネルギー',
+            organicMatter: '有機物',
+            biomass: 'バイオマス',
+            darkMatter: 'ダークマター',
+            thoughtPoints: '思考ポイント'
+        };
+    
+        Object.entries(gameState.statistics.resources).forEach(([key, stats]) => {
+            if (!isResourceKey(key) || !stats) return;
+            
+            const item = document.createElement('div');
+            item.className = 'stat-item';
+            
+            const formatNumber = (num: number): string => {
+                const value = (typeof num === 'number' && isFinite(num)) ? num : 0;
+                if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M';
+                if (value >= 1000) return (value / 1000).toFixed(1) + 'K';
+                return value.toFixed(1);
+            };
+            
+            const resourceStats = stats as ResourceStatistics;
+            item.innerHTML = `
+                <span class="stat-name">${resourceNames[key]}</span>
+                <div class="stat-values">
+                    <span class="stat-value">累計: ${formatNumber(resourceStats.total)}</span>
+                    <span class="stat-value">/秒: ${formatNumber(resourceStats.perSecond)}</span>
+                    <span class="stat-value">/時: ${formatNumber(resourceStats.perHour)}</span>
+                </div>
+            `;
+            
+            container.appendChild(item);
+        });
+    } catch (error) {
+        console.error('[STATISTICS] Failed to update resource statistics:', error);
+    }
+}
+
+// Type guard for ResourceKey
+function isResourceKey(key: string): key is ResourceKey {
+    return ['cosmicDust', 'energy', 'organicMatter', 'biomass', 'darkMatter', 'thoughtPoints'].includes(key);
+}
+
+// Type guard for CosmicKey
+function isCosmicKey(key: string): key is CosmicKey {
+    return ['starCount', 'planetCount', 'asteroidCount', 'cometCount', 'moonCount', 'cosmicActivity', 'totalPopulation', 'intelligentLifeCount', 'averageStarAge', 'totalMass'].includes(key);
+}
+
+function updateCosmicStatistics(): void {
+    const container = document.getElementById('cosmic-stats-grid');
+    if (!container) {
+        console.warn('[STATISTICS] Cosmic stats grid not found');
+        return;
+    }
+    
+    try {
+        container.innerHTML = '';
+        
+        const cosmicNames: Record<CosmicKey, string> = {
+            starCount: '恒星数',
+            planetCount: '惑星数',
+            asteroidCount: '小惑星数',
+            cometCount: '彗星数',
+            moonCount: '衛星数',
+            cosmicActivity: '宇宙活発度',
+            totalPopulation: '総人口',
+            intelligentLifeCount: '知的文明数',
+            averageStarAge: '平均恒星年齢',
+            totalMass: '総質量'
+        };
+    
+        Object.entries(gameState.statistics.cosmic).forEach(([key, stats]) => {
+            if (!isCosmicKey(key) || !stats) return;
+            
+            const item = document.createElement('div');
+            item.className = 'stat-item';
+            
+            const formatNumber = (num: number, type: CosmicKey): string => {
+                const value = (typeof num === 'number' && isFinite(num)) ? num : 0;
+                
+                if (type === 'averageStarAge') {
+                    return value.toFixed(1) + ' 億年';
+                } else if (type === 'totalMass') {
+                    if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M 太陽質量';
+                    if (value >= 1000) return (value / 1000).toFixed(1) + 'K 太陽質量';
+                    return value.toFixed(0) + ' 太陽質量';
+                } else if (type === 'cosmicActivity') {
+                    return value.toFixed(2);
+                } else {
+                    if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M';
+                    if (value >= 1000) return (value / 1000).toFixed(1) + 'K';
+                    return Math.floor(value).toLocaleString();
+                }
+            };
+            
+            const cosmicStats = stats as CosmicStatistics;
+            item.innerHTML = `
+                <span class="stat-name">${cosmicNames[key]}</span>
+                <div class="stat-values">
+                    <span class="stat-value">現在: ${formatNumber(cosmicStats.current, key)}</span>
+                </div>
+            `;
+            
+            container.appendChild(item);
+        });
+    } catch (error) {
+        console.error('[STATISTICS] Failed to update cosmic statistics:', error);
+    }
+}
+
+function updateStatisticsChart(): void {
+    const canvas = document.getElementById('statistics-chart') as HTMLCanvasElement | null;
+    if (!canvas) {
+        console.warn('[STATISTICS] Chart canvas not found');
+        return;
+    }
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+        console.error('[STATISTICS] Failed to get canvas context');
+        return;
+    }
+
+    try {
+        const width = canvas.width = canvas.offsetWidth * window.devicePixelRatio;
+        const height = canvas.height = canvas.offsetHeight * window.devicePixelRatio;
+        
+        ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        ctx.clearRect(0, 0, canvas.offsetWidth, canvas.offsetHeight);
+        
+        if (currentChart === 'resources') {
+            drawResourceChart(ctx, canvas.offsetWidth, canvas.offsetHeight);
+        } else {
+            drawCosmicChart(ctx, canvas.offsetWidth, canvas.offsetHeight);
+        }
+    } catch (error) {
+        console.error('[STATISTICS] Failed to update chart:', error);
+    }
+}
+
+function drawResourceChart(ctx: CanvasRenderingContext2D, width: number, height: number): void {
+    try {
+        const padding = 40;
+        const legendHeight = 60;
+        const chartWidth = width - padding * 2;
+        const chartHeight = height - padding * 2 - legendHeight;
+        
+        const resources: ResourceKey[] = ['cosmicDust', 'energy', 'organicMatter', 'biomass', 'darkMatter', 'thoughtPoints'];
+        const colors = ['#FFD700', '#00FFFF', '#00FF00', '#8A2BE2', '#FF69B4', '#FFA500'];
+        const resourceNames: Record<ResourceKey, string> = {
+            cosmicDust: '宇宙の塵',
+            energy: 'エネルギー',
+            organicMatter: '有機物',
+            biomass: 'バイオマス',
+            darkMatter: 'ダークマター',
+            thoughtPoints: '思考ポイント'
+        };
     
     ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
     ctx.fillRect(0, 0, width, height);
@@ -159,10 +227,11 @@ function drawResourceChart(ctx: CanvasRenderingContext2D, width: number, height:
         ctx.stroke();
     }
     
-    const resourcesWithData = resources.filter(resource => {
-        const stats = (gameState.statistics.resources as any)[resource];
-        return stats.history.length > 0 && Math.max(...stats.history.map((h: any) => h.value)) > 0;
-    });
+        const resourcesWithData = resources.filter(resource => {
+            const stats = gameState.statistics.resources[resource] as ResourceStatistics;
+            if (!stats || !stats.history) return false;
+            return stats.history.length > 0 && Math.max(...stats.history.map(h => h.value)) > 0;
+        });
     
     if (resourcesWithData.length === 0) {
         ctx.fillStyle = '#FFD700';
@@ -172,38 +241,41 @@ function drawResourceChart(ctx: CanvasRenderingContext2D, width: number, height:
         return;
     }
     
-    let globalMax = 0;
-    resourcesWithData.forEach(resource => {
-        const stats = (gameState.statistics.resources as any)[resource];
-        const max = Math.max(...stats.history.map((h: any) => h.value));
-        globalMax = Math.max(globalMax, max);
-    });
+        let globalMax = 0;
+        resourcesWithData.forEach(resource => {
+            const stats = gameState.statistics.resources[resource] as ResourceStatistics;
+            if (!stats || !stats.history) return;
+            const max = Math.max(...stats.history.map(h => h.value));
+            globalMax = Math.max(globalMax, max);
+        });
     
-    resourcesWithData.forEach((resource, index) => {
-        const stats = (gameState.statistics.resources as any)[resource];
-        const color = colors[resources.indexOf(resource)];
-        
-        ctx.strokeStyle = color;
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        
-        let hasValidPoints = false;
-        stats.history.forEach((point: any, i: number) => {
-            const x = padding + (i / Math.max(stats.history.length - 1, 1)) * chartWidth;
-            const y = padding + chartHeight - (point.value / globalMax) * chartHeight;
+        resourcesWithData.forEach((resource, index) => {
+            const stats = gameState.statistics.resources[resource] as ResourceStatistics;
+            if (!stats || !stats.history) return;
             
-            if (i === 0) {
-                ctx.moveTo(x, y);
-                hasValidPoints = true;
-            } else {
-                ctx.lineTo(x, y);
+            const color = colors[resources.indexOf(resource)];
+            
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            
+            let hasValidPoints = false;
+            stats.history.forEach((point, i) => {
+                const x = padding + (i / Math.max(stats.history.length - 1, 1)) * chartWidth;
+                const y = padding + chartHeight - (point.value / globalMax) * chartHeight;
+                
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                    hasValidPoints = true;
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            });
+            
+            if (hasValidPoints) {
+                ctx.stroke();
             }
         });
-        
-        if (hasValidPoints) {
-            ctx.stroke();
-        }
-    });
     
     ctx.fillStyle = '#FFD700';
     ctx.font = '10px "Noto Sans JP"';
@@ -250,30 +322,34 @@ function drawResourceChart(ctx: CanvasRenderingContext2D, width: number, height:
         ctx.fillText(resourceNames[resource], x + 16, y + 9);
     });
     
-    ctx.strokeStyle = '#FFB700';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(padding, padding);
-    ctx.lineTo(padding, padding + chartHeight);
-    ctx.lineTo(padding + chartWidth, padding + chartHeight);
-    ctx.stroke();
+        ctx.strokeStyle = '#FFB700';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(padding, padding);
+        ctx.lineTo(padding, padding + chartHeight);
+        ctx.lineTo(padding + chartWidth, padding + chartHeight);
+        ctx.stroke();
+    } catch (error) {
+        console.error('[STATISTICS] Failed to draw resource chart:', error);
+    }
 }
 
-function drawCosmicChart(ctx: CanvasRenderingContext2D, width: number, height: number) {
-    const padding = 40;
-    const legendHeight = 80;
-    const chartWidth = width - padding * 2;
-    const chartHeight = height - padding * 2 - legendHeight;
-    
-    const metrics = ['starCount', 'planetCount', 'totalPopulation', 'intelligentLifeCount', 'cosmicActivity'];
-    const colors = ['#FFD700', '#00FFFF', '#FF69B4', '#32CD32', '#FFA500'];
-    const metricNames: { [key: string]: string } = {
-        starCount: '恒星数',
-        planetCount: '惑星数',
-        totalPopulation: '総人口',
-        intelligentLifeCount: '知的文明',
-        cosmicActivity: '宇宙活発度'
-    };
+function drawCosmicChart(ctx: CanvasRenderingContext2D, width: number, height: number): void {
+    try {
+        const padding = 40;
+        const legendHeight = 80;
+        const chartWidth = width - padding * 2;
+        const chartHeight = height - padding * 2 - legendHeight;
+        
+        const metrics: CosmicKey[] = ['starCount', 'planetCount', 'totalPopulation', 'intelligentLifeCount', 'cosmicActivity'];
+        const colors = ['#FFD700', '#00FFFF', '#FF69B4', '#32CD32', '#FFA500'];
+        const metricNames: Partial<Record<CosmicKey, string>> = {
+            starCount: '恒星数',
+            planetCount: '惑星数',
+            totalPopulation: '総人口',
+            intelligentLifeCount: '知的文明',
+            cosmicActivity: '宇宙活発度'
+        };
     
     ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
     ctx.fillRect(0, 0, width, height);
@@ -297,10 +373,11 @@ function drawCosmicChart(ctx: CanvasRenderingContext2D, width: number, height: n
         ctx.stroke();
     }
     
-    const metricsWithData = metrics.filter(metric => {
-        const stats = (gameState.statistics.cosmic as any)[metric];
-        return stats.history.length > 0 && Math.max(...stats.history.map((h: any) => h.value)) > 0;
-    });
+        const metricsWithData = metrics.filter(metric => {
+            const stats = gameState.statistics.cosmic[metric] as CosmicStatistics;
+            if (!stats || !stats.history) return false;
+            return stats.history.length > 0 && Math.max(...stats.history.map(h => h.value)) > 0;
+        });
     
     if (metricsWithData.length === 0) {
         ctx.fillStyle = '#FFD700';
@@ -310,34 +387,36 @@ function drawCosmicChart(ctx: CanvasRenderingContext2D, width: number, height: n
         return;
     }
     
-    metricsWithData.forEach((metric, index) => {
-        const stats = (gameState.statistics.cosmic as any)[metric];
-        const color = colors[index];
-        const maxValue = Math.max(...stats.history.map((h: any) => h.value));
-        
-        if (maxValue === 0) return;
-        
-        ctx.strokeStyle = color;
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        
-        let hasValidPoints = false;
-        stats.history.forEach((point: any, i: number) => {
-            const x = padding + (i / Math.max(stats.history.length - 1, 1)) * chartWidth;
-            const y = padding + chartHeight - (point.value / maxValue) * chartHeight;
+        metricsWithData.forEach((metric, index) => {
+            const stats = gameState.statistics.cosmic[metric] as CosmicStatistics;
+            if (!stats || !stats.history) return;
             
-            if (i === 0) {
-                ctx.moveTo(x, y);
-                hasValidPoints = true;
-            } else {
-                ctx.lineTo(x, y);
+            const color = colors[index];
+            const maxValue = Math.max(...stats.history.map(h => h.value));
+            
+            if (maxValue === 0) return;
+            
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            
+            let hasValidPoints = false;
+            stats.history.forEach((point, i) => {
+                const x = padding + (i / Math.max(stats.history.length - 1, 1)) * chartWidth;
+                const y = padding + chartHeight - (point.value / maxValue) * chartHeight;
+                
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                    hasValidPoints = true;
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            });
+            
+            if (hasValidPoints) {
+                ctx.stroke();
             }
         });
-        
-        if (hasValidPoints) {
-            ctx.stroke();
-        }
-    });
     
     ctx.fillStyle = '#FFD700';
     ctx.font = '10px "Noto Sans JP"';
@@ -365,16 +444,20 @@ function drawCosmicChart(ctx: CanvasRenderingContext2D, width: number, height: n
         ctx.fillStyle = '#FFD700';
         ctx.font = '11px "Noto Sans JP"';
         ctx.textAlign = 'left';
-        ctx.fillText(metricNames[metric], x + 16, y + 9);
+        const metricName = metricNames[metric] || metric;
+        ctx.fillText(metricName, x + 16, y + 9);
         
-        const currentValue = (gameState.statistics.cosmic as any)[metric].current;
+        const cosmicStats = gameState.statistics.cosmic[metric] as CosmicStatistics;
+        if (!cosmicStats) return;
+        
+        const currentValue = cosmicStats.current;
         let valueText = '';
         if (metric === 'cosmicActivity') {
             valueText = ` (${currentValue.toFixed(2)})`;
         } else {
             valueText = ` (${Math.floor(currentValue).toLocaleString()})`;
         }
-        ctx.fillText(valueText, x + 16 + ctx.measureText(metricNames[metric]).width, y + 9);
+        ctx.fillText(valueText, x + 16 + ctx.measureText(metricName).width, y + 9);
     });
     
     ctx.strokeStyle = '#FFB700';
@@ -385,69 +468,93 @@ function drawCosmicChart(ctx: CanvasRenderingContext2D, width: number, height: n
     ctx.lineTo(padding + chartWidth, padding + chartHeight);
     ctx.stroke();
     
-    ctx.fillStyle = '#AAA';
-    ctx.font = '9px "Noto Sans JP"';
-    ctx.textAlign = 'center';
-    ctx.fillText('※各メトリクスは個別にスケールされています', width / 2, height - 5);
+        ctx.fillStyle = '#AAA';
+        ctx.font = '9px "Noto Sans JP"';
+        ctx.textAlign = 'center';
+        ctx.fillText('※各メトリクスは個別にスケールされています', width / 2, height - 5);
+    } catch (error) {
+        console.error('[STATISTICS] Failed to draw cosmic chart:', error);
+    }
 }
 
-export function switchChart(chartType: string) {
-    currentChart = chartType;
+export function switchChart(chartType: string): void {
+    if (chartType !== 'resources' && chartType !== 'cosmic') {
+        console.warn('[STATISTICS] Invalid chart type:', chartType);
+        return;
+    }
     
-    document.querySelectorAll('.chart-tab').forEach(tab => {
-        tab.classList.remove('active');
-    });
-    const activeTab = document.querySelector(`[data-chart="${chartType}"]`);
-    if (activeTab) activeTab.classList.add('active');
-    
-    updateStatisticsChart();
+    try {
+        currentChart = chartType;
+        
+        document.querySelectorAll('.chart-tab').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        
+        const activeTab = document.querySelector(`[data-chart="${chartType}"]`);
+        if (activeTab) {
+            activeTab.classList.add('active');
+        }
+        
+        updateStatisticsChart();
+    } catch (error) {
+        console.error('[STATISTICS] Failed to switch chart:', error);
+    }
 }
 
-export function updateStatistics() {
+export function updateStatistics(): void {
     const now = Date.now();
     const deltaTime = (now - gameState.statistics.lastUpdate) / 1000;
     
     if (deltaTime < 1) return;
     
     if (!gameState.statistics) {
-        console.warn('統計データが初期化されていません');
+        console.warn('[STATISTICS] Statistics data not initialized');
         return;
     }
     
-    const resources = ['cosmicDust', 'energy', 'organicMatter', 'biomass', 'darkMatter', 'thoughtPoints'];
-    resources.forEach(resource => {
-        const current = (gameState as any)[resource] || 0;
-        const stats = (gameState.statistics.resources as any)[resource];
-        
-        if (!stats.hasOwnProperty('previousValue')) {
-            stats.previousValue = current;
-            stats.total = current;
-        }
-        
-        const gained = current - stats.previousValue;
-        
-        stats.total = current;
-        stats.previousValue = current;
-        
-        if (deltaTime > 0) {
-            if (gained >= 0) {
-                stats.perSecond = gained / deltaTime;
-                stats.perHour = stats.perSecond * 3600;
-            } else {
-                stats.perSecond = gained / deltaTime;
-                stats.perHour = stats.perSecond * 3600;
+    try {
+    
+        const resources: ResourceKey[] = ['cosmicDust', 'energy', 'organicMatter', 'biomass', 'darkMatter', 'thoughtPoints'];
+        resources.forEach(resource => {
+            const current = gameState[resource] || 0;
+            const stats = gameState.statistics.resources[resource];
+            if (!stats || typeof stats !== 'object') {
+                console.warn(`[STATISTICS] Resource stats not found for ${resource}`);
+                return;
             }
-        }
+            
+            // TypeScript needs explicit type assertion here
+            const resourceStats = stats as any as ResourceStatistics;
+            
+            if (resourceStats.previousValue === undefined) {
+                resourceStats.previousValue = current;
+                resourceStats.total = current;
+            }
         
-        stats.history.push({
-            time: now,
-            value: current,
-            rate: stats.perSecond
-        });
-        
-        if (stats.history.length > gameState.statistics.maxHistoryPoints) {
-            stats.history.shift();
-        }
+            const gained = current - resourceStats.previousValue;
+            
+            resourceStats.total = current;
+            resourceStats.previousValue = current;
+            
+            if (deltaTime > 0) {
+                if (gained >= 0) {
+                    resourceStats.perSecond = gained / deltaTime;
+                    resourceStats.perHour = resourceStats.perSecond * 3600;
+                } else {
+                    resourceStats.perSecond = gained / deltaTime;
+                    resourceStats.perHour = resourceStats.perSecond * 3600;
+                }
+            }
+            
+            resourceStats.history.push({
+                time: now,
+                value: current,
+                rate: resourceStats.perSecond
+            });
+            
+            if (resourceStats.history.length > gameState.statistics.maxHistoryPoints) {
+                resourceStats.history.shift();
+            }
     });
     
     const starCount = gameState.stars.filter(s => s.userData.type === 'star').length;
@@ -477,11 +584,11 @@ export function updateStatistics() {
         if (!body.userData) return sum;
         const mass = body.userData.mass || 0;
         if (body.userData.type === 'star' || body.userData.type === 'planet') {
-            console.log(`[Mass Debug] ${body.userData.type} "${body.userData.name}": mass = ${mass}`);
-        }
-        return sum + mass;
-    }, 0);
-    console.log(`[Mass Debug] Total mass calculated: ${totalMass}`);
+                console.log(`[STATISTICS] ${body.userData.type} "${body.userData.name}": mass = ${mass}`);
+            }
+            return sum + mass;
+        }, 0);
+        console.log(`[STATISTICS] Total mass calculated: ${totalMass}`);
     
     const cosmicStats = [
         { key: 'starCount', value: starCount },
@@ -496,9 +603,14 @@ export function updateStatistics() {
         { key: 'totalMass', value: totalMass }
     ];
     
-    cosmicStats.forEach(({ key, value }) => {
-        const stats = (gameState.statistics.cosmic as any)[key];
-        if (!stats) return;
+        cosmicStats.forEach(({ key, value }) => {
+            if (!isCosmicKey(key)) return;
+            
+            const stats = gameState.statistics.cosmic[key] as CosmicStatistics;
+            if (!stats) {
+                console.warn(`[STATISTICS] Cosmic stats not found for ${key}`);
+                return;
+            }
         
         const safeValue = (typeof value === 'number' && isFinite(value)) ? value : 0;
         stats.current = safeValue;
@@ -513,6 +625,9 @@ export function updateStatistics() {
         }
     });
     
-    gameState.statistics.lastUpdate = now;
-    updateStatisticsDisplay();
+        gameState.statistics.lastUpdate = now;
+        updateStatisticsDisplay();
+    } catch (error) {
+        console.error('[STATISTICS] Failed to update statistics:', error);
+    }
 }

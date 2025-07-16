@@ -3,11 +3,12 @@ import { gameState, applyGraphicsPreset } from './state.js';
 import { scene, camera, renderer, composer, ambientLight } from './threeSetup.js';
 import { performanceMonitor } from './performanceMonitor.js';
 export class GraphicsEngine {
+    previousSettings = {};
+    frameRateLimiter;
+    lodSystems = new Map();
+    dynamicQualityEnabled = false;
+    qualityAdjustmentCooldown = 0;
     constructor() {
-        this.previousSettings = {};
-        this.lodSystems = new Map();
-        this.dynamicQualityEnabled = false;
-        this.qualityAdjustmentCooldown = 0;
         this.frameRateLimiter = new FrameRateLimiter();
         this.applyAllSettings();
     }
@@ -365,11 +366,9 @@ export class GraphicsEngine {
 }
 // Frame rate limiting utility
 class FrameRateLimiter {
-    constructor() {
-        this.targetFPS = -1; // -1 means unlimited
-        this.lastFrameTime = 0;
-        this.frameInterval = 0;
-    }
+    targetFPS = -1; // -1 means unlimited
+    lastFrameTime = 0;
+    frameInterval = 0;
     setTargetFPS(fps) {
         this.targetFPS = fps;
         this.frameInterval = fps > 0 ? 1000 / fps : 0;
@@ -393,10 +392,11 @@ class FrameRateLimiter {
 }
 // LOD (Level of Detail) system
 class LODSystem {
+    parentObject;
+    levels = [];
+    currentLevel = -1;
     constructor(parentObject, highDetail, mediumDetail, lowDetail) {
         this.parentObject = parentObject;
-        this.levels = [];
-        this.currentLevel = -1;
         this.levels = [
             { distance: 0, object: highDetail },
             { distance: 500, object: mediumDetail },
@@ -441,14 +441,18 @@ class LODSystem {
     // Force resolution update (used by resize workaround)
     forceResolutionUpdate() {
         console.log('🔧 Force resolution update called');
-        this.applyResolutionScale(gameState.graphics.resolutionScale);
+        if (window.graphicsEngine) {
+            window.graphicsEngine.applyResolutionScale(gameState.graphics.resolutionScale);
+        }
     }
     // Reset camera for initialization (used during startup)
     resetCameraForInitialization() {
         console.log('📹 Camera reset for initialization called');
         // This is a placeholder - actual camera reset logic would go here
         // For now, we'll just ensure resolution is applied
-        this.applyResolutionScale(gameState.graphics.resolutionScale);
+        if (window.graphicsEngine) {
+            window.graphicsEngine.applyResolutionScale(gameState.graphics.resolutionScale);
+        }
     }
 }
 // Create global instance

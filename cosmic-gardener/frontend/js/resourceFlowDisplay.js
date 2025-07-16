@@ -3,11 +3,11 @@ import { ResourceType } from './resourceSystem.js';
 import { CONVERSION_RECIPES } from './conversionRecipes.js';
 import { gameState } from './state.js';
 export class ResourceFlowDisplay {
+    activeFlows = new Map();
+    displayContainer = null;
+    updateInterval = 100; // Update every 100ms for smooth display
+    intervalId = null;
     constructor() {
-        this.activeFlows = new Map();
-        this.displayContainer = null;
-        this.updateInterval = 100; // Update every 100ms for smooth display
-        this.intervalId = null;
         this.displayContainer = document.getElementById('active-flows-container');
         this.startDisplayLoop();
     }

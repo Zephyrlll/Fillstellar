@@ -15,9 +15,9 @@ import { initProductionUI, updateProductionUI } from './js/productionUI.js';
 import { resourceParticleSystem } from './js/resourceParticles.js';
 import { productionChainUI } from './js/productionChainUI.js';
 // @ts-ignore
-import { catalystManager, CatalystType } from './dist/js/catalystSystem.js';
+import { catalystManager, CatalystType } from './js/catalystSystem.js';
 // @ts-ignore
-import { currencyManager } from './dist/js/currencySystem.js';
+import { currencyManager } from './js/currencySystem.js';
 // Graphics system imports
 import { performanceMonitor } from './js/performanceMonitor.js';
 import { graphicsEngine } from './js/graphicsEngine.js';

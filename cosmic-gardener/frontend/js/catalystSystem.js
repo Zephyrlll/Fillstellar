@@ -199,6 +199,11 @@ export const CATALYST_DEFINITIONS = {
 };
 // Active Catalyst Instance
 export class CatalystInstance {
+    catalystType;
+    facilityId;
+    startTime;
+    definition; // TODO: Define CatalystDefinition interface
+    endTime;
     constructor(catalystType, facilityId, startTime) {
         this.catalystType = catalystType;
         this.facilityId = facilityId;
@@ -226,9 +231,11 @@ export class CatalystInstance {
 }
 // Catalyst Manager
 export class CatalystManager {
+    activeCatalysts; // facilityId -> CatalystInstance
+    catalystInventory; // catalystType -> amount
     constructor() {
-        this.activeCatalysts = new Map(); // facilityId -> CatalystInstance
-        this.catalystInventory = new Map(); // catalystType -> amount
+        this.activeCatalysts = new Map();
+        this.catalystInventory = new Map();
     }
     // Add catalyst to inventory
     addCatalyst(catalystType, amount = 1) {
@@ -251,7 +258,9 @@ export class CatalystManager {
         }
         // Consume catalyst from inventory
         const current = this.catalystInventory.get(catalystType);
-        this.catalystInventory.set(catalystType, current - 1);
+        if (current !== undefined) {
+            this.catalystInventory.set(catalystType, current - 1);
+        }
         // Apply catalyst to facility
         const instance = new CatalystInstance(catalystType, facilityId, Date.now());
         this.activeCatalysts.set(facilityId, instance);
@@ -264,7 +273,7 @@ export class CatalystManager {
             this.activeCatalysts.delete(facilityId);
             return null;
         }
-        return catalyst;
+        return catalyst || null;
     }
     // Get all active catalysts
     getActiveCatalysts() {
@@ -369,7 +378,7 @@ export function canAffordCatalyst(catalystType, gameState) {
     const catalyst = CATALYST_DEFINITIONS[catalystType];
     if (!catalyst)
         return false;
-    return catalyst.cost.resources.every(cost => {
+    return catalyst.cost.resources.every((cost) => {
         const available = gameState.advancedResources?.[cost.type]?.amount || 0;
         return available >= cost.amount;
     });

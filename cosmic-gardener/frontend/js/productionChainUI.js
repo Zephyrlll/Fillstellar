@@ -4,9 +4,10 @@ import { conversionEngine } from './conversionEngine.js';
 import { RESOURCE_METADATA, ResourceType } from './resourceSystem.js';
 import { getResourceTier, getTierColor } from './resourceTiers.js';
 export class ProductionChainUI {
+    container = null;
+    chainView;
+    isVisible = false;
     constructor() {
-        this.container = null;
-        this.isVisible = false;
         this.chainView = {
             nodes: new Map(),
             connections: []
