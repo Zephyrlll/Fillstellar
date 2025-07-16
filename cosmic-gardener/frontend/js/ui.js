@@ -114,6 +114,7 @@ export const ui = {
     graphicsQualitySelect: document.getElementById('graphicsQualitySelect'),
     // New graphics settings UI elements
     graphicsPresetSelect: document.getElementById('graphicsPresetSelect'),
+    resolutionScaleSelect: document.getElementById('resolutionScaleSelect'),
     resolutionScaleRange: document.getElementById('resolutionScaleRange'),
     resolutionScaleValue: document.getElementById('resolutionScaleValue'),
     textureQualitySelect: document.getElementById('textureQualitySelect'),
@@ -727,6 +728,10 @@ export function updateGraphicsUI() {
         ui.graphicsPresetSelect.value = graphics.preset;
     }
     // Update resolution scale
+    if (ui.resolutionScaleSelect) {
+        const scalePercent = Math.round(graphics.resolutionScale * 100);
+        ui.resolutionScaleSelect.value = scalePercent.toString();
+    }
     if (ui.resolutionScaleRange && ui.resolutionScaleValue) {
         const scalePercent = Math.round(graphics.resolutionScale * 100);
         ui.resolutionScaleRange.value = scalePercent.toString();

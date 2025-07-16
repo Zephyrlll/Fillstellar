@@ -826,7 +826,14 @@ function setupMobileGraphicsSettings() {
                 originalSelect.dispatchEvent(new Event('change'));
                 console.log('📱 Resolution scale changed to:', e.target.value);
             }
+            // 警告メッセージを更新
+            updateResolutionWarning(e.target.value);
         });
+        
+        // 初期値の警告を設定（少し遅延させる）
+        setTimeout(() => {
+            updateResolutionWarning(resolutionSelect.value);
+        }, 100);
     }
     
     // パーティクル密度
@@ -1377,6 +1384,39 @@ export function startMobileStarManagementUpdates() {
 }
 
 // モバイルデフォルトグラフィック設定を適用
+// 解像度スケール警告を更新
+function updateResolutionWarning(scaleValue) {
+    const hintElement = document.getElementById('mobile-resolution-hint');
+    if (!hintElement) return;
+    
+    const scale = parseInt(scaleValue);
+    
+    // 警告レベルとメッセージを決定
+    let className = '';
+    let message = '';
+    
+    if (scale >= 150) {
+        className = 'danger';
+        message = '🔥 バッテリー消耗が激しいです！発熱にご注意ください';
+    } else if (scale >= 125) {
+        className = 'warning';
+        message = '⚠️ バッテリー消耗が多くなります';
+    } else if (scale >= 100) {
+        className = '';
+        message = '💡 標準的な品質です';
+    } else if (scale >= 75) {
+        className = '';
+        message = '🔋 バッテリー節約モードです';
+    } else {
+        className = '';
+        message = '🚀 超省電力モードです';
+    }
+    
+    // スタイルを更新
+    hintElement.className = 'mobile-setting-hint ' + className;
+    hintElement.textContent = message;
+}
+
 function setMobileDefaultGraphicsSettings() {
     if (!isMobileDevice()) return;
     
@@ -1399,6 +1439,8 @@ function setMobileDefaultGraphicsSettings() {
     if (mobileResolutionSelect) {
         mobileResolutionSelect.value = defaultSettings.resolutionScale;
         mobileResolutionSelect.dispatchEvent(new Event('change'));
+        // 警告メッセージも更新
+        updateResolutionWarning(defaultSettings.resolutionScale);
     }
     
     if (mobileParticleSelect) {
