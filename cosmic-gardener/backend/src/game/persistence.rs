@@ -7,8 +7,9 @@ use bincode;
 use rmp_serde as rmps;
 use sqlx::{PgPool, Row};
 use tokio::time::{interval, Duration};
+use tracing::{info, warn, error, debug};
 
-use crate::errors::GameError;
+use crate::errors::{GameError, Result};
 use crate::game::resources::{Resources, ProductionRates, ResourceAccumulators, UpgradeLevels};
 use crate::game::celestial_bodies::{CelestialBody, BodyId};
 use crate::game::physics::PhysicsState;
@@ -197,17 +198,17 @@ impl CompressedData {
         data: &T,
         compression_type: CompressionType,
         serialization_format: SerializationFormat,
-    ) -> Result<Self, GameError> {
+    ) -> Result<Self> {
         // シリアライゼーション
         let serialized = match serialization_format {
             SerializationFormat::Json => {
-                serde_json::to_vec(data).map_err(|e| GameError::SerializationError(e.to_string()))?
+                serde_json::to_vec(data).map_err(|e| GameError::Serialization(e))?
             },
             SerializationFormat::Bincode => {
-                bincode::serialize(data).map_err(|e| GameError::SerializationError(e.to_string()))?
+                bincode::serialize(data).map_err(|e| GameError::internal(format!("Bincode serialization error: {}", e)))?
             },
             SerializationFormat::MessagePack => {
-                rmps::to_vec(data).map_err(|e| GameError::SerializationError(e.to_string()))?
+                rmps::to_vec(data).map_err(|e| GameError::internal(format!("MessagePack serialization error: {}", e)))?
             },
         };
         
@@ -217,13 +218,13 @@ impl CompressedData {
         let compressed = match compression_type {
             CompressionType::None => serialized,
             CompressionType::Zstd => {
-                compress(&serialized, 3).map_err(|e| GameError::CompressionError(e.to_string()))?
+                compress(&serialized, 3).map_err(|e| GameError::internal(format!("Zstd compression error: {}", e)))?
             },
             CompressionType::Bincode => {
-                bincode::serialize(&serialized).map_err(|e| GameError::CompressionError(e.to_string()))?
+                bincode::serialize(&serialized).map_err(|e| GameError::internal(format!("Bincode compression error: {}", e)))?
             },
             CompressionType::MessagePack => {
-                rmps::to_vec(&serialized).map_err(|e| GameError::CompressionError(e.to_string()))?
+                rmps::to_vec(&serialized).map_err(|e| GameError::internal(format!("MessagePack compression error: {}", e)))?
             },
         };
         
@@ -239,21 +240,21 @@ impl CompressedData {
     }
     
     /// データの展開
-    pub fn decompress<T: for<'de> Deserialize<'de>>(&self) -> Result<T, GameError> {
+    pub fn decompress<T: for<'de> Deserialize<'de>>(&self) -> Result<T> {
         // 展開
         let decompressed = match self.compression_type {
             CompressionType::None => self.data.clone(),
             CompressionType::Zstd => {
                 decompress(&self.data, self.original_size)
-                    .map_err(|e| GameError::DecompressionError(e.to_string()))?
+                    .map_err(|e| GameError::internal(format!("Zstd decompression error: {}", e)))?
             },
             CompressionType::Bincode => {
                 bincode::deserialize::<Vec<u8>>(&self.data)
-                    .map_err(|e| GameError::DecompressionError(e.to_string()))?
+                    .map_err(|e| GameError::internal(format!("Bincode decompression error: {}", e)))?
             },
             CompressionType::MessagePack => {
                 rmps::from_slice::<Vec<u8>>(&self.data)
-                    .map_err(|e| GameError::DecompressionError(e.to_string()))?
+                    .map_err(|e| GameError::internal(format!("MessagePack decompression error: {}", e)))?
             },
         };
         
@@ -261,15 +262,15 @@ impl CompressedData {
         let result = match self.serialization_format {
             SerializationFormat::Json => {
                 serde_json::from_slice(&decompressed)
-                    .map_err(|e| GameError::DeserializationError(e.to_string()))?
+                    .map_err(|e| GameError::Serialization(e))?
             },
             SerializationFormat::Bincode => {
                 bincode::deserialize(&decompressed)
-                    .map_err(|e| GameError::DeserializationError(e.to_string()))?
+                    .map_err(|e| GameError::internal(format!("Bincode deserialization error: {}", e)))?
             },
             SerializationFormat::MessagePack => {
                 rmps::from_slice(&decompressed)
-                    .map_err(|e| GameError::DeserializationError(e.to_string()))?
+                    .map_err(|e| GameError::internal(format!("MessagePack deserialization error: {}", e)))?
             },
         };
         
@@ -326,9 +327,10 @@ impl PersistenceManager {
     }
     
     /// 完全なスナップショットの保存
-    pub async fn save_snapshot(&mut self, snapshot: GameStateSnapshot) -> Result<(), GameError> {
+    pub async fn save_snapshot(&mut self, snapshot: GameStateSnapshot) -> Result<()> {
         if !snapshot.verify_checksum() {
-            return Err(GameError::ChecksumMismatch);
+            error!("[PERSISTENCE] Checksum mismatch for snapshot");
+            return Err(GameError::validation("Checksum mismatch"));
         }
         
         let compressed = CompressedData::compress(
@@ -363,7 +365,10 @@ impl PersistenceManager {
             .bind(snapshot.checksum as i64)
             .execute(&self.db_pool)
             .await
-            .map_err(|e| GameError::DatabaseError(e.to_string()))?;
+            .map_err(|e| {
+                error!("[PERSISTENCE] Database error: {}", e);
+                GameError::Database(e)
+            })?;
         
         // キャッシュの更新
         self.last_snapshots.insert(snapshot.player_id, (snapshot.tick, snapshot));
@@ -372,7 +377,7 @@ impl PersistenceManager {
     }
     
     /// 差分の保存
-    pub async fn save_delta(&self, delta: GameStateDelta) -> Result<(), GameError> {
+    pub async fn save_delta(&self, delta: GameStateDelta) -> Result<()> {
         let compressed = CompressedData::compress(
             &delta,
             self.config.compression_type,
@@ -399,13 +404,16 @@ impl PersistenceManager {
             .bind(compressed.compressed_size as i32)
             .execute(&self.db_pool)
             .await
-            .map_err(|e| GameError::DatabaseError(e.to_string()))?;
+            .map_err(|e| {
+                error!("[PERSISTENCE] Database error: {}", e);
+                GameError::Database(e)
+            })?;
         
         Ok(())
     }
     
     /// スナップショットの読み込み
-    pub async fn load_snapshot(&mut self, player_id: Uuid, tick: Option<u64>) -> Result<Option<GameStateSnapshot>, GameError> {
+    pub async fn load_snapshot(&mut self, player_id: Uuid, tick: Option<u64>) -> Result<Option<GameStateSnapshot>> {
         // キャッシュから確認
         if let Some((cached_tick, cached_snapshot)) = self.last_snapshots.get(&player_id) {
             if tick.map_or(true, |t| t == *cached_tick) {
@@ -436,7 +444,10 @@ impl PersistenceManager {
         
         let row = query.fetch_optional(&self.db_pool)
             .await
-            .map_err(|e| GameError::DatabaseError(e.to_string()))?;
+            .map_err(|e| {
+                error!("[PERSISTENCE] Database error: {}", e);
+                GameError::Database(e)
+            })?;
         
         if let Some(row) = row {
             let data: Vec<u8> = row.get("data");
@@ -456,11 +467,13 @@ impl PersistenceManager {
             
             // チェックサムの検証
             if !snapshot.verify_checksum() {
-                return Err(GameError::ChecksumMismatch);
+                error!("[PERSISTENCE] Snapshot checksum verification failed");
+                return Err(GameError::validation("Snapshot checksum verification failed"));
             }
             
             if snapshot.checksum != stored_checksum as u64 {
-                return Err(GameError::ChecksumMismatch);
+                error!("[PERSISTENCE] Stored checksum mismatch: expected {}, got {}", stored_checksum, snapshot.checksum);
+                return Err(GameError::validation("Stored checksum mismatch"));
             }
             
             // キャッシュの更新
@@ -473,7 +486,7 @@ impl PersistenceManager {
     }
     
     /// 差分の読み込み
-    pub async fn load_deltas(&self, player_id: Uuid, from_tick: u64, to_tick: u64) -> Result<Vec<GameStateDelta>, GameError> {
+    pub async fn load_deltas(&self, player_id: Uuid, from_tick: u64, to_tick: u64) -> Result<Vec<GameStateDelta>> {
         let query = r#"
             SELECT data, compression_type, serialization_format
             FROM game_deltas
@@ -487,7 +500,10 @@ impl PersistenceManager {
             .bind(to_tick as i64)
             .fetch_all(&self.db_pool)
             .await
-            .map_err(|e| GameError::DatabaseError(e.to_string()))?;
+            .map_err(|e| {
+                error!("[PERSISTENCE] Database error: {}", e);
+                GameError::Database(e)
+            })?;
         
         let mut deltas = Vec::new();
         
@@ -512,7 +528,7 @@ impl PersistenceManager {
     }
     
     /// 差分を適用したスナップショットの復元
-    pub async fn restore_state(&mut self, player_id: Uuid, target_tick: u64) -> Result<Option<GameStateSnapshot>, GameError> {
+    pub async fn restore_state(&mut self, player_id: Uuid, target_tick: u64) -> Result<Option<GameStateSnapshot>> {
         // 最新のスナップショットを取得
         let mut snapshot = if let Some(snapshot) = self.load_snapshot(player_id, None).await? {
             snapshot
@@ -537,7 +553,7 @@ impl PersistenceManager {
     }
     
     /// 自動保存の開始
-    pub async fn start_auto_save(&self) -> Result<(), GameError> {
+    pub async fn start_auto_save(&self) -> Result<()> {
         let mut interval = interval(self.config.auto_save_interval);
         
         loop {
@@ -549,7 +565,7 @@ impl PersistenceManager {
     }
     
     /// 古いデータのクリーンアップ
-    pub async fn cleanup_old_data(&self) -> Result<(), GameError> {
+    pub async fn cleanup_old_data(&self) -> Result<()> {
         let cutoff_time = Utc::now() - chrono::Duration::days(30); // 30日前
         
         // 古いスナップショットの削除
@@ -570,7 +586,10 @@ impl PersistenceManager {
             .bind(self.config.max_snapshots as i64)
             .execute(&self.db_pool)
             .await
-            .map_err(|e| GameError::DatabaseError(e.to_string()))?;
+            .map_err(|e| {
+                error!("[PERSISTENCE] Database error: {}", e);
+                GameError::Database(e)
+            })?;
         
         // 古い差分の削除
         let query = r#"
@@ -582,13 +601,16 @@ impl PersistenceManager {
             .bind(cutoff_time)
             .execute(&self.db_pool)
             .await
-            .map_err(|e| GameError::DatabaseError(e.to_string()))?;
+            .map_err(|e| {
+                error!("[PERSISTENCE] Database error: {}", e);
+                GameError::Database(e)
+            })?;
         
         Ok(())
     }
     
     /// 統計情報の取得
-    pub async fn get_statistics(&self) -> Result<PersistenceStatistics, GameError> {
+    pub async fn get_statistics(&self) -> Result<PersistenceStatistics> {
         let query = r#"
             SELECT 
                 COUNT(*) as total_snapshots,
@@ -601,7 +623,10 @@ impl PersistenceManager {
         let row = sqlx::query(query)
             .fetch_one(&self.db_pool)
             .await
-            .map_err(|e| GameError::DatabaseError(e.to_string()))?;
+            .map_err(|e| {
+                error!("[PERSISTENCE] Database error: {}", e);
+                GameError::Database(e)
+            })?;
         
         Ok(PersistenceStatistics {
             total_snapshots: row.get::<i64, _>("total_snapshots") as u64,

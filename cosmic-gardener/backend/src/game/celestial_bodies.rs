@@ -3,8 +3,9 @@ use chrono::{DateTime, Utc};
 use nalgebra::{Vector3, Point3};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+use tracing::{info, warn, error, debug};
 
-use crate::errors::GameError;
+use crate::errors::{GameError, Result};
 use crate::game::resources::{Resources, ProductionRates, Fixed, fixed};
 
 /// 天体のID
@@ -317,13 +318,14 @@ impl CelestialBodyManager {
         body_type: CelestialType,
         position: Vec3Fixed,
         resources: &mut Resources,
-    ) -> Result<BodyId, GameError> {
+    ) -> Result<BodyId> {
         // 制限チェック
         self.validate_creation(&body_type, &position)?;
         
         // コストチェック
         if let Some(cost) = self.limits.creation_costs.get(&body_type) {
             if !resources.can_afford(cost) {
+                warn!("[CELESTIAL_BODIES] Insufficient resources for body creation");
                 return Err(GameError::InsufficientResources);
             }
             resources.spend(cost)?;
@@ -344,10 +346,11 @@ impl CelestialBodyManager {
     }
     
     /// 天体の削除
-    pub fn remove_body(&mut self, id: BodyId) -> Result<(), GameError> {
+    pub fn remove_body(&mut self, id: BodyId) -> Result<()> {
         if self.bodies.remove(&id).is_some() {
             Ok(())
         } else {
+            warn!("[CELESTIAL_BODIES] Body not found: {}", id);
             Err(GameError::BodyNotFound)
         }
     }
@@ -358,12 +361,13 @@ impl CelestialBodyManager {
     }
     
     /// 天体の更新
-    pub fn update_body(&mut self, id: BodyId, mut updater: impl FnMut(&mut CelestialBody)) -> Result<(), GameError> {
+    pub fn update_body(&mut self, id: BodyId, mut updater: impl FnMut(&mut CelestialBody)) -> Result<()> {
         if let Some(body) = self.bodies.get_mut(&id) {
             updater(body);
             body.last_updated = Utc::now();
             Ok(())
         } else {
+            warn!("[CELESTIAL_BODIES] Body not found for update: {}", id);
             Err(GameError::BodyNotFound)
         }
     }
@@ -520,9 +524,10 @@ impl CelestialBodyManager {
     }
     
     /// 作成の検証
-    fn validate_creation(&self, body_type: &CelestialType, position: &Vec3Fixed) -> Result<(), GameError> {
+    fn validate_creation(&self, body_type: &CelestialType, position: &Vec3Fixed) -> Result<()> {
         // 総数制限
         if self.bodies.len() >= self.limits.max_bodies {
+            warn!("[CELESTIAL_BODIES] Body limit reached: {} >= {}", self.bodies.len(), self.limits.max_bodies);
             return Err(GameError::BodyLimitReached);
         }
         
@@ -534,6 +539,7 @@ impl CelestialBodyManager {
         
         // 境界チェック
         if position.magnitude() > fixed::to_f64(self.limits.max_position) {
+            warn!("[CELESTIAL_BODIES] Position out of bounds: {} > {}", position.magnitude(), fixed::to_f64(self.limits.max_position));
             return Err(GameError::OutOfBounds);
         }
         
@@ -542,6 +548,7 @@ impl CelestialBodyManager {
             let distance = (position - body.physics.position).magnitude();
             let min_distance = fixed::to_f64(body.physics.radius + self.limits.min_separation);
             if distance < min_distance {
+                warn!("[CELESTIAL_BODIES] Bodies too close: distance {} < min_distance {}", distance, min_distance);
                 return Err(GameError::TooClose);
             }
         }

@@ -4,10 +4,11 @@ use argon2::password_hash::{rand_core::OsRng, SaltString};
 use chrono::{Duration, Utc};
 use jsonwebtoken::{encode, EncodingKey, Header};
 use sqlx::PgPool;
+use tracing::{error, warn};
 use uuid::Uuid;
 use validator::Validate;
 
-use crate::error::{AppError, Result};
+use crate::errors::{GameError, Result};
 use crate::models::{
     User, RegisterRequest, LoginRequest, LoginResponse, UserResponse,
     RefreshTokenRequest, RefreshTokenResponse, RefreshToken, JwtClaims,
@@ -32,7 +33,8 @@ pub async fn register(
     .await?;
 
     if existing_user.is_some() {
-        return Err(AppError::Conflict("Email or username already exists".to_string()));
+        error!("[AUTH] Email or username already exists for: {} / {}", user_data.email, user_data.username);
+        return Err(GameError::conflict("Email or username already exists"));
     }
 
     // パスワードハッシュ化
@@ -86,7 +88,10 @@ pub async fn login(
     )
     .fetch_optional(pool.get_ref())
     .await?
-    .ok_or_else(|| AppError::AuthenticationError("Invalid credentials".to_string()))?;
+    .ok_or_else(|| {
+        warn!("[AUTH] User not found for email: {}", login_data.email);
+        GameError::authentication("Invalid credentials")
+    })?;
 
     // パスワード検証
     let argon2 = Argon2::default();
@@ -96,7 +101,8 @@ pub async fn login(
         .verify_password(login_data.password.as_bytes(), &parsed_hash)
         .is_err()
     {
-        return Err(AppError::AuthenticationError("Invalid credentials".to_string()));
+        warn!("[AUTH] Invalid password for email: {}", login_data.email);
+        return Err(GameError::authentication("Invalid credentials"));
     }
 
     // JWTトークン生成
@@ -160,7 +166,10 @@ pub async fn refresh_token(
     )
     .fetch_optional(pool.get_ref())
     .await?
-    .ok_or_else(|| AppError::AuthenticationError("Invalid refresh token".to_string()))?;
+    .ok_or_else(|| {
+        warn!("[AUTH] Invalid refresh token");
+        GameError::authentication("Invalid refresh token")
+    })?;
 
     // ユーザー検索
     let user = sqlx::query_as!(
@@ -170,7 +179,10 @@ pub async fn refresh_token(
     )
     .fetch_optional(pool.get_ref())
     .await?
-    .ok_or_else(|| AppError::AuthenticationError("User not found".to_string()))?;
+    .ok_or_else(|| {
+        error!("[AUTH] User not found for refresh token: {}", refresh_token.user_id);
+        GameError::authentication("User not found")
+    })?;
 
     // 新しいトークン生成
     let new_access_token = jwt_service.generate_access_token(&user)?;

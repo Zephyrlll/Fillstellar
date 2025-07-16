@@ -1,4 +1,4 @@
-import { gameState } from './state.js';
+import { gameState, gameStateManager } from './state.js';
 let currentChart = 'resources';
 function updateStatisticsDisplay() {
     try {
@@ -437,6 +437,12 @@ export function updateStatistics() {
         return;
     }
     try {
+        // Create new statistics object to maintain immutability
+        const newStatistics = {
+            ...gameState.statistics,
+            resources: { ...gameState.statistics.resources },
+            cosmic: { ...gameState.statistics.cosmic }
+        };
         const resources = ['cosmicDust', 'energy', 'organicMatter', 'biomass', 'darkMatter', 'thoughtPoints'];
         resources.forEach(resource => {
             const current = gameState[resource] || 0;
@@ -445,8 +451,8 @@ export function updateStatistics() {
                 console.warn(`[STATISTICS] Resource stats not found for ${resource}`);
                 return;
             }
-            // TypeScript needs explicit type assertion here
-            const resourceStats = stats;
+            // Create new resource stats object
+            const resourceStats = { ...stats };
             if (resourceStats.previousValue === undefined) {
                 resourceStats.previousValue = current;
                 resourceStats.total = current;
@@ -464,6 +470,8 @@ export function updateStatistics() {
                     resourceStats.perHour = resourceStats.perSecond * 3600;
                 }
             }
+            // Create new history array
+            resourceStats.history = [...resourceStats.history];
             resourceStats.history.push({
                 time: now,
                 value: current,
@@ -472,6 +480,8 @@ export function updateStatistics() {
             if (resourceStats.history.length > gameState.statistics.maxHistoryPoints) {
                 resourceStats.history.shift();
             }
+            // Update the new statistics object
+            newStatistics.resources[resource] = resourceStats;
         });
         const starCount = gameState.stars.filter(s => s.userData.type === 'star').length;
         const planetCount = gameState.stars.filter(s => s.userData.type === 'planet').length;
@@ -496,11 +506,11 @@ export function updateStatistics() {
                 return sum;
             const mass = body.userData.mass || 0;
             if (body.userData.type === 'star' || body.userData.type === 'planet') {
-                console.log(`[STATISTICS] ${body.userData.type} "${body.userData.name}": mass = ${mass}`);
+                // Debug: console.log(`[STATISTICS] ${body.userData.type} "${body.userData.name}": mass = ${mass}`);
             }
             return sum + mass;
         }, 0);
-        console.log(`[STATISTICS] Total mass calculated: ${totalMass}`);
+        // Debug: console.log(`[STATISTICS] Total mass calculated: ${totalMass}`);
         const cosmicStats = [
             { key: 'starCount', value: starCount },
             { key: 'planetCount', value: planetCount },
@@ -521,17 +531,27 @@ export function updateStatistics() {
                 console.warn(`[STATISTICS] Cosmic stats not found for ${key}`);
                 return;
             }
+            // Create new cosmic stats object
+            const cosmicStatsCopy = { ...stats };
+            cosmicStatsCopy.history = [...stats.history];
             const safeValue = (typeof value === 'number' && isFinite(value)) ? value : 0;
-            stats.current = safeValue;
-            stats.history.push({
+            cosmicStatsCopy.current = safeValue;
+            cosmicStatsCopy.history.push({
                 time: now,
                 value: safeValue
             });
-            if (stats.history.length > gameState.statistics.maxHistoryPoints) {
-                stats.history.shift();
+            if (cosmicStatsCopy.history.length > gameState.statistics.maxHistoryPoints) {
+                cosmicStatsCopy.history.shift();
             }
+            // Update the new statistics object
+            newStatistics.cosmic[key] = cosmicStatsCopy;
         });
-        gameState.statistics.lastUpdate = now;
+        newStatistics.lastUpdate = now;
+        // Update state using gameStateManager
+        gameStateManager.updateState(state => ({
+            ...state,
+            statistics: newStatistics
+        }));
         updateStatisticsDisplay();
     }
     catch (error) {

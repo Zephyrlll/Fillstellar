@@ -5,7 +5,7 @@ use sqlx::{PgPool, Row};
 use uuid::Uuid;
 use tracing::{info, warn, error};
 
-use crate::errors::GameError;
+use crate::errors::{GameError, Result};
 use crate::game::persistence::{GameStateSnapshot, PersistenceManager};
 use crate::game::resources::Resources;
 use crate::game::celestial_bodies::{CelestialBody, BodyId};
@@ -64,7 +64,7 @@ pub struct DataMigration;
 impl DataMigration {
     /// V1からV2への移行
     pub async fn migrate_v1_to_v2(pool: &PgPool) -> Result<(), MigrationError> {
-        info!("Starting migration from V1 to V2");
+        info!("[MIGRATION] Starting migration from V1 to V2");
         
         // 既存のgame_savesテーブルからデータを読み取り
         let rows = sqlx::query(r#"
@@ -87,23 +87,23 @@ impl DataMigration {
                 Ok(v2_snapshot) => {
                     // 新しいフォーマットで保存
                     if let Err(e) = Self::save_v2_snapshot(pool, &v2_snapshot).await {
-                        error!("Failed to save migrated data for player {}: {}", player_id, e);
+                        error!("[MIGRATION] Failed to save migrated data for player {}: {}", player_id, e);
                         error_count += 1;
                     } else {
                         migrated_count += 1;
                     }
                 }
                 Err(e) => {
-                    error!("Failed to convert data for player {}: {}", player_id, e);
+                    error!("[MIGRATION] Failed to convert data for player {}: {}", player_id, e);
                     error_count += 1;
                 }
             }
         }
         
-        info!("Migration completed: {} migrated, {} errors", migrated_count, error_count);
+        info!("[MIGRATION] Migration completed: {} migrated, {} errors", migrated_count, error_count);
         
         if error_count > 0 {
-            warn!("Migration completed with {} errors", error_count);
+            warn!("[MIGRATION] Migration completed with {} errors", error_count);
         }
         
         Ok(())
@@ -171,7 +171,7 @@ impl DataMigration {
     
     /// 天体データの移行
     pub async fn migrate_celestial_bodies(pool: &PgPool) -> Result<(), MigrationError> {
-        info!("Migrating celestial bodies data");
+        info!("[MIGRATION] Migrating celestial bodies data");
         
         // 最新のスナップショットから天体データを抽出
         let snapshots = sqlx::query(r#"
@@ -199,11 +199,11 @@ impl DataMigration {
             match compressed.decompress::<GameStateV2>() {
                 Ok(snapshot) => {
                     if let Err(e) = Self::save_celestial_bodies(pool, player_id, &snapshot.bodies).await {
-                        warn!("Failed to save celestial bodies for player {}: {}", player_id, e);
+                        warn!("[MIGRATION] Failed to save celestial bodies for player {}: {}", player_id, e);
                     }
                 }
                 Err(e) => {
-                    warn!("Failed to decompress snapshot for player {}: {}", player_id, e);
+                    warn!("[MIGRATION] Failed to decompress snapshot for player {}: {}", player_id, e);
                 }
             }
         }
@@ -255,7 +255,7 @@ impl DataMigration {
     
     /// データ整合性チェック
     pub async fn verify_data_integrity(pool: &PgPool) -> Result<(), MigrationError> {
-        info!("Verifying data integrity");
+        info!("[MIGRATION] Verifying data integrity");
         
         // チェックサムの検証
         let invalid_checksums = sqlx::query(r#"
@@ -267,12 +267,12 @@ impl DataMigration {
         .await?;
         
         if !invalid_checksums.is_empty() {
-            warn!("Found {} snapshots with invalid checksums", invalid_checksums.len());
+            warn!("[MIGRATION] Found {} snapshots with invalid checksums", invalid_checksums.len());
             
             for row in invalid_checksums {
                 let player_id: Uuid = row.get("player_id");
                 let tick: i64 = row.get("tick");
-                warn!("Invalid checksum for player {} at tick {}", player_id, tick);
+                warn!("[MIGRATION] Invalid checksum for player {} at tick {}", player_id, tick);
             }
         }
         
@@ -287,7 +287,7 @@ impl DataMigration {
         .await?;
         
         if !orphaned_bodies.is_empty() {
-            warn!("Found {} orphaned celestial bodies", orphaned_bodies.len());
+            warn!("[MIGRATION] Found {} orphaned celestial bodies", orphaned_bodies.len());
             
             // 孤立した天体を削除
             sqlx::query(r#"
@@ -309,7 +309,7 @@ impl DataMigration {
         .await?;
         
         if !duplicates.is_empty() {
-            warn!("Found {} duplicate snapshots", duplicates.len());
+            warn!("[MIGRATION] Found {} duplicate snapshots", duplicates.len());
             
             // 重複を削除（最新のものを保持）
             sqlx::query(r#"
@@ -324,13 +324,13 @@ impl DataMigration {
             .await?;
         }
         
-        info!("Data integrity verification completed");
+        info!("[MIGRATION] Data integrity verification completed");
         Ok(())
     }
     
     /// 統計データの再計算
     pub async fn recalculate_statistics(pool: &PgPool) -> Result<(), MigrationError> {
-        info!("Recalculating player statistics");
+        info!("[MIGRATION] Recalculating player statistics");
         
         // 全プレイヤーの統計を再計算
         let players = sqlx::query(r#"
@@ -408,7 +408,7 @@ impl DataMigration {
             .await?;
         }
         
-        info!("Statistics recalculation completed");
+        info!("[MIGRATION] Statistics recalculation completed");
         Ok(())
     }
 }
@@ -501,7 +501,7 @@ impl MigrationManager {
     
     /// 単一のマイグレーションを実行
     pub async fn run_migration(&self, migration: &Migration) -> Result<(), MigrationError> {
-        info!("Running migration {}: {}", migration.version.0, migration.description);
+        info!("[MIGRATION] Running migration {}: {}", migration.version.0, migration.description);
         
         let mut tx = self.pool.begin().await?;
         
@@ -526,7 +526,7 @@ impl MigrationManager {
         
         tx.commit().await?;
         
-        info!("Migration {} completed successfully", migration.version.0);
+        info!("[MIGRATION] Migration {} completed successfully", migration.version.0);
         Ok(())
     }
     
@@ -537,17 +537,17 @@ impl MigrationManager {
         let pending = self.pending_migrations().await?;
         
         if pending.is_empty() {
-            info!("No pending migrations");
+            info!("[MIGRATION] No pending migrations");
             return Ok(());
         }
         
-        info!("Running {} pending migrations", pending.len());
+        info!("[MIGRATION] Running {} pending migrations", pending.len());
         
         for migration in pending {
             self.run_migration(migration).await?;
         }
         
-        info!("All migrations completed successfully");
+        info!("[MIGRATION] All migrations completed successfully");
         Ok(())
     }
     
@@ -563,10 +563,10 @@ impl MigrationManager {
             .filter(|m| m.version > target_version && m.version <= current)
             .collect();
         
-        info!("Rolling back {} migrations", rollback_migrations.len());
+        info!("[MIGRATION] Rolling back {} migrations", rollback_migrations.len());
         
         for migration in rollback_migrations.iter().rev() {
-            info!("Rolling back migration {}: {}", migration.version.0, migration.description);
+            info!("[MIGRATION] Rolling back migration {}: {}", migration.version.0, migration.description);
             
             let mut tx = self.pool.begin().await?;
             
@@ -586,7 +586,7 @@ impl MigrationManager {
             tx.commit().await?;
         }
         
-        info!("Rollback completed successfully");
+        info!("[MIGRATION] Rollback completed successfully");
         Ok(())
     }
     

@@ -1,5 +1,5 @@
 
-import { gameState, PlanetUserData } from './state.js';
+import { gameState, gameStateManager, PlanetUserData } from './state.js';
 
 // Type definitions for statistics
 interface StatisticsHistory {
@@ -513,7 +513,13 @@ export function updateStatistics(): void {
     }
     
     try {
-    
+        // Create new statistics object to maintain immutability
+        const newStatistics = {
+            ...gameState.statistics,
+            resources: { ...gameState.statistics.resources },
+            cosmic: { ...gameState.statistics.cosmic }
+        };
+        
         const resources: ResourceKey[] = ['cosmicDust', 'energy', 'organicMatter', 'biomass', 'darkMatter', 'thoughtPoints'];
         resources.forEach(resource => {
             const current = gameState[resource] || 0;
@@ -523,8 +529,8 @@ export function updateStatistics(): void {
                 return;
             }
             
-            // TypeScript needs explicit type assertion here
-            const resourceStats = stats as any as ResourceStatistics;
+            // Create new resource stats object
+            const resourceStats = { ...(stats as any as ResourceStatistics) };
             
             if (resourceStats.previousValue === undefined) {
                 resourceStats.previousValue = current;
@@ -546,6 +552,8 @@ export function updateStatistics(): void {
                 }
             }
             
+            // Create new history array
+            resourceStats.history = [...resourceStats.history];
             resourceStats.history.push({
                 time: now,
                 value: current,
@@ -555,6 +563,9 @@ export function updateStatistics(): void {
             if (resourceStats.history.length > gameState.statistics.maxHistoryPoints) {
                 resourceStats.history.shift();
             }
+            
+            // Update the new statistics object
+            newStatistics.resources[resource] = resourceStats as any;
     });
     
     const starCount = gameState.stars.filter(s => s.userData.type === 'star').length;
@@ -584,11 +595,11 @@ export function updateStatistics(): void {
         if (!body.userData) return sum;
         const mass = body.userData.mass || 0;
         if (body.userData.type === 'star' || body.userData.type === 'planet') {
-                console.log(`[STATISTICS] ${body.userData.type} "${body.userData.name}": mass = ${mass}`);
+                // Debug: console.log(`[STATISTICS] ${body.userData.type} "${body.userData.name}": mass = ${mass}`);
             }
             return sum + mass;
         }, 0);
-        console.log(`[STATISTICS] Total mass calculated: ${totalMass}`);
+        // Debug: console.log(`[STATISTICS] Total mass calculated: ${totalMass}`);
     
     const cosmicStats = [
         { key: 'starCount', value: starCount },
@@ -611,21 +622,35 @@ export function updateStatistics(): void {
                 console.warn(`[STATISTICS] Cosmic stats not found for ${key}`);
                 return;
             }
+            
+            // Create new cosmic stats object
+            const cosmicStatsCopy = { ...stats };
+            cosmicStatsCopy.history = [...stats.history];
         
         const safeValue = (typeof value === 'number' && isFinite(value)) ? value : 0;
-        stats.current = safeValue;
+        cosmicStatsCopy.current = safeValue;
         
-        stats.history.push({
+        cosmicStatsCopy.history.push({
             time: now,
             value: safeValue
         });
         
-        if (stats.history.length > gameState.statistics.maxHistoryPoints) {
-            stats.history.shift();
+        if (cosmicStatsCopy.history.length > gameState.statistics.maxHistoryPoints) {
+            cosmicStatsCopy.history.shift();
         }
+        
+        // Update the new statistics object
+        newStatistics.cosmic[key] = cosmicStatsCopy;
     });
     
-        gameState.statistics.lastUpdate = now;
+        newStatistics.lastUpdate = now;
+        
+        // Update state using gameStateManager
+        gameStateManager.updateState(state => ({
+            ...state,
+            statistics: newStatistics
+        }));
+        
         updateStatisticsDisplay();
     } catch (error) {
         console.error('[STATISTICS] Failed to update statistics:', error);

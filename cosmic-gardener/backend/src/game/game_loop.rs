@@ -7,7 +7,7 @@ use uuid::Uuid;
 use chrono::{DateTime, Utc};
 use tracing::{info, warn, error, debug};
 
-use crate::errors::GameError;
+use crate::errors::{GameError, Result};
 use crate::game::resources::{ResourceManager, Resources};
 use crate::game::celestial_bodies::{CelestialBodyManager, CelestialBody, BodyId};
 use crate::game::physics::PhysicsEngine;
@@ -128,7 +128,7 @@ impl PlayerState {
     }
     
     /// プレイヤー状態の更新
-    pub fn update(&mut self, delta_time_ms: u64) -> Result<Vec<GameEvent>, GameError> {
+    pub fn update(&mut self, delta_time_ms: u64) -> Result<Vec<GameEvent>> {
         let mut events = Vec::new();
         
         // リソースの蓄積
@@ -162,7 +162,7 @@ impl PlayerState {
     }
     
     /// スナップショットから状態を復元
-    pub fn restore_from_snapshot(&mut self, snapshot: &GameStateSnapshot) -> Result<(), GameError> {
+    pub fn restore_from_snapshot(&mut self, snapshot: &GameStateSnapshot) -> Result<()> {
         // リソースマネージャーの復元
         let mut game_state = crate::game::resources::GameState {
             resources: snapshot.resources.clone(),
@@ -253,8 +253,8 @@ impl GameLoop {
     }
     
     /// ゲームループの開始
-    pub async fn start(&mut self) -> Result<(), GameError> {
-        info!("Starting game loop with tick rate: {} Hz", self.config.tick_rate);
+    pub async fn start(&mut self) -> Result<()> {
+        info!("[GAME_LOOP] Starting game loop with tick rate: {} Hz", self.config.tick_rate);
         
         self.running = true;
         let mut ticker = interval(self.tick_duration);
@@ -265,39 +265,39 @@ impl GameLoop {
             tokio::select! {
                 _ = ticker.tick() => {
                     if let Err(e) = self.tick().await {
-                        error!("Error in game tick: {}", e);
+                        error!("[GAME_LOOP] Error in game tick: {}", e);
                     }
                 }
                 _ = save_ticker.tick() => {
                     if let Err(e) = self.auto_save().await {
-                        error!("Error in auto save: {}", e);
+                        error!("[GAME_LOOP] Error in auto save: {}", e);
                     }
                 }
                 _ = cleanup_ticker.tick() => {
                     if let Err(e) = self.cleanup().await {
-                        error!("Error in cleanup: {}", e);
+                        error!("[GAME_LOOP] Error in cleanup: {}", e);
                     }
                 }
                 Some(command) = self.command_receiver.recv() => {
                     if let Err(e) = self.handle_command(command).await {
-                        error!("Error handling command: {}", e);
+                        error!("[GAME_LOOP] Error handling command: {}", e);
                     }
                 }
             }
         }
         
-        info!("Game loop stopped");
+        info!("[GAME_LOOP] Game loop stopped");
         Ok(())
     }
     
     /// ゲームループの停止
     pub fn stop(&mut self) {
-        info!("Stopping game loop");
+        info!("[GAME_LOOP] Stopping game loop");
         self.running = false;
     }
     
     /// 1ティックの処理
-    async fn tick(&mut self) -> Result<(), GameError> {
+    async fn tick(&mut self) -> Result<()> {
         let tick_start = Instant::now();
         
         // プレイヤー状態の更新
@@ -326,7 +326,7 @@ impl GameLoop {
                     total_bodies += player_state.celestial_manager.get_body_count();
                 }
                 Err(e) => {
-                    warn!("Error updating player {}: {}", player_id, e);
+                    warn!("[GAME_LOOP] Error updating player {}: {}", player_id, e);
                 }
             }
         }
@@ -334,7 +334,7 @@ impl GameLoop {
         // イベントの送信
         for event in events {
             if let Err(e) = self.event_sender.send(event).await {
-                warn!("Failed to send event: {}", e);
+                warn!("[GAME_LOOP] Failed to send event: {}", e);
             }
         }
         
@@ -357,11 +357,11 @@ impl GameLoop {
         
         // パフォーマンス警告
         if tick_duration > self.config.max_delta_time {
-            warn!("Tick duration exceeded limit: {:?} > {:?}", tick_duration, self.config.max_delta_time);
+            warn!("[GAME_LOOP] Tick duration exceeded limit: {:?} > {:?}", tick_duration, self.config.max_delta_time);
         }
         
         if self.config.performance_monitoring && self.current_tick % 200 == 0 {
-            info!("Performance: tick={}, duration={:?}, avg={:?}, players={}, bodies={}",
+            info!("[GAME_LOOP] Performance: tick={}, duration={:?}, avg={:?}, players={}, bodies={}",
                 self.current_tick,
                 tick_duration,
                 self.performance_metrics.average_tick_duration,
@@ -376,7 +376,7 @@ impl GameLoop {
     }
     
     /// コマンドの処理
-    async fn handle_command(&mut self, command: GameCommand) -> Result<(), GameError> {
+    async fn handle_command(&mut self, command: GameCommand) -> Result<()> {
         match command {
             GameCommand::CreateCelestialBody { player_id, body_type, position } => {
                 self.handle_create_body(player_id, body_type, position).await?;
@@ -407,11 +407,15 @@ impl GameLoop {
         player_id: PlayerId,
         body_type: crate::game::celestial_bodies::CelestialType,
         position: crate::game::celestial_bodies::Vec3Fixed,
-    ) -> Result<(), GameError> {
+    ) -> Result<()> {
         let mut players = self.players.write().await;
         
         // プレイヤーの確認
-        let player = players.get_mut(&player_id).ok_or(GameError::PlayerNotFound)?;
+        let player = players.get_mut(&player_id)
+            .ok_or_else(|| {
+                warn!("[GAME_LOOP] Player not found: {}", player_id);
+                GameError::not_found(format!("Player {} not found", player_id))
+            })?;
         
         // バリデーション
         self.validation_engine.validate_body_creation(
@@ -436,17 +440,21 @@ impl GameLoop {
         };
         
         if let Err(e) = self.event_sender.send(event).await {
-            warn!("Failed to send event: {}", e);
+            warn!("[GAME_LOOP] Failed to send event: {}", e);
         }
         
         Ok(())
     }
     
     /// 天体削除の処理
-    async fn handle_remove_body(&mut self, player_id: PlayerId, body_id: BodyId) -> Result<(), GameError> {
+    async fn handle_remove_body(&mut self, player_id: PlayerId, body_id: BodyId) -> Result<()> {
         let mut players = self.players.write().await;
         
-        let player = players.get_mut(&player_id).ok_or(GameError::PlayerNotFound)?;
+        let player = players.get_mut(&player_id)
+            .ok_or_else(|| {
+                warn!("[GAME_LOOP] Player not found: {}", player_id);
+                GameError::not_found(format!("Player {} not found", player_id))
+            })?;
         
         player.celestial_manager.remove_body(body_id)?;
         
@@ -456,7 +464,7 @@ impl GameLoop {
         };
         
         if let Err(e) = self.event_sender.send(event).await {
-            warn!("Failed to send event: {}", e);
+            warn!("[GAME_LOOP] Failed to send event: {}", e);
         }
         
         Ok(())
@@ -467,10 +475,14 @@ impl GameLoop {
         &mut self,
         player_id: PlayerId,
         upgrade_type: crate::game::resources::UpgradeType,
-    ) -> Result<(), GameError> {
+    ) -> Result<()> {
         let mut players = self.players.write().await;
         
-        let player = players.get_mut(&player_id).ok_or(GameError::PlayerNotFound)?;
+        let player = players.get_mut(&player_id)
+            .ok_or_else(|| {
+                warn!("[GAME_LOOP] Player not found: {}", player_id);
+                GameError::not_found(format!("Player {} not found", player_id))
+            })?;
         
         player.resource_manager.apply_upgrade(upgrade_type)?;
         
@@ -480,17 +492,21 @@ impl GameLoop {
         };
         
         if let Err(e) = self.event_sender.send(event).await {
-            warn!("Failed to send event: {}", e);
+            warn!("[GAME_LOOP] Failed to send event: {}", e);
         }
         
         Ok(())
     }
     
     /// ゲーム保存の処理
-    async fn handle_save_game(&mut self, player_id: PlayerId) -> Result<(), GameError> {
+    async fn handle_save_game(&mut self, player_id: PlayerId) -> Result<()> {
         let players = self.players.read().await;
         
-        let player = players.get(&player_id).ok_or(GameError::PlayerNotFound)?;
+        let player = players.get(&player_id)
+            .ok_or_else(|| {
+                warn!("[GAME_LOOP] Player not found: {}", player_id);
+                GameError::not_found(format!("Player {} not found", player_id))
+            })?;
         
         let snapshot = player.create_snapshot(self.current_tick);
         self.persistence_manager.save_snapshot(snapshot).await?;
@@ -501,7 +517,7 @@ impl GameLoop {
         };
         
         if let Err(e) = self.event_sender.send(event).await {
-            warn!("Failed to send event: {}", e);
+            warn!("[GAME_LOOP] Failed to send event: {}", e);
         }
         
         self.performance_metrics.save_operations += 1;
@@ -510,7 +526,7 @@ impl GameLoop {
     }
     
     /// ゲーム読み込みの処理
-    async fn handle_load_game(&mut self, player_id: PlayerId) -> Result<(), GameError> {
+    async fn handle_load_game(&mut self, player_id: PlayerId) -> Result<()> {
         let snapshot = self.persistence_manager.load_snapshot(player_id, None).await?;
         
         if let Some(snapshot) = snapshot {
@@ -528,7 +544,7 @@ impl GameLoop {
             };
             
             if let Err(e) = self.event_sender.send(event).await {
-                warn!("Failed to send event: {}", e);
+                warn!("[GAME_LOOP] Failed to send event: {}", e);
             }
             
             self.performance_metrics.load_operations += 1;
@@ -538,16 +554,20 @@ impl GameLoop {
     }
     
     /// ゲーム状態取得の処理
-    async fn handle_get_state(&self, player_id: PlayerId) -> Result<GameStateSnapshot, GameError> {
+    async fn handle_get_state(&self, player_id: PlayerId) -> Result<GameStateSnapshot> {
         let players = self.players.read().await;
         
-        let player = players.get(&player_id).ok_or(GameError::PlayerNotFound)?;
+        let player = players.get(&player_id)
+            .ok_or_else(|| {
+                warn!("[GAME_LOOP] Player not found: {}", player_id);
+                GameError::not_found(format!("Player {} not found", player_id))
+            })?;
         
         Ok(player.create_snapshot(self.current_tick))
     }
     
     /// 自動保存
-    async fn auto_save(&mut self) -> Result<(), GameError> {
+    async fn auto_save(&mut self) -> Result<()> {
         let players = self.players.read().await;
         
         for (player_id, player_state) in players.iter() {
@@ -558,7 +578,7 @@ impl GameLoop {
             let snapshot = player_state.create_snapshot(self.current_tick);
             
             if let Err(e) = self.persistence_manager.save_snapshot(snapshot).await {
-                warn!("Failed to auto save for player {}: {}", player_id, e);
+                warn!("[GAME_LOOP] Failed to auto save for player {}: {}", player_id, e);
             }
         }
         
@@ -566,7 +586,7 @@ impl GameLoop {
     }
     
     /// クリーンアップ
-    async fn cleanup(&mut self) -> Result<(), GameError> {
+    async fn cleanup(&mut self) -> Result<()> {
         // 非アクティブプレイヤーの削除
         let mut players = self.players.write().await;
         let inactive_cutoff = Utc::now() - chrono::Duration::hours(24);
@@ -577,18 +597,19 @@ impl GameLoop {
         
         // 古いデータのクリーンアップ
         if let Err(e) = self.persistence_manager.cleanup_old_data().await {
-            warn!("Failed to cleanup old data: {}", e);
+            warn!("[GAME_LOOP] Failed to cleanup old data: {}", e);
         }
         
         Ok(())
     }
     
     /// プレイヤーの追加
-    pub async fn add_player(&mut self, player_id: PlayerId) -> Result<(), GameError> {
+    pub async fn add_player(&mut self, player_id: PlayerId) -> Result<()> {
         let mut players = self.players.write().await;
         
         if players.len() >= self.config.max_players {
-            return Err(GameError::PlayerLimitReached);
+            error!("[GAME_LOOP] Player limit reached: {} >= {}", players.len(), self.config.max_players);
+            return Err(GameError::business_logic("Player limit reached"));
         }
         
         let player_state = PlayerState::new(player_id, self.tick_duration.as_millis() as u64);
@@ -598,14 +619,14 @@ impl GameLoop {
     }
     
     /// プレイヤーの削除
-    pub async fn remove_player(&mut self, player_id: PlayerId) -> Result<(), GameError> {
+    pub async fn remove_player(&mut self, player_id: PlayerId) -> Result<()> {
         let mut players = self.players.write().await;
         
         if let Some(player_state) = players.remove(&player_id) {
             // 最終保存
             let snapshot = player_state.create_snapshot(self.current_tick);
             if let Err(e) = self.persistence_manager.save_snapshot(snapshot).await {
-                warn!("Failed to save final state for player {}: {}", player_id, e);
+                warn!("[GAME_LOOP] Failed to save final state for player {}: {}", player_id, e);
             }
         }
         

@@ -1,7 +1,7 @@
 
 import * as THREE from 'three';
 import { scene, camera, renderer, composer, controls } from './js/threeSetup.js';
-import { gameState, PlanetUserData } from './js/state.js';
+import { gameState, gameStateManager, PlanetUserData } from './js/state.js';
 import { saveGame, loadGame } from './js/saveload.js';
 import { updateUI, debouncedUpdateGalaxyMap, ui } from './js/ui.js';
 import { createCelestialBody, checkLifeSpawn, evolveLife } from './js/celestialBody.js';
@@ -18,9 +18,9 @@ import { initProductionUI, updateProductionUI } from './js/productionUI.js';
 import { resourceParticleSystem } from './js/resourceParticles.js';
 import { productionChainUI } from './js/productionChainUI.js';
 // @ts-ignore
-import { catalystManager, CatalystType } from './dist/js/catalystSystem.js';
+import { catalystManager, CatalystType } from './js/catalystSystem.js';
 // @ts-ignore
-import { currencyManager } from './dist/js/currencySystem.js';
+import { currencyManager } from './js/currencySystem.js';
 // Graphics system imports
 import { performanceMonitor } from './js/performanceMonitor.js';
 import { graphicsEngine } from './js/graphicsEngine.js';
@@ -76,7 +76,12 @@ function createStarfield() {
     scene.add(starfield);
 }
 
+let animationCount = 0;
 function animate() {
+    if (animationCount < 5) {
+        console.log('[ANIMATE] Animation frame:', animationCount);
+        animationCount++;
+    }
     requestAnimationFrame(animate);
     
     // Update performance monitor
@@ -91,7 +96,7 @@ function animate() {
     
     const rawDeltaTime = (now - gameState.lastTick) / 1000;
     if (!isFinite(rawDeltaTime) || rawDeltaTime < 0 || rawDeltaTime > 1) {
-        gameState.lastTick = now;
+        gameStateManager.updateState(state => ({ ...state, lastTick: now }));
         return;
     }
     
@@ -107,14 +112,20 @@ function animate() {
     const animationDeltaTime = deltaTime * 0.2;
     
     if (!isFinite(animationDeltaTime) || animationDeltaTime <= 0) {
-        console.warn('Invalid animationDeltaTime:', { rawDeltaTime, timeMultiplier, deltaTime, animationDeltaTime, currentTimeMultiplier: gameState.currentTimeMultiplier });
-        gameState.lastTick = now;
+        console.warn('[GAME] Invalid animationDeltaTime:', { rawDeltaTime, timeMultiplier, deltaTime, animationDeltaTime, currentTimeMultiplier: gameState.currentTimeMultiplier });
+        gameStateManager.updateState(state => ({ ...state, lastTick: now }));
         return;
     }
     
-    gameState.lastTick = now;
-
-    gameState.gameYear += deltaTime / 5;
+    // Prepare batch updates
+    let batchUpdates: Array<(state: any) => any> = [];
+    
+    // Update lastTick and gameYear
+    batchUpdates.push(state => ({
+        ...state,
+        lastTick: now,
+        gameYear: state.gameYear + deltaTime / 5
+    }));
     updatePhysics(animationDeltaTime);
     
     let totalVelocity = 0;
@@ -129,11 +140,13 @@ function animate() {
         }
     });
     
-    if (movingBodies > 0) {
-        const averageVelocity = totalVelocity / movingBodies;
-        gameState.cosmicActivity = averageVelocity * Math.sqrt(movingBodies) * 0.01;
-    } else {
-        gameState.cosmicActivity = 0;
+    const newCosmicActivity = movingBodies > 0
+        ? (totalVelocity / movingBodies) * Math.sqrt(movingBodies) * 0.01
+        : 0;
+    
+    // Only update cosmic activity if it changed significantly
+    if (Math.abs(newCosmicActivity - gameState.cosmicActivity) > 0.001) {
+        batchUpdates.push(state => ({ ...state, cosmicActivity: newCosmicActivity }));
     }
 
     let dustRate = 1 + gameState.dustUpgradeLevel * 0.5 + (gameState.researchEnhancedDust ? 2 : 0);
@@ -178,43 +191,102 @@ function animate() {
                             organicRate = 1.0; biomassRate = 0.5; populationGrowthRate = 0.5;
                             intelligentLifeCount++;
                             let thoughtPointRate = (((body.userData as PlanetUserData).population || 0) / 1000000) * (1 + gameState.cosmicActivity / 10000);
-                            gameState.thoughtPoints += thoughtPointRate * deltaTime;
-                            gameState.resources.thoughtPoints += thoughtPointRate * deltaTime;
+                            const thoughtPointsToAdd = thoughtPointRate * deltaTime;
+                            
+                            // Only add to batch if significant amount
+                            if (thoughtPointsToAdd > 0.01) {
+                                batchUpdates.push(state => ({
+                                    ...state,
+                                    thoughtPoints: state.thoughtPoints + thoughtPointsToAdd,
+                                    resources: {
+                                        ...state.resources,
+                                        thoughtPoints: state.resources.thoughtPoints + thoughtPointsToAdd
+                                    }
+                                }));
+                            }
                             break;
                     }
-                    gameState.organicMatter += organicRate * deltaTime;
-                    gameState.resources.organicMatter += organicRate * deltaTime;
-                    gameState.biomass += biomassRate * deltaTime;
-                    gameState.resources.biomass += biomassRate * deltaTime;
+                    const organicToAdd = organicRate * deltaTime;
+                    const biomassToAdd = biomassRate * deltaTime;
+                    
+                    // Only add to batch if significant amounts
+                    if (organicToAdd > 0.01 || biomassToAdd > 0.01) {
+                        batchUpdates.push(state => ({
+                            ...state,
+                            organicMatter: state.organicMatter + organicToAdd,
+                            biomass: state.biomass + biomassToAdd,
+                            resources: {
+                                ...state.resources,
+                                organicMatter: state.resources.organicMatter + organicToAdd,
+                                biomass: state.resources.biomass + biomassToAdd
+                            }
+                        }));
+                    }
                     (body.userData as PlanetUserData).population = ((body.userData as PlanetUserData).population || 0) + ((body.userData as PlanetUserData).population || 0) * populationGrowthRate * deltaTime;
                 }
                 break;
         }
     });
     
-    gameState.cachedTotalPopulation = totalPopulation;
+    // Only update cached population if it changed
+    if (totalPopulation !== gameState.cachedTotalPopulation) {
+        batchUpdates.push(state => ({ ...state, cachedTotalPopulation: totalPopulation }));
+    }
 
     if (gameState.researchAdvancedEnergy) energyRate *= 2;
     
-    gameState.currentDustRate = dustRate;
+    const thoughtSpeed = mathCache.getThoughtSpeed();
+    batchUpdates.push(state => ({
+        ...state,
+        currentDustRate: dustRate,
+        thoughtSpeedMps: thoughtSpeed,
+        resourceAccumulators: {
+            ...state.resourceAccumulators,
+            cosmicDust: state.resourceAccumulators.cosmicDust + dustRate * deltaTime,
+            energy: state.resourceAccumulators.energy + energyRate * deltaTime
+        }
+    }));
 
-    gameState.thoughtSpeedMps = mathCache.getThoughtSpeed();
-
-    gameState.resourceAccumulators.cosmicDust += dustRate * deltaTime;
-    gameState.resourceAccumulators.energy += energyRate * deltaTime;
-
-    if (gameState.resourceAccumulators.cosmicDust >= 1) {
-        const dustToAdd = Math.floor(gameState.resourceAccumulators.cosmicDust);
-        gameState.cosmicDust += dustToAdd;
-        gameState.resources.cosmicDust += dustToAdd;
-        gameState.resourceAccumulators.cosmicDust -= dustToAdd;
+    // Handle resource accumulator overflow
+    batchUpdates.push(state => {
+        const newState = { ...state };
+        
+        if (newState.resourceAccumulators.cosmicDust >= 1) {
+            const dustToAdd = Math.floor(newState.resourceAccumulators.cosmicDust);
+            newState.cosmicDust += dustToAdd;
+            newState.resources = {
+                ...newState.resources,
+                cosmicDust: newState.resources.cosmicDust + dustToAdd
+            };
+            newState.resourceAccumulators = {
+                ...newState.resourceAccumulators,
+                cosmicDust: newState.resourceAccumulators.cosmicDust - dustToAdd
+            };
+        }
+        
+        if (newState.resourceAccumulators.energy >= 1) {
+            const energyToAdd = Math.floor(newState.resourceAccumulators.energy);
+            newState.energy += energyToAdd;
+            newState.resources = {
+                ...newState.resources,
+                energy: newState.resources.energy + energyToAdd
+            };
+            newState.resourceAccumulators = {
+                ...newState.resourceAccumulators,
+                energy: newState.resourceAccumulators.energy - energyToAdd
+            };
+        }
+        
+        return newState;
+    });
+    
+    // Apply all batch updates only if there are any
+    if (batchUpdates.length > 0) {
+        gameStateManager.batchUpdate(batchUpdates);
     }
-    if (gameState.resourceAccumulators.energy >= 1) {
-        const energyToAdd = Math.floor(gameState.resourceAccumulators.energy);
-        gameState.energy += energyToAdd;
-        gameState.resources.energy += energyToAdd;
-        gameState.resourceAccumulators.energy -= energyToAdd;
-    }
+    
+    // Reset update counter for next frame
+    gameStateManager.resetUpdateCounter();
     
     // Update conversion engine
     conversionEngine.update();
@@ -252,6 +324,13 @@ function animate() {
     graphicsEngine.update();
     
     composer.render();
+    
+    // Debug: Check if scene has objects
+    if (animationCount === 1) {
+        console.log('[RENDER] Scene children count:', scene.children.length);
+        console.log('[RENDER] Camera position:', camera.position);
+        console.log('[RENDER] Stars count:', gameState.stars.length);
+    }
 
     uiUpdateTimer += deltaTime;
     if (uiUpdateTimer >= uiUpdateInterval) {
@@ -279,8 +358,19 @@ function animate() {
 }
 
 function init() {
+    console.log('[INIT] Starting initialization...');
+    
+    // Debug: Check canvas and UI elements
+    const canvas = document.getElementById('game-canvas');
+    const gameInfo = document.getElementById('game-info');
+    console.log('[INIT] Canvas element:', canvas);
+    console.log('[INIT] Game info element:', gameInfo);
+    console.log('[INIT] Canvas size:', canvas?.clientWidth, 'x', canvas?.clientHeight);
+    
     createStarfield();
+    console.log('[INIT] Starfield created');
     loadGame();
+    console.log('[INIT] Game loaded');
     
     // Initialize production UI
     initProductionUI();
@@ -292,26 +382,35 @@ function init() {
     // @ts-ignore
     if (!gameState.catalystSystemInitialized) {
         // Add required technologies for catalyst system
-        gameState.discoveredTechnologies.add('advanced_processing');
-        gameState.discoveredTechnologies.add('quantum_manipulation');
+        gameStateManager.updateState(state => {
+            const newDiscoveredTechnologies = new Set(state.discoveredTechnologies);
+            newDiscoveredTechnologies.add('advanced_processing');
+            newDiscoveredTechnologies.add('quantum_manipulation');
+            
+            return {
+                ...state,
+                discoveredTechnologies: newDiscoveredTechnologies,
+                catalystSystemInitialized: true
+            };
+        });
         
         catalystManager.addCatalyst(CatalystType.EFFICIENCY_BOOSTER, 2);
         catalystManager.addCatalyst(CatalystType.SPEED_ACCELERATOR, 1);
-        
-        // @ts-ignore
-        gameState.catalystSystemInitialized = true;
     }
     
     // Initialize currency system
     currencyManager.initializeCurrencies();
     
     // Debug: Check UI elements
-    console.log('🔧 Checking UI elements after initialization...');
-    console.log('🔧 overlayResourceSellButton:', ui.overlayResourceSellButton);
-    console.log('🔧 All UI keys with overlay:', Object.keys(ui).filter(key => key.includes('overlay')));
+    // console.log('[UI] Checking UI elements after initialization...');
+    // console.log('[UI] overlayResourceSellButton:', ui.overlayResourceSellButton);
+    // console.log('[UI] All UI keys with overlay:', Object.keys(ui).filter(key => key.includes('overlay')));
 
+    console.log('[INIT] Checking for black hole...');
     const blackHoleExists = gameState.stars.some(star => star.userData.type === 'black_hole');
+    console.log('[INIT] Black hole exists:', blackHoleExists);
     if (!blackHoleExists) {
+        console.log('[INIT] Creating black hole...');
         const blackHole = createCelestialBody('black_hole', {
             name: 'Galactic Center',
             mass: 10000000,
@@ -319,13 +418,21 @@ function init() {
             position: new THREE.Vector3(0, 0, 0),
             velocity: new THREE.Vector3(0, 0, 0)
         });
-        gameState.stars.push(blackHole);
+        console.log('[INIT] Black hole created:', blackHole);
+        gameStateManager.updateState(state => ({
+            ...state,
+            stars: [...state.stars, blackHole]
+        }));
         scene.add(blackHole);
+        console.log('[INIT] Black hole added to scene');
     }
 
     const blackHole = gameState.stars.find(s => s.userData.type === 'black_hole');
     if (blackHole) {
-        gameState.focusedObject = blackHole;
+        gameStateManager.updateState(state => ({
+            ...state,
+            focusedObject: blackHole
+        }));
     }
 
     // サウンドシステムの初期化（ユーザーインタラクション後）
@@ -344,11 +451,11 @@ function init() {
     // Ensure DOM is fully loaded before setting up event listeners
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
-            console.log('🔧 DOM loaded, setting up event listeners...');
+            // console.log('[INIT] DOM loaded, setting up event listeners...');
             setupEventListeners();
         });
     } else {
-        console.log('🔧 DOM already loaded, setting up event listeners now...');
+        // console.log('[INIT] DOM already loaded, setting up event listeners now...');
         setupEventListeners();
     }
     
@@ -357,46 +464,62 @@ function init() {
     
     // WebSocketイベントハンドラー
     wsClient.on('connected', () => {
-        console.log('バックエンドに接続しました');
+        // console.log('[WEBSOCKET] Connected to backend');
         wsClient.getGameState(); // 接続後に状態を取得
         wsClient.setGameRunning(true); // ゲームループを開始
     });
     
     wsClient.on('gameState', (data: any) => {
-        console.log('ゲーム状態更新:', data);
+        // console.log('[WEBSOCKET] ゲーム状態更新:', data);
         // リソースを更新
         if (data.resources) {
-            gameState.resources = data.resources;
+            gameStateManager.updateState(state => ({
+                ...state,
+                resources: data.resources
+            }));
         }
         // 天体情報を更新（必要に応じて）
         if (data.bodies) {
-            console.log('天体数:', data.bodies.length);
+            // console.log('[WEBSOCKET] 天体数:', data.bodies.length);
         }
         // UIを更新
         updateUI();
     });
     
     wsClient.on('bodyCreated', (data: any) => {
-        console.log('天体作成:', data);
+        // console.log('[WEBSOCKET] Body created:', data);
         if (data.success) {
-            console.log('天体作成成功:', data.bodyId);
+            // console.log('[WEBSOCKET] Body creation success:', data.bodyId);
         } else {
-            console.error('天体作成失敗:', data.error);
+            console.error('[WEBSOCKET] Body creation failed:', data.error);
         }
     });
     
     wsClient.on('serverError', (data: any) => {
-        console.error('サーバーエラー:', data.message);
+        console.error('[WEBSOCKET] Server error:', data.message);
     });
     
     wsClient.on('disconnected', () => {
-        console.log('バックエンドから切断されました');
+        // console.log('[WEBSOCKET] Disconnected from backend');
     });
     
     // 接続を開始
     wsClient.connect();
     
+    console.log('[INIT] Starting animation loop...');
     animate();
+    console.log('[INIT] Initialization complete');
+    
+    // Remove fade overlay after initialization
+    const fadeOverlay = document.getElementById('fade-overlay');
+    if (fadeOverlay) {
+        console.log('[INIT] Removing fade overlay...');
+        fadeOverlay.classList.add('fade-out');
+        setTimeout(() => {
+            fadeOverlay.style.display = 'none';
+        }, 1500);
+    }
 }
 
+console.log('[MAIN] Calling init()...');
 init();

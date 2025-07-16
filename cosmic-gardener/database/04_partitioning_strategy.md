@@ -1,0 +1,352 @@
+# Cosmic Gardener パーティショニング戦略
+
+## 概要
+
+本ドキュメントでは、Cosmic Gardenerの大規模データに対するパーティショニング戦略を定義します。
+目的：
+- 数百万の天体データの効率的な管理
+- イベントログの時系列管理
+- 水平スケーリングへの対応
+- クエリパフォーマンスの最適化
+
+## 1. パーティショニング対象テーブル
+
+### 1.1 event_logs（イベントログ）
+**パーティション方式**: Range Partitioning（時系列）
+**パーティションキー**: server_timestamp
+**分割単位**: 月次
+
+```sql
+-- パーティション親テーブル（既に定義済み）
+-- 月次パーティションの自動作成
+CREATE OR REPLACE FUNCTION manage_event_log_partitions()
+RETURNS void AS $$
+DECLARE
+    start_date date;
+    end_date date;
+    partition_name text;
+    i integer;
+BEGIN
+    -- 過去3ヶ月分と未来3ヶ月分のパーティションを作成
+    FOR i IN -3..3 LOOP
+        start_date := date_trunc('month', CURRENT_DATE + (i || ' months')::interval);
+        end_date := start_date + interval '1 month';
+        partition_name := 'event_logs_' || to_char(start_date, 'YYYY_MM');
+        
+        -- パーティションが存在しない場合のみ作成
+        IF NOT EXISTS (
+            SELECT 1 FROM pg_class c
+            JOIN pg_namespace n ON n.oid = c.relnamespace
+            WHERE c.relname = partition_name
+        ) THEN
+            EXECUTE format(
+                'CREATE TABLE IF NOT EXISTS %I PARTITION OF event_logs 
+                FOR VALUES FROM (%L) TO (%L)',
+                partition_name, start_date, end_date
+            );
+            
+            -- パーティション固有のインデックスを作成
+            EXECUTE format(
+                'CREATE INDEX IF NOT EXISTS idx_%I_player_time 
+                ON %I(player_id, server_timestamp DESC)',
+                partition_name, partition_name
+            );
+            
+            EXECUTE format(
+                'CREATE INDEX IF NOT EXISTS idx_%I_type 
+                ON %I(event_type, server_timestamp DESC)',
+                partition_name, partition_name
+            );
+        END IF;
+    END LOOP;
+    
+    -- 古いパーティションの自動削除（12ヶ月以上前）
+    FOR partition_name IN 
+        SELECT tablename FROM pg_tables 
+        WHERE schemaname = 'public' 
+        AND tablename LIKE 'event_logs_%'
+        AND tablename < 'event_logs_' || to_char(CURRENT_DATE - interval '12 months', 'YYYY_MM')
+    LOOP
+        EXECUTE format('DROP TABLE IF EXISTS %I', partition_name);
+    END LOOP;
+END;
+$$ LANGUAGE plpgsql;
+
+-- 定期実行用のcronジョブ（pg_cronを使用）
+-- SELECT cron.schedule('manage-partitions', '0 0 1 * *', 'SELECT manage_event_log_partitions()');
+```
+
+### 1.2 celestial_bodies（天体データ）
+**パーティション方式**: List Partitioning + Sub-partitioning
+**パーティションキー**: body_type（第1階層）、save_id のハッシュ（第2階層）
+**分割単位**: 天体タイプ別 → セーブIDのハッシュ値による分割
+
+```sql
+-- 天体タイプ別パーティション
+CREATE TABLE celestial_bodies_stars PARTITION OF celestial_bodies
+    FOR VALUES IN ('star');
+
+CREATE TABLE celestial_bodies_planets PARTITION OF celestial_bodies
+    FOR VALUES IN ('planet');
+
+CREATE TABLE celestial_bodies_moons PARTITION OF celestial_bodies
+    FOR VALUES IN ('moon');
+
+CREATE TABLE celestial_bodies_small PARTITION OF celestial_bodies
+    FOR VALUES IN ('asteroid', 'comet', 'dust_cloud');
+
+CREATE TABLE celestial_bodies_special PARTITION OF celestial_bodies
+    FOR VALUES IN ('black_hole');
+
+-- さらに各パーティションをハッシュで分割（将来の拡張用）
+-- 例: 惑星テーブルを4つのサブパーティションに分割
+CREATE TABLE celestial_bodies_planets_0 PARTITION OF celestial_bodies_planets
+    FOR VALUES WITH (modulus 4, remainder 0);
+
+CREATE TABLE celestial_bodies_planets_1 PARTITION OF celestial_bodies_planets
+    FOR VALUES WITH (modulus 4, remainder 1);
+
+CREATE TABLE celestial_bodies_planets_2 PARTITION OF celestial_bodies_planets
+    FOR VALUES WITH (modulus 4, remainder 2);
+
+CREATE TABLE celestial_bodies_planets_3 PARTITION OF celestial_bodies_planets
+    FOR VALUES WITH (modulus 4, remainder 3);
+```
+
+## 2. シャーディング戦略（将来対応）
+
+### 2.1 プレイヤーベースシャーディング
+```yaml
+シャーディング設計:
+  キー: player_id のハッシュ値
+  シャード数: 初期4シャード、需要に応じて拡張
+  
+  シャード割り当て:
+    - shard_0: hash(player_id) % 4 = 0
+    - shard_1: hash(player_id) % 4 = 1
+    - shard_2: hash(player_id) % 4 = 2
+    - shard_3: hash(player_id) % 4 = 3
+  
+  影響テーブル:
+    - players
+    - player_sessions
+    - player_statistics
+    - game_saves
+    - celestial_bodies（save_id経由）
+```
+
+### 2.2 FDW（Foreign Data Wrapper）による透過的アクセス
+```sql
+-- シャード間クエリ用のFDW設定
+CREATE EXTENSION postgres_fdw;
+
+-- リモートシャードへの接続
+CREATE SERVER shard_1 FOREIGN DATA WRAPPER postgres_fdw
+    OPTIONS (host 'shard1.cosmic-gardener.internal', dbname 'cosmic_gardener');
+
+-- ユーザーマッピング
+CREATE USER MAPPING FOR cosmic_app
+    SERVER shard_1
+    OPTIONS (user 'app_user', password 'secure_password');
+
+-- 外部テーブルの定義
+CREATE FOREIGN TABLE celestial_bodies_shard_1 (
+    -- カラム定義は本体と同じ
+) SERVER shard_1
+OPTIONS (schema_name 'public', table_name 'celestial_bodies');
+
+-- 統合ビューの作成
+CREATE VIEW celestial_bodies_global AS
+    SELECT * FROM celestial_bodies_local
+    UNION ALL
+    SELECT * FROM celestial_bodies_shard_1
+    -- 他のシャードも追加
+;
+```
+
+## 3. データアーカイブ戦略
+
+### 3.1 コールドストレージへの移行
+```sql
+-- アーカイブテーブルの作成
+CREATE TABLE celestial_bodies_archive (
+    LIKE celestial_bodies INCLUDING ALL
+) TABLESPACE archive_storage;
+
+-- 削除された天体の定期アーカイブ
+CREATE OR REPLACE FUNCTION archive_destroyed_celestial_bodies()
+RETURNS void AS $$
+BEGIN
+    -- 30日以上前に削除された天体をアーカイブ
+    INSERT INTO celestial_bodies_archive
+    SELECT * FROM celestial_bodies
+    WHERE is_destroyed = true
+    AND updated_at < CURRENT_TIMESTAMP - interval '30 days';
+    
+    -- 元テーブルから削除
+    DELETE FROM celestial_bodies
+    WHERE is_destroyed = true
+    AND updated_at < CURRENT_TIMESTAMP - interval '30 days';
+END;
+$$ LANGUAGE plpgsql;
+```
+
+### 3.2 セーブデータの圧縮
+```sql
+-- 非アクティブセーブの圧縮
+CREATE OR REPLACE FUNCTION compress_inactive_saves()
+RETURNS void AS $$
+DECLARE
+    save_record RECORD;
+BEGIN
+    FOR save_record IN 
+        SELECT id FROM game_saves
+        WHERE is_active = false
+        AND updated_at < CURRENT_TIMESTAMP - interval '7 days'
+        AND compressed_state IS NULL
+    LOOP
+        -- 関連データをJSONBに集約して圧縮
+        UPDATE game_saves
+        SET compressed_state = compress_save_data(save_record.id)
+        WHERE id = save_record.id;
+        
+        -- 圧縮後、関連テーブルから削除
+        DELETE FROM celestial_bodies WHERE save_id = save_record.id;
+        DELETE FROM save_resources WHERE save_id = save_record.id;
+        DELETE FROM save_research WHERE save_id = save_record.id;
+    END LOOP;
+END;
+$$ LANGUAGE plpgsql;
+```
+
+## 4. パーティション管理の自動化
+
+### 4.1 メンテナンススクリプト
+```bash
+#!/bin/bash
+# partition_maintenance.sh
+
+# PostgreSQL接続情報
+export PGHOST=localhost
+export PGDATABASE=cosmic_gardener
+export PGUSER=maintenance_user
+
+# パーティション管理
+psql -c "SELECT manage_event_log_partitions();"
+
+# 統計情報の更新
+psql -c "ANALYZE event_logs;"
+psql -c "ANALYZE celestial_bodies;"
+
+# アーカイブ処理
+psql -c "SELECT archive_destroyed_celestial_bodies();"
+psql -c "SELECT compress_inactive_saves();"
+
+# パーティションサイズの監視
+psql -c "
+SELECT 
+    schemaname,
+    tablename,
+    pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) as size
+FROM pg_tables
+WHERE tablename LIKE 'event_logs_%'
+   OR tablename LIKE 'celestial_bodies_%'
+ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC;
+"
+```
+
+### 4.2 監視とアラート
+```sql
+-- パーティションサイズ監視ビュー
+CREATE VIEW partition_sizes AS
+SELECT 
+    n.nspname as schema_name,
+    c.relname as table_name,
+    pg_size_pretty(pg_total_relation_size(c.oid)) as total_size,
+    pg_size_pretty(pg_relation_size(c.oid)) as table_size,
+    pg_stat_get_live_tuples(c.oid) as live_tuples,
+    pg_stat_get_dead_tuples(c.oid) as dead_tuples
+FROM pg_class c
+JOIN pg_namespace n ON n.oid = c.relnamespace
+WHERE c.relkind = 'r'
+AND (c.relname LIKE 'event_logs_%' OR c.relname LIKE 'celestial_bodies_%')
+ORDER BY pg_total_relation_size(c.oid) DESC;
+
+-- パーティション数の監視
+CREATE VIEW partition_counts AS
+SELECT 
+    parent.relname as parent_table,
+    COUNT(*) as partition_count,
+    MIN(child.relname) as oldest_partition,
+    MAX(child.relname) as newest_partition
+FROM pg_inherits
+JOIN pg_class parent ON pg_inherits.inhparent = parent.oid
+JOIN pg_class child ON pg_inherits.inhrelid = child.oid
+GROUP BY parent.relname;
+```
+
+## 5. パフォーマンス最適化のベストプラクティス
+
+### 5.1 パーティションプルーニング
+```sql
+-- 実行計画でパーティションプルーニングを確認
+SET enable_partition_pruning = on;
+
+-- クエリ例（特定月のイベントのみアクセス）
+EXPLAIN (ANALYZE, BUFFERS) 
+SELECT * FROM event_logs 
+WHERE server_timestamp >= '2024-01-01' 
+AND server_timestamp < '2024-02-01'
+AND event_type = 'celestial_body_created';
+```
+
+### 5.2 パラレルクエリの活用
+```sql
+-- パーティション並列スキャンの有効化
+SET max_parallel_workers_per_gather = 4;
+SET parallel_setup_cost = 100;
+SET parallel_tuple_cost = 0.01;
+
+-- 大規模集計でのパラレル実行
+EXPLAIN (ANALYZE, BUFFERS)
+SELECT 
+    body_type,
+    COUNT(*) as count,
+    AVG(mass) as avg_mass
+FROM celestial_bodies
+WHERE is_destroyed = false
+GROUP BY body_type;
+```
+
+### 5.3 パーティション単位のVACUUM
+```sql
+-- 個別パーティションのVACUUM（高速）
+VACUUM ANALYZE event_logs_2024_01;
+
+-- 自動VACUUMの設定
+ALTER TABLE event_logs SET (
+    autovacuum_vacuum_scale_factor = 0.05,
+    autovacuum_analyze_scale_factor = 0.02
+);
+```
+
+## 6. 災害復旧とバックアップ
+
+### 6.1 パーティション単位のバックアップ
+```bash
+# 特定パーティションのみバックアップ
+pg_dump -t event_logs_2024_01 cosmic_gardener > event_logs_2024_01.sql
+
+# 並列バックアップ
+pg_dump -j 4 -Fd -f backup_dir cosmic_gardener
+```
+
+### 6.2 ポイントインタイムリカバリ
+```sql
+-- WALアーカイブの設定
+ALTER SYSTEM SET archive_mode = on;
+ALTER SYSTEM SET archive_command = 'cp %p /archive/%f';
+ALTER SYSTEM SET wal_level = replica;
+```
+
+この戦略により、Cosmic Gardenerは数百万の天体と数億のイベントログを効率的に管理できます。

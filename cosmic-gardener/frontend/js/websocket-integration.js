@@ -11,10 +11,11 @@ import { createWebSocketClient } from './websocket.js';
  * WebSocket統合マネージャー
  */
 export class WebSocketIntegration {
+    ws;
+    syncInterval = null;
+    lastSyncTime = 0;
+    pendingActions = new Map();
     constructor() {
-        this.syncInterval = null;
-        this.lastSyncTime = 0;
-        this.pendingActions = new Map();
         this.ws = createWebSocketClient({
             url: this.getWebSocketUrl(),
             maxRetries: 3,
@@ -151,7 +152,12 @@ export class WebSocketIntegration {
             const state = serverState.game_state;
             // リソース更新
             if (state.resources) {
-                Object.assign(gameState, state.resources);
+                gameState.resources.cosmicDust = state.resources.cosmicDust;
+                gameState.resources.energy = state.resources.energy;
+                gameState.resources.organicMatter = state.resources.organicMatter;
+                gameState.resources.biomass = state.resources.biomass;
+                gameState.resources.darkMatter = state.resources.darkMatter;
+                gameState.resources.thoughtPoints = state.resources.thoughtPoints;
             }
             // 天体データ更新
             if (state.celestial_bodies) {
@@ -189,7 +195,7 @@ export class WebSocketIntegration {
             },
             celestial_bodies: gameState.stars.map(star => ({
                 // TODO: 天体データの変換
-                id: star.userData.id || crypto.randomUUID(),
+                id: star.uuid,
                 type: star.userData.type,
                 position: star.position,
                 // その他のプロパティ

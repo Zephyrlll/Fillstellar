@@ -175,15 +175,15 @@ export const celestialObjectPools = {
         }
     },
     dispose() {
-        Object.values(this.sphereGeometries).forEach(pool => {
+        Object.values(this.sphereGeometries).forEach((pool) => {
             pool.forEach(geometry => geometry.dispose());
             pool.length = 0;
         });
-        Object.values(this.materials).forEach(pool => {
+        Object.values(this.materials).forEach((pool) => {
             pool.forEach(material => material.dispose());
             pool.length = 0;
         });
-        Object.values(this.meshes).forEach(pool => {
+        Object.values(this.meshes).forEach((pool) => {
             pool.forEach(mesh => {
                 if (mesh.geometry)
                     mesh.geometry.dispose();

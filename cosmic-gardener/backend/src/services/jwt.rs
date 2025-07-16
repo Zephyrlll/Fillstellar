@@ -3,7 +3,7 @@ use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation}
 use sha2::{Digest, Sha256};
 use uuid::Uuid;
 
-use crate::error::{AppError, Result};
+use crate::errors::{GameError, Result};
 use crate::models::{User, JwtClaims, UserClaims, SessionClaims};
 
 #[derive(Clone)]

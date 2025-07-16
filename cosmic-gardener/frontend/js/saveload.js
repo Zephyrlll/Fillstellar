@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { gameState } from './state.js';
+import { gameState, gameStateManager } from './state.js';
 import { removeAndDispose, celestialObjectPools } from './utils.js';
 import { createCelestialBody } from './celestialBody.js';
 import { scene } from './threeSetup.js';
@@ -150,21 +150,24 @@ export function loadGame() {
             return;
         }
         const { stars, focusedObjectUUID, discoveredTechnologies, availableFacilities, conversionEngineState, ...restOfState } = parsedState;
-        Object.assign(gameState, restOfState);
-        // Restore Sets from Arrays
-        gameState.discoveredTechnologies = new Set(discoveredTechnologies || []);
-        gameState.availableFacilities = new Set(availableFacilities || ['basic_converter']);
+        // Use gameStateManager to update state
+        gameStateManager.updateState(state => ({
+            ...state,
+            ...restOfState,
+            discoveredTechnologies: new Set(discoveredTechnologies || []),
+            availableFacilities: new Set(availableFacilities || ['basic_converter']),
+            focusedObject: null
+        }));
         // Restore conversion engine state
         if (conversionEngineState) {
             conversionEngine.loadState(conversionEngineState);
         }
-        gameState.focusedObject = null;
         // Clear existing stars
         gameState.stars.forEach(star => {
             if (star)
                 removeAndDispose(star);
         });
-        gameState.stars = stars.map((starData) => {
+        const newStars = stars.map((starData) => {
             if (!starData || !starData.userData) {
                 console.warn('[SAVELOAD] Skipping invalid star data');
                 return null;
@@ -245,19 +248,39 @@ export function loadGame() {
             scene.add(body);
             return body;
         }).filter(body => body !== null);
+        // Update stars in state manager
+        gameStateManager.updateState(state => ({
+            ...state,
+            stars: newStars
+        }));
         if (focusedObjectUUID) {
-            gameState.focusedObject = gameState.stars.find(s => s.uuid === focusedObjectUUID) || null;
+            const focusedObject = gameState.stars.find(s => s.uuid === focusedObjectUUID) || null;
+            gameStateManager.updateState(state => ({
+                ...state,
+                focusedObject
+            }));
         }
         if (gameState.statistics) {
-            gameState.statistics.lastUpdate = Date.now();
-            if (gameState.statistics.resources) {
-                Object.keys(gameState.statistics.resources).forEach(resource => {
-                    const stats = gameState.statistics.resources[resource];
+            const now = Date.now();
+            const currentStatistics = { ...gameState.statistics };
+            currentStatistics.lastUpdate = now;
+            if (currentStatistics.resources) {
+                const updatedResources = { ...currentStatistics.resources };
+                Object.keys(updatedResources).forEach(resource => {
+                    const stats = updatedResources[resource];
                     if (stats && 'previousValue' in stats) {
-                        stats.previousValue = gameState[resource] || 0;
+                        updatedResources[resource] = {
+                            ...stats,
+                            previousValue: gameState[resource] || 0
+                        };
                     }
                 });
+                currentStatistics.resources = updatedResources;
             }
+            gameStateManager.updateState(state => ({
+                ...state,
+                statistics: currentStatistics
+            }));
         }
         // Apply loaded graphics settings and initialize graphics systems
         if (gameState.graphics) {

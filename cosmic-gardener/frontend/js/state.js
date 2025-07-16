@@ -1,5 +1,195 @@
+// --- Game State Manager ---
+export class GameStateManager {
+    state;
+    listeners = new Set();
+    history = [];
+    options;
+    updateCount = 0;
+    MAX_UPDATES_PER_FRAME = 10; // 緊急対応: 大幅に削減
+    constructor(initialState, options = {}) {
+        // Selectively freeze the initial state
+        this.state = this.deepFreeze(initialState);
+        this.options = {
+            enableLogging: false,
+            maxHistorySize: 10,
+            ...options
+        };
+    }
+    getState() {
+        return this.state;
+    }
+    updateState(updater) {
+        try {
+            // Prevent excessive updates
+            this.updateCount++;
+            if (this.updateCount > this.MAX_UPDATES_PER_FRAME) {
+                // 緊急対応: 異常な更新回数を検出
+                if (this.updateCount % 1000 === 0) {
+                    console.error(`[STATE] CRITICAL: Excessive updates detected (${this.updateCount}). Possible infinite loop!`);
+                    console.trace('Call stack trace:');
+                }
+                // より長いディレイでスロットリング
+                setTimeout(() => this.updateState(updater), 100);
+                return;
+            }
+            const previousState = this.state;
+            const newState = updater(this.state);
+            if (!newState) {
+                console.error('[STATE] State updater returned null or undefined');
+                return;
+            }
+            if (newState === previousState) {
+                return; // No changes
+            }
+            // Validate state integrity
+            if (!this.validateState(newState)) {
+                console.error('[STATE] State validation failed');
+                return;
+            }
+            // Add to history
+            if (this.history.length >= (this.options.maxHistorySize || 10)) {
+                this.history.shift();
+            }
+            this.history.push(previousState);
+            // Update state with selective freezing
+            this.state = this.deepFreeze(newState);
+            // Log update if enabled
+            if (this.options.enableLogging) {
+                console.log('[STATE] State updated', {
+                    updateCount: this.updateCount,
+                    previousState: previousState,
+                    newState: this.state
+                });
+            }
+            // Notify listeners
+            this.listeners.forEach(listener => {
+                try {
+                    listener(this.state, previousState);
+                }
+                catch (error) {
+                    console.error('[STATE] Listener error:', error);
+                }
+            });
+        }
+        catch (error) {
+            console.error('[STATE] Update state failed:', error);
+        }
+    }
+    validateState(state) {
+        try {
+            // Basic validation
+            if (!state || typeof state !== 'object') {
+                return false;
+            }
+            // Check required properties
+            const requiredProps = ['gameYear', 'resources', 'stars', 'physics'];
+            for (const prop of requiredProps) {
+                if (!(prop in state)) {
+                    console.error(`[STATE] Missing required property: ${prop}`);
+                    return false;
+                }
+            }
+            // Validate numeric properties
+            if (typeof state.gameYear !== 'number' || !isFinite(state.gameYear)) {
+                console.error('[STATE] Invalid gameYear');
+                return false;
+            }
+            return true;
+        }
+        catch (error) {
+            console.error('[STATE] State validation error:', error);
+            return false;
+        }
+    }
+    // Reset update counter (call this on each frame)
+    resetUpdateCounter() {
+        this.updateCount = 0;
+    }
+    batchUpdate(updaters) {
+        this.updateState(state => {
+            return updaters.reduce((accState, updater) => updater(accState), state);
+        });
+    }
+    subscribe(listener) {
+        this.listeners.add(listener);
+        return () => this.listeners.delete(listener);
+    }
+    getHistory() {
+        return [...this.history];
+    }
+    deepFreeze(obj, visited = new WeakSet()) {
+        // Skip if already frozen or not an object
+        if (!obj || typeof obj !== 'object' || Object.isFrozen(obj)) {
+            return obj;
+        }
+        // Prevent circular references
+        if (visited.has(obj)) {
+            return obj;
+        }
+        visited.add(obj);
+        // Skip Three.js objects and other framework objects
+        if (this.isFrameworkObject(obj)) {
+            return obj;
+        }
+        // Handle arrays - selectively freeze
+        if (Array.isArray(obj)) {
+            // For stars array, don't freeze the Three.js objects but freeze the array itself
+            if (this.isStarsArray(obj)) {
+                return Object.freeze(obj);
+            }
+            return Object.freeze(obj.map(item => this.deepFreeze(item, visited)));
+        }
+        // Handle objects - selectively freeze properties
+        const frozen = {};
+        for (const key in obj) {
+            if (obj.hasOwnProperty(key)) {
+                const value = obj[key];
+                // Skip freezing problematic properties but keep them
+                if (key === 'stars' || key === 'focusedObject' || this.isFrameworkObject(value)) {
+                    frozen[key] = value;
+                }
+                else {
+                    frozen[key] = this.deepFreeze(value, visited);
+                }
+            }
+        }
+        return Object.freeze(frozen);
+    }
+    isStarsArray(obj) {
+        return Array.isArray(obj) && obj.length > 0 && obj[0]?.isMesh;
+    }
+    isFrameworkObject(obj) {
+        // Skip Three.js objects
+        if (obj.isVector3 || obj.isVector2 || obj.isQuaternion || obj.isMatrix4 ||
+            obj.isObject3D || obj.isMesh || obj.isGeometry || obj.isMaterial ||
+            obj.isTexture || obj.isBufferGeometry || obj.isBufferAttribute) {
+            return true;
+        }
+        // Skip DOM elements
+        if (typeof window !== 'undefined' && obj instanceof HTMLElement) {
+            return true;
+        }
+        // Skip Set and Map objects
+        if (obj instanceof Set || obj instanceof Map) {
+            return true;
+        }
+        // Skip other known framework objects by constructor name
+        const constructorName = obj.constructor?.name;
+        if (constructorName && (constructorName.startsWith('THREE.') ||
+            constructorName === 'Vector3' ||
+            constructorName === 'Mesh' ||
+            constructorName === 'Object3D' ||
+            constructorName === 'Scene' ||
+            constructorName === 'Camera' ||
+            constructorName === 'Set' ||
+            constructorName === 'Map')) {
+            return true;
+        }
+        return false;
+    }
+}
 // --- Game State Initialization ---
-export const gameState = {
+const initialGameState = {
     gameYear: 0,
     cosmicDust: 150000,
     energy: 0,
@@ -132,6 +322,28 @@ export const gameState = {
         lastDetectionTime: 0
     }
 };
+// --- Global State Manager Instance ---
+export const gameStateManager = new GameStateManager(initialGameState);
+// Make gameStateManager available globally for main.js
+if (typeof window !== 'undefined') {
+    window.gameStateManager = gameStateManager;
+}
+// --- Legacy Compatibility Layer ---
+// This provides backward compatibility for existing code that accesses gameState directly
+export const gameState = new Proxy({}, {
+    get(target, prop) {
+        const state = gameStateManager.getState();
+        return state[prop];
+    },
+    set(target, prop, value) {
+        console.warn(`[STATE] Direct mutation detected on property '${String(prop)}'. Use gameStateManager.updateState() instead.`);
+        gameStateManager.updateState(state => ({
+            ...state,
+            [prop]: value
+        }));
+        return true;
+    }
+});
 // --- Graphics Presets ---
 export const GRAPHICS_PRESETS = {
     ultra: {

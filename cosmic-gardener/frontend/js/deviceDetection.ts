@@ -1,4 +1,4 @@
-import { gameState } from './state.js';
+import { gameState, gameStateManager } from './state.js';
 
 // デバイス検出ユーティリティ
 export function detectDevice(): void {
@@ -23,15 +23,18 @@ export function detectDevice(): void {
         lastDetection.screenHeight !== screenHeight ||
         currentTime - lastDetection.lastDetectionTime > 5000) { // 5秒以上経過した場合
         
-        gameState.deviceInfo = {
-            isMobile,
-            isDesktop,
-            screenWidth,
-            screenHeight,
-            userAgent,
-            hasTouchSupport,
-            lastDetectionTime: currentTime
-        };
+        gameStateManager.updateState(state => ({
+            ...state,
+            deviceInfo: {
+                isMobile,
+                isDesktop,
+                screenWidth,
+                screenHeight,
+                userAgent,
+                hasTouchSupport,
+                lastDetectionTime: currentTime
+            }
+        }));
         
         console.log('📱 Device detected:', {
             isMobile,
@@ -99,4 +102,66 @@ export function isMobileDevice(): boolean {
 // デスクトップデバイスかどうかを判定
 export function isDesktopDevice(): boolean {
     return gameState.deviceInfo?.isDesktop || true;
+}
+
+// モバイルデバイス向けナビゲーション更新
+export function startMobileNavUpdates(): void {
+    if (!isMobileDevice()) return;
+    
+    // モバイル向けナビゲーション調整
+    const navElements = document.querySelectorAll('.nav-item');
+    navElements.forEach(element => {
+        (element as HTMLElement).style.fontSize = '14px';
+        (element as HTMLElement).style.padding = '8px';
+    });
+    
+    console.log('[MOBILE] Navigation updates applied');
+}
+
+// モバイルデバイス向けゲーム更新
+export function startMobileGameUpdates(): void {
+    if (!isMobileDevice()) return;
+    
+    // モバイル向けゲーム調整
+    const gameContainer = document.querySelector('.game-container');
+    if (gameContainer) {
+        (gameContainer as HTMLElement).style.fontSize = '14px';
+    }
+    
+    // タッチ操作の最適化
+    const buttons = document.querySelectorAll('button');
+    buttons.forEach(button => {
+        button.style.minHeight = '44px'; // タッチしやすい最小サイズ
+        button.style.fontSize = '14px';
+    });
+    
+    console.log('[MOBILE] Game updates applied');
+}
+
+// モバイルデバイス向け設定更新
+export function startMobileSettingsUpdates(): void {
+    if (!isMobileDevice()) return;
+    
+    // モバイル向け設定調整
+    const settingsElements = document.querySelectorAll('.settings-item');
+    settingsElements.forEach(element => {
+        (element as HTMLElement).style.fontSize = '14px';
+        (element as HTMLElement).style.padding = '12px';
+    });
+    
+    console.log('[MOBILE] Settings updates applied');
+}
+
+// モバイルデバイス向け星管理更新
+export function startMobileStarManagementUpdates(): void {
+    if (!isMobileDevice()) return;
+    
+    // モバイル向け星管理調整
+    const starElements = document.querySelectorAll('.star-item');
+    starElements.forEach(element => {
+        (element as HTMLElement).style.fontSize = '14px';
+        (element as HTMLElement).style.padding = '10px';
+    });
+    
+    console.log('[MOBILE] Star management updates applied');
 }

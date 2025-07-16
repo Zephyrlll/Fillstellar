@@ -1,9 +1,10 @@
 use actix_web::{web, HttpResponse};
 use chrono::Utc;
 use sqlx::PgPool;
+use tracing::error;
 use validator::Validate;
 
-use crate::error::{AppError, Result};
+use crate::errors::{GameError, Result};
 use crate::models::{
     GameSave, GameStatistics, SaveGameRequest, GameStateResponse,
     StatisticsResponse, AuthenticatedUser, Achievement,
@@ -187,7 +188,10 @@ pub async fn get_leaderboard(
             .fetch_all(pool.get_ref())
             .await?
         }
-        _ => return Err(AppError::BadRequest("Invalid metric".to_string())),
+        _ => {
+            error!("[GAME] Invalid leaderboard metric: {}", metric);
+            return Err(GameError::bad_request("Invalid metric"));
+        }
     };
 
     let leaderboard_data: Vec<serde_json::Value> = leaderboard

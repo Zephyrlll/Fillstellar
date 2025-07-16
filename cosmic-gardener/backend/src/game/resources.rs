@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
-use crate::errors::GameError;
+use crate::errors::{GameError, Result};
 
 /// 固定小数点数（32.32フォーマット）
 pub type Fixed = i64;
@@ -101,9 +101,11 @@ impl Resources {
         self.set(resource_type, current.saturating_add(amount));
     }
     
-    pub fn subtract(&mut self, resource_type: ResourceType, amount: u64) -> Result<(), GameError> {
+    pub fn subtract(&mut self, resource_type: ResourceType, amount: u64) -> Result<()> {
         let current = self.get(resource_type);
         if current < amount {
+            log::warn!("[RESOURCES] Insufficient resources: type={:?}, current={}, required={}", 
+                resource_type, current, amount);
             return Err(GameError::InsufficientResources);
         }
         self.set(resource_type, current - amount);
@@ -119,8 +121,9 @@ impl Resources {
         self.thought_points >= cost.thought_points
     }
     
-    pub fn spend(&mut self, cost: &Resources) -> Result<(), GameError> {
+    pub fn spend(&mut self, cost: &Resources) -> Result<()> {
         if !self.can_afford(cost) {
+            log::warn!("[RESOURCES] Cannot afford cost: current={:?}, cost={:?}", self, cost);
             return Err(GameError::InsufficientResources);
         }
         
@@ -131,6 +134,7 @@ impl Resources {
         self.dark_matter -= cost.dark_matter;
         self.thought_points -= cost.thought_points;
         
+        log::debug!("[RESOURCES] Resources spent: cost={:?}", cost);
         Ok(())
     }
 }
@@ -417,11 +421,12 @@ impl ResourceManager {
     }
     
     /// アップグレードの適用
-    pub fn apply_upgrade(&mut self, upgrade_type: UpgradeType) -> Result<(), GameError> {
+    pub fn apply_upgrade(&mut self, upgrade_type: UpgradeType) -> Result<()> {
         let cost = self.game_state.upgrade_levels.calculate_cost(upgrade_type);
         
         // コストの検証
         if !self.game_state.resources.can_afford(&cost) {
+            log::warn!("[RESOURCES] Cannot afford upgrade: type={:?}, cost={:?}", upgrade_type, cost);
             return Err(GameError::InsufficientResources);
         }
         
@@ -429,11 +434,12 @@ impl ResourceManager {
         self.game_state.resources.spend(&cost)?;
         
         // アップグレード適用
-        self.game_state.upgrade_levels.upgrade(upgrade_type);
+        let new_level = self.game_state.upgrade_levels.upgrade(upgrade_type);
         
         // 生産レートの再計算
         self.game_state.production_rates = self.calculate_production_rates(&self.game_state);
         
+        log::info!("[RESOURCES] Upgrade applied: type={:?}, new_level={}", upgrade_type, new_level);
         Ok(())
     }
     
@@ -483,7 +489,7 @@ impl ResourceManager {
     }
     
     /// リソースの検証
-    pub fn validate_resources(&self, resources: &Resources) -> Result<(), GameError> {
+    pub fn validate_resources(&self, resources: &Resources) -> Result<()> {
         const MAX_RESOURCE_VALUE: u64 = u64::MAX / 2; // オーバーフロー防止
         
         if resources.cosmic_dust > MAX_RESOURCE_VALUE ||
@@ -492,7 +498,8 @@ impl ResourceManager {
            resources.biomass > MAX_RESOURCE_VALUE ||
            resources.dark_matter > MAX_RESOURCE_VALUE ||
            resources.thought_points > MAX_RESOURCE_VALUE {
-            return Err(GameError::InvalidResourceValue);
+            log::error!("[RESOURCES] Resource value exceeds maximum allowed: {:?}", resources);
+            return Err(GameError::InvalidResource("Resource value exceeds maximum allowed".to_string()));
         }
         
         Ok(())

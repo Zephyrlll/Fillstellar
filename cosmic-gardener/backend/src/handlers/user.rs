@@ -2,9 +2,10 @@ use actix_web::{web, HttpResponse};
 use argon2::{Argon2, PasswordHash, PasswordHasher, PasswordVerifier};
 use argon2::password_hash::{rand_core::OsRng, SaltString};
 use sqlx::PgPool;
+use tracing::{error, warn};
 use validator::Validate;
 
-use crate::error::{AppError, Result};
+use crate::errors::{GameError, Result};
 use crate::models::{
     User, UserResponse, UpdateUserRequest, AuthenticatedUser,
 };
@@ -20,7 +21,7 @@ pub async fn get_me(
     )
     .fetch_optional(pool.get_ref())
     .await?
-    .ok_or_else(|| AppError::NotFound("User not found".to_string()))?;
+    .ok_or_else(|| GameError::not_found("User not found"))?;
 
     Ok(HttpResponse::Ok().json(UserResponse::from(user_data)))
 }
@@ -41,14 +42,14 @@ pub async fn update_me(
     )
     .fetch_optional(pool.get_ref())
     .await?
-    .ok_or_else(|| AppError::NotFound("User not found".to_string()))?;
+    .ok_or_else(|| GameError::not_found("User not found"))?;
 
     // パスワード変更の場合、現在のパスワードを検証
     if update_data.new_password.is_some() {
         let current_password = update_data
             .current_password
             .as_ref()
-            .ok_or_else(|| AppError::BadRequest("Current password is required".to_string()))?;
+            .ok_or_else(|| GameError::bad_request("Current password is required"))?;
 
         let argon2 = Argon2::default();
         let parsed_hash = PasswordHash::new(&current_user.password_hash)?;
@@ -57,7 +58,8 @@ pub async fn update_me(
             .verify_password(current_password.as_bytes(), &parsed_hash)
             .is_err()
         {
-            return Err(AppError::AuthenticationError("Invalid current password".to_string()));
+            error!("[AUTH] Invalid current password for user: {}", user.id);
+            return Err(GameError::authentication("Invalid current password"));
         }
     }
 
@@ -73,7 +75,8 @@ pub async fn update_me(
             .await?;
 
             if existing_user.is_some() {
-                return Err(AppError::Conflict("Username already exists".to_string()));
+                error!("[USER] Username already exists: {}", new_username);
+                return Err(GameError::conflict("Username already exists"));
             }
         }
     }

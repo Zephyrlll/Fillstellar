@@ -5,10 +5,9 @@ use simdeez::*;
 use rayon::prelude::*;
 use std::collections::HashMap;
 use std::sync::Arc;
-use anyhow::Result;
 use tracing::{instrument, debug, info};
 
-use crate::errors::GameError;
+use crate::errors::{GameError, Result};
 use crate::game::celestial_bodies::{CelestialBody, BodyId};
 use crate::game::resources::{Fixed, fixed};
 use crate::services::metrics::MetricsService;
@@ -140,7 +139,7 @@ impl SimdPhysicsEngine {
 
     /// 物理演算の更新（最適化版）
     #[instrument(skip(self, bodies), fields(body_count = bodies.len()))]
-    pub fn update_optimized(&mut self, bodies: &mut HashMap<BodyId, CelestialBody>, delta_time: f64) -> Result<(), GameError> {
+    pub fn update_optimized(&mut self, bodies: &mut HashMap<BodyId, CelestialBody>, delta_time: f64) -> Result<()> {
         if bodies.is_empty() {
             return Ok(());
         }
@@ -148,7 +147,7 @@ impl SimdPhysicsEngine {
         let timer_id = self.metrics_recorder.start_timer();
         
         let body_count = bodies.len();
-        debug!("Starting SIMD physics update for {} bodies", body_count);
+        debug!("[PHYSICS_SIMD] Starting SIMD physics update for {} bodies", body_count);
 
         // アルゴリズム選択
         let result = if body_count <= self.direct_threshold {
@@ -168,12 +167,12 @@ impl SimdPhysicsEngine {
         let collision_checks = self.apply_velocity_limits_simd(bodies);
         let duration = self.metrics_recorder.end_timer(&timer_id, body_count, collision_checks);
 
-        debug!("SIMD physics update completed in {:.3}ms", duration * 1000.0);
+        debug!("[PHYSICS_SIMD] SIMD physics update completed in {:.3}ms", duration * 1000.0);
         result
     }
 
     /// SIMD並列重力計算
-    fn calculate_gravity_simd_parallel(&self, bodies: &mut HashMap<BodyId, CelestialBody>, delta_time: f64) -> Result<(), GameError> {
+    fn calculate_gravity_simd_parallel(&self, bodies: &mut HashMap<BodyId, CelestialBody>, delta_time: f64) -> Result<()> {
         // 天体データをSIMD形式に変換
         let simd_bodies: Vec<SimdCelestialBody> = bodies.values().map(|b| b.into()).collect();
         
@@ -197,7 +196,7 @@ impl SimdPhysicsEngine {
     }
 
     /// SIMD直接重力計算
-    fn calculate_gravity_direct_simd(&self, bodies: &mut HashMap<BodyId, CelestialBody>, delta_time: f64) -> Result<(), GameError> {
+    fn calculate_gravity_direct_simd(&self, bodies: &mut HashMap<BodyId, CelestialBody>, delta_time: f64) -> Result<()> {
         let body_ids: Vec<BodyId> = bodies.keys().copied().collect();
         let mut forces: HashMap<BodyId, SimdVector3> = HashMap::new();
 
@@ -247,11 +246,11 @@ impl SimdPhysicsEngine {
     }
 
     /// Barnes-Hut + SIMD最適化
-    fn calculate_gravity_barnes_hut_simd(&self, bodies: &mut HashMap<BodyId, CelestialBody>, delta_time: f64) -> Result<(), GameError> {
+    fn calculate_gravity_barnes_hut_simd(&self, bodies: &mut HashMap<BodyId, CelestialBody>, delta_time: f64) -> Result<()> {
         // Barnes-Hut木を構築（既存の実装を使用）
         // ここではリーフノードでの力計算にSIMDを適用
         
-        info!("Using Barnes-Hut with SIMD optimization for {} bodies", bodies.len());
+        info!("[PHYSICS_SIMD] Using Barnes-Hut with SIMD optimization for {} bodies", bodies.len());
         
         // 簡略化：既存のBarnes-Hut実装を呼び出し
         // 実際の実装では、木の各ノードでの計算にSIMDを適用

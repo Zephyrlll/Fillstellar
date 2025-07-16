@@ -1,4 +1,4 @@
-import { gameState } from './state.js';
+import { gameState, gameStateManager } from './state.js';
 
 export class PerformanceMonitor {
     private lastFrameTime: number = 0;
@@ -12,6 +12,8 @@ export class PerformanceMonitor {
     
     private frameTimeHistory: number[] = [];
     private maxFrameTimeHistory: number = 120; // Store last 120 frames
+    private currentFrameTime: number = 0; // Store current frame time locally
+    private deviceInfoDetected: boolean = false; // Track if device info was already detected
     
     constructor() {
         this.detectDeviceInfo();
@@ -30,8 +32,8 @@ export class PerformanceMonitor {
         const currentTime = performance.now();
         const deltaTime = currentTime - this.lastFrameTime;
         
-        // Update frame time
-        gameState.graphics.performance.frameTime = deltaTime;
+        // Store frame time locally, only update state on FPS update
+        this.currentFrameTime = deltaTime;
         this.frameTimeHistory.push(deltaTime);
         if (this.frameTimeHistory.length > this.maxFrameTimeHistory) {
             this.frameTimeHistory.shift();
@@ -42,19 +44,41 @@ export class PerformanceMonitor {
         // Update FPS every second
         if (currentTime - this.lastFpsUpdate >= this.fpsUpdateInterval) {
             const fps = Math.round((this.frameCount * 1000) / (currentTime - this.lastFpsUpdate));
-            gameState.graphics.performance.fps = fps;
+            const currentPerformance = gameState.graphics.performance;
+            const averageFps = currentPerformance.averageFps === 0 ? fps : 
+                Math.round((currentPerformance.averageFps * 0.9) + (fps * 0.1));
             
-            // Update average FPS (simple moving average)
-            if (gameState.graphics.performance.averageFps === 0) {
-                gameState.graphics.performance.averageFps = fps;
-            } else {
-                gameState.graphics.performance.averageFps = Math.round(
-                    (gameState.graphics.performance.averageFps * 0.9) + (fps * 0.1)
-                );
-            }
-            
-            // Add to history
-            this.addToHistory(fps, deltaTime);
+            // Batch update FPS, averageFPS, frameTime AND history together
+            gameStateManager.updateState(state => {
+                const currentHistory = [...state.graphics.performance.history];
+                
+                // Add new entry to history
+                currentHistory.push({
+                    time: Date.now(),
+                    fps: fps,
+                    frameTime: deltaTime,
+                    memory: state.graphics.performance.memoryUsage
+                });
+                
+                // Keep only the last maxHistoryPoints entries
+                if (currentHistory.length > this.maxHistoryPoints) {
+                    currentHistory.shift();
+                }
+                
+                return {
+                    ...state,
+                    graphics: {
+                        ...state.graphics,
+                        performance: {
+                            ...state.graphics.performance,
+                            fps: fps,
+                            averageFps: averageFps,
+                            frameTime: this.currentFrameTime,
+                            history: currentHistory
+                        }
+                    }
+                };
+            });
             
             this.frameCount = 0;
             this.lastFpsUpdate = currentTime;
@@ -69,36 +93,31 @@ export class PerformanceMonitor {
         this.lastFrameTime = currentTime;
     }
     
-    // Add performance data to history
-    private addToHistory(fps: number, frameTime: number): void {
-        const memoryUsage = gameState.graphics.performance.memoryUsage;
-        
-        gameState.graphics.performance.history.push({
-            time: Date.now(),
-            fps: fps,
-            frameTime: frameTime,
-            memory: memoryUsage
-        });
-        
-        // Keep only the last maxHistoryPoints entries
-        if (gameState.graphics.performance.history.length > this.maxHistoryPoints) {
-            gameState.graphics.performance.history.shift();
-        }
-    }
     
     // Update memory usage information
     private updateMemoryUsage(): void {
+        let memoryUsage: number;
+        
         // @ts-ignore - performance.memory is not in standard types but exists in Chrome
         if (performance.memory) {
             // @ts-ignore
             const memInfo = performance.memory;
-            gameState.graphics.performance.memoryUsage = Math.round(
-                memInfo.usedJSHeapSize / (1024 * 1024) // Convert to MB
-            );
+            memoryUsage = Math.round(memInfo.usedJSHeapSize / (1024 * 1024)); // Convert to MB
         } else {
             // Fallback: estimate based on objects in scene
-            gameState.graphics.performance.memoryUsage = this.estimateMemoryUsage();
+            memoryUsage = this.estimateMemoryUsage();
         }
+        
+        gameStateManager.updateState(state => ({
+            ...state,
+            graphics: {
+                ...state.graphics,
+                performance: {
+                    ...state.graphics.performance,
+                    memoryUsage: memoryUsage
+                }
+            }
+        }));
     }
     
     // Estimate memory usage when performance.memory is not available
@@ -111,36 +130,109 @@ export class PerformanceMonitor {
         return Math.round(baseMemory + (objectCount * memoryPerObject));
     }
     
+    private estimateDeviceMemory(): number {
+        // Fallback memory estimation based on platform
+        const platform = this.detectPlatform();
+        return this.estimateDeviceMemoryByPlatform(platform);
+    }
+    
+    private estimateDeviceMemoryByPlatform(platform: string): number {
+        switch (platform) {
+            case 'mobile':
+                return 4; // 4GB typical for modern mobile devices
+            case 'tablet':
+                return 6; // 6GB typical for tablets
+            case 'desktop':
+            default:
+                return 8; // 8GB typical for desktop
+        }
+    }
+    
+    private isHighEndDeviceByInfo(deviceInfo: any): boolean {
+        // High-end criteria
+        const hasEnoughMemory = deviceInfo.memory >= 8;
+        const hasEnoughCores = deviceInfo.cores >= 4;
+        const isDesktop = deviceInfo.platform === 'desktop';
+        const hasWebGL2 = deviceInfo.webglVersion.includes('2.0');
+        const hasModernGPU = this.hasModernGPUByInfo(deviceInfo);
+        
+        return hasEnoughMemory && hasEnoughCores && (isDesktop || hasWebGL2) && hasModernGPU;
+    }
+    
+    private hasModernGPUByInfo(deviceInfo: any): boolean {
+        const gpu = deviceInfo.gpu.toLowerCase();
+        // Check for modern GPU indicators
+        const modernGPUKeywords = [
+            'rtx', 'gtx 10', 'gtx 16', 'gtx 20', 'gtx 30', 'gtx 40',
+            'radeon rx', 'radeon pro', 'intel iris', 'intel xe',
+            'apple m1', 'apple m2', 'adreno 6', 'adreno 7',
+            'mali-g7', 'mali-g9', 'powervr series 9'
+        ];
+        return modernGPUKeywords.some(keyword => gpu.includes(keyword));
+    }
+    
+    private recommendPresetByInfo(deviceInfo: any): string {
+        if (deviceInfo.isHighEnd && deviceInfo.platform === 'desktop') {
+            return 'high';
+        } else if (deviceInfo.memory >= 6 && deviceInfo.cores >= 4) {
+            return 'medium';
+        } else if (deviceInfo.platform === 'mobile') {
+            return 'low';
+        } else {
+            return 'minimal';
+        }
+    }
+    
     // Detect device information for auto-optimization
     private detectDeviceInfo(): void {
-        const deviceInfo = gameState.graphics.deviceInfo;
+        // Only detect once to prevent infinite loops
+        if (this.deviceInfoDetected) return;
+        this.deviceInfoDetected = true;
         
-        // Platform detection
-        deviceInfo.platform = this.detectPlatform();
-        
-        // CPU cores
-        deviceInfo.cores = navigator.hardwareConcurrency || 4;
+        const platform = this.detectPlatform();
+        const cores = navigator.hardwareConcurrency || 4;
         
         // Memory (rough estimation)
+        let memory: number;
         // @ts-ignore
         if (navigator.deviceMemory) {
             // @ts-ignore
-            deviceInfo.memory = navigator.deviceMemory;
+            memory = navigator.deviceMemory;
         } else {
-            deviceInfo.memory = this.estimateDeviceMemory();
+            memory = this.estimateDeviceMemory();
         }
         
         // GPU information
-        this.detectGPUInfo();
+        const gpu = this.detectGPUInfo();
         
         // WebGL version
-        deviceInfo.webglVersion = this.detectWebGLVersion();
+        const webglVersion = this.detectWebGLVersion();
         
-        // Determine if device is high-end
-        deviceInfo.isHighEnd = this.isHighEndDevice();
+        // Create complete device info object first
+        const deviceInfo = {
+            platform,
+            cores,
+            memory,
+            gpu,
+            webglVersion,
+            isHighEnd: false,
+            recommendedPreset: 'medium' as const
+        };
+        
+        // Determine if device is high-end using the new device info
+        deviceInfo.isHighEnd = this.isHighEndDeviceByInfo(deviceInfo);
         
         // Recommend preset based on device capabilities
-        deviceInfo.recommendedPreset = this.recommendPreset();
+        deviceInfo.recommendedPreset = this.recommendPresetByInfo(deviceInfo) as any;
+        
+        // Update device info via state manager
+        gameStateManager.updateState(state => ({
+            ...state,
+            graphics: {
+                ...state.graphics,
+                deviceInfo
+            }
+        }));
     }
     
     private detectPlatform(): string {
@@ -155,22 +247,8 @@ export class PerformanceMonitor {
         }
     }
     
-    private estimateDeviceMemory(): number {
-        // Fallback memory estimation based on platform
-        const platform = gameState.graphics.deviceInfo.platform;
-        
-        switch (platform) {
-            case 'mobile':
-                return 4; // 4GB typical for modern mobile devices
-            case 'tablet':
-                return 6; // 6GB typical for tablets
-            case 'desktop':
-            default:
-                return 8; // 8GB typical for desktop
-        }
-    }
     
-    private detectGPUInfo(): void {
+    private detectGPUInfo(): string {
         try {
             // Create a temporary canvas to get WebGL context
             const canvas = document.createElement('canvas');
@@ -181,15 +259,15 @@ export class PerformanceMonitor {
                 if (debugInfo) {
                     const vendor = gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL);
                     const renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
-                    gameState.graphics.deviceInfo.gpu = `${vendor} ${renderer}`;
+                    return `${vendor} ${renderer}`;
                 } else {
-                    gameState.graphics.deviceInfo.gpu = 'WebGL GPU (info unavailable)';
+                    return 'WebGL GPU (info unavailable)';
                 }
             } else {
-                gameState.graphics.deviceInfo.gpu = 'WebGL not supported';
+                return 'WebGL not supported';
             }
         } catch (e) {
-            gameState.graphics.deviceInfo.gpu = 'GPU detection failed';
+            return 'GPU detection failed';
         }
     }
     
@@ -211,43 +289,17 @@ export class PerformanceMonitor {
     
     private isHighEndDevice(): boolean {
         const deviceInfo = gameState.graphics.deviceInfo;
-        
-        // High-end criteria
-        const hasEnoughMemory = deviceInfo.memory >= 8;
-        const hasEnoughCores = deviceInfo.cores >= 4;
-        const isDesktop = deviceInfo.platform === 'desktop';
-        const hasWebGL2 = deviceInfo.webglVersion.includes('2.0');
-        const hasModernGPU = this.hasModernGPU();
-        
-        return hasEnoughMemory && hasEnoughCores && (isDesktop || hasWebGL2) && hasModernGPU;
+        return this.isHighEndDeviceByInfo(deviceInfo);
     }
     
     private hasModernGPU(): boolean {
         const gpu = gameState.graphics.deviceInfo.gpu.toLowerCase();
-        
-        // Check for modern GPU indicators
-        const modernGPUKeywords = [
-            'rtx', 'gtx 10', 'gtx 16', 'gtx 20', 'gtx 30', 'gtx 40',
-            'radeon rx', 'radeon pro', 'intel iris', 'intel xe',
-            'apple m1', 'apple m2', 'adreno 6', 'adreno 7',
-            'mali-g7', 'mali-g9', 'powervr series 9'
-        ];
-        
-        return modernGPUKeywords.some(keyword => gpu.includes(keyword));
+        return this.hasModernGPUByInfo({ gpu });
     }
     
     private recommendPreset(): string {
         const deviceInfo = gameState.graphics.deviceInfo;
-        
-        if (deviceInfo.isHighEnd && deviceInfo.platform === 'desktop') {
-            return 'high';
-        } else if (deviceInfo.memory >= 6 && deviceInfo.cores >= 4) {
-            return 'medium';
-        } else if (deviceInfo.platform === 'mobile') {
-            return 'low';
-        } else {
-            return 'minimal';
-        }
+        return this.recommendPresetByInfo(deviceInfo);
     }
     
     // Get current FPS
@@ -281,9 +333,18 @@ export class PerformanceMonitor {
     
     // Reset performance history (useful when changing settings)
     resetHistory(): void {
-        gameState.graphics.performance.history = [];
         this.frameTimeHistory = [];
-        gameState.graphics.performance.averageFps = 60; // Reset to default
+        gameStateManager.updateState(state => ({
+            ...state,
+            graphics: {
+                ...state.graphics,
+                performance: {
+                    ...state.graphics.performance,
+                    history: [],
+                    averageFps: 60 // Reset to default
+                }
+            }
+        }));
     }
 }
 

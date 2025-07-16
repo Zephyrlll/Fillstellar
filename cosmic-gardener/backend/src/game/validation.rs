@@ -4,49 +4,14 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::errors::GameError;
+use crate::errors::{GameError, Result};
 use crate::game::resources::{Resources, ResourceType, Fixed, fixed};
 use crate::game::celestial_bodies::{CelestialBody, CelestialType, BodyId, Vec3Fixed};
 
 /// プレイヤーID
 pub type PlayerId = Uuid;
 
-/// バリデーションエラー
-#[derive(Debug, thiserror::Error)]
-pub enum ValidationError {
-    #[error("Insufficient resources: {0}")]
-    InsufficientResources(String),
-    
-    #[error("Invalid resource value")]
-    InvalidResourceValue,
-    
-    #[error("Rate limit exceeded")]
-    RateLimitExceeded,
-    
-    #[error("Body limit reached")]
-    BodyLimitReached,
-    
-    #[error("Position out of bounds")]
-    OutOfBounds,
-    
-    #[error("Objects too close")]
-    TooClose,
-    
-    #[error("Invalid velocity")]
-    InvalidVelocity,
-    
-    #[error("Invalid mass")]
-    InvalidMass,
-    
-    #[error("Impossible state transition")]
-    ImpossibleStateTransition,
-    
-    #[error("Suspicious activity detected")]
-    SuspiciousActivity,
-    
-    #[error("Energy conservation violated")]
-    EnergyConservationViolated,
-}
+// Use unified GameError instead of ValidationError
 
 /// 違反の種類
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -228,24 +193,24 @@ impl ValidationEngine {
     }
     
     /// リソース検証
-    pub fn validate_resources(&self, resources: &Resources) -> Result<(), ValidationError> {
+    pub fn validate_resources(&self, resources: &Resources) -> Result<()> {
         for resource_type in ResourceType::all() {
             let value = resources.get(resource_type);
             if value > self.max_resource_value {
-                return Err(ValidationError::InvalidResourceValue);
+                return Err(GameError::InvalidResource("Resource value exceeds maximum".to_string()));
             }
         }
         Ok(())
     }
     
     /// リソース支出の検証
-    pub fn validate_resource_spending(&self, current: &Resources, cost: &Resources) -> Result<(), ValidationError> {
+    pub fn validate_resource_spending(&self, current: &Resources, cost: &Resources) -> Result<()> {
         for resource_type in ResourceType::all() {
             let current_value = current.get(resource_type);
             let cost_value = cost.get(resource_type);
             
             if current_value < cost_value {
-                return Err(ValidationError::InsufficientResources(format!("{:?}", resource_type)));
+                return Err(GameError::InsufficientResources);
             }
         }
         Ok(())
@@ -258,7 +223,7 @@ impl ValidationEngine {
         body_type: &CelestialType,
         position: &Vec3Fixed,
         existing_bodies: &HashMap<BodyId, CelestialBody>,
-    ) -> Result<(), ValidationError> {
+    ) -> Result<()> {
         // レート制限チェック
         self.check_creation_rate_limit(player_id)?;
         
@@ -272,10 +237,10 @@ impl ValidationEngine {
     }
     
     /// 位置の検証
-    fn validate_position(&self, position: &Vec3Fixed, existing_bodies: &HashMap<BodyId, CelestialBody>) -> Result<(), ValidationError> {
+    fn validate_position(&self, position: &Vec3Fixed, existing_bodies: &HashMap<BodyId, CelestialBody>) -> Result<()> {
         // 境界チェック
         if position.magnitude() > self.max_position {
-            return Err(ValidationError::OutOfBounds);
+            return Err(GameError::OutOfBounds);
         }
         
         // 最小分離距離チェック
@@ -284,7 +249,7 @@ impl ValidationEngine {
             let distance = (position - body.physics.position).magnitude();
             let min_dist = body.physics.radius + fixed::from_f64(MIN_SEPARATION);
             if distance < min_dist {
-                return Err(ValidationError::TooClose);
+                return Err(GameError::TooClose);
             }
         }
         
@@ -292,9 +257,9 @@ impl ValidationEngine {
     }
     
     /// 速度の検証
-    pub fn validate_velocity(&self, velocity: &Vec3Fixed, mass: Fixed) -> Result<(), ValidationError> {
+    pub fn validate_velocity(&self, velocity: &Vec3Fixed, mass: Fixed) -> Result<()> {
         if velocity.magnitude() > self.max_velocity {
-            return Err(ValidationError::InvalidVelocity);
+            return Err(GameError::Validation("Velocity exceeds maximum allowed".to_string()));
         }
         
         // 質量が大きいほど速度制限が厳しい
@@ -302,14 +267,14 @@ impl ValidationEngine {
         let adjusted_max = fixed::from_f64(fixed::to_f64(self.max_velocity) / (1.0 + mass_factor));
         
         if velocity.magnitude() > adjusted_max {
-            return Err(ValidationError::InvalidVelocity);
+            return Err(GameError::Validation("Velocity exceeds maximum allowed".to_string()));
         }
         
         Ok(())
     }
     
     /// 質量の検証
-    pub fn validate_mass(&self, mass: Fixed, body_type: &CelestialType) -> Result<(), ValidationError> {
+    pub fn validate_mass(&self, mass: Fixed, body_type: &CelestialType) -> Result<()> {
         let (min_mass, max_mass) = match body_type {
             CelestialType::Star(_) => (fixed::from_f64(1.989e30 * 0.1), fixed::from_f64(1.989e30 * 100.0)),
             CelestialType::Planet(_) => (fixed::from_f64(5.972e24 * 0.1), fixed::from_f64(5.972e24 * 300.0)),
@@ -318,14 +283,14 @@ impl ValidationEngine {
         };
         
         if mass < min_mass || mass > max_mass {
-            return Err(ValidationError::InvalidMass);
+            return Err(GameError::Validation("Mass is outside allowed range for body type".to_string()));
         }
         
         Ok(())
     }
     
     /// 作成レート制限チェック
-    fn check_creation_rate_limit(&mut self, player_id: PlayerId) -> Result<(), ValidationError> {
+    fn check_creation_rate_limit(&mut self, player_id: PlayerId) -> Result<()> {
         let now = Utc::now();
         let history = self.creation_history.entry(player_id).or_insert_with(CreationHistory::new);
         
@@ -341,7 +306,7 @@ impl ValidationEngine {
         });
         
         if history.timestamps.len() >= self.rate_limits.max_per_minute as usize {
-            return Err(ValidationError::RateLimitExceeded);
+            return Err(GameError::RateLimitExceeded("Per-minute creation limit exceeded".to_string()));
         }
         
         // バースト制限
@@ -350,12 +315,12 @@ impl ValidationEngine {
             .count();
         
         if recent_actions >= self.rate_limits.burst_size as usize {
-            return Err(ValidationError::RateLimitExceeded);
+            return Err(GameError::RateLimitExceeded("Per-minute creation limit exceeded".to_string()));
         }
         
         // 日次制限
         if history.total_today >= self.rate_limits.max_per_day {
-            return Err(ValidationError::RateLimitExceeded);
+            return Err(GameError::RateLimitExceeded("Per-minute creation limit exceeded".to_string()));
         }
         
         // 記録の更新
@@ -398,25 +363,25 @@ impl ValidationEngine {
     }
     
     /// 異常検出
-    pub fn detect_anomalies(&mut self, player_id: PlayerId) -> Vec<ValidationError> {
+    pub fn detect_anomalies(&mut self, player_id: PlayerId) -> Vec<GameError> {
         let mut anomalies = Vec::new();
         
         if let Some(pattern) = self.player_patterns.get_mut(&player_id) {
             // 超人的APMの検出
             if pattern.avg_apm > 300.0 {
                 pattern.suspicious_score += 10.0;
-                anomalies.push(ValidationError::SuspiciousActivity);
+                anomalies.push(GameError::Validation("Suspicious activity detected".to_string()));
             }
             
             // 行動の規則性検出
             if pattern.detect_regularity() {
                 pattern.suspicious_score += 15.0;
-                anomalies.push(ValidationError::SuspiciousActivity);
+                anomalies.push(GameError::Validation("Suspicious activity detected".to_string()));
             }
             
             // 疑わしいスコアの閾値チェック
             if pattern.suspicious_score > 50.0 {
-                anomalies.push(ValidationError::SuspiciousActivity);
+                anomalies.push(GameError::Validation("Suspicious activity detected".to_string()));
             }
         }
         
@@ -430,7 +395,7 @@ impl ValidationEngine {
         new_resources: &Resources,
         delta_time: Duration,
         max_production_rate: &Resources,
-    ) -> Result<(), ValidationError> {
+    ) -> Result<()> {
         for resource_type in ResourceType::all() {
             let old_value = old_resources.get(resource_type);
             let new_value = new_resources.get(resource_type);
@@ -442,7 +407,7 @@ impl ValidationEngine {
                 let max_increase = (max_rate as f64 * time_factor) as u64;
                 
                 if new_value - old_value > max_increase {
-                    return Err(ValidationError::ImpossibleStateTransition);
+                    return Err(GameError::Validation("Impossible state transition detected".to_string()));
                 }
             }
         }
@@ -451,10 +416,10 @@ impl ValidationEngine {
     }
     
     /// エネルギー保存の検証
-    pub fn validate_energy_conservation(&self, old_energy: Fixed, new_energy: Fixed) -> Result<(), ValidationError> {
+    pub fn validate_energy_conservation(&self, old_energy: Fixed, new_energy: Fixed) -> Result<()> {
         let energy_diff = (new_energy - old_energy).abs();
         if energy_diff > self.energy_tolerance {
-            return Err(ValidationError::EnergyConservationViolated);
+            return Err(GameError::PhysicsError("Energy conservation violated".to_string()));
         }
         Ok(())
     }
@@ -485,7 +450,7 @@ impl ValidationEngine {
     }
     
     /// チェックサムの検証
-    pub fn validate_checksum(&self, expected: u64, actual: u64) -> Result<(), ValidationError> {
+    pub fn validate_checksum(&self, expected: u64, actual: u64) -> Result<()> {
         if expected != actual {
             return Err(ValidationError::ImpossibleStateTransition);
         }

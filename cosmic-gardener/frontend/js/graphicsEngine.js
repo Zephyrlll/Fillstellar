@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { gameState, applyGraphicsPreset } from './state.js';
+import { gameStateManager, applyGraphicsPreset } from './state.js';
 import { scene, camera, renderer, composer, ambientLight } from './threeSetup.js';
 import { performanceMonitor } from './performanceMonitor.js';
 export class GraphicsEngine {
@@ -14,7 +14,7 @@ export class GraphicsEngine {
     }
     // Apply all current graphics settings
     applyAllSettings() {
-        const graphics = gameState.graphics;
+        const graphics = gameStateManager.getState().graphics;
         this.applyResolutionScale(graphics.resolutionScale);
         this.applyAntiAliasing(graphics.antiAliasing);
         this.applyShadowQuality(graphics.shadowQuality);
@@ -26,14 +26,18 @@ export class GraphicsEngine {
         this.applyUIAnimations(graphics.uiAnimations);
         // Update frame rate limiter
         this.frameRateLimiter.setTargetFPS(graphics.frameRateLimit);
-        console.log(`🎯 Frame rate limit set to: ${graphics.frameRateLimit} FPS`);
+        // console.log(`🎯 Frame rate limit set to: ${graphics.frameRateLimit} FPS`);
         // Store current settings for change detection
         this.previousSettings = { ...graphics };
-        console.log(`🎨 Graphics settings applied: ${graphics.preset} preset`);
+        // console.log(`🎨 Graphics settings applied: ${graphics.preset} preset`);
     }
     // Check for setting changes and apply only what's needed
     update() {
-        const graphics = gameState.graphics;
+        const graphics = gameStateManager.getState().graphics;
+        // Debug log
+        if (this.previousSettings.resolutionScale !== graphics.resolutionScale) {
+            console.log(`[GraphicsEngine.update] Previous: ${this.previousSettings.resolutionScale}, Current: ${graphics.resolutionScale}`);
+        }
         // Check for preset changes
         if (this.previousSettings.preset !== graphics.preset && graphics.preset !== 'custom') {
             this.applyPreset(graphics.preset);
@@ -41,6 +45,7 @@ export class GraphicsEngine {
         }
         // Check individual setting changes
         if (this.previousSettings.resolutionScale !== graphics.resolutionScale) {
+            console.log(`[GraphicsEngine] Resolution scale changed: ${this.previousSettings.resolutionScale} -> ${graphics.resolutionScale}`);
             this.applyResolutionScale(graphics.resolutionScale);
         }
         if (this.previousSettings.antiAliasing !== graphics.antiAliasing) {
@@ -78,13 +83,14 @@ export class GraphicsEngine {
     }
     // Apply a graphics preset
     applyPreset(presetName) {
-        applyGraphicsPreset(gameState.graphics, presetName);
+        applyGraphicsPreset(gameStateManager.getState().graphics, presetName);
         this.applyAllSettings();
         performanceMonitor.resetHistory();
         console.log(`🎨 Applied graphics preset: ${presetName}`);
     }
     // Resolution scaling
     applyResolutionScale(scale) {
+        console.log(`[GraphicsEngine] Applying resolution scale: ${scale}`);
         const canvas = renderer.domElement;
         const pixelRatio = window.devicePixelRatio || 1;
         // 表示サイズ（常に画面いっぱい）
@@ -299,7 +305,7 @@ export class GraphicsEngine {
     }
     // LOD (Level of Detail) management
     updateLODSystems() {
-        const objectDetail = gameState.graphics.objectDetail;
+        const objectDetail = gameStateManager.getState().graphics.objectDetail;
         // Update existing LOD systems
         for (const [object, lodSystem] of this.lodSystems) {
             lodSystem.update(camera, objectDetail);
@@ -334,7 +340,7 @@ export class GraphicsEngine {
         }
     }
     reduceQuality() {
-        const graphics = gameState.graphics;
+        const graphics = gameStateManager.getState().graphics;
         let changed = false;
         // Reduce settings in order of performance impact
         if (graphics.resolutionScale > 0.5) {
@@ -442,7 +448,7 @@ class LODSystem {
     forceResolutionUpdate() {
         console.log('🔧 Force resolution update called');
         if (window.graphicsEngine) {
-            window.graphicsEngine.applyResolutionScale(gameState.graphics.resolutionScale);
+            window.graphicsEngine.applyResolutionScale(gameStateManager.getState().graphics.resolutionScale);
         }
     }
     // Reset camera for initialization (used during startup)
@@ -451,7 +457,7 @@ class LODSystem {
         // This is a placeholder - actual camera reset logic would go here
         // For now, we'll just ensure resolution is applied
         if (window.graphicsEngine) {
-            window.graphicsEngine.applyResolutionScale(gameState.graphics.resolutionScale);
+            window.graphicsEngine.applyResolutionScale(gameStateManager.getState().graphics.resolutionScale);
         }
     }
 }

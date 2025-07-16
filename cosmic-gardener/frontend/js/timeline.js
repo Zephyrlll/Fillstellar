@@ -1,4 +1,4 @@
-import { gameState } from './state.js';
+import { gameState, gameStateManager } from './state.js';
 export function addTimelineLog(message, type = 'event') {
     const logEntry = {
         id: Date.now() + Math.random(),
@@ -7,10 +7,13 @@ export function addTimelineLog(message, type = 'event') {
         type: type,
         timestamp: Date.now()
     };
-    gameState.timelineLog.unshift(logEntry);
-    if (gameState.timelineLog.length > gameState.maxLogEntries) {
-        gameState.timelineLog = gameState.timelineLog.slice(0, gameState.maxLogEntries);
-    }
+    gameStateManager.updateState(state => {
+        const newLog = [logEntry, ...state.timelineLog];
+        return {
+            ...state,
+            timelineLog: newLog.slice(0, state.maxLogEntries)
+        };
+    });
     updateTimelineLogDisplay();
 }
 function updateTimelineLogDisplay() {
@@ -33,6 +36,9 @@ function updateTimelineLogDisplay() {
     }
 }
 export function clearTimelineLog() {
-    gameState.timelineLog = [];
+    gameStateManager.updateState(state => ({
+        ...state,
+        timelineLog: []
+    }));
     updateTimelineLogDisplay();
 }

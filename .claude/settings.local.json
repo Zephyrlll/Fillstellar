@@ -22,7 +22,14 @@
       "Bash(ss:*)",
       "Bash(node:*)",
       "WebFetch(domain:threejsfundamentals.org)",
-      "WebFetch(domain:webglfundamentals.org)"
+      "WebFetch(domain:webglfundamentals.org)",
+      "Bash(diff:*)",
+      "Bash(for file in celestialBody.ts constants.ts events.ts physics.ts saveload.ts sound.ts state.ts statistics.ts threeSetup.ts timeline.ts ui.ts utils.ts)",
+      "Bash(do if [ ! -f \"/mnt/c/AIagent/Fillstellar/cosmic-gardener/frontend/js/$file\" ])",
+      "Bash(then echo \"Missing: $file\")",
+      "Bash(fi)",
+      "Bash(done)",
+      "Bash(npm run build:*)"
     ],
     "deny": []
   }

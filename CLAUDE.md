@@ -1,253 +1,156 @@
-# 🌌 Fillstellar - AI開発ガイド
+# CLAUDE.md
 
-## 🎯 プロジェクト概要
-宇宙シミュレーションゲーム「Fillstellar」の開発プロジェクト。
-TypeScript + Three.js (Frontend) + Rust + PostgreSQL (Backend)
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## 🚨 **必須守則（AI指示時は常に適用）**
+## Project Overview
 
-### 1. 型安全性最優先
-```typescript
-// ✅ 必須
-function createStar(position: Vector3, mass: number): CelestialBody | null
-// ❌ 禁止
-function createStar(data: any): any
+Cosmic Gardener (Fillstellar) - A 3D space simulation idle game where players create and manage cosmic objects from dust to stars.
+
+### Project Structure
+- **Root**: Main project configuration and documentation
+- **cosmic-gardener/**: Main game directory
+  - **frontend/**: TypeScript/Three.js game client
+  - **backend/**: Rust backend server (Axum-based)
+  - **database/**: PostgreSQL schema and migrations
+  - **docs/**: Project documentation
+  - **infra/**: Infrastructure and deployment scripts
+
+### Key Technologies
+- **Frontend**: TypeScript, Three.js, ES6 modules
+- **Backend**: Rust (Axum framework), PostgreSQL, WebSocket
+- **Build Tools**: TypeScript compiler, Cargo
+
+## Development Commands
+
+### Frontend Development
+```bash
+# Navigate to frontend
+cd cosmic-gardener/frontend
+
+# Install dependencies
+npm install
+
+# Build TypeScript
+npm run build
+# or
+npx tsc
+
+# Start local server
+npm run serve
+# or
+起動.bat
+# or
+python -m http.server 8000
 ```
 
-### 2. エラーハンドリング必須
-```typescript
-// ✅ 必須パターン
-try {
-  const result = riskyOperation();
-  return result;
-} catch (error) {
-  console.error('[CONTEXT] Operation failed:', error);
-  return null; // または適切なフォールバック
-}
+### Backend Development
+```bash
+# Navigate to backend
+cd cosmic-gardener/backend
+
+# Run development server
+cargo run
+
+# Run tests
+cargo test
+
+# Build for production
+cargo build --release
 ```
 
-### 3. null安全チェック
-```typescript
-// ✅ 必須
-const body = gameState.stars.find(s => s.id === id);
-if (!body) {
-  console.warn('[GAME] CelestialBody not found:', id);
-  return null;
-}
-```
+### Git Operations
+- **Commit Helper**: Use `コミット.bat` in various directories
+- **Manual Commit**: Standard git commands
 
-### 4. 統一ログ形式
-```typescript
-console.log('[CONTEXT] message', data);
-console.error('[CONTEXT] error:', error);
-console.warn('[CONTEXT] warning:', warning);
-```
+## Architecture Guidelines
 
-## 🏗️ **アーキテクチャ**
+### Frontend Architecture
+- **Main Entry**: `cosmic-gardener/frontend/main.ts`
+- **Modular Design**: Each system in separate TypeScript file
+- **State Management**: Centralized in `state.ts`
+- **Physics**: Custom N-body simulation in `physics.ts`
+- **UI**: Tab-based interface in `ui.ts`
+- **Sound**: Procedural audio in `sound.ts`
 
-### Frontend構造
-```
-src/frontend/
-├── types/           # 型定義（最重要）
-├── engine/          # ゲームエンジン
-├── ui/              # UIシステム  
-└── utils/           # ユーティリティ
-```
+### Backend Architecture
+- **Clean Architecture**: Domain/Application/Infrastructure layers
+- **RESTful API**: Health, auth, game endpoints
+- **WebSocket**: Real-time game state synchronization
+- **Error Handling**: Comprehensive error types and middleware
 
-### 重要な型定義
-```typescript
-interface GameState {
-  stars: CelestialBody[];
-  cosmicDust: number;
-  energy: number;
-  // ...
-}
+### Code Style
+- **TypeScript**: Strict typing, ES6+ features
+- **Rust**: Follow Rust conventions, use Result<T, E>
+- **Comments**: Minimal, code should be self-documenting
 
-interface CelestialBody extends THREE.Mesh {
-  userData: {
-    id: string;
-    type: 'star' | 'planet' | 'asteroid' | 'black_hole';
-    mass: number;
-    velocity: Vector3;
-  };
-}
-```
+## Important Notes
 
-### Backend構造
-```
-src/backend/
-├── handlers/        # APIエンドポイント
-├── services/        # ビジネスロジック
-├── models/          # データモデル
-└── game/           # ゲームロジック
-```
+### Performance Considerations
+- UI updates throttled to 0.1s intervals
+- Object pooling for Vector3 objects
+- Fixed timestep physics with accumulator
+- WebSocket backpressure handling
 
-## 🎮 **主要システム**
+### Testing
+- Frontend: Manual testing via browser
+- Backend: `cargo test` for unit/integration tests
+- Use `test_runner.bat` for automated backend tests
 
-### 1. 天体管理システム
-- 天体の作成・削除・更新
-- 物理演算（重力、衝突）
-- 3D描画とアニメーション
+### Deployment
+- Frontend: Static file hosting
+- Backend: Docker containerization
+- Database: PostgreSQL with migrations
 
-### 2. リソース管理
-- 6種類のリソース（塵、エネルギー、有機物、バイオマス、ダークマター、思考ポイント）
-- リアルタイム生成・消費
-- バランス調整
+## File Management
 
-### 3. WebSocket通信
-- フロント⇔バック間のリアルタイム同期
-- 楽観的更新による UX向上
+### Critical Files (Do NOT delete)
+- All `.ts` and `.js` files in frontend
+- All `.rs` files in backend
+- `package.json`, `Cargo.toml` files
+- Migration files in `database/`
+- All `.bat` helper scripts
 
-## 📋 **AI実装指示ルール**
+### Files to Exclude from Git
+- `node_modules/`
+- `target/` (Rust build)
+- `.env` files (use `.env.example`)
+- OS-specific files (`.DS_Store`, `Thumbs.db`)
+- IDE directories (`.vscode/`, `.idea/`)
 
-### コード生成時の必須チェック
-1. **型定義は明確か？**
-2. **エラーハンドリングはあるか？**
-3. **null/undefinedチェックはあるか？**
-4. **ログ出力は統一形式か？**
-5. **命名規約に従っているか？**
+## Common Tasks
 
-### 関数設計原則
-```typescript
-// ✅ 理想的な関数
-function processGameAction(
-  action: GameAction,
-  currentState: GameState
-): Result<GameState, GameError> {
-  // 1. 入力検証
-  if (!isValidAction(action)) {
-    return Err(new GameError('INVALID_ACTION', 'Action validation failed'));
-  }
-  
-  try {
-    // 2. 処理実行
-    const newState = applyAction(action, currentState);
-    
-    // 3. ログ出力
-    console.log('[GAME] Action processed:', action.type);
-    
-    return Ok(newState);
-  } catch (error) {
-    console.error('[GAME] Action processing failed:', error);
-    return Err(new GameError('PROCESSING_FAILED', error.message));
-  }
-}
-```
+### Adding New Resources
+1. Update `cosmic-gardener/frontend/js/constants.ts`
+2. Add icon to `cosmic-gardener/frontend/icon/`
+3. Update resource generation logic
+4. Update UI display
 
-## 🔄 **WebSocket メッセージ形式**
+### Creating New Celestial Bodies
+1. Define in `celestialBody.ts`
+2. Add creation logic
+3. Update physics calculations
+4. Add UI controls
 
-```typescript
-interface WSMessage<T = unknown> {
-  type: MessageType;
-  timestamp: number;
-  requestId?: string;
-  data: T;
-}
+### Implementing New Features
+1. Create dedicated TypeScript module
+2. Import in `main.ts`
+3. Add UI elements if needed
+4. Update save/load if adding persistent data
 
-// 使用例
-const message: WSMessage<CreateStarRequest> = {
-  type: 'CREATE_CELESTIAL_BODY',
-  timestamp: Date.now(),
-  requestId: crypto.randomUUID(),
-  data: { type: 'star', position: [0, 0, 0], mass: 1.989e30 }
-};
-```
+## Troubleshooting
 
-## 🐛 **デバッグ支援**
+### TypeScript Build Errors
+- Check `tsconfig.json` configuration
+- Ensure all imports use `.js` extension (for ES modules)
+- Verify type definitions are installed
 
-### エラー報告時に必要な情報
-1. **ファイル名と行番号**
-2. **完全なエラーメッセージ**
-3. **実行コンテキスト**（どの機能実行中か）
-4. **関連する型定義**
+### WebSocket Connection Issues
+- Check backend is running on correct port
+- Verify CORS settings
+- Check firewall/proxy settings
 
-### トラブルシューティング用ログ
-```typescript
-// 問題調査用の詳細ログ
-function debugLog(category: string, message: string, data?: any) {
-  if (DEBUG_MODE) {
-    console.log(`[DEBUG:${category}] ${message}`, data);
-  }
-}
-```
-
-## 🎯 **開発優先順位**
-
-### 現在の開発フェーズ: バックエンド統合
-1. **WebSocket実装完了** (TODO削除)
-2. **フロント⇔バック連携**
-3. **エラー修正** (カメラバグ等)
-4. **ゲームバランス調整**
-
-### コード品質重視項目
-1. 型安全性 > 機能追加
-2. エラーハンドリング > パフォーマンス  
-3. 可読性 > 簡潔性
-
-## 🚀 **AI指示テンプレート集**
-
-### 新機能実装
-```
-この規約に従って[機能名]を実装してください：
-
-## 要件
-- [具体的な要件]
-
-## 必須チェック項目
-- [ ] 型安全性（any禁止）
-- [ ] エラーハンドリング
-- [ ] null安全チェック  
-- [ ] 統一ログ形式
-- [ ] 命名規約準拠
-
-## 期待する形
-```typescript
-[期待する関数シグネチャ]
-```
-```
-
-### コードレビュー
-```
-以下のコードをCLAUDE.mdの規約でレビューし、問題があれば修正版を提示してください：
-
-[コードを貼付]
-
-特に以下をチェック：
-- 型安全性
-- エラーハンドリング
-- null安全性
-- ログ形式
-```
-
-### バグ修正
-```
-以下のエラーを規約に従って修正してください：
-
-**エラー内容:**
-[完全なエラーメッセージ]
-
-**関連コード:**
-[問題のあるコード]
-
-**期待する動作:**
-[期待する動作]
-```
-
-## 💡 **AIとの協働のコツ**
-
-1. **「規約に従って」** を毎回明示
-2. **具体的なコンテキスト** を提供
-3. **完全なエラーログ** をコピペ
-4. **関連型定義** を一緒に提示
-5. **期待する結果** を明確に
-
-## 📊 **品質指標**
-
-- **型安全性**: any使用率 < 1%
-- **エラーハンドリング**: カバー率 > 95%
-- **命名規約**: 準拠率 100%
-- **テストカバレッジ**: > 80%
-
----
-
-**重要**: このガイドは生きた文書です。プロジェクトの成長と共に更新し、常に最新の開発方針を反映してください。
+### Performance Issues
+- Use browser DevTools Performance tab
+- Check for excessive DOM updates
+- Monitor Three.js draw calls
+- Review physics calculation frequency

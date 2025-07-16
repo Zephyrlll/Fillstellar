@@ -84,7 +84,7 @@ export function handleCollision(body1, body2) {
     const mass1 = body1.userData.mass || 1;
     const mass2 = body2.userData.mass || 1;
     const totalMass = mass1 + mass2;
-    console.log(`💥 Handling collision: ${body1.userData.name} (${mass1}) + ${body2.userData.name} (${mass2}) = ${totalMass}`);
+    // Debug: console.log(`💥 Handling collision: ${body1.userData.name} (${mass1}) + ${body2.userData.name} (${mass2}) = ${totalMass}`);
     // Determine which body survives (higher mass wins)
     const survivor = mass1 >= mass2 ? body1 : body2;
     const absorbed = mass1 >= mass2 ? body2 : body1;
@@ -184,10 +184,10 @@ export function updatePhysics(deltaTime) {
         const collisions = detectCollisions();
         // Debug logging
         if (collisions.length > 0) {
-            console.log(`🔴 Collisions detected: ${collisions.length}`);
-            collisions.forEach((collision, index) => {
-                console.log(`  Collision ${index + 1}: ${collision.body1.userData.name} (mass: ${collision.body1.userData.mass}) vs ${collision.body2.userData.name} (mass: ${collision.body2.userData.mass})`);
-            });
+            // Debug: console.log(`🔴 Collisions detected: ${collisions.length}`);
+            // collisions.forEach((collision, index) => {
+            //     console.log(`  Collision ${index + 1}: ${collision.body1.userData.name} (mass: ${collision.body1.userData.mass}) vs ${collision.body2.userData.name} (mass: ${collision.body2.userData.mass})`);
+            // });
         }
         // Handle collisions
         collisions.forEach(collision => {
@@ -221,9 +221,22 @@ export function updatePhysics(deltaTime) {
         userData.velocity.add(userData.acceleration.clone().multiplyScalar(deltaTime));
         body.position.add(userData.velocity.clone().multiplyScalar(deltaTime));
         const boundary = GALAXY_BOUNDARY;
-        if (body.position.length() > boundary) {
-            body.position.normalize().multiplyScalar(boundary);
-            userData.velocity.multiplyScalar(0.5);
+        const distance = body.position.length();
+        // Gradual boundary with soft bounce
+        if (distance > boundary * 0.9) {
+            const softnessZone = boundary * 0.1;
+            const penetration = distance - (boundary * 0.9);
+            const bounceForce = Math.min(penetration / softnessZone, 1.0);
+            // Apply gradual velocity reduction and gentle push back
+            const pushDirection = body.position.clone().normalize().multiplyScalar(-1);
+            const pushForce = bounceForce * 0.1;
+            userData.velocity.add(pushDirection.multiplyScalar(pushForce));
+            userData.velocity.multiplyScalar(1 - bounceForce * 0.02);
+            // Hard boundary as last resort
+            if (distance > boundary) {
+                body.position.normalize().multiplyScalar(boundary);
+                userData.velocity.multiplyScalar(0.3);
+            }
         }
     });
 }

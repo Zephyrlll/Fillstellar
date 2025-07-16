@@ -3,7 +3,7 @@ use rayon::prelude::*;
 use rstar::{RTree, RTreeObject, AABB, Envelope};
 use serde::{Deserialize, Serialize};
 
-use crate::errors::GameError;
+use crate::errors::{GameError, Result};
 use crate::game::celestial_bodies::{CelestialBody, BodyId, Vec3Fixed, Point3Fixed};
 use crate::game::resources::{Fixed, fixed};
 
@@ -219,7 +219,7 @@ impl PhysicsEngine {
     }
     
     /// 物理演算の更新
-    pub fn update(&mut self, bodies: &mut HashMap<BodyId, CelestialBody>, delta_time: f64) -> Result<(), GameError> {
+    pub fn update(&mut self, bodies: &mut HashMap<BodyId, CelestialBody>, delta_time: f64) -> Result<()> {
         if bodies.is_empty() {
             return Ok(());
         }
@@ -269,7 +269,7 @@ impl PhysicsEngine {
     }
     
     /// 重力計算
-    fn calculate_gravity(&mut self, bodies: &mut HashMap<BodyId, CelestialBody>, delta_time: f64) -> Result<(), GameError> {
+    fn calculate_gravity(&mut self, bodies: &mut HashMap<BodyId, CelestialBody>, delta_time: f64) -> Result<()> {
         if bodies.len() <= self.max_bodies_direct {
             // 直接計算
             self.calculate_gravity_direct(bodies, delta_time)
@@ -280,7 +280,7 @@ impl PhysicsEngine {
     }
     
     /// 直接的な重力計算（O(n²)）
-    fn calculate_gravity_direct(&self, bodies: &mut HashMap<BodyId, CelestialBody>, delta_time: f64) -> Result<(), GameError> {
+    fn calculate_gravity_direct(&self, bodies: &mut HashMap<BodyId, CelestialBody>, delta_time: f64) -> Result<()> {
         let body_data: Vec<_> = bodies.iter().map(|(id, body)| {
             (*id, body.physics.position, body.physics.mass)
         }).collect();
@@ -332,7 +332,7 @@ impl PhysicsEngine {
     }
     
     /// Barnes-Hut近似による重力計算
-    fn calculate_gravity_barnes_hut(&mut self, bodies: &mut HashMap<BodyId, CelestialBody>, delta_time: f64) -> Result<(), GameError> {
+    fn calculate_gravity_barnes_hut(&mut self, bodies: &mut HashMap<BodyId, CelestialBody>, delta_time: f64) -> Result<()> {
         // Barnes-Hut木の構築
         self.build_bh_tree(bodies);
         
@@ -465,7 +465,7 @@ impl PhysicsEngine {
     }
     
     /// 衝突検出
-    fn detect_collisions(&mut self, bodies: &mut HashMap<BodyId, CelestialBody>) -> Result<(), GameError> {
+    fn detect_collisions(&mut self, bodies: &mut HashMap<BodyId, CelestialBody>) -> Result<()> {
         let mut collision_pairs = Vec::new();
         
         for (id, body) in bodies.iter() {
@@ -502,7 +502,7 @@ impl PhysicsEngine {
     }
     
     /// 衝突処理
-    fn handle_collision(&self, bodies: &mut HashMap<BodyId, CelestialBody>, id1: BodyId, id2: BodyId) -> Result<(), GameError> {
+    fn handle_collision(&self, bodies: &mut HashMap<BodyId, CelestialBody>, id1: BodyId, id2: BodyId) -> Result<()> {
         // 非弾性衝突を実装
         let (body1, body2) = {
             let body1 = bodies.get(&id1).ok_or(GameError::BodyNotFound)?.clone();

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { scene, camera, renderer, composer } from './threeSetup.js';
-import { gameState, CelestialBody, StarUserData } from './state.js';
+import { gameState, gameStateManager, CelestialBody, StarUserData } from './state.js';
 import { ui, switchTab, showMessage, updateUI, debouncedUpdateGalaxyMap, toggleProductionPanel, closeProductionPanel } from './ui.js';
 import { saveGame } from './saveload.js';
 import { createCelestialBody } from './celestialBody.js';
@@ -16,8 +16,11 @@ const mouse = new THREE.Vector2();
 export const keys = { w: false, a: false, s: false, d: false };
 
 function focusOnStar(star: CelestialBody) {
-    gameState.focusedObject = star;
-    console.log("Focused on:", star.userData.name);
+    gameStateManager.updateState(state => ({
+        ...state,
+        focusedObject: star
+    }));
+    console.log("[GAME] Focused on:", star.userData.name);
 }
 
 let eventListenersSetup = false;
@@ -93,7 +96,10 @@ export function setupEventListeners() {
         if (event.code === 'KeyS') keys.s = false;
         if (event.code === 'KeyD') keys.d = false;
         if (event.code === 'KeyM') {
-            gameState.isMapVisible = !gameState.isMapVisible;
+            gameStateManager.updateState(state => ({
+                ...state,
+                isMapVisible: !state.isMapVisible
+            }));
             debouncedUpdateGalaxyMap();
         }
     });
@@ -157,7 +163,10 @@ export function setupEventListeners() {
                 console.log('🔧 Map container collapsed state:', isCollapsed);
                 
                 // Update gameState.isMapVisible to match the visual state
-                gameState.isMapVisible = !isCollapsed;
+                gameStateManager.updateState(state => ({
+                    ...state,
+                    isMapVisible: !isCollapsed
+                }));
                 
                 // Update button appearance
                 if (ui.galaxyMapToggle) {
@@ -271,8 +280,14 @@ export function setupEventListeners() {
                 return;
             }
 
-            gameState.cosmicDust -= cost;
-            gameState.resources.cosmicDust -= cost;
+            gameStateManager.updateState(state => ({
+                ...state,
+                cosmicDust: state.cosmicDust - cost,
+                resources: {
+                    ...state.resources,
+                    cosmicDust: state.resources.cosmicDust - cost
+                }
+            }));
             // Use actual radius from userData instead of visual scale
             const parentRadius = focusedObject.userData.radius || 1;
             const minSafeDistance = parentRadius * 3; // At least 3x parent radius for safety
@@ -347,7 +362,10 @@ export function setupEventListeners() {
                 velocity: finalVelocity,
                 parent: focusedObject
             });
-            gameState.stars.push(newBody);
+            gameStateManager.updateState(state => ({
+                ...state,
+                stars: [...state.stars, newBody]
+            }));
             scene.add(newBody);
             
             // サウンドエフェクトの再生
@@ -398,8 +416,14 @@ export function setupEventListeners() {
         
         const name = starName || `恒星-${gameState.stars.filter(s => s.userData.type === 'star').length + 1}`;
         
-        gameState.cosmicDust -= cost;
-        gameState.resources.cosmicDust -= cost;
+        gameStateManager.updateState(state => ({
+            ...state,
+            cosmicDust: state.cosmicDust - cost,
+            resources: {
+                ...state.resources,
+                cosmicDust: state.resources.cosmicDust - cost
+            }
+        }));
         const radius = 5000 + Math.random() * 10000;
         const angle = Math.random() * Math.PI * 2;
         const position = new THREE.Vector3(radius * Math.cos(angle), (Math.random() - 0.5) * 100, radius * Math.sin(angle));
@@ -408,7 +432,10 @@ export function setupEventListeners() {
         const orbitalSpeed = Math.sqrt((gameState.physics.G * blackHoleMass) / radius);
         const velocity = new THREE.Vector3(-position.z, 0, position.x).normalize().multiplyScalar(orbitalSpeed);
         const newStar = createCelestialBody('star', { name, position, velocity });
-        gameState.stars.push(newStar);
+        gameStateManager.updateState(state => ({
+            ...state,
+            stars: [...state.stars, newStar]
+        }));
         scene.add(newStar);
         focusOnStar(newStar);
         
@@ -495,9 +522,15 @@ export function setupEventListeners() {
             const upgradeAction = () => {
                 const cost = mathCache.getDustUpgradeCost();
                 if (gameState.energy >= cost) {
-                    gameState.energy -= cost;
-                    gameState.resources.energy -= cost;
-                    gameState.dustUpgradeLevel++;
+                    gameStateManager.updateState(state => ({
+                        ...state,
+                        energy: state.energy - cost,
+                        dustUpgradeLevel: state.dustUpgradeLevel + 1,
+                        resources: {
+                            ...state.resources,
+                            energy: state.resources.energy - cost
+                        }
+                    }));
                     updateUI();
                     saveGame();
                     soundManager.playUISound('success');
@@ -533,11 +566,17 @@ export function setupEventListeners() {
             const upgradeAction = () => {
                 const cost = mathCache.getConverterCost();
                 if (gameState.energy >= cost) {
-                    gameState.energy -= cost;
-                    gameState.resources.energy -= cost;
-                    gameState.darkMatterConverterLevel++;
-                    gameState.darkMatter++;
-                    gameState.resources.darkMatter++;
+                    gameStateManager.updateState(state => ({
+                        ...state,
+                        energy: state.energy - cost,
+                        darkMatterConverterLevel: state.darkMatterConverterLevel + 1,
+                        darkMatter: state.darkMatter + 1,
+                        resources: {
+                            ...state.resources,
+                            energy: state.resources.energy - cost,
+                            darkMatter: state.resources.darkMatter + 1
+                        }
+                    }));
                     updateUI();
                     saveGame();
                     soundManager.playUISound('success');
@@ -568,9 +607,15 @@ export function setupEventListeners() {
     if (ui.researchEnhancedDustButton) {
         ui.researchEnhancedDustButton.addEventListener('click', () => {
             if (gameState.darkMatter >= 1 && !gameState.researchEnhancedDust) {
-                gameState.darkMatter -= 1;
-                gameState.resources.darkMatter -= 1;
-                gameState.researchEnhancedDust = true;
+                gameStateManager.updateState(state => ({
+                    ...state,
+                    darkMatter: state.darkMatter - 1,
+                    researchEnhancedDust: true,
+                    resources: {
+                        ...state.resources,
+                        darkMatter: state.resources.darkMatter - 1
+                    }
+                }));
                 updateUI();
                 saveGame();
             }
@@ -580,9 +625,15 @@ export function setupEventListeners() {
     if (ui.researchAdvancedEnergyButton) {
         ui.researchAdvancedEnergyButton.addEventListener('click', () => {
             if (gameState.darkMatter >= 2 && !gameState.researchAdvancedEnergy) {
-                gameState.darkMatter -= 2;
-                gameState.resources.darkMatter -= 2;
-                gameState.researchAdvancedEnergy = true;
+                gameStateManager.updateState(state => ({
+                    ...state,
+                    darkMatter: state.darkMatter - 2,
+                    researchAdvancedEnergy: true,
+                    resources: {
+                        ...state.resources,
+                        darkMatter: state.resources.darkMatter - 2
+                    }
+                }));
                 updateUI();
                 saveGame();
             }
@@ -592,9 +643,18 @@ export function setupEventListeners() {
     if (ui.researchMoonButton) {
         ui.researchMoonButton.addEventListener('click', () => {
             if (gameState.darkMatter >= 1 && !gameState.unlockedCelestialBodies.moon) {
-                gameState.darkMatter -= 1;
-                gameState.resources.darkMatter -= 1;
-                gameState.unlockedCelestialBodies.moon = true;
+                gameStateManager.updateState(state => ({
+                    ...state,
+                    darkMatter: state.darkMatter - 1,
+                    resources: {
+                        ...state.resources,
+                        darkMatter: state.resources.darkMatter - 1
+                    },
+                    unlockedCelestialBodies: {
+                        ...state.unlockedCelestialBodies,
+                        moon: true
+                    }
+                }));
                 updateUI();
                 saveGame();
             }
@@ -604,9 +664,18 @@ export function setupEventListeners() {
     if (ui.researchDwarfPlanetButton) {
         ui.researchDwarfPlanetButton.addEventListener('click', () => {
             if (gameState.darkMatter >= 2 && !gameState.unlockedCelestialBodies.dwarfPlanet) {
-                gameState.darkMatter -= 2;
-                gameState.resources.darkMatter -= 2;
-                gameState.unlockedCelestialBodies.dwarfPlanet = true;
+                gameStateManager.updateState(state => ({
+                    ...state,
+                    darkMatter: state.darkMatter - 2,
+                    resources: {
+                        ...state.resources,
+                        darkMatter: state.resources.darkMatter - 2
+                    },
+                    unlockedCelestialBodies: {
+                        ...state.unlockedCelestialBodies,
+                        dwarfPlanet: true
+                    }
+                }));
                 updateUI();
                 saveGame();
             }
@@ -616,9 +685,18 @@ export function setupEventListeners() {
     if (ui.researchPlanetButton) {
         ui.researchPlanetButton.addEventListener('click', () => {
             if (gameState.darkMatter >= 3 && !gameState.unlockedCelestialBodies.planet) {
-                gameState.darkMatter -= 3;
-                gameState.resources.darkMatter -= 3;
-                gameState.unlockedCelestialBodies.planet = true;
+                gameStateManager.updateState(state => ({
+                    ...state,
+                    darkMatter: state.darkMatter - 3,
+                    resources: {
+                        ...state.resources,
+                        darkMatter: state.resources.darkMatter - 3
+                    },
+                    unlockedCelestialBodies: {
+                        ...state.unlockedCelestialBodies,
+                        planet: true
+                    }
+                }));
                 updateUI();
                 saveGame();
             }
@@ -629,9 +707,18 @@ export function setupEventListeners() {
         ui.researchStarButton.addEventListener('click', () => {
             const cost = 5;
             if (gameState.darkMatter >= cost && !gameState.unlockedCelestialBodies.star) {
-                gameState.darkMatter -= cost;
-                gameState.resources.darkMatter -= cost;
-                gameState.unlockedCelestialBodies.star = true;
+                gameStateManager.updateState(state => ({
+                    ...state,
+                    darkMatter: state.darkMatter - cost,
+                    resources: {
+                        ...state.resources,
+                        darkMatter: state.resources.darkMatter - cost
+                    },
+                    unlockedCelestialBodies: {
+                        ...state.unlockedCelestialBodies,
+                        star: true
+                    }
+                }));
                 updateUI();
                 saveGame();
             }
@@ -641,7 +728,13 @@ export function setupEventListeners() {
     if (ui.gravitySlider) {
         ui.gravitySlider.addEventListener('input', (event) => {
             const target = event.target as HTMLInputElement;
-            gameState.physics.G = parseFloat(target.value);
+            gameStateManager.updateState(state => ({
+                ...state,
+                physics: {
+                    ...state.physics,
+                    G: parseFloat(target.value)
+                }
+            }));
             if (ui.gravityValue) ui.gravityValue.textContent = target.value;
         });
     }
@@ -649,7 +742,13 @@ export function setupEventListeners() {
     if (ui.simulationSpeedSlider) {
         ui.simulationSpeedSlider.addEventListener('input', (event) => {
             const target = event.target as HTMLInputElement;
-            gameState.physics.simulationSpeed = parseFloat(target.value);
+            gameStateManager.updateState(state => ({
+                ...state,
+                physics: {
+                    ...state.physics,
+                    simulationSpeed: parseFloat(target.value)
+                }
+            }));
             if (ui.simulationSpeedValue) ui.simulationSpeedValue.textContent = `${target.value}x`;
         });
     }
@@ -657,25 +756,36 @@ export function setupEventListeners() {
     if (ui.dragSlider) {
         ui.dragSlider.addEventListener('input', (event) => {
             const target = event.target as HTMLInputElement;
-            gameState.physics.dragFactor = parseFloat(target.value);
+            gameStateManager.updateState(state => ({
+                ...state,
+                physics: {
+                    ...state.physics,
+                    dragFactor: parseFloat(target.value)
+                }
+            }));
             if (ui.dragValue) ui.dragValue.textContent = target.value;
         });
     }
 
     if (ui.addAllResourcesButton) {
         ui.addAllResourcesButton.addEventListener('click', () => {
-            gameState.cosmicDust += 100000000;
-            gameState.resources.cosmicDust += 100000000;
-            gameState.energy += 1000000;
-            gameState.resources.energy += 1000000;
-            gameState.darkMatter += 10;
-            gameState.resources.darkMatter += 10;
-            gameState.organicMatter += 10000;
-            gameState.resources.organicMatter += 10000;
-            gameState.biomass += 5000;
-            gameState.resources.biomass += 5000;
-            gameState.thoughtPoints += 1000;
-            gameState.resources.thoughtPoints += 1000;
+            gameStateManager.updateState(state => ({
+                ...state,
+                cosmicDust: state.cosmicDust + 100000000,
+                energy: state.energy + 1000000,
+                darkMatter: state.darkMatter + 10,
+                organicMatter: state.organicMatter + 10000,
+                biomass: state.biomass + 5000,
+                thoughtPoints: state.thoughtPoints + 1000,
+                resources: {
+                    cosmicDust: state.resources.cosmicDust + 100000000,
+                    energy: state.resources.energy + 1000000,
+                    darkMatter: state.resources.darkMatter + 10,
+                    organicMatter: state.resources.organicMatter + 10000,
+                    biomass: state.resources.biomass + 5000,
+                    thoughtPoints: state.resources.thoughtPoints + 1000
+                }
+            }));
             updateUI();
             showMessage('全リソースを追加しました。');
         });
@@ -714,10 +824,16 @@ export function setupEventListeners() {
     if (ui.graphicsQualitySelect) {
         ui.graphicsQualitySelect.addEventListener('change', (event) => {
             const target = event.target as HTMLSelectElement;
-            gameState.graphicsQuality = target.value;
-            // Update new graphics state for compatibility
-            gameState.graphics.preset = target.value === 'low' ? 'low' : 
-                                       target.value === 'high' ? 'high' : 'medium';
+            const preset = target.value === 'low' ? 'low' : 
+                         target.value === 'high' ? 'high' : 'medium';
+            gameStateManager.updateState(state => ({
+                ...state,
+                graphicsQuality: target.value,
+                graphics: {
+                    ...state.graphics,
+                    preset: preset
+                }
+            }));
             saveGame();
         });
     }
@@ -739,7 +855,13 @@ export function setupEventListeners() {
                 });
             }
             
-            gameState.graphics.preset = presetName;
+            gameStateManager.updateState(state => ({
+                ...state,
+                graphics: {
+                    ...state.graphics,
+                    preset: presetName
+                }
+            }));
             saveGame();
         });
     }
@@ -751,8 +873,14 @@ export function setupEventListeners() {
             const scalePercent = parseInt(target.value);
             const scale = scalePercent / 100;
             
-            gameState.graphics.resolutionScale = scale;
-            gameState.graphics.preset = 'custom';
+            gameStateManager.updateState(state => ({
+                ...state,
+                graphics: {
+                    ...state.graphics,
+                    resolutionScale: scale,
+                    preset: 'custom'
+                }
+            }));
             
             // Update display value
             if (ui.resolutionScaleValue) {
@@ -775,8 +903,14 @@ export function setupEventListeners() {
             const densityPercent = parseInt(target.value);
             const density = densityPercent / 100;
             
-            gameState.graphics.particleDensity = density;
-            gameState.graphics.preset = 'custom';
+            gameStateManager.updateState(state => ({
+                ...state,
+                graphics: {
+                    ...state.graphics,
+                    particleDensity: density,
+                    preset: 'custom'
+                }
+            }));
             
             // Update display value
             if (ui.particleDensityValue) {
@@ -810,8 +944,14 @@ export function setupEventListeners() {
         if (element) {
             element.addEventListener('change', (event) => {
                 const target = event.target as HTMLSelectElement;
-                (gameState.graphics as any)[property] = target.value;
-                gameState.graphics.preset = 'custom';
+                gameStateManager.updateState(state => ({
+                    ...state,
+                    graphics: {
+                        ...state.graphics,
+                        [property]: target.value,
+                        preset: 'custom'
+                    }
+                }));
                 
                 // Update preset selector to show custom
                 if (ui.graphicsPresetSelect) {
@@ -827,11 +967,18 @@ export function setupEventListeners() {
     if (ui.frameRateLimitSelect) {
         ui.frameRateLimitSelect.addEventListener('change', (event) => {
             const target = event.target as HTMLSelectElement;
-            gameState.graphics.frameRateLimit = parseInt(target.value);
-            gameState.graphics.preset = 'custom';
+            const newFrameRate = parseInt(target.value);
+            gameStateManager.updateState(state => ({
+                ...state,
+                graphics: {
+                    ...state.graphics,
+                    frameRateLimit: newFrameRate,
+                    preset: 'custom'
+                }
+            }));
             
             // Update graphics engine frame rate limiter
-            graphicsEngine.getFrameRateLimiter().setTargetFPS(gameState.graphics.frameRateLimit);
+            graphicsEngine.getFrameRateLimiter().setTargetFPS(newFrameRate);
             console.log(`🎯 Frame rate changed to: ${gameState.graphics.frameRateLimit} FPS`);
             
             // Update preset selector to show custom
@@ -891,7 +1038,10 @@ export function setupEventListeners() {
     if (ui.unitSystemSelect) {
         ui.unitSystemSelect.addEventListener('change', (event) => {
             const target = event.target as HTMLSelectElement;
-            gameState.currentUnitSystem = target.value;
+            gameStateManager.updateState(state => ({
+                ...state,
+                currentUnitSystem: target.value
+            }));
             saveGame();
             updateUI();
         });
@@ -900,7 +1050,13 @@ export function setupEventListeners() {
     const collisionDetectionCheckbox = document.getElementById('collisionDetectionCheckbox') as HTMLInputElement;
     if (collisionDetectionCheckbox) {
         collisionDetectionCheckbox.addEventListener('change', () => {
-            gameState.physics.collisionDetectionEnabled = collisionDetectionCheckbox.checked;
+            gameStateManager.updateState(state => ({
+                ...state,
+                physics: {
+                    ...state.physics,
+                    collisionDetectionEnabled: collisionDetectionCheckbox.checked
+                }
+            }));
             saveGame();
             showMessage(collisionDetectionCheckbox.checked ? '天体衝突システムが有効になりました' : '天体衝突システムが無効になりました');
             soundManager.playUISound('click');
@@ -1054,7 +1210,10 @@ export function setupEventListeners() {
             const target = event.target as HTMLSelectElement;
             const selectedMultiplier = target.value + 'x';
             if (gameState.unlockedTimeMultipliers[selectedMultiplier] || selectedMultiplier === '1x') {
-                gameState.currentTimeMultiplier = selectedMultiplier;
+                gameStateManager.updateState(state => ({
+                    ...state,
+                    currentTimeMultiplier: selectedMultiplier
+                }));
                 saveGame();
                 updateUI();
                 showMessage(`時間倍率を${selectedMultiplier}に設定しました`);
@@ -1066,9 +1225,18 @@ export function setupEventListeners() {
         timeMultiplier2xButton.addEventListener('click', () => {
             const cost = gameState.timeMultiplierCosts['2x'];
             if (gameState.thoughtPoints >= cost && !gameState.unlockedTimeMultipliers['2x']) {
-                gameState.thoughtPoints -= cost;
-                gameState.resources.thoughtPoints -= cost;
-                gameState.unlockedTimeMultipliers['2x'] = true;
+                gameStateManager.updateState(state => ({
+                    ...state,
+                    thoughtPoints: state.thoughtPoints - cost,
+                    resources: {
+                        ...state.resources,
+                        thoughtPoints: state.resources.thoughtPoints - cost
+                    },
+                    unlockedTimeMultipliers: {
+                        ...state.unlockedTimeMultipliers,
+                        '2x': true
+                    }
+                }));
                 updateUI();
                 saveGame();
                 showMessage('2x時間加速をアンロックしました！');
@@ -1080,9 +1248,18 @@ export function setupEventListeners() {
         timeMultiplier5xButton.addEventListener('click', () => {
             const cost = gameState.timeMultiplierCosts['5x'];
             if (gameState.thoughtPoints >= cost && !gameState.unlockedTimeMultipliers['5x']) {
-                gameState.thoughtPoints -= cost;
-                gameState.resources.thoughtPoints -= cost;
-                gameState.unlockedTimeMultipliers['5x'] = true;
+                gameStateManager.updateState(state => ({
+                    ...state,
+                    thoughtPoints: state.thoughtPoints - cost,
+                    resources: {
+                        ...state.resources,
+                        thoughtPoints: state.resources.thoughtPoints - cost
+                    },
+                    unlockedTimeMultipliers: {
+                        ...state.unlockedTimeMultipliers,
+                        '5x': true
+                    }
+                }));
                 updateUI();
                 saveGame();
                 showMessage('5x時間加速をアンロックしました！');
@@ -1094,9 +1271,18 @@ export function setupEventListeners() {
         timeMultiplier10xButton.addEventListener('click', () => {
             const cost = gameState.timeMultiplierCosts['10x'];
             if (gameState.thoughtPoints >= cost && !gameState.unlockedTimeMultipliers['10x']) {
-                gameState.thoughtPoints -= cost;
-                gameState.resources.thoughtPoints -= cost;
-                gameState.unlockedTimeMultipliers['10x'] = true;
+                gameStateManager.updateState(state => ({
+                    ...state,
+                    thoughtPoints: state.thoughtPoints - cost,
+                    resources: {
+                        ...state.resources,
+                        thoughtPoints: state.resources.thoughtPoints - cost
+                    },
+                    unlockedTimeMultipliers: {
+                        ...state.unlockedTimeMultipliers,
+                        '10x': true
+                    }
+                }));
                 updateUI();
                 saveGame();
                 showMessage('10x時間加速をアンロックしました！');
@@ -1115,7 +1301,10 @@ export function setupEventListeners() {
                 controls.target.set(0, 0, 0);
                 
                 // Reset focused object
-                gameState.focusedObject = null;
+                gameStateManager.updateState(state => ({
+                    ...state,
+                    focusedObject: null
+                }));
                 
                 // Update controls
                 controls.update();

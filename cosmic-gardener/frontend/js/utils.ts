@@ -182,15 +182,15 @@ export const celestialObjectPools = {
     },
     
     dispose() {
-        Object.values(this.sphereGeometries).forEach(pool => {
+        Object.values(this.sphereGeometries).forEach((pool: THREE.SphereGeometry[]) => {
             pool.forEach(geometry => geometry.dispose());
             pool.length = 0;
         });
-        Object.values(this.materials).forEach(pool => {
+        Object.values(this.materials).forEach((pool: THREE.Material[]) => {
             pool.forEach(material => material.dispose());
             pool.length = 0;
         });
-        Object.values(this.meshes).forEach(pool => {
+        Object.values(this.meshes).forEach((pool: THREE.Mesh[]) => {
             pool.forEach(mesh => {
                 if (mesh.geometry) mesh.geometry.dispose();
                 if (mesh.material) (mesh.material as THREE.Material).dispose();
