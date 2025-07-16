@@ -2152,6 +2152,74 @@ button:disabled {
     box-shadow: 0 0 10px rgba(255, 183, 0, 0.7), inset 0 0 10px 2px rgba(255, 230, 150, 0.6);
     overflow: hidden; /* はみ出したマーカーを隠す */
     pointer-events: auto; /* マップ上でのクリックを有効化 */
+    transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+/* レーダー開閉トグルボタン */
+#galaxy-map-toggle {
+    position: absolute;
+    bottom: 220px;
+    left: 10px;
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 183, 0, 0.8);
+    border: 1px solid #FFB700;
+    border-radius: 50%;
+    color: #000;
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 10px rgba(255, 183, 0, 0.7);
+    transition: all 0.3s ease;
+    z-index: 900;
+}
+
+#galaxy-map-toggle:hover {
+    background: rgba(255, 183, 0, 1);
+    transform: scale(1.1);
+}
+
+/* 閉じた状態 */
+#galaxy-map-container.collapsed {
+    transform: scale(0);
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* モバイル対応: レーダーを小さくして開閉式にする */
+@media (max-width: 768px) {
+    body:not(.desktop-device) #galaxy-map-container {
+        width: 120px;
+        height: 120px;
+        bottom: 80px;
+        left: 10px;
+    }
+    
+    body:not(.desktop-device) #galaxy-map-toggle {
+        bottom: 210px;
+        left: 10px;
+        width: 45px;
+        height: 45px;
+        font-size: 20px;
+        touch-action: manipulation;
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        -khtml-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+        z-index: 1000;
+        position: fixed;
+        pointer-events: auto;
+    }
+    
+    /* モバイル専用: UI エリアが開いている時にボタンを隠す */
+    body:not(.desktop-device) #ui-area:not(.mobile-collapsed) ~ #galaxy-map-toggle {
+        display: none;
+    }
 }
 
 #star-management-screen h1 {

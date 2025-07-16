@@ -100,6 +100,7 @@ export const ui: { [key: string]: HTMLElement | null } = {
     messageOverlay: document.getElementById('message-overlay'),
     messageText: document.getElementById('message-text'),
     galaxyMapContainer: document.getElementById('galaxy-map-container'),
+    galaxyMapToggle: document.getElementById('galaxy-map-toggle'),
     addAllResourcesButton: document.getElementById('addAllResourcesButton'),
     overlayCosmicDust: document.getElementById('overlayCosmicDust'),
     overlayEnergy: document.getElementById('overlayEnergy'),
@@ -399,6 +400,15 @@ function updateTimeAccelerationUI() {
 export function switchTab(activeTab: string) {
     console.log('📑 Switching to tab:', activeTab);
     
+    // Hide/show galaxy map toggle based on active tab
+    if (ui.galaxyMapToggle) {
+        if (activeTab === 'options' || activeTab === 'research' || activeTab === 'starManagement') {
+            ui.galaxyMapToggle.style.display = 'none';
+        } else {
+            ui.galaxyMapToggle.style.display = 'flex';
+        }
+    }
+    
     if (ui.gameScreen) ui.gameScreen.classList.add('hidden-screen');
     if (ui.researchScreen) ui.researchScreen.classList.add('hidden-screen');
     if (ui.productionScreen) ui.productionScreen.classList.add('hidden-screen');
@@ -553,10 +563,18 @@ function updateGalaxyMap() {
     if (!map) return;
 
     if (!gameState.isMapVisible) {
-        map.style.display = 'none';
+        map.classList.add('collapsed');
+        if (ui.galaxyMapToggle) {
+            ui.galaxyMapToggle.textContent = '📡';
+            ui.galaxyMapToggle.title = 'レーダーを開く';
+        }
         return;
     }
-    map.style.display = 'block';
+    map.classList.remove('collapsed');
+    if (ui.galaxyMapToggle) {
+        ui.galaxyMapToggle.textContent = '📶';
+        ui.galaxyMapToggle.title = 'レーダーを閉じる';
+    }
     map.innerHTML = '';
 
     let mapSize;

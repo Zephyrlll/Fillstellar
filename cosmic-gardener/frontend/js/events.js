@@ -132,6 +132,59 @@ export function setupEventListeners() {
             soundManager.playUISound('click');
             switchTab('game');
         });
+
+    // Galaxy map toggle button
+    if (ui.galaxyMapToggle) {
+        console.log('🔧 Galaxy map toggle button found, adding event listener');
+        
+        // Add both click and touchstart events for mobile compatibility
+        const handleToggle = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('🔧 Galaxy map toggle clicked!');
+            
+            soundManager.playUISound('click');
+            const mapContainer = ui.galaxyMapContainer;
+            if (mapContainer) {
+                // Toggle the collapsed state
+                mapContainer.classList.toggle('collapsed');
+                const isCollapsed = mapContainer.classList.contains('collapsed');
+                
+                console.log('🔧 Map container collapsed state:', isCollapsed);
+                
+                // Update gameState.isMapVisible to match the visual state
+                gameState.isMapVisible = !isCollapsed;
+                
+                // Update button appearance
+                if (ui.galaxyMapToggle) {
+                    ui.galaxyMapToggle.textContent = isCollapsed ? '📡' : '📶';
+                    ui.galaxyMapToggle.title = isCollapsed ? 'レーダーを開く' : 'レーダーを閉じる';
+                    console.log('🔧 Button updated:', ui.galaxyMapToggle.textContent);
+                }
+                
+                // Save the state
+                saveGame();
+            } else {
+                console.log('🔧 Map container not found!');
+            }
+        };
+        
+        ui.galaxyMapToggle.addEventListener('click', handleToggle);
+        ui.galaxyMapToggle.addEventListener('touchstart', handleToggle, { passive: false });
+        
+        // Add visual feedback for touch
+        ui.galaxyMapToggle.addEventListener('touchstart', (e) => {
+            e.target.style.transform = 'scale(0.95)';
+        }, { passive: true });
+        
+        ui.galaxyMapToggle.addEventListener('touchend', (e) => {
+            e.target.style.transform = 'scale(1)';
+        }, { passive: true });
+        
+    } else {
+        console.log('🔧 Galaxy map toggle button NOT found!');
+    }
+
     const collapsibleHeaders = document.querySelectorAll('.collapsible-header');
     collapsibleHeaders.forEach(header => {
         header.addEventListener('click', () => {
