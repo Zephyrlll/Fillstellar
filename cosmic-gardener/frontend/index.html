@@ -1,37 +1,14 @@
 <!DOCTYPE html>
-<!-- 🚀 CAMERA FIX v2024-07-13-15:30 -->
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cosmic Gardener - Production System Update</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="icon" href="favicon.png">
-    <script type="importmap">
-      {
-        "imports": {
-          "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-          "three/examples/jsm/controls/OrbitControls.js": "https://unpkg.com/three@0.160.0/examples/jsm/controls/OrbitControls.js",
-          "three/examples/jsm/postprocessing/EffectComposer.js": "https://unpkg.com/three@0.160.0/examples/jsm/postprocessing/EffectComposer.js",
-          "three/examples/jsm/postprocessing/RenderPass.js": "https://unpkg.com/three@0.160.0/examples/jsm/postprocessing/RenderPass.js",
-          "three/examples/jsm/postprocessing/UnrealBloomPass.js": "https://unpkg.com/three@0.160.0/examples/jsm/postprocessing/UnrealBloomPass.js"
-        }
-      }
-    </script>
-    <!-- Cache Busting Debug -->
-    <script>
-      const timestamp = new Date().getTime();
-      console.log('🚀 CAMERA FIX VERSION LOADING:', timestamp);
-      window.graphicsDebug = true;
-      window.cameraFixDebug = true;
-    </script>
+    <title>Cosmic Gardener - 3D Space Simulation</title>
+    <link rel="stylesheet" href="/style.css">
+    <link rel="icon" href="/favicon.png">
+    <meta name="description" content="A 3D space simulation idle game where players create and manage cosmic objects from dust to stars">
 </head>
 <body>
-<script>
-    console.log('🌟 Cosmic Gardener with CAMERA FIX loaded!');
-    console.log('📅 Version: 2024-07-13 CAMERA FIX');
-    console.log('🎯 Camera positioning bug fix active');
-</script>
 
   <!-- 🔧 初期化フェードオーバーレイ -->
   <div id="fade-overlay">
@@ -1525,5 +1502,6 @@
       }
     });
   </script>
+  <script type="module" src="/main.ts"></script>
 </body>
 </html>

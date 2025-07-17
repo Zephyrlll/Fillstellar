@@ -30,10 +30,12 @@
 
 ### 技術スタック
 
-- **言語:** TypeScript
+- **言語:** TypeScript 5.8+
 - **グラフィックス:** Three.js
-- **ビルド/コンパイル:** TypeScript Compiler (tsc)
+- **ビルドツール:** Vite 5.0+ (高速ホットリロード対応)
 - **パッケージ管理:** npm
+- **コード品質:** ESLint, Prettier
+- **テスト:** Vitest (ユニットテスト), Playwright (E2Eテスト)
 
 ### プロジェクト構造
 
@@ -55,20 +57,54 @@
 
 ### セットアップと実行
 
+#### 🚀 推奨: モダン開発環境（Vite）
+
 1. **依存関係のインストール:**
    ```bash
    npm install
    ```
 
-2. **TypeScriptのコンパイル:**
+2. **開発サーバーの起動:**
    ```bash
-   npx tsc
+   npm run dev
    ```
-   これにより、`js`ディレクトリ内の`.ts`ファイルがコンパイルされ、`dist`ディレクトリに`.js`ファイルが出力されます。
+   Viteが起動し、http://localhost:8000 が自動的に開きます。
+   ホットリロード対応で、コードの変更が即座に反映されます。
 
-3. **ローカルサーバーの起動:**
-   `index.html`をブラウザで直接開くか、ローカルサーバーを立ててアクセスしてください。
-   （例: `python -m http.server` や VSCodeのLive Server拡張など）
+3. **プロダクションビルド:**
+   ```bash
+   npm run build
+   npm run preview  # ビルド結果のプレビュー
+   ```
+
+#### 🔧 従来の方法（互換性のため維持）
+
+1. **TypeScriptのコンパイル:**
+   ```bash
+   npm run build  # または npx tsc
+   ```
+
+2. **ローカルサーバーの起動:**
+   ```bash
+   npm run serve  # または ./start-server.bat (Windows)
+   # または
+   python -m http.server 8000
+   ```
+
+### 開発コマンド一覧
+
+```bash
+npm run dev        # 開発サーバー起動（ホットリロード）
+npm run build      # プロダクションビルド
+npm run preview    # ビルド結果のプレビュー
+npm run lint       # ESLintでコード品質チェック
+npm run lint:fix   # ESLintエラーの自動修正
+npm run format     # Prettierでコードフォーマット
+npm run test       # ユニットテスト実行
+npm run test:ui    # テストUIで結果確認
+npm run test:e2e   # E2Eテスト実行
+npm run typecheck  # TypeScript型チェック
+```
 
 ### 主要なロジック
 

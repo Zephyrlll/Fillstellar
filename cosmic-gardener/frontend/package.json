@@ -1,29 +1,67 @@
 {
-  "name": "space_idle_game",
+  "name": "cosmic-gardener",
   "version": "1.0.0",
-  "main": "main.js",
+  "private": true,
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "npx tsc",
-    "serve": "http-server -p 8000"
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "serve": "http-server -p 8000",
+    "lint": "eslint . --ext .ts,.tsx",
+    "lint:fix": "eslint . --ext .ts,.tsx --fix",
+    "format": "prettier --write \"js/**/*.{ts,tsx,js,jsx}\"",
+    "format:check": "prettier --check \"js/**/*.{ts,tsx,js,jsx}\"",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:run": "vitest run",
+    "test:e2e": "playwright test",
+    "typecheck": "tsc --noEmit",
+    "prepare": "husky install"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Zephyrlll/Space_Idle_Game.git"
   },
-  "keywords": [],
+  "keywords": ["space", "simulation", "idle-game", "threejs", "typescript"],
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/Zephyrlll/Space_Idle_Game/issues"
   },
   "homepage": "https://github.com/Zephyrlll/Space_Idle_Game#readme",
-  "description": "",
-  "devDependencies": {
-    "@types/three": "^0.178.0",
-    "typescript": "^5.8.3"
-  },
+  "description": "A 3D space simulation idle game where players create and manage cosmic objects from dust to stars",
   "dependencies": {
-    "http-server": "^14.1.1"
+    "three": "^0.178.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.5",
+    "@types/three": "^0.178.0",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "@vitejs/plugin-typescript": "^3.0.0",
+    "@vitest/ui": "^1.4.0",
+    "@playwright/test": "^1.42.0",
+    "@testing-library/dom": "^10.0.0",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-import": "^2.29.1",
+    "http-server": "^14.1.1",
+    "husky": "^9.0.0",
+    "jsdom": "^24.0.0",
+    "lint-staged": "^15.2.0",
+    "prettier": "^3.2.0",
+    "typescript": "^5.8.3",
+    "vite": "^5.0.8",
+    "vitest": "^1.4.0"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{js,jsx,json,md}": [
+      "prettier --write"
+    ]
   }
 }

@@ -21,14 +21,13 @@
 ```bash
 cd cosmic-gardener/frontend
 npm install              # 依存関係のインストール
+
+# 開発サーバー起動（推奨: Vite使用）
+npm run dev             # ホットリロード対応、http://localhost:8000 が自動で開く
+
+# 従来の方法
 npm run build           # TypeScriptのビルド
-
-# 開発サーバー起動
 npm run serve           # または ./起動.bat (Windows)
-# または
-python -m http.server 8000
-
-# ブラウザで http://localhost:8000 を開く
 ```
 
 ### フルスタック（マルチプレイヤー）
@@ -122,12 +121,16 @@ Fillstellar/
 ### 開発コマンド
 
 ```bash
-# フロントエンド
+# フロントエンド（モダン開発環境）
 cd cosmic-gardener/frontend
 npm install              # 依存関係インストール
-npm run build           # TypeScriptビルド
-npm run watch           # ファイル監視モード
-npm run serve           # 開発サーバー起動
+npm run dev             # Vite開発サーバー（ホットリロード）
+npm run build           # プロダクションビルド
+npm run preview         # ビルド結果プレビュー
+npm run lint            # コード品質チェック
+npm run format          # コードフォーマット
+npm run test            # ユニットテスト
+npm run test:e2e        # E2Eテスト
 
 # バックエンド
 cd cosmic-gardener/backend
@@ -149,8 +152,10 @@ make deploy-staging    # ステージング環境デプロイ
 ### フロントエンド
 - **TypeScript** - 型安全なJavaScript
 - **Three.js** - 3Dグラフィックス
+- **Vite** - 高速ビルドツール・ホットリロード
 - **ES6 Modules** - モジュラーアーキテクチャ
 - **Web Audio API** - 空間オーディオ
+- **Vitest/Playwright** - テスティングフレームワーク
 
 ### バックエンド
 - **Rust** - 高性能・安全なシステム言語
