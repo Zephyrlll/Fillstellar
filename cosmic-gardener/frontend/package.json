@@ -4,9 +4,13 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
-    "preview": "vite preview",
+    "dev": "npx vite",
+    "dev:mobile": "npx vite --config vite.config.mobile.ts",
+    "dev:secure": "npx vite --config vite.config.mobile.ts --https",
+    "dev:simple": "node serve-simple.js",
+    "dev:fallback": "tsc && node serve-simple.js",
+    "build": "tsc && npx vite build",
+    "preview": "npx vite preview",
     "serve": "http-server -p 8000",
     "lint": "eslint . --ext .ts,.tsx",
     "lint:fix": "eslint . --ext .ts,.tsx --fix",
@@ -23,7 +27,13 @@
     "type": "git",
     "url": "git+https://github.com/Zephyrlll/Space_Idle_Game.git"
   },
-  "keywords": ["space", "simulation", "idle-game", "threejs", "typescript"],
+  "keywords": [
+    "space",
+    "simulation",
+    "idle-game",
+    "threejs",
+    "typescript"
+  ],
   "author": "",
   "license": "MIT",
   "bugs": {
@@ -32,17 +42,18 @@
   "homepage": "https://github.com/Zephyrlll/Space_Idle_Game#readme",
   "description": "A 3D space simulation idle game where players create and manage cosmic objects from dust to stars",
   "dependencies": {
-    "three": "^0.178.0"
+    "three": "^0.178.0",
+    "vite": "^4.5.3"
   },
   "devDependencies": {
+    "@playwright/test": "^1.42.0",
+    "@rollup/rollup-win32-x64-msvc": "^4.21.0",
+    "@testing-library/dom": "^10.0.0",
     "@types/node": "^20.10.5",
     "@types/three": "^0.178.0",
     "@typescript-eslint/eslint-plugin": "^7.0.0",
     "@typescript-eslint/parser": "^7.0.0",
-    "@vitejs/plugin-typescript": "^3.0.0",
     "@vitest/ui": "^1.4.0",
-    "@playwright/test": "^1.42.0",
-    "@testing-library/dom": "^10.0.0",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-import": "^2.29.1",
@@ -52,7 +63,6 @@
     "lint-staged": "^15.2.0",
     "prettier": "^3.2.0",
     "typescript": "^5.8.3",
-    "vite": "^5.0.8",
     "vitest": "^1.4.0"
   },
   "lint-staged": {
@@ -63,5 +73,8 @@
     "*.{js,jsx,json,md}": [
       "prettier --write"
     ]
+  },
+  "optionalDependencies": {
+    "@rollup/rollup-win32-x64-msvc": "^4.21.0"
   }
 }

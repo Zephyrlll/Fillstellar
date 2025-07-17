@@ -1,35 +1,14 @@
 {
   "permissions": {
     "allow": [
-      "Bash(rg:*)",
-      "Bash(grep:*)",
-      "Bash(npx tsc:*)",
-      "Bash(mkdir:*)",
-      "Bash(cargo:*)",
-      "Bash(chmod:*)",
-      "Bash(ls:*)",
-      "Bash(mv:*)",
-      "Bash(true)",
-      "Bash(cp:*)",
+      "Bash(npm run dev:*)",
       "Bash(rm:*)",
-      "Bash(find:*)",
-      "WebFetch(domain:docs.anthropic.com)",
-      "Bash(~/.cargo/bin/cargo check --no-default-features)",
       "Bash(npm install:*)",
-      "Bash(touch:*)",
-      "Bash(python:*)",
-      "Bash(cat:*)",
-      "Bash(ss:*)",
-      "Bash(node:*)",
-      "WebFetch(domain:threejsfundamentals.org)",
-      "WebFetch(domain:webglfundamentals.org)",
-      "Bash(diff:*)",
-      "Bash(for file in celestialBody.ts constants.ts events.ts physics.ts saveload.ts sound.ts state.ts statistics.ts threeSetup.ts timeline.ts ui.ts utils.ts)",
-      "Bash(do if [ ! -f \"/mnt/c/AIagent/Fillstellar/cosmic-gardener/frontend/js/$file\" ])",
-      "Bash(then echo \"Missing: $file\")",
-      "Bash(fi)",
-      "Bash(done)",
-      "Bash(npm run build:*)"
+      "Bash(ls:*)",
+      "Bash(find:*)",
+      "Bash(npx stylelint:*)",
+      "Bash(awk:*)",
+      "Bash(python3:*)"
     ],
     "deny": []
   }

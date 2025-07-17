@@ -1,0 +1,20 @@
+{
+  "name": "Cosmic Gardener",
+  "short_name": "CosmicGardener",
+  "description": "A 3D space simulation idle game where players create and manage cosmic objects from dust to stars",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "landscape-primary",
+  "theme_color": "#1a1a2e",
+  "background_color": "#0f0f1e",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "any",
+      "type": "image/png"
+    }
+  ],
+  "categories": ["games", "entertainment"],
+  "lang": "ja",
+  "scope": "/"
+}

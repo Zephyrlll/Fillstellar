@@ -1365,7 +1365,7 @@
             console.log('🔧 Attempting direct module imports...');
             
             // Load currency system
-            import('./js/currencySystem.js')
+            import('/js/currencySystem.js')
                 .then((currencyModule) => {
                     console.log('🔧 currencySystem module loaded:', currencyModule);
                     if (currencyModule.currencyManager) {
@@ -1379,7 +1379,7 @@
                 });
             
             // Load market system
-            import('./js/marketSystem.js')
+            import('/js/marketSystem.js')
                 .then((marketModule) => {
                     console.log('🔧 marketSystem module loaded:', marketModule);
                     if (marketModule.marketSystem) {
@@ -1393,7 +1393,7 @@
                 });
             
             // Load modal system
-            import('./js/resourceSellModal.js')
+            import('/js/resourceSellModal.js')
                 .then((module) => {
                     console.log('🔧 resourceSellModal module loaded:', module);
                     if (module.showResourceSellModal) {
@@ -1502,6 +1502,5 @@
       }
     });
   </script>
-  <script type="module" src="/main.ts"></script>
 </body>
 </html>

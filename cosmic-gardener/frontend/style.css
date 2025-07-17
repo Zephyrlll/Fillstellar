@@ -4175,7 +4175,6 @@ input[type="range"]::-moz-range-thumb {
     .graphics-settings-grid .option-item {
         padding: 10px;
     }
-}
 
 /* Quality indicator colors */
 .quality-ultra { color: #ffd700; }
