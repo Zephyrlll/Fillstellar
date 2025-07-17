@@ -98,6 +98,22 @@ export const ui: { [key: string]: HTMLElement | null } = {
     closeOptionsButton: document.getElementById('closeOptionsButton'),
     starListContainer: document.getElementById('star-list-container'),
     messageOverlay: document.getElementById('message-overlay'),
+    
+    // Mobile tab buttons
+    gameTabMobile: document.getElementById('gameTab-mobile'),
+    researchTabMobile: document.getElementById('researchTab-mobile'),
+    optionsTabMobile: document.getElementById('optionsTab-mobile'),
+    starTabMobile: document.getElementById('starTab-mobile'),
+    
+    // Mobile UI elements
+    gameYearNav: document.getElementById('gameYear-nav'),
+    dustValueNav: document.getElementById('dust-value-nav'),
+    energyValueNav: document.getElementById('energy-value-nav'),
+    mobileContentArea: document.getElementById('mobile-content-area'),
+    mobileGameContent: document.getElementById('mobile-game-content'),
+    mobileResearchContent: document.getElementById('mobile-research-content'),
+    mobileOptionsContent: document.getElementById('mobile-options-content'),
+    mobileStarContent: document.getElementById('mobile-star-content'),
     messageText: document.getElementById('message-text'),
     galaxyMapContainer: document.getElementById('galaxy-map-container'),
     galaxyMapToggle: document.getElementById('galaxy-map-toggle'),
@@ -245,14 +261,17 @@ export function updateUI() {
 
     if (previousUIValues.gameYear !== currentGameYear) {
         if (ui.gameYear) ui.gameYear.textContent = String(currentGameYear);
+        if (ui.gameYearNav) ui.gameYearNav.textContent = String(currentGameYear);
         previousUIValues.gameYear = currentGameYear;
     }
     if (previousUIValues.cosmicDust !== currentCosmicDust) {
         if (ui.cosmicDust) ui.cosmicDust.textContent = String(currentCosmicDust);
+        if (ui.dustValueNav) ui.dustValueNav.textContent = String(currentCosmicDust);
         previousUIValues.cosmicDust = currentCosmicDust;
     }
      if (previousUIValues.energy !== currentEnergy) {
         if (ui.energy) ui.energy.textContent = String(currentEnergy);
+        if (ui.energyValueNav) ui.energyValueNav.textContent = String(currentEnergy);
         previousUIValues.energy = currentEnergy;
     }
     if (previousUIValues.darkMatter !== currentDarkMatter) {
@@ -419,13 +438,21 @@ export function switchTab(activeTab: string) {
     if (ui.productionTabButton) ui.productionTabButton.classList.remove('active-tab');
     if (ui.optionsTabButton) ui.optionsTabButton.classList.remove('active-tab');
     if (ui.starManagementTabButton) ui.starManagementTabButton.classList.remove('active-tab');
+    
+    // Remove active class from mobile tabs
+    if (ui.gameTabMobile) ui.gameTabMobile.classList.remove('active-mobile-tab');
+    if (ui.researchTabMobile) ui.researchTabMobile.classList.remove('active-mobile-tab');
+    if (ui.optionsTabMobile) ui.optionsTabMobile.classList.remove('active-mobile-tab');
+    if (ui.starTabMobile) ui.starTabMobile.classList.remove('active-mobile-tab');
 
     if (activeTab === 'game') {
         if (ui.gameScreen) ui.gameScreen.classList.remove('hidden-screen');
         if (ui.gameTabButton) ui.gameTabButton.classList.add('active-tab');
+        if (ui.gameTabMobile) ui.gameTabMobile.classList.add('active-mobile-tab');
     } else if (activeTab === 'research') {
         if (ui.researchScreen) ui.researchScreen.classList.remove('hidden-screen');
         if (ui.researchTabButton) ui.researchTabButton.classList.add('active-tab');
+        if (ui.researchTabMobile) ui.researchTabMobile.classList.add('active-mobile-tab');
     } else if (activeTab === 'production') {
         if (ui.productionScreen) ui.productionScreen.classList.remove('hidden-screen');
         if (ui.productionTabButton) ui.productionTabButton.classList.add('active-tab');
@@ -433,9 +460,11 @@ export function switchTab(activeTab: string) {
     } else if (activeTab === 'options') {
         if (ui.optionsScreen) ui.optionsScreen.classList.remove('hidden-screen');
         if (ui.optionsTabButton) ui.optionsTabButton.classList.add('active-tab');
+        if (ui.optionsTabMobile) ui.optionsTabMobile.classList.add('active-mobile-tab');
     } else if (activeTab === 'starManagement') {
         if (ui.starManagementScreen) ui.starManagementScreen.classList.remove('hidden-screen');
         if (ui.starManagementTabButton) ui.starManagementTabButton.classList.add('active-tab');
+        if (ui.starTabMobile) ui.starTabMobile.classList.add('active-mobile-tab');
         updateStarList();
     }
 }
@@ -873,3 +902,46 @@ export function setGraphicsSettingValue(settingName: string, value: any): void {
         }
     }
 }
+
+// Mobile modal functions
+export function showMobileModal(tabName: string) {
+    console.log('📱 Showing mobile modal for:', tabName);
+    
+    // Show the mobile content area
+    if (ui.mobileContentArea) {
+        ui.mobileContentArea.classList.add('active');
+    }
+    
+    // Hide all mobile content panels
+    if (ui.mobileGameContent) ui.mobileGameContent.classList.remove('active-mobile-content');
+    if (ui.mobileResearchContent) ui.mobileResearchContent.classList.remove('active-mobile-content');
+    if (ui.mobileOptionsContent) ui.mobileOptionsContent.classList.remove('active-mobile-content');
+    if (ui.mobileStarContent) ui.mobileStarContent.classList.remove('active-mobile-content');
+    
+    // Show the selected content panel
+    switch(tabName) {
+        case 'game':
+            if (ui.mobileGameContent) ui.mobileGameContent.classList.add('active-mobile-content');
+            break;
+        case 'research':
+            if (ui.mobileResearchContent) ui.mobileResearchContent.classList.add('active-mobile-content');
+            break;
+        case 'options':
+            if (ui.mobileOptionsContent) ui.mobileOptionsContent.classList.add('active-mobile-content');
+            break;
+        case 'starManagement':
+            if (ui.mobileStarContent) ui.mobileStarContent.classList.add('active-mobile-content');
+            updateStarList();
+            break;
+    }
+}
+
+export function closeMobileModal() {
+    console.log('📱 Closing mobile modal');
+    if (ui.mobileContentArea) {
+        ui.mobileContentArea.classList.remove('active');
+    }
+}
+
+// Make closeMobileModal available globally for onclick handlers
+(window as any).closeMobileModal = closeMobileModal;

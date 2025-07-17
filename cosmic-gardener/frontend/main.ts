@@ -17,6 +17,7 @@ import { resourceFlowDisplay } from './js/resourceFlowDisplay.ts';
 import { initProductionUI, updateProductionUI } from './js/productionUI.ts';
 import { resourceParticleSystem } from './js/resourceParticles.ts';
 import { productionChainUI } from './js/productionChainUI.ts';
+import { setupDeviceDetection } from './js/deviceDetection.ts';
 // @ts-ignore
 import { catalystManager, CatalystType } from './js/catalystSystem.ts';
 // @ts-ignore
@@ -366,6 +367,10 @@ function init() {
     console.log('[INIT] Canvas element:', canvas);
     console.log('[INIT] Game info element:', gameInfo);
     console.log('[INIT] Canvas size:', canvas?.clientWidth, 'x', canvas?.clientHeight);
+    
+    // Initialize device detection FIRST - this must run before other UI initialization
+    setupDeviceDetection();
+    console.log('[INIT] Device detection initialized');
     
     createStarfield();
     console.log('[INIT] Starfield created');

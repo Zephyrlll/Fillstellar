@@ -1365,7 +1365,7 @@
             console.log('🔧 Attempting direct module imports...');
             
             // Load currency system
-            import('/js/currencySystem.ts')
+            import('./js/currencySystem.ts')
                 .then((currencyModule) => {
                     console.log('🔧 currencySystem module loaded:', currencyModule);
                     if (currencyModule.currencyManager) {
@@ -1379,7 +1379,7 @@
                 });
             
             // Load market system
-            import('/js/marketSystem.ts')
+            import('./js/marketSystem.ts')
                 .then((marketModule) => {
                     console.log('🔧 marketSystem module loaded:', marketModule);
                     if (marketModule.marketSystem) {

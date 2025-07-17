@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { scene, camera, renderer, composer } from './threeSetup.js';
 import { gameState, gameStateManager, CelestialBody, StarUserData } from './state.js';
-import { ui, switchTab, showMessage, updateUI, debouncedUpdateGalaxyMap, toggleProductionPanel, closeProductionPanel } from './ui.js';
+import { ui, switchTab, showMessage, updateUI, debouncedUpdateGalaxyMap, toggleProductionPanel, closeProductionPanel, showMobileModal } from './ui.js';
 import { saveGame } from './saveload.js';
 import { createCelestialBody } from './celestialBody.js';
 import { GALAXY_BOUNDARY } from './constants.js';
@@ -141,6 +141,24 @@ export function setupEventListeners() {
     if (ui.closeOptionsButton) ui.closeOptionsButton.addEventListener('click', () => {
         soundManager.playUISound('click');
         switchTab('game');
+    });
+    
+    // Mobile tab buttons
+    if (ui.gameTabMobile) ui.gameTabMobile.addEventListener('click', () => {
+        soundManager.playUISound('tab');
+        showMobileModal('game');
+    });
+    if (ui.researchTabMobile) ui.researchTabMobile.addEventListener('click', () => {
+        soundManager.playUISound('tab');
+        showMobileModal('research');
+    });
+    if (ui.optionsTabMobile) ui.optionsTabMobile.addEventListener('click', () => {
+        soundManager.playUISound('tab');
+        showMobileModal('options');
+    });
+    if (ui.starTabMobile) ui.starTabMobile.addEventListener('click', () => {
+        soundManager.playUISound('tab');
+        showMobileModal('starManagement');
     });
 
     // Galaxy map toggle button
