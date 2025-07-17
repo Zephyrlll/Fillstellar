@@ -213,6 +213,11 @@ export interface GameState {
         galacticCredits: number;          // ハードカレンシー
         ancientRelics: number;            // プレミアム通貨
     };
+    // Additional currency fields (for backward compatibility)
+    cosmicCredits?: number;
+    quantumCoins?: number;
+    stellarShards?: number;
+    voidTokens?: number;
     // Device detection
     deviceInfo?: {
         isMobile: boolean;

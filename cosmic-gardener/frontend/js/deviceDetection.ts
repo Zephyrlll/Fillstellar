@@ -73,7 +73,7 @@ export function setupDeviceDetection(): void {
     detectDevice();
     
     // リサイズ時の再検出（デバウンス付き）
-    let resizeTimeout: number;
+    let resizeTimeout: ReturnType<typeof setTimeout>;
     window.addEventListener('resize', () => {
         clearTimeout(resizeTimeout);
         resizeTimeout = setTimeout(() => {

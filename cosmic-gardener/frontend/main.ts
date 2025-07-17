@@ -1,30 +1,30 @@
 
 import * as THREE from 'three';
-import { scene, camera, renderer, composer, controls } from './js/threeSetup.js';
-import { gameState, gameStateManager, PlanetUserData } from './js/state.js';
-import { saveGame, loadGame } from './js/saveload.js';
-import { updateUI, debouncedUpdateGalaxyMap, ui } from './js/ui.js';
-import { createCelestialBody, checkLifeSpawn, evolveLife } from './js/celestialBody.js';
-import { spatialGrid, updatePhysics } from './js/physics.js';
-import { updateStatistics } from './js/statistics.js';
-import { GALAXY_BOUNDARY } from './js/constants.js';
-import { mathCache } from './js/utils.js';
-import { setupEventListeners, keys } from './js/events.js';
-import { soundManager } from './js/sound.js';
-import { createWebSocketClient } from './js/websocket.js';
-import { conversionEngine } from './js/conversionEngine.js';
-import { resourceFlowDisplay } from './js/resourceFlowDisplay.js';
-import { initProductionUI, updateProductionUI } from './js/productionUI.js';
-import { resourceParticleSystem } from './js/resourceParticles.js';
-import { productionChainUI } from './js/productionChainUI.js';
+import { scene, camera, renderer, composer, controls } from './js/threeSetup.ts';
+import { gameState, gameStateManager, PlanetUserData } from './js/state.ts';
+import { saveGame, loadGame } from './js/saveload.ts';
+import { updateUI, debouncedUpdateGalaxyMap, ui } from './js/ui.ts';
+import { createCelestialBody, checkLifeSpawn, evolveLife } from './js/celestialBody.ts';
+import { spatialGrid, updatePhysics } from './js/physics.ts';
+import { updateStatistics } from './js/statistics.ts';
+import { GALAXY_BOUNDARY } from './js/constants.ts';
+import { mathCache } from './js/utils.ts';
+import { setupEventListeners, keys } from './js/events.ts';
+import { soundManager } from './js/sound.ts';
+import { createWebSocketClient } from './js/websocket.ts';
+import { conversionEngine } from './js/conversionEngine.ts';
+import { resourceFlowDisplay } from './js/resourceFlowDisplay.ts';
+import { initProductionUI, updateProductionUI } from './js/productionUI.ts';
+import { resourceParticleSystem } from './js/resourceParticles.ts';
+import { productionChainUI } from './js/productionChainUI.ts';
 // @ts-ignore
-import { catalystManager, CatalystType } from './js/catalystSystem.js';
+import { catalystManager, CatalystType } from './js/catalystSystem.ts';
 // @ts-ignore
-import { currencyManager } from './js/currencySystem.js';
+import { currencyManager } from './js/currencySystem.ts';
 // Graphics system imports
-import { performanceMonitor } from './js/performanceMonitor.js';
-import { graphicsEngine } from './js/graphicsEngine.js';
-import { updatePerformanceDisplay } from './js/ui.js';
+import { performanceMonitor } from './js/performanceMonitor.ts';
+import { graphicsEngine } from './js/graphicsEngine.ts';
+import { updatePerformanceDisplay } from './js/ui.ts';
 
 // Expose graphicsEngine globally for synchronous access from saveload.ts
 (window as any).graphicsEngine = graphicsEngine;

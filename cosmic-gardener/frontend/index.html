@@ -1314,9 +1314,9 @@
     </div>
   </div>
 
-  <script type="module" src="./main.js"></script>
+  <script type="module" src="./main.ts"></script>
   <script>
-    console.log('🔧 HTML loaded, market system will be handled by events.js');
+    console.log('🔧 HTML loaded, market system will be handled by events.ts');
     
     // Debug: Test currency button directly
     document.addEventListener('DOMContentLoaded', () => {
@@ -1365,7 +1365,7 @@
             console.log('🔧 Attempting direct module imports...');
             
             // Load currency system
-            import('/js/currencySystem.js')
+            import('/js/currencySystem.ts')
                 .then((currencyModule) => {
                     console.log('🔧 currencySystem module loaded:', currencyModule);
                     if (currencyModule.currencyManager) {
@@ -1379,7 +1379,7 @@
                 });
             
             // Load market system
-            import('/js/marketSystem.js')
+            import('/js/marketSystem.ts')
                 .then((marketModule) => {
                     console.log('🔧 marketSystem module loaded:', marketModule);
                     if (marketModule.marketSystem) {
@@ -1393,7 +1393,7 @@
                 });
             
             // Load modal system
-            import('/js/resourceSellModal.js')
+            import('/js/resourceSellModal.ts')
                 .then((module) => {
                     console.log('🔧 resourceSellModal module loaded:', module);
                     if (module.showResourceSellModal) {

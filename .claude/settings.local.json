@@ -8,7 +8,10 @@
       "Bash(find:*)",
       "Bash(npx stylelint:*)",
       "Bash(awk:*)",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Bash(npm run lint)",
+      "Bash(npm run:*)",
+      "Bash(killall:*)"
     ],
     "deny": []
   }
