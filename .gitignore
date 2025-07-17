@@ -9,8 +9,8 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# ビルド成果物（プロジェクトに応じて判断）
-# dist/  # コメントアウトして追跡するか検討
+# ビルド成果物
+dist/
 *.tsbuildinfo
 
 # OS/エディタ固有
@@ -20,9 +20,13 @@ desktop.ini
 *.swp
 *.swo
 
-# IDE
-.vscode/
-.idea/
+# IDE設定（個人の設定は除外、プロジェクト設定は追跡）
+.vscode/settings.json
+.vscode/launch.json
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/usage.statistics.xml
+.idea/shelf
 
 # ログファイル
 *.log
@@ -35,15 +39,20 @@ desktop.ini
 *.bak
 
 # Rust関連
-/target/
+**/target/
 **/*.rs.bk
-Cargo.lock
+# Note: Cargo.lock is tracked for applications, ignored for libraries
 
-# カスタムファイル（プロジェクト固有）
-# idea.txt  # 追跡したい場合はコメントアウト
+# テスト・カバレッジ
+coverage/
+.nyc_output/
 
-# 注意: 以下のファイルは追跡することを推奨
-# *.bat - 開発補助スクリプト
-# prompt.md - 開発ガイドライン
-# CLAUDE.md - プロジェクト説明
-# favicon.ico - サイトアイコン
+# キャッシュ
+.cache/
+.parcel-cache/
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock

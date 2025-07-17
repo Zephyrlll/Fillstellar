@@ -11,7 +11,10 @@
       "Bash(python3:*)",
       "Bash(npm run lint)",
       "Bash(npm run:*)",
-      "Bash(killall:*)"
+      "Bash(killall:*)",
+      "Bash(timeout 5s npm run dev:mobile)",
+      "Bash(mkdir:*)",
+      "Bash(cp:*)"
     ],
     "deny": []
   }
