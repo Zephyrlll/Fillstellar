@@ -1,5 +1,5 @@
 
-import { gameState, CelestialBody, StarUserData, PlanetUserData } from './state.js';
+import { gameState, gameStateManager, CelestialBody, StarUserData, PlanetUserData } from './state.js';
 import { mathCache } from './utils.js';
 import { updateProductionUI } from './productionUI.js';
 
@@ -117,6 +117,13 @@ export const ui: { [key: string]: HTMLElement | null } = {
     messageText: document.getElementById('message-text'),
     galaxyMapContainer: document.getElementById('galaxy-map-container'),
     galaxyMapToggle: document.getElementById('galaxy-map-toggle'),
+    
+    // Mobile graphics settings
+    mobileResolutionScaleSelect: document.getElementById('mobile-resolutionScaleSelect'),
+    mobileParticleDensitySelect: document.getElementById('mobile-particleDensitySelect'),
+    mobileFrameRateLimitSelect: document.getElementById('mobile-frameRateLimitSelect'),
+    mobilePostProcessingSelect: document.getElementById('mobile-postProcessingSelect'),
+    mobileSetDefaultGraphicsButton: document.getElementById('mobile-setDefaultGraphicsButton'),
     addAllResourcesButton: document.getElementById('addAllResourcesButton'),
     overlayCosmicDust: document.getElementById('overlayCosmicDust'),
     overlayEnergy: document.getElementById('overlayEnergy'),
@@ -126,17 +133,11 @@ export const ui: { [key: string]: HTMLElement | null } = {
     overlayPopulation: document.getElementById('overlayPopulation'),
     resetGameButton: document.getElementById('resetGameButton'),
     resetCameraButton: document.getElementById('resetCameraButton'),
-    gravitySlider: document.getElementById('gravitySlider'),
-    gravityValue: document.getElementById('gravityValue'),
-    simulationSpeedSlider: document.getElementById('simulationSpeedSlider'),
-    simulationSpeedValue: document.getElementById('simulationSpeedValue'),
-    dragSlider: document.getElementById('dragSlider'),
-    dragValue: document.getElementById('dragValue'),
     graphicsQualitySelect: document.getElementById('graphicsQualitySelect'),
     
     // New graphics settings UI elements
     graphicsPresetSelect: document.getElementById('graphicsPresetSelect'),
-    resolutionScaleRange: document.getElementById('resolutionScaleRange'),
+    resolutionScaleRange: document.getElementById('resolutionScaleSelect'),
     resolutionScaleValue: document.getElementById('resolutionScaleValue'),
     textureQualitySelect: document.getElementById('textureQualitySelect'),
     shadowQualitySelect: document.getElementById('shadowQualitySelect'),
@@ -744,10 +745,9 @@ export function updateGraphicsUI(): void {
     }
     
     // Update resolution scale
-    if (ui.resolutionScaleRange && ui.resolutionScaleValue) {
+    if (ui.resolutionScaleRange) {
         const scalePercent = Math.round(graphics.resolutionScale * 100);
-        (ui.resolutionScaleRange as HTMLInputElement).value = scalePercent.toString();
-        (ui.resolutionScaleValue as HTMLElement).textContent = `${scalePercent}%`;
+        (ui.resolutionScaleRange as HTMLSelectElement).value = scalePercent.toString();
     }
     
     // Update particle density
@@ -783,6 +783,25 @@ export function updateGraphicsUI(): void {
     
     // Update device info display
     updateDeviceInfoDisplay();
+    
+    // Update mobile graphics UI elements
+    if (ui.mobileResolutionScaleSelect) {
+        const scalePercent = Math.round(graphics.resolutionScale * 100);
+        (ui.mobileResolutionScaleSelect as HTMLSelectElement).value = scalePercent.toString();
+    }
+    
+    if (ui.mobileParticleDensitySelect) {
+        const densityPercent = Math.round(graphics.particleDensity * 100);
+        (ui.mobileParticleDensitySelect as HTMLSelectElement).value = densityPercent.toString();
+    }
+    
+    if (ui.mobileFrameRateLimitSelect) {
+        (ui.mobileFrameRateLimitSelect as HTMLSelectElement).value = graphics.frameRateLimit.toString();
+    }
+    
+    if (ui.mobilePostProcessingSelect) {
+        (ui.mobilePostProcessingSelect as HTMLSelectElement).value = graphics.postProcessing;
+    }
 }
 
 export function updatePerformanceDisplay(): void {
@@ -860,7 +879,13 @@ export function resetGraphicsToDefaults(): void {
     };
     
     // Apply settings to gameState
-    Object.assign(gameState.graphics, mediumPreset);
+    gameStateManager.updateState((state: any) => ({
+        ...state,
+        graphics: {
+            ...state.graphics,
+            ...mediumPreset
+        }
+    }));
     
     // Update UI to reflect changes
     updateGraphicsUI();
@@ -945,3 +970,8 @@ export function closeMobileModal() {
 
 // Make closeMobileModal available globally for onclick handlers
 (window as any).closeMobileModal = closeMobileModal;
+
+// Update all settings UI after loading
+export function updateAllSettingsUI(): void {
+    updateGraphicsUI();
+}

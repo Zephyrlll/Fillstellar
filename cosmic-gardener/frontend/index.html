@@ -1501,6 +1501,92 @@
         logPanel.style.display = 'none';
       }
     });
+    
+    // Debug: Manual graphics test function
+    // Debug: Test save data
+    window.testSave = function() {
+        console.log('🔍 Testing save data...');
+        const savedData = localStorage.getItem('cosmicGardenerState');
+        if (savedData) {
+            const parsed = JSON.parse(savedData);
+            console.log('Saved data:', parsed);
+            console.log('Resources in save:', parsed.resources);
+            console.log('Research states:', {
+                enhancedDust: parsed.researchEnhancedDust,
+                advancedEnergy: parsed.researchAdvancedEnergy,
+                moon: parsed.unlockedCelestialBodies?.moon,
+                planet: parsed.unlockedCelestialBodies?.planet
+            });
+        } else {
+            console.log('No save data found');
+        }
+        
+        // Show current game state
+        console.log('Current game state:', gameStateManager.getState());
+    };
+    
+    window.testGraphics = function() {
+        console.log('🔧 Testing graphics system...');
+        const currentScale = gameStateManager.getState().graphics.resolutionScale;
+        console.log('Current resolution scale:', currentScale);
+        
+        // Try to change resolution scale
+        gameStateManager.updateState(state => ({
+            ...state,
+            graphics: {
+                ...state.graphics,
+                resolutionScale: 0.5,
+                preset: 'custom'
+            }
+        }));
+        
+        console.log('After update - resolution scale:', gameStateManager.getState().graphics.resolutionScale);
+        
+        // Force graphics engine update
+        if (window.graphicsEngine) {
+            console.log('Forcing graphics engine update...');
+            window.graphicsEngine.update();
+        } else {
+            console.error('Graphics engine not found on window!');
+        }
+    };
+    
+    console.log('💡 You can test graphics with: testGraphics()');
+    console.log('💡 You can test save with: testSave()');
+    
+    // Debug graphics state
+    window.debugGraphics = function() {
+        const state = gameStateManager.getState();
+        console.log('Current graphics state:', state.graphics);
+        console.log('Resolution scale in state:', state.graphics.resolutionScale);
+        
+        const slider = document.getElementById('resolutionScaleRange');
+        if (slider) {
+            console.log('Slider value:', slider.value);
+            console.log('Slider value / 100:', slider.value / 100);
+        }
+        
+        // Check if graphics engine is receiving updates
+        if (window.graphicsEngine) {
+            console.log('Graphics engine exists');
+            // Try manual update
+            window.graphicsEngine.update();
+        }
+    };
+    console.log('💡 Debug graphics with: debugGraphics()');
+    
+    // Unregister old service workers to fix caching issues
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(registrations) {
+            for(let registration of registrations) {
+                registration.unregister().then(function(success) {
+                    if (success) {
+                        console.log('🧹 Service Worker unregistered:', registration.scope);
+                    }
+                });
+            }
+        });
+    }
   </script>
 </body>
 </html>

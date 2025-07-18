@@ -27,8 +27,9 @@ import { performanceMonitor } from './js/performanceMonitor.ts';
 import { graphicsEngine } from './js/graphicsEngine.ts';
 import { updatePerformanceDisplay } from './js/ui.ts';
 
-// Expose graphicsEngine globally for synchronous access from saveload.ts
+// Expose graphicsEngine globally for synchronous access from saveload.ts and debugging
 (window as any).graphicsEngine = graphicsEngine;
+console.log('🎮 Graphics engine exposed to window:', (window as any).graphicsEngine);
 
 const moveSpeed = 200;
 
@@ -386,11 +387,16 @@ function init() {
     // Initialize catalyst system with some starter catalysts for testing
     // @ts-ignore
     if (!gameState.catalystSystemInitialized) {
-        // Add required technologies for catalyst system
+        // Only add technologies if they don't already exist (preserve loaded state)
         gameStateManager.updateState(state => {
             const newDiscoveredTechnologies = new Set(state.discoveredTechnologies);
-            newDiscoveredTechnologies.add('advanced_processing');
-            newDiscoveredTechnologies.add('quantum_manipulation');
+            // Only add if not already discovered
+            if (!newDiscoveredTechnologies.has('advanced_processing')) {
+                newDiscoveredTechnologies.add('advanced_processing');
+            }
+            if (!newDiscoveredTechnologies.has('quantum_manipulation')) {
+                newDiscoveredTechnologies.add('quantum_manipulation');
+            }
             
             return {
                 ...state,
@@ -399,8 +405,11 @@ function init() {
             };
         });
         
-        catalystManager.addCatalyst(CatalystType.EFFICIENCY_BOOSTER, 2);
-        catalystManager.addCatalyst(CatalystType.SPEED_ACCELERATOR, 1);
+        // Only add starter catalysts if this is truly a new game
+        if (gameState.gameYear === 0) {
+            catalystManager.addCatalyst(CatalystType.EFFICIENCY_BOOSTER, 2);
+            catalystManager.addCatalyst(CatalystType.SPEED_ACCELERATOR, 1);
+        }
     }
     
     // Initialize currency system

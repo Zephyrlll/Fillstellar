@@ -743,47 +743,6 @@ export function setupEventListeners() {
         });
     }
 
-    if (ui.gravitySlider) {
-        ui.gravitySlider.addEventListener('input', (event) => {
-            const target = event.target as HTMLInputElement;
-            gameStateManager.updateState(state => ({
-                ...state,
-                physics: {
-                    ...state.physics,
-                    G: parseFloat(target.value)
-                }
-            }));
-            if (ui.gravityValue) ui.gravityValue.textContent = target.value;
-        });
-    }
-
-    if (ui.simulationSpeedSlider) {
-        ui.simulationSpeedSlider.addEventListener('input', (event) => {
-            const target = event.target as HTMLInputElement;
-            gameStateManager.updateState(state => ({
-                ...state,
-                physics: {
-                    ...state.physics,
-                    simulationSpeed: parseFloat(target.value)
-                }
-            }));
-            if (ui.simulationSpeedValue) ui.simulationSpeedValue.textContent = `${target.value}x`;
-        });
-    }
-
-    if (ui.dragSlider) {
-        ui.dragSlider.addEventListener('input', (event) => {
-            const target = event.target as HTMLInputElement;
-            gameStateManager.updateState(state => ({
-                ...state,
-                physics: {
-                    ...state.physics,
-                    dragFactor: parseFloat(target.value)
-                }
-            }));
-            if (ui.dragValue) ui.dragValue.textContent = target.value;
-        });
-    }
 
     if (ui.addAllResourcesButton) {
         ui.addAllResourcesButton.addEventListener('click', () => {
@@ -884,12 +843,16 @@ export function setupEventListeners() {
         });
     }
     
-    // Resolution scale slider
+    // Resolution scale select
+    console.log('[Events] Checking resolutionScaleRange:', ui.resolutionScaleRange);
     if (ui.resolutionScaleRange) {
-        ui.resolutionScaleRange.addEventListener('input', (event) => {
-            const target = event.target as HTMLInputElement;
+        console.log('[Events] Adding event listener to resolution scale select');
+        ui.resolutionScaleRange.addEventListener('change', (event) => {
+            const target = event.target as HTMLSelectElement;
             const scalePercent = parseInt(target.value);
             const scale = scalePercent / 100;
+            
+            console.log(`[Events] Resolution scale slider changed: ${scalePercent}% (${scale})`);
             
             gameStateManager.updateState(state => ({
                 ...state,
@@ -899,6 +862,8 @@ export function setupEventListeners() {
                     preset: 'custom'
                 }
             }));
+            
+            console.log(`[Events] Updated gameState.graphics.resolutionScale to: ${gameState.graphics.resolutionScale}`);
             
             // Update display value
             if (ui.resolutionScaleValue) {
@@ -1033,6 +998,113 @@ export function setupEventListeners() {
                 saveGame();
                 showMessage('グラフィック設定をリセットしました');
             });
+        });
+    }
+    
+    // Mobile graphics settings
+    // Mobile resolution scale select
+    if (ui.mobileResolutionScaleSelect) {
+        ui.mobileResolutionScaleSelect.addEventListener('change', (event) => {
+            const target = event.target as HTMLSelectElement;
+            const scalePercent = parseInt(target.value);
+            const scale = scalePercent / 100;
+            
+            console.log(`[Events] Mobile resolution scale changed: ${scalePercent}% (${scale})`);
+            
+            gameStateManager.updateState(state => ({
+                ...state,
+                graphics: {
+                    ...state.graphics,
+                    resolutionScale: scale
+                }
+            }));
+            
+            saveGame();
+        });
+    }
+    
+    // Mobile particle density select
+    if (ui.mobileParticleDensitySelect) {
+        ui.mobileParticleDensitySelect.addEventListener('change', (event) => {
+            const target = event.target as HTMLSelectElement;
+            const densityPercent = parseInt(target.value);
+            const density = densityPercent / 100;
+            
+            gameStateManager.updateState(state => ({
+                ...state,
+                graphics: {
+                    ...state.graphics,
+                    particleDensity: density
+                }
+            }));
+            
+            saveGame();
+        });
+    }
+    
+    // Mobile frame rate limit select
+    if (ui.mobileFrameRateLimitSelect) {
+        ui.mobileFrameRateLimitSelect.addEventListener('change', (event) => {
+            const target = event.target as HTMLSelectElement;
+            const newFrameRate = parseInt(target.value);
+            
+            gameStateManager.updateState(state => ({
+                ...state,
+                graphics: {
+                    ...state.graphics,
+                    frameRateLimit: newFrameRate
+                }
+            }));
+            
+            // Update graphics engine frame rate limiter
+            graphicsEngine.getFrameRateLimiter().setTargetFPS(newFrameRate);
+            console.log(`[Mobile] Frame rate changed to: ${newFrameRate} FPS`);
+            
+            saveGame();
+        });
+    }
+    
+    // Mobile post processing select
+    if (ui.mobilePostProcessingSelect) {
+        ui.mobilePostProcessingSelect.addEventListener('change', (event) => {
+            const target = event.target as HTMLSelectElement;
+            const postProcessingLevel = target.value;
+            
+            gameStateManager.updateState(state => ({
+                ...state,
+                graphics: {
+                    ...state.graphics,
+                    postProcessing: postProcessingLevel
+                }
+            }));
+            
+            saveGame();
+        });
+    }
+    
+    // Mobile set default graphics button
+    if (ui.mobileSetDefaultGraphicsButton) {
+        ui.mobileSetDefaultGraphicsButton.addEventListener('click', () => {
+            // Apply mobile-optimized graphics preset
+            graphicsEngine.applyPreset('low');
+            console.log('[Mobile] Applied mobile-optimized graphics preset');
+            
+            // Update UI to reflect changes
+            if (ui.mobileResolutionScaleSelect) {
+                (ui.mobileResolutionScaleSelect as HTMLSelectElement).value = '50';
+            }
+            if (ui.mobileParticleDensitySelect) {
+                (ui.mobileParticleDensitySelect as HTMLSelectElement).value = '25';
+            }
+            if (ui.mobileFrameRateLimitSelect) {
+                (ui.mobileFrameRateLimitSelect as HTMLSelectElement).value = '30';
+            }
+            if (ui.mobilePostProcessingSelect) {
+                (ui.mobilePostProcessingSelect as HTMLSelectElement).value = 'low';
+            }
+            
+            saveGame();
+            showMessage('モバイル向けグラフィック設定を適用しました');
         });
     }
     

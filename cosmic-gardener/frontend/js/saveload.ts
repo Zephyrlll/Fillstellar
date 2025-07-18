@@ -4,6 +4,7 @@ import { removeAndDispose, celestialObjectPools } from './utils.js';
 import { createCelestialBody } from './celestialBody.js';
 import { scene } from './threeSetup.js';
 import { conversionEngine } from './conversionEngine.js';
+import { updateAllSettingsUI } from './ui.js';
 
 interface SavedStar {
     position: number[];
@@ -48,8 +49,11 @@ export function saveGame(): void {
             };
         }).filter(star => star !== null) as SavedStar[];
 
+        // Get the actual state object instead of using the Proxy
+        const currentState = gameStateManager.getState();
+        
         const savableState: SavedGameState = { 
-            ...gameState, 
+            ...currentState, 
             stars: savableStars,
             discoveredTechnologies: [],
             availableFacilities: [],
@@ -106,9 +110,9 @@ export function loadGame(): void {
             darkMatter: parsedState.darkMatter || 0,
             thoughtPoints: parsedState.thoughtPoints || 0
         };
-        parsedState.advancedResources = {};
-        parsedState.discoveredTechnologies = [];
-        parsedState.availableFacilities = ['basic_converter'];
+        parsedState.advancedResources = parsedState.advancedResources || {};
+        parsedState.discoveredTechnologies = parsedState.discoveredTechnologies || [];
+        parsedState.availableFacilities = parsedState.availableFacilities || ['basic_converter'];
         parsedState.saveVersion = '2.0-resource-system';
     }
     
@@ -175,9 +179,9 @@ export function loadGame(): void {
     }
     
         if (parsedState.saveVersion !== '2.2-device-detection') {
-            console.warn('[SAVELOAD] Save version mismatch:', parsedState.saveVersion, 'Expected: 2.2-device-detection. Discarding save.');
-            localStorage.removeItem('cosmicGardenerState');
-            return;
+            console.warn('[SAVELOAD] Save version mismatch:', parsedState.saveVersion, 'Expected: 2.2-device-detection');
+            // Don't discard save, just warn about version mismatch
+            // Migration should have handled any necessary updates
         }
 
         const { stars, focusedObjectUUID, discoveredTechnologies, availableFacilities, conversionEngineState, ...restOfState } = parsedState;
@@ -360,6 +364,12 @@ export function loadGame(): void {
         }
         
         console.log('[SAVELOAD] Game loaded successfully');
+        
+        // Update UI to reflect loaded settings (delayed to avoid state update loops)
+        setTimeout(() => {
+            updateAllSettingsUI();
+            console.log('[SAVELOAD] UI settings synchronized with loaded game state');
+        }, 100);
     } catch (error) {
         console.error('[SAVELOAD] Failed to load game:', error);
     }

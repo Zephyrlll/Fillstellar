@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Save/Load Test</title>
+    <style>
+        body { font-family: monospace; padding: 20px; }
+        .section { margin: 20px 0; padding: 10px; border: 1px solid #ccc; }
+        button { margin: 5px; padding: 10px; }
+        pre { background: #f0f0f0; padding: 10px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>Save/Load System Test</h1>
+    
+    <div class="section">
+        <h2>Test Actions</h2>
+        <button onclick="testSave()">Test Save</button>
+        <button onclick="testLoad()">Test Load</button>
+        <button onclick="clearSave()">Clear Save</button>
+        <button onclick="showCurrentState()">Show Current State</button>
+        <button onclick="showSavedState()">Show Saved State</button>
+    </div>
+    
+    <div class="section">
+        <h2>Current Game State</h2>
+        <pre id="currentState">Click "Show Current State" to display</pre>
+    </div>
+    
+    <div class="section">
+        <h2>Saved State in localStorage</h2>
+        <pre id="savedState">Click "Show Saved State" to display</pre>
+    </div>
+    
+    <div class="section">
+        <h2>Test Results</h2>
+        <pre id="results"></pre>
+    </div>
+
+    <script type="module">
+        import { gameState, gameStateManager } from './js/state.js';
+        import { saveGame, loadGame } from './js/saveload.js';
+        
+        window.testSave = function() {
+            const results = document.getElementById('results');
+            results.textContent = 'Testing save...\n';
+            
+            // Set some test values
+            gameStateManager.updateState(state => ({
+                ...state,
+                resources: {
+                    cosmicDust: 12345,
+                    energy: 67890,
+                    organicMatter: 11111,
+                    biomass: 22222,
+                    darkMatter: 33333,
+                    thoughtPoints: 44444
+                },
+                gameYear: 9999,
+                cosmicActivity: 0.5
+            }));
+            
+            results.textContent += 'Set test values:\n';
+            results.textContent += `- resources.cosmicDust: ${gameState.resources.cosmicDust}\n`;
+            results.textContent += `- resources.energy: ${gameState.resources.energy}\n`;
+            results.textContent += `- gameYear: ${gameState.gameYear}\n`;
+            results.textContent += `- cosmicActivity: ${gameState.cosmicActivity}\n\n`;
+            
+            // Save the game
+            saveGame();
+            results.textContent += 'Game saved!\n';
+            
+            showSavedState();
+        };
+        
+        window.testLoad = function() {
+            const results = document.getElementById('results');
+            results.textContent = 'Testing load...\n';
+            
+            // First, set different values to verify load overwrites them
+            gameStateManager.updateState(state => ({
+                ...state,
+                resources: {
+                    cosmicDust: 0,
+                    energy: 0,
+                    organicMatter: 0,
+                    biomass: 0,
+                    darkMatter: 0,
+                    thoughtPoints: 0
+                },
+                gameYear: 0,
+                cosmicActivity: 0
+            }));
+            
+            results.textContent += 'Reset values before load:\n';
+            results.textContent += `- resources.cosmicDust: ${gameState.resources.cosmicDust}\n`;
+            results.textContent += `- resources.energy: ${gameState.resources.energy}\n`;
+            results.textContent += `- gameYear: ${gameState.gameYear}\n`;
+            results.textContent += `- cosmicActivity: ${gameState.cosmicActivity}\n\n`;
+            
+            // Load the game
+            loadGame();
+            
+            results.textContent += 'Game loaded! New values:\n';
+            results.textContent += `- resources.cosmicDust: ${gameState.resources.cosmicDust}\n`;
+            results.textContent += `- resources.energy: ${gameState.resources.energy}\n`;
+            results.textContent += `- gameYear: ${gameState.gameYear}\n`;
+            results.textContent += `- cosmicActivity: ${gameState.cosmicActivity}\n`;
+            
+            showCurrentState();
+        };
+        
+        window.clearSave = function() {
+            localStorage.removeItem('cosmicGardenerState');
+            document.getElementById('results').textContent = 'Save data cleared from localStorage';
+            showSavedState();
+        };
+        
+        window.showCurrentState = function() {
+            const state = JSON.parse(JSON.stringify(gameState, (key, value) => {
+                if (value instanceof Set) return Array.from(value);
+                if (value instanceof THREE.Vector3) return value.toArray();
+                if (key === 'stars' && Array.isArray(value)) return `[${value.length} stars]`;
+                return value;
+            }));
+            document.getElementById('currentState').textContent = JSON.stringify(state, null, 2);
+        };
+        
+        window.showSavedState = function() {
+            const saved = localStorage.getItem('cosmicGardenerState');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                document.getElementById('savedState').textContent = JSON.stringify(parsed, null, 2);
+            } else {
+                document.getElementById('savedState').textContent = 'No saved data found';
+            }
+        };
+        
+        // Show initial state
+        setTimeout(() => {
+            showCurrentState();
+            showSavedState();
+        }, 1000);
+    </script>
+</body>
+</html>

@@ -12,7 +12,8 @@ export class GraphicsEngine {
     
     constructor() {
         this.frameRateLimiter = new FrameRateLimiter();
-        this.applyAllSettings();
+        // Don't apply settings in constructor - wait for explicit initialization
+        console.log('🎮 Graphics engine created (settings will be applied on first update)');
     }
     
     // Apply all current graphics settings
@@ -42,6 +43,19 @@ export class GraphicsEngine {
     // Check for setting changes and apply only what's needed
     update(): void {
         const graphics = gameStateManager.getState().graphics;
+        
+        // Debug: Log current graphics state periodically
+        if (Math.random() < 0.001) { // Log occasionally to avoid spam
+            console.log('[GraphicsEngine.update] Current graphics state:', graphics);
+            console.log('[GraphicsEngine.update] Previous settings:', this.previousSettings);
+        }
+        
+        // If this is the first update, apply all settings
+        if (Object.keys(this.previousSettings).length === 0) {
+            console.log('🎮 Graphics engine first update - applying all settings');
+            this.applyAllSettings();
+            return;
+        }
         
         // Debug log
         if (this.previousSettings.resolutionScale !== graphics.resolutionScale) {
@@ -113,7 +127,7 @@ export class GraphicsEngine {
     }
     
     // Resolution scaling
-    private applyResolutionScale(scale: number): void {
+    applyResolutionScale(scale: number): void {
         console.log(`[GraphicsEngine] Applying resolution scale: ${scale}`);
         const canvas = renderer.domElement;
         const pixelRatio = window.devicePixelRatio || 1;
