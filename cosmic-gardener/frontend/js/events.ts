@@ -161,6 +161,13 @@ export function setupEventListeners() {
         showMobileModal('starManagement');
     });
 
+    // Add lab tab for mobile
+    const labTabMobile = document.getElementById('labTab-mobile');
+    if (labTabMobile) labTabMobile.addEventListener('click', () => {
+        soundManager.playUISound('tab');
+        showMobileModal('lab');
+    });
+
     // Galaxy map toggle button
     if (ui.galaxyMapToggle) {
         console.log('🔧 Galaxy map toggle button found, adding event listener');

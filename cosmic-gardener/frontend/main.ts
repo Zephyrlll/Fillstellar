@@ -26,6 +26,8 @@ import { currencyManager } from './js/currencySystem.ts';
 import { performanceMonitor } from './js/performanceMonitor.ts';
 import { graphicsEngine } from './js/graphicsEngine.ts';
 import { updatePerformanceDisplay } from './js/ui.ts';
+// Research Lab UI
+import { initializeResearchLab } from './js/researchLab.ts';
 
 // Expose graphicsEngine globally for synchronous access from saveload.ts and debugging
 (window as any).graphicsEngine = graphicsEngine;
@@ -467,10 +469,12 @@ function init() {
         document.addEventListener('DOMContentLoaded', () => {
             // console.log('[INIT] DOM loaded, setting up event listeners...');
             setupEventListeners();
+            initializeResearchLab();
         });
     } else {
         // console.log('[INIT] DOM already loaded, setting up event listeners now...');
         setupEventListeners();
+        initializeResearchLab();
     }
     
     // WebSocket接続の初期化

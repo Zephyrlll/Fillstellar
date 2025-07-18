@@ -29,6 +29,9 @@
       <button id="floatingResourceSellButton-mobile" class="mobile-nav-btn sell-btn" title="資源を販売">
         💰
       </button>
+      <button id="researchLabToggleButton-mobile" class="mobile-nav-btn research-lab-btn" title="研究室を開く">
+        🔬
+      </button>
     </div>
     <div id="mobile-nav-right">
       <div id="resource-summary-nav">
@@ -43,6 +46,7 @@
   <div id="mobile-tab-nav">
     <button id="gameTab-mobile" class="mobile-tab active-mobile-tab">ゲーム</button>
     <button id="researchTab-mobile" class="mobile-tab">研究</button>
+    <button id="labTab-mobile" class="mobile-tab">研究室</button>
     <button id="optionsTab-mobile" class="mobile-tab">設定</button>
     <button id="starTab-mobile" class="mobile-tab">恒星</button>
   </div>
@@ -603,6 +607,22 @@
         <span id="mobile-star-count">0</span>
       </div>
     </div>
+    <div id="mobile-lab-content" class="mobile-content">
+      <div class="mobile-content-header">
+        <h3>🔬 研究室</h3>
+        <button class="mobile-close-btn" onclick="closeMobileModal()">×</button>
+      </div>
+      <div class="mobile-content-body">
+        <p style="text-align: center; padding: 50px 20px; color: #8892b0;">
+          モバイル版の研究室は全画面表示で開きます
+        </p>
+        <div style="text-align: center; padding: 20px;">
+          <button id="mobile-open-full-lab" class="mobile-action-btn" style="background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);">
+            研究室を開く
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- 上部中央の情報表示 -->
@@ -1103,6 +1123,10 @@
             <div class="btn-icon">💰</div>
             <div class="btn-label">資源販売</div>
         </button>
+        <button id="researchLabToggleButton" class="floating-btn research-lab-btn" title="研究室を開く">
+            <div class="btn-icon">🔬</div>
+            <div class="btn-label">研究室</div>
+        </button>
     </div>
 
     <!-- 銀河マップコンテナ -->
@@ -1309,6 +1333,79 @@
             </div>
           </div>
           
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 研究室UI (フルスクリーンオーバーレイ) -->
+  <div id="research-lab-overlay" class="research-lab-overlay">
+    <div class="research-lab-container">
+      <!-- ヘッダー -->
+      <div class="research-lab-header">
+        <div class="lab-title">
+          <div class="lab-icon">🔬</div>
+          <h1>宇宙研究室</h1>
+          <div class="lab-subtitle">Cosmic Research Laboratory</div>
+        </div>
+        <button id="researchLabCloseButton" class="lab-close-btn">
+          <span class="close-icon">✕</span>
+        </button>
+      </div>
+
+      <!-- メインコンテンツ -->
+      <div class="research-lab-content">
+        <!-- 研究カテゴリータブ -->
+        <div class="research-categories">
+          <button class="research-category-tab active" data-category="fundamental">基礎研究</button>
+          <button class="research-category-tab" data-category="celestial">天体研究</button>
+          <button class="research-category-tab" data-category="life">生命研究</button>
+          <button class="research-category-tab" data-category="technology">技術研究</button>
+          <button class="research-category-tab" data-category="cosmic">宇宙研究</button>
+        </div>
+
+        <!-- 研究項目表示エリア -->
+        <div class="research-items-container">
+          <div id="research-items-grid" class="research-items-grid">
+            <!-- 動的に研究項目が追加される -->
+          </div>
+        </div>
+
+        <!-- 研究進捗サイドバー -->
+        <div class="research-sidebar">
+          <div class="research-progress-section">
+            <h3>研究進捗</h3>
+            <div class="progress-stats">
+              <div class="progress-stat">
+                <span class="stat-label">完了済み研究:</span>
+                <span class="stat-value" id="completedResearchCount">0</span>
+              </div>
+              <div class="progress-stat">
+                <span class="stat-label">進行中研究:</span>
+                <span class="stat-value" id="activeResearchCount">0</span>
+              </div>
+              <div class="progress-stat">
+                <span class="stat-label">研究ポイント:</span>
+                <span class="stat-value" id="researchPointsDisplay">0</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 研究ボーナス -->
+          <div class="research-bonuses-section">
+            <h3>アクティブボーナス</h3>
+            <div id="active-bonuses-list" class="bonuses-list">
+              <!-- 動的にボーナスが表示される -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- フッター情報 -->
+      <div class="research-lab-footer">
+        <div class="footer-info">
+          <span>研究速度: <span id="researchSpeedDisplay">1.0x</span></span>
+          <span>次の研究ポイント獲得まで: <span id="nextResearchPointTime">--:--</span></span>
         </div>
       </div>
     </div>
