@@ -20,8 +20,8 @@
     "boundaryDamping": 0.3
   },
   "performance": {
-    "spatialGridCellSize": 1000,
-    "nearbySearchRadius": 10000,
+    "spatialGridCellSize": 2000,
+    "nearbySearchRadius": 30000,
     "maxPhysicsUpdatesPerFrame": 1000
   }
 }

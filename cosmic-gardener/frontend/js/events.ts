@@ -451,7 +451,7 @@ export function setupEventListeners() {
                 cosmicDust: state.resources.cosmicDust - cost
             }
         }));
-        const radius = 8000 + Math.random() * 6000;  // 8000-14000 game units (80-140 AU)
+        const radius = 7000 + Math.random() * 18000;  // 7000-25000 game units (70-250 AU)
         const angle = Math.random() * Math.PI * 2;
         const position = new THREE.Vector3(radius * Math.cos(angle), (Math.random() - 0.5) * 100, radius * Math.sin(angle));
         const blackHole = gameState.stars.find(s => s.userData.type === 'black_hole');
