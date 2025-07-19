@@ -10,6 +10,7 @@ export class BackgroundGalaxies {
     private displayMode: 'none' | 'skybox' | 'sprites' | 'mixed' = 'mixed';
     private nebulaeGroup: THREE.Group;
     private rotationSpeed: number = 0.00005; // ゆっくり回転
+    private originalNebulaePositions: Map<string, THREE.Vector3> = new Map(); // 元の位置を保存
     
     constructor() {
         this.galaxyGroup = new THREE.Group();
@@ -554,6 +555,10 @@ export class BackgroundGalaxies {
             }
             
             group.name = `purpleGalaxy_${i}`;
+            
+            // 元の位置を保存
+            this.originalNebulaePositions.set(group.name, group.position.clone());
+            
             // フラスタムカリングを無効化
             group.traverse((child) => {
                 child.frustumCulled = false;
@@ -584,10 +589,15 @@ export class BackgroundGalaxies {
                 r * Math.cos(phi) * Math.sin(theta)
             );
             
-            // 紫系の色
-            const brightness = 1.2 - (r / 300) * 0.5;
-            bulgeColors.push(0.7 * brightness, 0.3 * brightness, 1.0 * brightness);
-            bulgeSizes.push(0.3 + Math.random() * 0.3);
+            // 現実的な銀河中心部の色（黄色〜オレンジ）
+            const brightness = 0.8 - (r / 300) * 0.3;
+            const temp = 0.85 + Math.random() * 0.15; // 温かい色
+            bulgeColors.push(
+                brightness,
+                brightness * temp,
+                brightness * temp * 0.7
+            );
+            bulgeSizes.push(0.2 + Math.random() * 0.2); // より小さい星
         }
         
         bulgeGeometry.setAttribute('position', new THREE.Float32BufferAttribute(bulgePositions, 3));
@@ -595,11 +605,11 @@ export class BackgroundGalaxies {
         bulgeGeometry.setAttribute('size', new THREE.Float32BufferAttribute(bulgeSizes, 1));
         
         const bulgeMaterial = new THREE.PointsMaterial({
-            size: 0.8,
+            size: 0.4, // より小さく
             sizeAttenuation: true,
             vertexColors: true,
             transparent: true,
-            opacity: 0.8,
+            opacity: 0.6, // より淡く
             blending: THREE.AdditiveBlending,
             depthWrite: false,
             fog: false
@@ -631,15 +641,54 @@ export class BackgroundGalaxies {
                     (radius + offset) * Math.sin(spiralAngle)
                 );
                 
-                // 外側に行くほど青紫に
-                const brightness = 0.9 - t * 0.4;
-                const blueShift = t * 0.3;
-                armColors.push(
-                    (0.6 + blueShift) * brightness,
-                    0.4 * brightness,
-                    1.0 * brightness
-                );
-                armSizes.push(0.2 + Math.random() * 0.4);
+                // より多彩な渦巻き腕の色
+                const brightness = 0.8 - t * 0.3;
+                const colorVariation = Math.random();
+                
+                if (colorVariation < 0.35) {
+                    // 鮮やかな青〜水色（35%）
+                    armColors.push(
+                        brightness * 0.2,
+                        brightness * 0.5,
+                        brightness * 1.5
+                    );
+                } else if (colorVariation < 0.55) {
+                    // 濃い青紫（20%）
+                    armColors.push(
+                        brightness * 0.6,
+                        brightness * 0.3,
+                        brightness * 1.3
+                    );
+                } else if (colorVariation < 0.75) {
+                    // エメラルドグリーン（20%）
+                    armColors.push(
+                        brightness * 0.2,
+                        brightness * 1.3,
+                        brightness * 0.7
+                    );
+                } else if (colorVariation < 0.90) {
+                    // ピンク系（15%）
+                    armColors.push(
+                        brightness * 1.3,
+                        brightness * 0.4,
+                        brightness * 0.8
+                    );
+                } else if (colorVariation < 0.98) {
+                    // オレンジ系（8%）
+                    armColors.push(
+                        brightness * 1.3,
+                        brightness * 0.7,
+                        brightness * 0.2
+                    );
+                } else {
+                    // 黄色系（2%のみ）
+                    armColors.push(
+                        brightness * 1.0,
+                        brightness * 0.9,
+                        brightness * 0.3
+                    );
+                }
+                armSizes.push(0.15 + Math.random() * 0.35);
             }
             
             armGeometry.setAttribute('position', new THREE.Float32BufferAttribute(armPositions, 3));
@@ -681,10 +730,54 @@ export class BackgroundGalaxies {
             
             positions.push(x, y, z);
             
-            // 中心ほど明るい紫
-            const brightness = 1.0 - (r / 600) * 0.6;
-            colors.push(0.8 * brightness, 0.4 * brightness, 1.0 * brightness);
-            sizes.push(0.25 + Math.random() * 0.35);
+            // より多彩な楕円銀河の色
+            const brightness = 0.8 - (r / 600) * 0.4;
+            const colorType = Math.random();
+            
+            if (colorType < 0.3) {
+                // 濃い青（30%）
+                colors.push(
+                    brightness * 0.3,
+                    brightness * 0.5,
+                    brightness * 1.4
+                );
+            } else if (colorType < 0.55) {
+                // 濃い紫（25%）
+                colors.push(
+                    brightness * 0.8,
+                    brightness * 0.3,
+                    brightness * 1.3
+                );
+            } else if (colorType < 0.75) {
+                // オレンジ系（20%）
+                colors.push(
+                    brightness * 1.4,
+                    brightness * 0.7,
+                    brightness * 0.2
+                );
+            } else if (colorType < 0.9) {
+                // ピンク（15%）
+                colors.push(
+                    brightness * 1.3,
+                    brightness * 0.5,
+                    brightness * 0.8
+                );
+            } else if (colorType < 0.97) {
+                // シアン（7%）
+                colors.push(
+                    brightness * 0.3,
+                    brightness * 1.1,
+                    brightness * 1.2
+                );
+            } else {
+                // 赤系（3%のみ）
+                colors.push(
+                    brightness * 1.2,
+                    brightness * 0.3,
+                    brightness * 0.4
+                );
+            }
+            sizes.push(0.15 + Math.random() * 0.3);
         }
         
         geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
@@ -735,14 +828,55 @@ export class BackgroundGalaxies {
                     clusterZ + r * Math.sin(phi) * Math.sin(theta)
                 );
                 
-                // ランダムな紫のバリエーション
-                const hue = 0.75 + Math.random() * 0.1;
-                const saturation = 0.7 + Math.random() * 0.3;
-                const lightness = 0.5 + Math.random() * 0.3;
-                const color = new THREE.Color().setHSL(hue, saturation, lightness);
+                // カラフルな不規則銀河の色
+                const colorType = Math.random();
+                let red, green, blue;
+                const brightness = 0.6 + Math.random() * 0.4;
                 
-                colors.push(color.r, color.g, color.b);
-                sizes.push(0.2 + Math.random() * 0.5);
+                if (colorType < 0.25) {
+                    // 濃い青（25%）
+                    red = brightness * 0.1;
+                    green = brightness * 0.3;
+                    blue = brightness * 1.5;
+                } else if (colorType < 0.45) {
+                    // シアン（20%）
+                    red = brightness * 0.2;
+                    green = brightness * 1.2;
+                    blue = brightness * 1.3;
+                } else if (colorType < 0.6) {
+                    // 濃い紫（15%）
+                    red = brightness * 0.7;
+                    green = brightness * 0.2;
+                    blue = brightness * 1.3;
+                } else if (colorType < 0.75) {
+                    // エメラルドグリーン（15%）
+                    red = brightness * 0.1;
+                    green = brightness * 1.3;
+                    blue = brightness * 0.6;
+                } else if (colorType < 0.85) {
+                    // マゼンタ（10%）
+                    red = brightness * 1.4;
+                    green = brightness * 0.3;
+                    blue = brightness * 0.9;
+                } else if (colorType < 0.93) {
+                    // オレンジ（8%）
+                    red = brightness * 1.4;
+                    green = brightness * 0.6;
+                    blue = brightness * 0.1;
+                } else if (colorType < 0.98) {
+                    // 赤系（5%）
+                    red = brightness * 1.3;
+                    green = brightness * 0.2;
+                    blue = brightness * 0.3;
+                } else {
+                    // ごく少数の黄色系（2%のみ）
+                    red = brightness * 1.1;
+                    green = brightness * 1.0;
+                    blue = brightness * 0.4;
+                }
+                
+                colors.push(red, green, blue);
+                sizes.push(0.1 + Math.random() * 0.3);
             }
             
             geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
@@ -1144,7 +1278,24 @@ export class BackgroundGalaxies {
     }
     
     update(deltaTime: number, cameraPosition?: THREE.Vector3): void {
-        // カメラ追従を削除 - 固定位置に配置
+        // 視差効果（パララックス）の適用
+        if (cameraPosition) {
+            const parallaxFactor = 0.05; // カメラ移動の5%だけ動く（遠くにあるように見える）
+            
+            // 紫の銀河に視差効果を適用
+            this.nebulaeGroup.children.forEach(child => {
+                if (child.name.startsWith('purpleGalaxy_')) {
+                    const originalPos = this.originalNebulaePositions.get(child.name);
+                    if (originalPos) {
+                        // 元の位置から、カメラの移動に対して逆方向に少しだけ動かす
+                        child.position.x = originalPos.x - cameraPosition.x * parallaxFactor;
+                        child.position.z = originalPos.z - cameraPosition.z * parallaxFactor;
+                        // Y軸はさらに少なく動かす（垂直方向の視差を抑える）
+                        child.position.y = originalPos.y - cameraPosition.y * parallaxFactor * 0.5;
+                    }
+                }
+            });
+        }
         
         // 銀河全体をゆっくり回転（反時計回り）
         this.galaxyGroup.rotation.y -= this.rotationSpeed * deltaTime * 60; // 60fpsベース
