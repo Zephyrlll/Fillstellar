@@ -162,8 +162,11 @@ export class CelestialBodyFactory {
       if (!creationResult) return null;
       
       gameMass = creationResult.mass;
-      radius = creationResult.radius;
+      // configで指定されたradiusがある場合はそれを優先
+      radius = config.radius !== undefined ? config.radius : creationResult.radius;
       specificData = creationResult.data;
+      
+      // Debug log removed
     }
 
     // 天体タイプ別の3Dオブジェクト作成
@@ -254,6 +257,7 @@ export class CelestialBodyFactory {
     
     const gameMass = (starData.mass as number) * 1000;
     const radius = Math.max(Math.cbrt(gameMass) * 8.0, 15.0);
+    
     
     return { mass: gameMass, radius, data: starData };
   }
@@ -414,10 +418,14 @@ export class CelestialBodyFactory {
     params.materialParams.metalness = 0.0;
     params.materialParams.roughness = 1.0;
     
-    const starSphereGeometry = celestialObjectPools.getSphereGeometry(params.radius);
+    
+    // ジオメトリは単位サイズ（半径1）で作成
+    const starSphereGeometry = celestialObjectPools.getSphereGeometry(1);
     const starMaterial = celestialObjectPools.getMaterial('star', params.materialParams);
     const body = new THREE.Mesh(starSphereGeometry, starMaterial);
+    // スケールで実際の半径を設定
     body.scale.set(params.radius, params.radius, params.radius);
+    
     
     (body.userData as any).originalRadius = params.radius;
     (body.userData as any).materialType = 'star';
@@ -447,8 +455,10 @@ export class CelestialBodyFactory {
       envMapIntensity: 0.5 
     });
     
-    const planetGeometry = celestialObjectPools.getSphereGeometry(params.radius);
+    // ジオメトリは単位サイズ（半径1）で作成
+    const planetGeometry = celestialObjectPools.getSphereGeometry(1);
     const planetMesh = new THREE.Mesh(planetGeometry, planetMaterial);
+    // スケールで実際の半径を設定
     planetMesh.scale.set(params.radius, params.radius, params.radius);
     (planetMesh.userData as any).originalRadius = params.radius;
     (planetMesh.userData as any).materialType = 'planet';
@@ -471,7 +481,8 @@ export class CelestialBodyFactory {
 
   // その他の天体オブジェクト作成メソッド（簡略化）
   private createMoonObject(params: any): THREE.Mesh {
-    const moonGeometry = celestialObjectPools.getSphereGeometry(params.radius);
+    // ジオメトリは単位サイズ（半径1）で作成
+    const moonGeometry = celestialObjectPools.getSphereGeometry(1);
     const moonMaterial = new THREE.MeshStandardMaterial({ 
       color: 0x999999, 
       roughness: 0.8,
@@ -480,6 +491,7 @@ export class CelestialBodyFactory {
       emissiveIntensity: 0.1
     });
     const body = new THREE.Mesh(moonGeometry, moonMaterial);
+    // スケールで実際の半径を設定
     body.scale.set(params.radius, params.radius, params.radius);
     
     // アウトライン追加
@@ -506,7 +518,8 @@ export class CelestialBodyFactory {
   }
 
   private createCometObject(params: any): THREE.Mesh {
-    const coreGeometry = new THREE.SphereGeometry(params.radius, 16, 16);
+    // ジオメトリは単位サイズ（半径1）で作成
+    const coreGeometry = new THREE.SphereGeometry(1, 16, 16);
     const coreMaterial = new THREE.MeshBasicMaterial({ 
       color: 0xaaddff, 
       blending: THREE.AdditiveBlending,
@@ -514,9 +527,11 @@ export class CelestialBodyFactory {
       opacity: 0.8
     });
     const body = new THREE.Mesh(coreGeometry, coreMaterial);
+    // スケールで実際の半径を設定
+    body.scale.set(params.radius, params.radius, params.radius);
     
     // コマ効果
-    const comaGeometry = new THREE.SphereGeometry(params.radius * 2, 12, 12);
+    const comaGeometry = new THREE.SphereGeometry(1, 12, 12);
     const comaMaterial = new THREE.MeshBasicMaterial({
       color: 0x66aaff,
       transparent: true,
@@ -524,6 +539,8 @@ export class CelestialBodyFactory {
       blending: THREE.AdditiveBlending
     });
     const coma = new THREE.Mesh(comaGeometry, comaMaterial);
+    // コマは2倍のサイズ
+    coma.scale.set(2, 2, 2);
     body.add(coma);
     
     // アウトライン追加
@@ -533,13 +550,15 @@ export class CelestialBodyFactory {
   }
 
   private createDwarfPlanetObject(params: any): THREE.Mesh {
-    const dwarfGeometry = celestialObjectPools.getSphereGeometry(params.radius);
+    // ジオメトリは単位サイズ（半径1）で作成
+    const dwarfGeometry = celestialObjectPools.getSphereGeometry(1);
     const dwarfMaterial = new THREE.MeshStandardMaterial({ 
       color: 0xaa8866, 
       roughness: 0.9,
       metalness: 0.2
     });
     const body = new THREE.Mesh(dwarfGeometry, dwarfMaterial);
+    // スケールで実際の半径を設定
     body.scale.set(params.radius, params.radius, params.radius);
     return body;
   }
@@ -602,7 +621,8 @@ export class CelestialBodyFactory {
 
   // ヘルパーメソッド
   private addOutline(body: THREE.Object3D, radius: number, color: number, opacity: number): void {
-    const outlineGeometry = celestialObjectPools.getSphereGeometry(radius);
+    // ジオメトリは単位サイズ（半径1）で作成
+    const outlineGeometry = celestialObjectPools.getSphereGeometry(1);
     const outlineMaterial = new THREE.MeshBasicMaterial({
       color: color,
       transparent: true,
@@ -610,6 +630,7 @@ export class CelestialBodyFactory {
       side: THREE.BackSide
     });
     const outline = new THREE.Mesh(outlineGeometry, outlineMaterial);
+    // アウトラインはオリジナルの1.05倍のサイズ
     outline.scale.set(radius * 1.05, radius * 1.05, radius * 1.05);
     body.add(outline);
   }
@@ -625,9 +646,11 @@ export class CelestialBodyFactory {
       opacity: parseFloat(planetData.atmosphere) * 0.3, 
       blending: THREE.AdditiveBlending 
     });
-    const atmosphereGeometry = celestialObjectPools.getSphereGeometry(radius * 1.05);
+    // ジオメトリは単位サイズ（半径1）で作成
+    const atmosphereGeometry = celestialObjectPools.getSphereGeometry(1);
     const atmosphereSphere = new THREE.Mesh(atmosphereGeometry, atmosphereMaterial);
     atmosphereSphere.name = 'atmosphere';
+    // 大気はオリジナルの1.05倍のサイズ
     atmosphereSphere.scale.set(radius * 1.05, radius * 1.05, radius * 1.05);
     (atmosphereSphere.userData as any).originalRadius = radius * 1.05;
     (atmosphereSphere.userData as any).materialType = 'atmosphere';

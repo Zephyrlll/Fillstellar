@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { ResourceStorage } from './resourceSystem.js';
+import { physicsConfig } from './physicsConfig.js';
 
 // --- Type Definitions ---
 
@@ -271,12 +272,19 @@ export class GameStateManager {
             this.updateCount++;
             if (this.updateCount > this.MAX_UPDATES_PER_FRAME) {
                 // 緊急対応: 異常な更新回数を検出
-                if (this.updateCount % 1000 === 0) {
-                    console.error(`[STATE] CRITICAL: Excessive updates detected (${this.updateCount}). Possible infinite loop!`);
+                if (this.updateCount === this.MAX_UPDATES_PER_FRAME + 1) {
+                    console.error(`[STATE] CRITICAL: Excessive updates detected (${this.updateCount}). Update skipped to prevent infinite loop!`);
                     console.trace('Call stack trace:');
+                    
+                    // デバッグ情報: どの更新が問題を起こしているか
+                    const updaterString = updater.toString();
+                    if (updaterString.length < 200) {
+                        console.error('[STATE] Problem updater:', updaterString);
+                    } else {
+                        console.error('[STATE] Problem updater (truncated):', updaterString.substring(0, 200) + '...');
+                    }
                 }
-                // より長いディレイでスロットリング
-                setTimeout(() => this.updateState(updater), 100);
+                // 更新をスキップして無限ループを防ぐ
                 return;
             }
 
@@ -487,13 +495,8 @@ const initialGameState: GameState = {
     thoughtSpeedMps: 0,
     cosmicActivity: 0,
     physics: {
-        G: 100,
-        softeningFactor: 20,
-        simulationSpeed: 1,
-        timeStep: 1 / 120,
-        accumulator: 0,
-        dragFactor: 0.01,
-        collisionDetectionEnabled: true
+        ...physicsConfig.getPhysics(),
+        accumulator: 0
     },
     researchEnhancedDust: false,
     researchAdvancedEnergy: false,

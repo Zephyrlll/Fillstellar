@@ -1,8 +1,9 @@
 import * as THREE from 'three';
 import { GALAXY_BOUNDARY } from './constants.js';
 import { mathCache } from './utils.js';
-import { gameState, CelestialBody } from './state.js';
+import { gameState, gameStateManager, CelestialBody } from './state.js';
 import { addTimelineLog } from './timeline.js';
+import { physicsConfig } from './physicsConfig.js';
 
 export class SpatialGrid {
     worldSize: number;
@@ -60,7 +61,10 @@ export class SpatialGrid {
     }
 }
 
-export const spatialGrid = new SpatialGrid(GALAXY_BOUNDARY * 2, 1000);
+export const spatialGrid = new SpatialGrid(
+    physicsConfig.getBoundaries().galaxyBoundary * 2, 
+    physicsConfig.getPerformance().spatialGridCellSize
+);
 
 // Collision detection structures
 interface CollisionPair {
@@ -197,10 +201,20 @@ export function handleCollision(body1: CelestialBody, body2: CelestialBody) {
     // Add timeline log entry
     addTimelineLog(`${survivor.userData.name} merged with ${absorbed.userData.name}`, 'collision');
 
-    // Update cosmic statistics
-    if (gameState.statistics) {
-        gameState.statistics.cosmic.totalMass.current += absorbedMass;
-    }
+    // Update cosmic statistics through state manager
+    gameStateManager.updateState(state => ({
+        ...state,
+        statistics: {
+            ...state.statistics,
+            cosmic: {
+                ...state.statistics.cosmic,
+                totalMass: {
+                    ...state.statistics.cosmic.totalMass,
+                    current: state.statistics.cosmic.totalMass.current + absorbedMass
+                }
+            }
+        }
+    }));
 }
 
 export function updatePhysics(deltaTime: number) {
@@ -208,9 +222,13 @@ export function updatePhysics(deltaTime: number) {
         return;
     }
 
-    const G = gameState.physics.G;
-    const softeningFactorSq = mathCache.softeningFactorSq || (gameState.physics.softeningFactor * gameState.physics.softeningFactor);
-    const dragFactor = gameState.physics.dragFactor || 0.01;
+    const physicsSettings = physicsConfig.getPhysics();
+    const boundarySettings = physicsConfig.getBoundaries();
+    const performanceSettings = physicsConfig.getPerformance();
+    
+    const G = physicsSettings.G;
+    const softeningFactorSq = mathCache.softeningFactorSq || (physicsSettings.softeningFactor * physicsSettings.softeningFactor);
+    const dragFactor = physicsSettings.dragFactor;
 
     // Clear spatial grid and repopulate
     spatialGrid.clear();
@@ -221,7 +239,7 @@ export function updatePhysics(deltaTime: number) {
     });
 
     // Detect collisions before physics update (if enabled)
-    if (gameState.physics.collisionDetectionEnabled) {
+    if (physicsSettings.collisionDetectionEnabled) {
         const collisions = detectCollisions();
         
         // Debug logging
@@ -244,6 +262,30 @@ export function updatePhysics(deltaTime: number) {
 
         const userData = body.userData;
         
+        // Debug: Log black hole and star interactions
+        if (body.userData.type === 'star' && gameState.stars.some(s => s.userData.type === 'black_hole')) {
+            const blackHole = gameState.stars.find(s => s.userData.type === 'black_hole');
+            if (blackHole) {
+                const dist = body.position.distanceTo(blackHole.position);
+                const speed = userData.velocity.length();
+                const escapeVelocity = Math.sqrt(2 * G * blackHole.userData.mass / dist);
+                const circularVelocity = Math.sqrt(G * blackHole.userData.mass / dist);
+                
+                if (Math.random() < 0.01) { // Log occasionally
+                    console.log('[PHYSICS] Orbital analysis:', {
+                        distance: dist,
+                        currentSpeed: speed,
+                        circularSpeed: circularVelocity,
+                        escapeSpeed: escapeVelocity,
+                        speedRatio: speed / circularVelocity,
+                        G: G,
+                        BHMass: blackHole.userData.mass,
+                        StarMass: userData.mass
+                    });
+                }
+            }
+        }
+        
         if (!userData.velocity) {
             userData.velocity = new THREE.Vector3(0, 0, 0);
         }
@@ -253,8 +295,8 @@ export function updatePhysics(deltaTime: number) {
 
         userData.acceleration.set(0, 0, 0);
 
-        const nearby = spatialGrid.getNearbyObjects(body, 2000);
-        nearby.forEach(other => {
+        // 重力計算をより直接的に行う - すべての天体との相互作用を計算
+        gameState.stars.forEach(other => {
             if (other === body || !other.userData) return;
 
             const distance = body.position.distanceTo(other.position);
@@ -263,7 +305,21 @@ export function updatePhysics(deltaTime: number) {
             const force = G * (userData.mass || 1) * (other.userData.mass || 1) / (distance * distance + softeningFactorSq);
             const direction = other.position.clone().sub(body.position).normalize();
             
-            userData.acceleration.add(direction.multiplyScalar(force / (userData.mass || 1)));
+            const acceleration = direction.multiplyScalar(force / (userData.mass || 1));
+            userData.acceleration.add(acceleration);
+            
+            // デバッグ: ブラックホールとの相互作用をログ
+            if (body.userData.type === 'star' && other.userData.type === 'black_hole') {
+                if (Math.random() < 0.05) {
+                    console.log('[PHYSICS] Gravity calculation:', {
+                        distance: distance,
+                        force: force,
+                        acceleration: acceleration.length(),
+                        G: G,
+                        masses: { star: userData.mass, blackHole: other.userData.mass }
+                    });
+                }
+            }
         });
 
         userData.velocity.multiplyScalar(1 - dragFactor * deltaTime);
@@ -272,26 +328,29 @@ export function updatePhysics(deltaTime: number) {
 
         body.position.add(userData.velocity.clone().multiplyScalar(deltaTime));
 
-        const boundary = GALAXY_BOUNDARY;
+        const boundary = boundarySettings.galaxyBoundary;
         const distance = body.position.length();
         
         // Gradual boundary with soft bounce
-        if (distance > boundary * 0.9) {
-            const softnessZone = boundary * 0.1;
-            const penetration = distance - (boundary * 0.9);
+        if (distance > boundary * boundarySettings.softBoundaryRatio) {
+            const softnessZone = boundary * (1 - boundarySettings.softBoundaryRatio);
+            const penetration = distance - (boundary * boundarySettings.softBoundaryRatio);
             const bounceForce = Math.min(penetration / softnessZone, 1.0);
             
             // Apply gradual velocity reduction and gentle push back
             const pushDirection = body.position.clone().normalize().multiplyScalar(-1);
-            const pushForce = bounceForce * 0.1;
+            const pushForce = bounceForce * boundarySettings.bounceForce;
             
             userData.velocity.add(pushDirection.multiplyScalar(pushForce));
-            userData.velocity.multiplyScalar(1 - bounceForce * 0.02);
+            // Only apply velocity damping if dragFactor > 0
+            if (dragFactor > 0) {
+                userData.velocity.multiplyScalar(1 - bounceForce * 0.02);
+            }
             
             // Hard boundary as last resort
             if (distance > boundary) {
                 body.position.normalize().multiplyScalar(boundary);
-                userData.velocity.multiplyScalar(0.3);
+                userData.velocity.multiplyScalar(boundarySettings.boundaryDamping);
             }
         }
     });

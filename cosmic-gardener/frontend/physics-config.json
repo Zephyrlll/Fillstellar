@@ -1,0 +1,27 @@
+{
+  "physics": {
+    "G": 100,
+    "softeningFactor": 1,
+    "simulationSpeed": 1,
+    "timeStep": 0.00833,
+    "dragFactor": 0,
+    "collisionDetectionEnabled": true
+  },
+  "orbitalMechanics": {
+    "enableKeplerianOrbits": true,
+    "orbitalDecayRate": 0.0001,
+    "tidalLockingEnabled": false,
+    "orbitalSpeedMultiplier": 1.0
+  },
+  "boundaries": {
+    "galaxyBoundary": 50000,
+    "softBoundaryRatio": 0.9,
+    "bounceForce": 0.1,
+    "boundaryDamping": 0.3
+  },
+  "performance": {
+    "spatialGridCellSize": 1000,
+    "nearbySearchRadius": 10000,
+    "maxPhysicsUpdatesPerFrame": 1000
+  }
+}

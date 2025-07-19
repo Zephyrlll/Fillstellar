@@ -111,10 +111,8 @@ export const celestialObjectPools = {
     },
 
     getSphereGeometry(radius: number): THREE.SphereGeometry {
-        let pool;
-        if (radius <= 5) pool = this.sphereGeometries.small;
-        else if (radius <= 20) pool = this.sphereGeometries.medium;
-        else pool = this.sphereGeometries.large;
+        // 常に半径1のジオメトリを返す（スケールはメッシュで行う）
+        const pool = this.sphereGeometries.small;
         
         const geometry = pool.pop();
         if (geometry) {

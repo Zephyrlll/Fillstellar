@@ -9,6 +9,7 @@ import { mathCache } from './utils.js';
 import { addTimelineLog } from './timeline.js';
 import { soundManager } from './sound.js';
 import { graphicsEngine } from './graphicsEngine.js';
+import { physicsConfig } from './physicsConfig.js';
 
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
@@ -364,7 +365,8 @@ export function setupEventListeners() {
                 return;
             }
 
-            const orbitalSpeed = Math.sqrt((gameState.physics.G * (focusedObject.userData as StarUserData).mass) / orbitalRadius);
+            const gameScaleFactor = 0.15; // 接線速度を1.5倍に増加
+            const orbitalSpeed = Math.sqrt((gameState.physics.G * (focusedObject.userData as StarUserData).mass) / orbitalRadius) * gameScaleFactor;
 
             if (!isFinite(orbitalSpeed)) {
                 console.error(`[Creation Error] Calculated orbitalSpeed is not finite (${orbitalSpeed}) for ${type}. Skipping creation.`);
@@ -449,19 +451,26 @@ export function setupEventListeners() {
                 cosmicDust: state.resources.cosmicDust - cost
             }
         }));
-        const radius = 5000 + Math.random() * 10000;
+        const radius = 8000 + Math.random() * 6000;  // 8000-14000 game units (80-140 AU)
         const angle = Math.random() * Math.PI * 2;
         const position = new THREE.Vector3(radius * Math.cos(angle), (Math.random() - 0.5) * 100, radius * Math.sin(angle));
         const blackHole = gameState.stars.find(s => s.userData.type === 'black_hole');
-        const blackHoleMass = blackHole ? (blackHole.userData.mass as number) : 100000;
-        const orbitalSpeed = Math.sqrt((gameState.physics.G * blackHoleMass) / radius);
+        const blackHoleMass = blackHole ? (blackHole.userData.mass as number) : 1e7;
+        const speedMultiplier = physicsConfig.getOrbitalMechanics().orbitalSpeedMultiplier;
+        const G = physicsConfig.getPhysics().G;
+        const gameScaleFactor = 0.95; // 楕円軌道のために少し遅く
+        const orbitalSpeed = Math.sqrt((G * blackHoleMass) / radius) * speedMultiplier * gameScaleFactor;
         const velocity = new THREE.Vector3(-position.z, 0, position.x).normalize().multiplyScalar(orbitalSpeed);
+        
+        
         const newStar = createCelestialBody('star', { name, position, velocity });
         gameStateManager.updateState(state => ({
             ...state,
             stars: [...state.stars, newStar]
         }));
         scene.add(newStar);
+        
+        
         focusOnStar(newStar);
         
         // 恒星作成サウンドの再生
@@ -1159,6 +1168,55 @@ export function setupEventListeners() {
             soundManager.playUISound('click');
         });
     }
+
+    // Orbit trail toggle button
+    const orbitTrailToggleButton = document.getElementById('orbitTrailToggle');
+    if (orbitTrailToggleButton) {
+        orbitTrailToggleButton.addEventListener('click', () => {
+            import('./orbitTrails.js').then(({ orbitTrailSystem }) => {
+                const isEnabled = orbitTrailSystem.toggle();
+                orbitTrailToggleButton.textContent = isEnabled ? 'オン' : 'オフ';
+                orbitTrailToggleButton.classList.toggle('active', isEnabled);
+                showMessage(isEnabled ? '軌道トレイル表示を有効にしました' : '軌道トレイル表示を無効にしました');
+                soundManager.playUISound('click');
+            });
+        });
+    }
+
+    // Orbit trail length slider
+    const orbitTrailLengthSlider = document.getElementById('orbitTrailLengthSlider') as HTMLInputElement;
+    const orbitTrailLengthValue = document.getElementById('orbitTrailLengthValue');
+    if (orbitTrailLengthSlider && orbitTrailLengthValue) {
+        orbitTrailLengthSlider.addEventListener('input', () => {
+            const value = parseInt(orbitTrailLengthSlider.value);
+            orbitTrailLengthValue.textContent = value.toString();
+            import('./orbitTrails.js').then(({ orbitTrailSystem }) => {
+                orbitTrailSystem.setMaxPoints(value);
+            });
+        });
+    }
+
+    // Orbit trail type filters
+    const typeCheckboxes = [
+        { id: 'trailTypeBlackHole', type: 'black_hole' },
+        { id: 'trailTypeStar', type: 'star' },
+        { id: 'trailTypePlanet', type: 'planet' },
+        { id: 'trailTypeMoon', type: 'moon' },
+        { id: 'trailTypeAsteroid', type: 'asteroid' },
+        { id: 'trailTypeComet', type: 'comet' }
+    ];
+
+    typeCheckboxes.forEach(({ id, type }) => {
+        const checkbox = document.getElementById(id) as HTMLInputElement;
+        if (checkbox) {
+            checkbox.addEventListener('change', () => {
+                import('./orbitTrails.js').then(({ orbitTrailSystem }) => {
+                    orbitTrailSystem.toggleType(type);
+                    soundManager.playUISound('click');
+                });
+            });
+        }
+    });
 
     if (ui.resetGameButton) {
         ui.resetGameButton.addEventListener('click', () => {

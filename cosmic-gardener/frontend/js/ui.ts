@@ -53,6 +53,7 @@ export const ui: { [key: string]: HTMLElement | null } = {
     focusedStarMass: document.getElementById('focused-star-mass'),
     focusedStarLifespan: document.getElementById('focused-star-lifespan'),
     focusedStarSpeed: document.getElementById('focused-star-speed'),
+    focusedStarDistance: document.getElementById('focused-star-distance'),
     focusedPlanetType: document.getElementById('focused-planet-type'),
     focusedPlanetMass: document.getElementById('focused-planet-mass'),
     focusedPlanetRadius: document.getElementById('focused-planet-radius'),
@@ -65,6 +66,7 @@ export const ui: { [key: string]: HTMLElement | null } = {
     focusedPlanetGeology: document.getElementById('focusedPlanetGeology'),
     focusedPlanetGeologyRow: document.getElementById('focused-planet-geology-row'),
     focusedPlanetSpeed: document.getElementById('focused-planet-speed'),
+    focusedPlanetDistance: document.getElementById('focused-planet-distance'),
     researchEnhancedDustStatus: document.getElementById('researchEnhancedDustStatus'),
     researchAdvancedEnergyStatus: document.getElementById('researchAdvancedEnergyStatus'),
     researchMoonStatus: document.getElementById('researchMoonStatus'),
@@ -183,7 +185,18 @@ function updateFocusedBodyUI() {
             if (ui.focusedStarTemp) ui.focusedStarTemp.textContent = String(starData.temperature);
             if (ui.focusedStarMass) ui.focusedStarMass.textContent = String(starData.mass);
             if (ui.focusedStarLifespan) ui.focusedStarLifespan.textContent = String(starData.lifespan);
-            if (ui.focusedStarSpeed) ui.focusedStarSpeed.textContent = starData.velocity.length().toFixed(2);
+            if (ui.focusedStarSpeed) {
+                // ゲーム単位をkm/sに変換（1ゲーム単位 = 10 km/s と仮定）
+                const speedKmPerS = starData.velocity.length() * 10;
+                ui.focusedStarSpeed.textContent = speedKmPerS.toFixed(2);
+            }
+            // ブラックホールとの距離を計算
+            const blackHole = gameState.stars.find(s => s.userData.type === 'black_hole');
+            if (blackHole && ui.focusedStarDistance) {
+                const distance = focusedBody.position.distanceTo(blackHole.position);
+                // 1 AU = 100 game units として計算
+                ui.focusedStarDistance.textContent = (distance / 100).toFixed(2);
+            }
         } else if (userData.type === 'planet') {
             const planetData = userData as PlanetUserData;
             if (ui.focusedPlanetMass) ui.focusedPlanetMass.textContent = String(planetData.mass);
@@ -194,7 +207,18 @@ function updateFocusedBodyUI() {
             if (ui.focusedPlanetHasLife) ui.focusedPlanetHasLife.textContent = planetData.hasLife ? 'はい' : 'いいえ';
             if (ui.focusedPlanetLifeStage) ui.focusedPlanetLifeStage.textContent = planetData.lifeStage || '--';
             if (ui.focusedPlanetPopulation) ui.focusedPlanetPopulation.textContent = Math.floor(planetData.population || 0).toLocaleString();
-            if (ui.focusedPlanetSpeed) ui.focusedPlanetSpeed.textContent = planetData.velocity.length().toFixed(2);
+            if (ui.focusedPlanetSpeed) {
+                // ゲーム単位をkm/sに変換（1ゲーム単位 = 10 km/s と仮定）
+                const speedKmPerS = planetData.velocity.length() * 10;
+                ui.focusedPlanetSpeed.textContent = speedKmPerS.toFixed(2);
+            }
+            // ブラックホールとの距離を計算
+            const blackHolePlanet = gameState.stars.find(s => s.userData.type === 'black_hole');
+            if (blackHolePlanet && ui.focusedPlanetDistance) {
+                const distance = focusedBody.position.distanceTo(blackHolePlanet.position);
+                // 1 AU = 100 game units として計算
+                ui.focusedPlanetDistance.textContent = (distance / 100).toFixed(2);
+            }
         }
         return;
     }
@@ -211,7 +235,18 @@ function updateFocusedBodyUI() {
             if (ui.focusedStarTemp) ui.focusedStarTemp.textContent = String(starData.temperature);
             if (ui.focusedStarMass) ui.focusedStarMass.textContent = String(starData.mass);
             if (ui.focusedStarLifespan) ui.focusedStarLifespan.textContent = String(starData.lifespan);
-            if (ui.focusedStarSpeed) ui.focusedStarSpeed.textContent = starData.velocity.length().toFixed(2);
+            if (ui.focusedStarSpeed) {
+                // ゲーム単位をkm/sに変換（1ゲーム単位 = 10 km/s と仮定）
+                const speedKmPerS = starData.velocity.length() * 10;
+                ui.focusedStarSpeed.textContent = speedKmPerS.toFixed(2);
+            }
+            // ブラックホールとの距離を計算
+            const blackHoleStar = gameState.stars.find(s => s.userData.type === 'black_hole');
+            if (blackHoleStar && ui.focusedStarDistance) {
+                const distance = focusedBody.position.distanceTo(blackHoleStar.position);
+                // 1 AU = 100 game units として計算
+                ui.focusedStarDistance.textContent = (distance / 100).toFixed(2);
+            }
         } else if (userData.type === 'planet') {
             const planetData = userData as PlanetUserData;
             if (ui.starParameters) ui.starParameters.classList.add('hidden');
@@ -225,7 +260,18 @@ function updateFocusedBodyUI() {
             if (ui.focusedPlanetHasLife) ui.focusedPlanetHasLife.textContent = planetData.hasLife ? 'はい' : 'いいえ';
             if (ui.focusedPlanetLifeStage) ui.focusedPlanetLifeStage.textContent = planetData.lifeStage || '--';
             if (ui.focusedPlanetPopulation) ui.focusedPlanetPopulation.textContent = Math.floor(planetData.population || 0).toLocaleString();
-            if (ui.focusedPlanetSpeed) ui.focusedPlanetSpeed.textContent = planetData.velocity.length().toFixed(2);
+            if (ui.focusedPlanetSpeed) {
+                // ゲーム単位をkm/sに変換（1ゲーム単位 = 10 km/s と仮定）
+                const speedKmPerS = planetData.velocity.length() * 10;
+                ui.focusedPlanetSpeed.textContent = speedKmPerS.toFixed(2);
+            }
+            // ブラックホールとの距離を計算  
+            const blackHole2 = gameState.stars.find(s => s.userData.type === 'black_hole');
+            if (blackHole2 && ui.focusedPlanetDistance) {
+                const distance = focusedBody.position.distanceTo(blackHole2.position);
+                // 1 AU = 100 game units として計算
+                ui.focusedPlanetDistance.textContent = (distance / 100).toFixed(2);
+            }
             if (planetData.geologicalActivity) {
                 if (ui.focusedPlanetGeologyRow) ui.focusedPlanetGeologyRow.style.display = '';
                 if (ui.focusedPlanetGeology) ui.focusedPlanetGeology.textContent = `${(parseFloat(planetData.geologicalActivity) * 100).toFixed(0)} %`;

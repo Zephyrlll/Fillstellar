@@ -28,6 +28,12 @@ import { graphicsEngine } from './js/graphicsEngine.ts';
 import { updatePerformanceDisplay } from './js/ui.ts';
 // Research Lab UI
 import { initializeResearchLab } from './js/researchLab.ts';
+// Physics config
+import { physicsConfig } from './js/physicsConfig.ts';
+// Debug physics
+import './js/debugPhysics.ts';
+// Orbit trails
+import { orbitTrailSystem } from './js/orbitTrails.ts';
 
 // Expose graphicsEngine globally for synchronous access from saveload.ts and debugging
 (window as any).graphicsEngine = graphicsEngine;
@@ -88,11 +94,16 @@ function animate() {
     }
     requestAnimationFrame(animate);
     
+    // Reset update counter at the start of each frame
+    gameStateManager.resetUpdateCounter();
+    
     // Update performance monitor
     performanceMonitor.update();
     
     // Check frame rate limiter - skip rendering if limited
     if (!graphicsEngine.getFrameRateLimiter().shouldRender()) {
+        // Reset update counter even when skipping frame
+        gameStateManager.resetUpdateCounter();
         return;
     }
     
@@ -101,6 +112,7 @@ function animate() {
     const rawDeltaTime = (now - gameState.lastTick) / 1000;
     if (!isFinite(rawDeltaTime) || rawDeltaTime < 0 || rawDeltaTime > 1) {
         gameStateManager.updateState(state => ({ ...state, lastTick: now }));
+        gameStateManager.resetUpdateCounter();
         return;
     }
     
@@ -113,11 +125,12 @@ function animate() {
     }
     
     const deltaTime = rawDeltaTime * timeMultiplier;
-    const animationDeltaTime = deltaTime * 0.2;
+    const animationDeltaTime = deltaTime;
     
     if (!isFinite(animationDeltaTime) || animationDeltaTime <= 0) {
         console.warn('[GAME] Invalid animationDeltaTime:', { rawDeltaTime, timeMultiplier, deltaTime, animationDeltaTime, currentTimeMultiplier: gameState.currentTimeMultiplier });
         gameStateManager.updateState(state => ({ ...state, lastTick: now }));
+        gameStateManager.resetUpdateCounter();
         return;
     }
     
@@ -131,6 +144,9 @@ function animate() {
         gameYear: state.gameYear + deltaTime / 5
     }));
     updatePhysics(animationDeltaTime);
+    
+    // 軌道トレイルを更新
+    orbitTrailSystem.update(gameState.stars);
     
     let totalVelocity = 0;
     let movingBodies = 0;
@@ -163,7 +179,7 @@ function animate() {
     gameState.stars.forEach(body => {
         spatialGrid.insert(body);
         
-        body.rotation.y += 0.3 * animationDeltaTime;
+        body.rotation.y += 0.01 * animationDeltaTime;
 
         if (body.userData.type === 'planet') {
             if ((body.userData as PlanetUserData).hasLife) {
@@ -288,9 +304,6 @@ function animate() {
     if (batchUpdates.length > 0) {
         gameStateManager.batchUpdate(batchUpdates);
     }
-    
-    // Reset update counter for next frame
-    gameStateManager.resetUpdateCounter();
     
     // Update conversion engine
     conversionEngine.update();
@@ -423,14 +436,14 @@ function init() {
     // console.log('[UI] All UI keys with overlay:', Object.keys(ui).filter(key => key.includes('overlay')));
 
     console.log('[INIT] Checking for black hole...');
-    const blackHoleExists = gameState.stars.some(star => star.userData.type === 'black_hole');
-    console.log('[INIT] Black hole exists:', blackHoleExists);
-    if (!blackHoleExists) {
+    let blackHole = gameState.stars.find(star => star.userData.type === 'black_hole');
+    console.log('[INIT] Black hole exists:', !!blackHole);
+    if (!blackHole) {
         console.log('[INIT] Creating black hole...');
-        const blackHole = createCelestialBody('black_hole', {
+        blackHole = createCelestialBody('black_hole', {
             name: 'Galactic Center',
-            mass: 10000000,
-            radius: 500,
+            mass: 1e7,  // より適度な質量
+            radius: 50,  // 適切なサイズに修正
             position: new THREE.Vector3(0, 0, 0),
             velocity: new THREE.Vector3(0, 0, 0)
         });
@@ -443,7 +456,65 @@ function init() {
         console.log('[INIT] Black hole added to scene');
     }
 
-    const blackHole = gameState.stars.find(s => s.userData.type === 'black_hole');
+    console.log('[INIT] Checking for initial star...');
+    const starExists = gameState.stars.some(star => star.userData.type === 'star');
+    console.log('[INIT] Star exists:', starExists);
+    if (!starExists && blackHole) {
+        console.log('[INIT] Creating initial star...');
+        
+        // Calculate proper orbital velocity using Kepler's laws
+        const orbitalRadius = 10000;  // 安定した軌道距離（10000 game units = 100 AU）
+        const blackHoleMass = blackHole.userData.mass || 1e7;
+        const G = physicsConfig.getPhysics().G;
+        
+        // v = sqrt(G * M / r) for circular orbit
+        const baseOrbitalSpeed = Math.sqrt(G * blackHoleMass / orbitalRadius);
+        const speedMultiplier = physicsConfig.getOrbitalMechanics().orbitalSpeedMultiplier;
+        const gameScaleFactor = 0.95; // 少し遅くして楕円軌道を作る
+        const orbitalSpeed = baseOrbitalSpeed * speedMultiplier * gameScaleFactor;
+        console.log('[INIT] Orbital speed calculation:', {
+            radius: orbitalRadius,
+            baseSpeed: baseOrbitalSpeed,
+            adjustedSpeed: orbitalSpeed,
+            multiplier: speedMultiplier,
+            escapeVelocity: baseOrbitalSpeed * Math.sqrt(2)  // 脱出速度の参考値
+        });
+        
+        // 通常の恒星作成処理を使わず、デフォルト位置で作成してから移動
+        const initialStar = createCelestialBody('star', {
+            name: 'Alpha Centauri',
+            mass: 2000,  // ゲーム単位での恒星質量
+            radius: 10,  // ゲーム内の適切なスケール
+            velocity: new THREE.Vector3(0, 0, orbitalSpeed)
+            // positionは意図的に指定しない
+        });
+        
+        // 恒星作成直後に位置を設定
+        initialStar.position.set(orbitalRadius, 0, 0);
+        // 恒星をstars配列に追加する前に、既存の恒星をチェック
+        const existingStars = gameState.stars.filter(s => s.userData.type === 'star');
+        console.log('[INIT] Existing stars:', existingStars.length);
+        
+        gameStateManager.updateState(state => ({
+            ...state,
+            stars: [...state.stars, initialStar]
+        }));
+        
+        scene.add(initialStar);
+        console.log('[INIT] Initial star added to scene at position:', initialStar.position);
+        
+        // フォーカスを初期恒星に設定
+        gameStateManager.updateState(state => ({
+            ...state,
+            focusedObject: initialStar
+        }));
+        
+        // カメラを初期恒星の近くに移動
+        camera.position.set(orbitalRadius + 500, 200, 200);
+        camera.lookAt(initialStar.position);
+    }
+
+    // Focus on black hole if it exists
     if (blackHole) {
         gameStateManager.updateState(state => ({
             ...state,

@@ -648,6 +648,7 @@
             <p>質量: <span id="focused-star-mass">--</span> 太陽質量</p>
             <p>寿命: <span id="focused-star-lifespan">--</span> 億年</p>
             <p>速度: <span id="focused-star-speed">--</span> km/s</p>
+            <p>主星との距離: <span id="focused-star-distance">--</span> AU</p>
         </div>
         <div id="planet-parameters" class="hidden">
             <p>種類: <span id="focused-planet-type">--</span></p>
@@ -661,6 +662,7 @@
             <p>生命段階: <span id="focused-planet-lifeStage">--</span></p>
             <p>人口: <span id="focused-planet-population">--</span></p>
             <p>速度: <span id="focused-planet-speed">--</span> km/s</p>
+            <p>主星との距離: <span id="focused-planet-distance">--</span> AU</p>
         </div>
     </div>
 
@@ -1024,6 +1026,52 @@
                         <p>10x 加速アンロック (コスト: <span id="timeMultiplier10xCost">--</span> TP)</p>
                         <p>状態: <span id="timeMultiplier10xStatus">--</span></p>
                         <button id="timeMultiplier10xButton">アンロック</button>
+                    </div>
+                </div>
+              </div>
+
+              <div class="collapsible-section">
+                <div class="collapsible-header" id="viewOptionsHeader">👁️ 表示オプション</div>
+                <div class="collapsible-content hidden" id="viewOptionsContent">
+                    <div class="option-item">
+                        <label for="orbitTrailToggle">軌道トレイル表示:</label>
+                        <button id="orbitTrailToggle" class="toggle-button">オフ</button>
+                        <p class="option-description">天体の軌道を可視化します</p>
+                    </div>
+                    <div class="option-item">
+                        <label for="orbitTrailLengthSlider">軌道トレイルの長さ: <span id="orbitTrailLengthValue">300</span></label>
+                        <div class="slider-container">
+                            <input type="range" id="orbitTrailLengthSlider" min="50" max="1000" value="300" step="50">
+                        </div>
+                    </div>
+                    <div class="option-item">
+                        <label>表示する天体の種類:</label>
+                        <div class="celestial-type-filters">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="trailTypeBlackHole" checked>
+                                <span>ブラックホール</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="trailTypeStar" checked>
+                                <span>恒星</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="trailTypePlanet" checked>
+                                <span>惑星</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="trailTypeMoon" checked>
+                                <span>衛星</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="trailTypeAsteroid" checked>
+                                <span>小惑星</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="trailTypeComet" checked>
+                                <span>彗星</span>
+                            </label>
+                        </div>
                     </div>
                 </div>
               </div>

@@ -15,7 +15,8 @@
       "Bash(timeout 5s npm run dev:mobile)",
       "Bash(mkdir:*)",
       "Bash(cp:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(curl:*)"
     ],
     "deny": []
   }
