@@ -36,6 +36,8 @@ import './js/debugPhysics.ts';
 import { orbitTrailSystem } from './js/orbitTrails.ts';
 // Background galaxies
 import { backgroundGalaxies } from './js/backgroundGalaxies.ts';
+// Black hole gas effect
+import { blackHoleGas } from './js/blackHoleGas.ts';
 
 // Expose graphicsEngine globally for synchronous access from saveload.ts and debugging
 (window as any).graphicsEngine = graphicsEngine;
@@ -156,6 +158,12 @@ function animate() {
     
     // 背景銀河を更新（カメラ位置を渡す）
     backgroundGalaxies.update(animationDeltaTime, camera.position);
+    
+    // ブラックホールのガス効果を更新
+    const blackHole = gameState.stars.find(star => star.userData.type === 'black_hole');
+    if (blackHole) {
+        blackHoleGas.update(animationDeltaTime, blackHole.position);
+    }
     
     let totalVelocity = 0;
     let movingBodies = 0;
@@ -473,6 +481,8 @@ function init() {
         }));
         scene.add(blackHole);
         console.log('[INIT] Black hole added to scene');
+        // ガス効果にブラックホールを設定
+        blackHoleGas.setBlackHole(blackHole);
     }
 
     console.log('[INIT] Checking for initial star...');

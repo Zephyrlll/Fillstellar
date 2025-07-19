@@ -95,7 +95,7 @@ export class BackgroundGalaxies {
         const colors = [];
         const sizes = [];
         
-        const bulgeStars = 2000; // 減らした
+        const bulgeStars = 1400; // 30%削減（2000 → 1400）
         const bulgeRadius = GALAXY_BOUNDARY * 0.3;
         
         for (let i = 0; i < bulgeStars; i++) {
@@ -144,7 +144,7 @@ export class BackgroundGalaxies {
     private createSpiralArms(): void {
         // 2本の渦巻腕を作成（より現実的）
         const armCount = 2;
-        const particlesPerArm = 3000; // 2本になったので各腕の星を増やす
+        const particlesPerArm = 2100; // 30%削減（3000 → 2100）
         const galaxyRadius = GALAXY_BOUNDARY * 0.8;
         
         for (let arm = 0; arm < armCount; arm++) {
@@ -196,7 +196,7 @@ export class BackgroundGalaxies {
             }
             
             // ダストレーンを追加（暗い領域）
-            const dustParticles = 600; // 2本なので各腕のダストを増やす
+            const dustParticles = 420; // 30%削減（600 → 420）
             for (let i = 0; i < dustParticles; i++) {
                 const t = Math.random();
                 const radius = t * galaxyRadius * 0.9;
@@ -247,7 +247,7 @@ export class BackgroundGalaxies {
         const colors = [];
         const sizes = [];
         
-        const haloStars = 800; // 減らした
+        const haloStars = 560; // 30%削減（800 → 560）
         const haloRadius = GALAXY_BOUNDARY * 1.2;
         
         for (let i = 0; i < haloStars; i++) {
@@ -295,7 +295,7 @@ export class BackgroundGalaxies {
     
     private createDistantGalaxies(): void {
         // 遠方の小さな銀河
-        const galaxyCount = 10; // 減らした
+        const galaxyCount = 7; // 30%削減（10 → 7）
         
         for (let i = 0; i < galaxyCount; i++) {
             const geometry = new THREE.BufferGeometry();
@@ -304,7 +304,7 @@ export class BackgroundGalaxies {
             const sizes = [];
             
             // 各銀河は50-100個の星で表現
-            const starCount = 50 + Math.floor(Math.random() * 50); // 減らした
+            const starCount = 35 + Math.floor(Math.random() * 35); // 30%削減
             
             // ランダムな位置に配置
             const distance = GALAXY_BOUNDARY * (1.5 + Math.random() * 1.0);
@@ -484,7 +484,7 @@ export class BackgroundGalaxies {
             'spiral', 'barred_spiral', 'elliptical', 'lenticular', 
             'irregular', 'ring', 'dwarf_elliptical', 'edge_on_spiral'
         ];
-        const galaxyCount = 12; // 増やす
+        const galaxyCount = 8; // 30%削減（12 → 8）
         
         for (let i = 0; i < galaxyCount; i++) {
             const galaxyType = galaxyTypes[i % galaxyTypes.length];
@@ -553,7 +553,7 @@ export class BackgroundGalaxies {
         const bulgeColors = [];
         const bulgeSizes = [];
         
-        const bulgeStars = 300;
+        const bulgeStars = 210; // 30%削減
         for (let i = 0; i < bulgeStars; i++) {
             const r = Math.pow(Math.random(), 0.5) * 300;
             const theta = Math.random() * Math.PI * 2;
@@ -596,7 +596,7 @@ export class BackgroundGalaxies {
             const armColors = [];
             const armSizes = [];
             
-            const armStars = 400;
+            const armStars = 280; // 30%削減
             const armAngle = arm * Math.PI;
             
             for (let i = 0; i < armStars; i++) {
@@ -649,7 +649,7 @@ export class BackgroundGalaxies {
         const colors = [];
         const sizes = [];
         
-        const starCount = 800;
+        const starCount = 560; // 30%削減
         for (let i = 0; i < starCount; i++) {
             // 楕円形の分布
             const r = Math.pow(Math.random(), 0.6) * 600;
@@ -702,7 +702,7 @@ export class BackgroundGalaxies {
             const clusterY = (Math.random() - 0.5) * 200;
             const clusterZ = (Math.random() - 0.5) * 400;
             
-            const starsInCluster = 200 + Math.floor(Math.random() * 200);
+            const starsInCluster = 140 + Math.floor(Math.random() * 140); // 30%削減
             
             for (let i = 0; i < starsInCluster; i++) {
                 // 不規則な分布
@@ -754,7 +754,7 @@ export class BackgroundGalaxies {
         const barColors = [];
         const barSizes = [];
         
-        const barStars = 400;
+        const barStars = 280; // 30%削減
         for (let i = 0; i < barStars; i++) {
             // 棒状の分布
             const t = (Math.random() - 0.5) * 2;
@@ -794,7 +794,7 @@ export class BackgroundGalaxies {
             const armColors = [];
             const armSizes = [];
             
-            const armStars = 300;
+            const armStars = 210; // 30%削減
             const startX = arm === 0 ? 400 : -400;
             
             for (let i = 0; i < armStars; i++) {
@@ -845,7 +845,7 @@ export class BackgroundGalaxies {
         const colors = [];
         const sizes = [];
         
-        const starCount = 1000;
+        const starCount = 700; // 30%削減
         for (let i = 0; i < starCount; i++) {
             // レンズ状の分布（中心が厚く、端が薄い）
             const r = Math.pow(Math.random(), 0.5) * 700;
@@ -896,7 +896,7 @@ export class BackgroundGalaxies {
         const coreColors = [];
         const coreSizes = [];
         
-        const coreStars = 200;
+        const coreStars = 140; // 30%削減
         for (let i = 0; i < coreStars; i++) {
             const r = Math.pow(Math.random(), 0.8) * 150;
             const theta = Math.random() * Math.PI * 2;
@@ -937,7 +937,7 @@ export class BackgroundGalaxies {
         const ringColors = [];
         const ringSizes = [];
         
-        const ringStars = 800;
+        const ringStars = 560; // 30%削減
         const innerRadius = 400;
         const ringWidth = 150;
         
@@ -984,7 +984,7 @@ export class BackgroundGalaxies {
         const colors = [];
         const sizes = [];
         
-        const starCount = 300; // 少ない星
+        const starCount = 210; // 30%削減
         for (let i = 0; i < starCount; i++) {
             const r = Math.pow(Math.random(), 0.4) * 250; // 小さい
             const theta = Math.random() * Math.PI * 2;
@@ -1028,7 +1028,7 @@ export class BackgroundGalaxies {
         const colors = [];
         const sizes = [];
         
-        const starCount = 1200;
+        const starCount = 840; // 30%削減
         for (let i = 0; i < starCount; i++) {
             // 薄い円盤状の分布
             const x = (Math.random() - 0.5) * 1600;
@@ -1054,7 +1054,7 @@ export class BackgroundGalaxies {
         }
         
         // ダストレーン（暗い帯）
-        const dustCount = 300;
+        const dustCount = 210; // 30%削減
         for (let i = 0; i < dustCount; i++) {
             const x = (Math.random() - 0.5) * 1400;
             const y = (Math.random() - 0.5) * 5; // 非常に薄い
