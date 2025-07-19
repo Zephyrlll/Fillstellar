@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { scene } from './threeSetup.js';
 import { GALAXY_BOUNDARY } from './constants.js';
+import { starfieldOptimizer } from './starfieldOptimizer.js';
+import { gameStateManager } from './state.js';
 
 export class BackgroundGalaxies {
     private galaxyMesh: THREE.Mesh | null = null;
@@ -364,8 +366,10 @@ export class BackgroundGalaxies {
     }
     
     private createRealisticStarfield(): void {
-        // パフォーマンスモードの取得（将来的にグラフィック設定と連動）
-        const qualityMultiplier = 1.0; // TODO: graphicsEngine.getQualityMultiplier();
+        const currentState = gameStateManager.getState();
+        const resolutionScale = currentState.graphics.resolutionScale;
+        const devicePixelRatio = window.devicePixelRatio || 1;
+        const qualityMultiplier = starfieldOptimizer.getParticleDensityMultiplier(resolutionScale);
         
         // 3つの距離層で星を配置（パフォーマンス重視）
         const layers = [
@@ -419,21 +423,36 @@ export class BackgroundGalaxies {
             geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
             geometry.setAttribute('size', new THREE.Float32BufferAttribute(sizes, 1));
             
+            const optimizedSize = starfieldOptimizer.getOptimizedStarSize({
+                resolutionScale,
+                devicePixelRatio,
+                baseStarSize: layer.size,
+                starCount: layer.count
+            });
+            
             const material = new THREE.PointsMaterial({
-                size: 1,
-                sizeAttenuation: true,
+                size: optimizedSize,
+                sizeAttenuation: starfieldOptimizer.shouldUseSizeAttenuation(resolutionScale),
                 vertexColors: true,
                 transparent: true,
                 opacity: 0.9,
                 blending: THREE.AdditiveBlending,
                 depthWrite: false,
-                fog: false
+                fog: false,
+                alphaTest: starfieldOptimizer.getOptimizedAlphaTest(resolutionScale)
             });
+            
+            starfieldOptimizer.optimizeBackgroundGalaxyMaterial(material, layer.distance, resolutionScale);
             
             const stars = new THREE.Points(geometry, material);
             stars.name = `starLayer_${layerIndex}`;
             stars.frustumCulled = false;
             stars.renderOrder = -2000 - layerIndex;
+            stars.userData = {
+                layerDistance: layer.distance,
+                baseSize: layer.size,
+                isBackgroundStarfield: true
+            };
             this.galaxyGroup.add(stars);
         });
     }

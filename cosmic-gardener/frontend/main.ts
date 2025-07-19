@@ -26,6 +26,8 @@ import { currencyManager } from './js/currencySystem.ts';
 import { performanceMonitor } from './js/performanceMonitor.ts';
 import { graphicsEngine } from './js/graphicsEngine.ts';
 import { updatePerformanceDisplay } from './js/ui.ts';
+// Starfield optimization
+import { starfieldOptimizer } from './js/starfieldOptimizer.ts';
 // Research Lab UI
 import { initializeResearchLab } from './js/researchLab.ts';
 // Physics config
@@ -56,15 +58,15 @@ let wsClient: any = null;
 
 function createStarfield() {
     const starsGeometry = new THREE.BufferGeometry();
-    const starsMaterial = new THREE.PointsMaterial({ 
-        color: 0xffffff, 
-        size: 0.8, // Base size - will be adjusted by graphics engine
-        sizeAttenuation: true, // Let distance affect size for depth perception
-        transparent: true,
-        alphaTest: 0.1, // Higher threshold to reduce flickering at 300% resolution
-        opacity: 1.0, // Full opacity for maximum stability
-        depthWrite: false, // Prevent depth conflicts
-        blending: THREE.NormalBlending // More stable blending for high resolution
+    const currentState = gameStateManager.getState();
+    const resolutionScale = currentState.graphics.resolutionScale;
+    const devicePixelRatio = window.devicePixelRatio || 1;
+    
+    const starsMaterial = starfieldOptimizer.createOptimizedStarfieldMaterial({
+        resolutionScale,
+        devicePixelRatio,
+        baseStarSize: 0.8,
+        starCount: 8000
     });
     const starsVertices = [];
     const galaxySize = GALAXY_BOUNDARY * 2; // 全宇宙範囲をカバー
@@ -85,7 +87,8 @@ function createStarfield() {
     // Store original positions for particle density control
     starfield.userData = {
         originalPositions: new Float32Array(starsVertices), // Store copy of original positions
-        isStarfield: true
+        isStarfield: true,
+        baseStarSize: 0.8
     };
     
     console.log('[STARFIELD] Created with', starsVertices.length / 3, 'stars');
@@ -359,7 +362,12 @@ function animate() {
     
     // NaNエラーのデバッグ用にtry-catchを追加
     try {
-        composer.render();
+        // ポストプロセッシングが有効な場合はcomposerを使用、無効な場合は直接レンダリング
+        if (graphicsEngine.isPostProcessingEnabled()) {
+            composer.render();
+        } else {
+            renderer.render(scene, camera);
+        }
     } catch (error) {
         console.error('[RENDER] Error during rendering:', error);
     }

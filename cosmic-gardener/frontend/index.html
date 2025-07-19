@@ -329,12 +329,11 @@
           <div class="mobile-setting-item">
             <label class="setting-label">解像度スケール:</label>
             <select id="mobile-resolutionScaleSelect" class="mobile-select">
-              <option value="25">25% (超軽い)</option>
-              <option value="50">50% (軽い)</option>
-              <option value="75">75% (標準)</option>
-              <option value="100" selected>100% (高品質)</option>
-              <option value="125">125% (超高品質)</option>
-              <option value="150">150% (最高品質)</option>
+              <option value="50">50% (パフォーマンス)</option>
+              <option value="75">75% (バランス)</option>
+              <option value="100" selected>100% (標準)</option>
+              <option value="125">125% (高品質)</option>
+              <option value="200">200% (最高品質)</option>
             </select>
             <div id="mobile-resolution-hint" class="mobile-setting-hint">
               💡 解像度スケールを選択してください
@@ -801,12 +800,11 @@
                       <div class="option-item">
                           <label for="graphicsPresetSelect">プリセット:</label>
                           <select id="graphicsPresetSelect">
-                              <option value="extreme">エクストリーム (300%)</option>
                               <option value="ultra">ウルトラ (200%)</option>
-                              <option value="high">高</option>
-                              <option value="medium" selected>中</option>
-                              <option value="low">低</option>
-                              <option value="minimal">最小</option>
+                              <option value="high">高 (125%)</option>
+                              <option value="medium" selected>中 (100%)</option>
+                              <option value="low">低 (75%)</option>
+                              <option value="minimal">最小 (50%)</option>
                               <option value="custom">カスタム</option>
                           </select>
                       </div>
@@ -833,14 +831,11 @@
                           <div class="option-item">
                               <label for="resolutionScaleSelect">解像度スケール:</label>
                               <select id="resolutionScaleSelect">
-                                  <option value="25">25% (最低品質)</option>
-                                  <option value="50">50% (低品質)</option>
-                                  <option value="75">75% (中品質)</option>
+                                  <option value="50">50% (パフォーマンス)</option>
+                                  <option value="75">75% (バランス)</option>
                                   <option value="100" selected>100% (標準)</option>
                                   <option value="125">125% (高品質)</option>
-                                  <option value="150">150% (超高品質)</option>
-                                  <option value="200">200% (ウルトラ高品質)</option>
-                                  <option value="300">300% (極限品質)</option>
+                                  <option value="200">200% (最高品質)</option>
                               </select>
                           </div>
                           

@@ -455,6 +455,9 @@ export class CelestialBodyFactory {
     const body = new THREE.Mesh(starSphereGeometry, starMaterial);
     // スケールで実際の半径を設定
     body.scale.set(params.radius, params.radius, params.radius);
+    // シャドウの設定
+    body.castShadow = true;
+    body.receiveShadow = true;
     
     
     (body.userData as any).originalRadius = params.radius;
@@ -490,6 +493,9 @@ export class CelestialBodyFactory {
     const planetMesh = new THREE.Mesh(planetGeometry, planetMaterial);
     // スケールで実際の半径を設定
     planetMesh.scale.set(params.radius, params.radius, params.radius);
+    // シャドウの設定
+    planetMesh.castShadow = true;
+    planetMesh.receiveShadow = true;
     (planetMesh.userData as any).originalRadius = params.radius;
     (planetMesh.userData as any).materialType = 'planet';
     
@@ -523,6 +529,9 @@ export class CelestialBodyFactory {
     const body = new THREE.Mesh(moonGeometry, moonMaterial);
     // スケールで実際の半径を設定
     body.scale.set(params.radius, params.radius, params.radius);
+    // シャドウの設定
+    body.castShadow = true;
+    body.receiveShadow = true;
     
     // アウトライン追加
     this.addOutline(body, params.radius, 0xffffff, 0.2);
@@ -547,6 +556,9 @@ export class CelestialBodyFactory {
     
     // スケールで実際の半径を設定
     body.scale.set(safeRadius, safeRadius, safeRadius);
+    // シャドウの設定
+    body.castShadow = true;
+    body.receiveShadow = true;
     
     // アウトライン追加
     this.addOutline(body, safeRadius, 0xaaaaaa, 0.15);
@@ -566,6 +578,9 @@ export class CelestialBodyFactory {
     const body = new THREE.Mesh(coreGeometry, coreMaterial);
     // スケールで実際の半径を設定
     body.scale.set(params.radius, params.radius, params.radius);
+    // シャドウの設定
+    body.castShadow = true;
+    body.receiveShadow = true;
     
     // コマ効果
     const comaGeometry = new THREE.SphereGeometry(1, 12, 12);
@@ -597,6 +612,9 @@ export class CelestialBodyFactory {
     const body = new THREE.Mesh(dwarfGeometry, dwarfMaterial);
     // スケールで実際の半径を設定
     body.scale.set(params.radius, params.radius, params.radius);
+    // シャドウの設定
+    body.castShadow = true;
+    body.receiveShadow = true;
     return body;
   }
 

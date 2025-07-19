@@ -16,15 +16,23 @@ if (!canvas) {
     throw new Error("Could not find canvas element with id 'game-canvas'");
 }
 
-export const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+export const renderer = new THREE.WebGLRenderer({ 
+    canvas: canvas, 
+    antialias: true,
+    powerPreference: "high-performance"
+});
 renderer.setSize(window.innerWidth, window.innerHeight);
+
+// シャドウマップの初期設定
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
 // --- ポストプロセッシング -----------------------------------------------------
 export const composer = new EffectComposer(renderer);
 const renderPass = new RenderPass(scene, camera);
 composer.addPass(renderPass);
 
-const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.8, 0.6, 0.6);
+export const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.8, 0.6, 0.6);
 composer.addPass(bloomPass);
 
 // --- カメラコントロール -------------------------------------------------------
@@ -64,3 +72,20 @@ controls.zoomToCursor = false; // カーソル位置ズームを無効化（標�
 // --- 光源 ---------------------------------------------------------------------
 export const ambientLight = new THREE.AmbientLight(0x606060);
 scene.add(ambientLight);
+
+// メインの方向光源（シャドウ用）
+export const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+directionalLight.position.set(1000, 2000, 1000);
+directionalLight.castShadow = true;
+
+// シャドウマップの設定
+directionalLight.shadow.mapSize.width = 2048;
+directionalLight.shadow.mapSize.height = 2048;
+directionalLight.shadow.camera.near = 100;
+directionalLight.shadow.camera.far = 5000;
+directionalLight.shadow.camera.left = -2000;
+directionalLight.shadow.camera.right = 2000;
+directionalLight.shadow.camera.top = 2000;
+directionalLight.shadow.camera.bottom = -2000;
+
+scene.add(directionalLight);

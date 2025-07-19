@@ -632,7 +632,7 @@ export const gameState = new Proxy({} as GameState, {
 
 export const GRAPHICS_PRESETS = {
     ultra: {
-        resolutionScale: 1.25,
+        resolutionScale: 2.0,
         textureQuality: 'ultra',
         shadowQuality: 'ultra',
         antiAliasing: 'msaa8x',
@@ -649,7 +649,7 @@ export const GRAPHICS_PRESETS = {
         uiAnimations: 'smooth'
     },
     high: {
-        resolutionScale: 1.0,
+        resolutionScale: 1.25,
         textureQuality: 'high',
         shadowQuality: 'high',
         antiAliasing: 'msaa4x',
@@ -715,14 +715,52 @@ export const GRAPHICS_PRESETS = {
         objectDetail: 'low',
         backgroundDetail: 'off',
         uiAnimations: 'off'
+    },
+    mobile: {
+        resolutionScale: 0.75,
+        textureQuality: 'medium',
+        shadowQuality: 'low',
+        antiAliasing: 'off',
+        postProcessing: 'low',
+        particleDensity: 0.5,
+        viewDistance: 'medium',
+        frameRateLimit: 30,
+        vsync: 'off',
+        lightingQuality: 'medium',
+        fogEffect: 'simple',
+        renderPrecision: 'performance',
+        objectDetail: 'medium',
+        backgroundDetail: 'simple',
+        uiAnimations: 'simple'
+    },
+    performance: {
+        resolutionScale: 0.75,
+        textureQuality: 'low',
+        shadowQuality: 'off',
+        antiAliasing: 'off',
+        postProcessing: 'off',
+        particleDensity: 0.25,
+        viewDistance: 'near',
+        frameRateLimit: 60,
+        vsync: 'off',
+        lightingQuality: 'low',
+        fogEffect: 'simple',
+        renderPrecision: 'performance',
+        objectDetail: 'low',
+        backgroundDetail: 'simple',
+        uiAnimations: 'off'
     }
 } as const;
 
 // Helper function to apply preset to graphics state
-export function applyGraphicsPreset(graphics: GraphicsState, presetName: keyof typeof GRAPHICS_PRESETS): void {
+export function applyGraphicsPreset(graphics: GraphicsState, presetName: keyof typeof GRAPHICS_PRESETS): GraphicsState {
     const preset = GRAPHICS_PRESETS[presetName];
-    graphics.preset = presetName;
-    Object.assign(graphics, preset);
+    // Create a new object instead of modifying the existing one
+    return {
+        ...graphics,
+        ...preset,
+        preset: presetName
+    };
 }
 
 // Helper function to detect if current settings match a preset
