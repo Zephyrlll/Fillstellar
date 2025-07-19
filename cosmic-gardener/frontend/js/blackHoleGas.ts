@@ -78,9 +78,18 @@ export class BlackHoleGas {
         const orbitalRadii = new Float32Array(this.particleCount);
         const orbitalAngles = new Float32Array(this.particleCount);
         
-        // パーティクルを初期化
+        // パーティクルを初期化（位相をずらして配置）
         for (let i = 0; i < this.particleCount; i++) {
+            // 初期化時に位相をずらす
+            const phaseOffset = (i / this.particleCount) * Math.PI * 2;
             this.resetParticle(i, positions, colors, sizes, velocities, lifetimes, orbitalRadii, orbitalAngles);
+            
+            // 初期半径を段階的に設定
+            const t = i / this.particleCount;
+            orbitalRadii[i] = 600 + t * 2400; // 600から3000まで均等に分布
+            
+            // 各パーティクルの寿命も段階的に設定
+            lifetimes[i] = t; // 0から1まで
         }
         
         geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
@@ -186,15 +195,28 @@ export class BlackHoleGas {
         velocities: Float32Array,
         lifetimes: Float32Array,
         orbitalRadii: Float32Array,
-        orbitalAngles: Float32Array
+        orbitalAngles: Float32Array,
+        continuous: boolean = false
     ): void {
         const i3 = index * 3;
         
         // ブラックホール周辺のガスの軌道設定
         const minRadius = 600; // イベントホライゾンの外側
         const maxRadius = 3000;
-        const radius = minRadius + Math.random() * (maxRadius - minRadius);
-        const angle = Math.random() * Math.PI * 2;
+        
+        let radius: number;
+        let angle: number;
+        
+        if (continuous && orbitalRadii[index] < 650) {
+            // 連続的にリセット：外側から再開
+            radius = maxRadius - Math.random() * 500; // 外側の領域から
+            angle = orbitalAngles[index]; // 同じ角度を維持
+        } else {
+            // 通常のランダムリセット
+            radius = minRadius + Math.random() * (maxRadius - minRadius);
+            angle = Math.random() * Math.PI * 2;
+        }
+        
         const height = (Math.random() - 0.5) * 200 * (1 - radius / maxRadius); // 内側ほど薄い円盤
         
         // 初期位置
@@ -234,8 +256,8 @@ export class BlackHoleGas {
         // サイズ（内側ほど大きい）
         sizes[index] = (0.5 + temp * 1.5) * (0.8 + Math.random() * 0.4);
         
-        // 寿命
-        lifetimes[index] = 1.0;
+        // 寿命（連続的な場合はフェードインのため少し低く開始）
+        lifetimes[index] = continuous ? 0.8 : 1.0;
         
         // 速度は軌道運動で計算
         velocities[i3] = 0;
@@ -313,13 +335,28 @@ export class BlackHoleGas {
                     colors[i3 + 2] = 1.0;
                 }
                 
-                // フェードアウト効果
-                const alpha = lifetimes[i];
-                sizes[i] *= 0.99; // 徐々に小さくなる
+                // スムーズなフェード効果
+                let alpha = 1.0;
                 
-                // パーティクルをリセット
+                // フェードイン（外側の新しいパーティクル）
+                if (currentRadius > 2500) {
+                    alpha = (3000 - currentRadius) / 500;
+                }
+                
+                // フェードアウト（内側の古いパーティクル）
+                if (currentRadius < 700) {
+                    alpha = (currentRadius - 550) / 150;
+                }
+                
+                // 寿命に基づくフェード
+                alpha *= Math.min(1.0, lifetimes[i] * 2);
+                
+                // サイズに反映
+                sizes[i] = sizes[i] * 0.99 * alpha;
+                
+                // パーティクルをリセット（連続的に）
                 if (lifetimes[i] <= 0 || currentRadius < 550) {
-                    this.resetParticle(i, positions, colors, sizes, userData.velocities, lifetimes, orbitalRadii, orbitalAngles);
+                    this.resetParticle(i, positions, colors, sizes, userData.velocities, lifetimes, orbitalRadii, orbitalAngles, true);
                 }
             }
             
