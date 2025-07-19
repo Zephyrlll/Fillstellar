@@ -3,6 +3,7 @@ import { GALAXY_BOUNDARY } from './constants.js';
 import { mathCache } from './utils.js';
 import { gameState, gameStateManager, CelestialBody } from './state.js';
 import { addTimelineLog } from './timeline.js';
+import { CollisionEffects } from './collisionEffects.js';
 import { physicsConfig } from './physicsConfig.js';
 
 export class SpatialGrid {
@@ -106,6 +107,32 @@ export function detectCollisions(): CollisionPair[] {
 export function handleCollision(body1: CelestialBody, body2: CelestialBody) {
     if (!body1.userData || !body2.userData) return;
 
+    // 新しい衝突システムを使用
+    const result = CollisionEffects.processCollision(body1, body2);
+    
+    // 統計情報を更新（破壊された質量を追跡）
+    const originalTotalMass = body1.userData.mass + body2.userData.mass;
+    const survivingMass = result.survivors.reduce((sum, body) => sum + body.userData.mass, 0);
+    const destroyedMass = originalTotalMass - survivingMass;
+    
+    if (destroyedMass > 0) {
+        gameStateManager.updateState(state => ({
+            ...state,
+            statistics: {
+                ...state.statistics,
+                cosmic: {
+                    ...state.statistics.cosmic,
+                    totalMass: {
+                        ...state.statistics.cosmic.totalMass,
+                        current: Math.max(0, state.statistics.cosmic.totalMass.current - destroyedMass)
+                    }
+                }
+            }
+        }));
+    }
+    
+    return; // 以下の旧処理をスキップ
+    
     const mass1 = body1.userData.mass || 1;
     const mass2 = body2.userData.mass || 1;
     const totalMass = mass1 + mass2;

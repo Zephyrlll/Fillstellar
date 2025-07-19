@@ -57,8 +57,8 @@ export class BackgroundGalaxies {
         this.galaxyMesh.name = 'skyboxGalaxy';
         this.galaxyGroup.add(this.galaxyMesh);
         
-        // 簡単な銀河テクスチャを追加（グラデーション）
-        this.addGalaxyTexture(material);
+        // シェーダーエラーを避けるため、テクスチャ追加をスキップ
+        // this.addGalaxyTexture(material);
     }
     
     private createSpriteGalaxies(): void {
@@ -131,18 +131,31 @@ export class BackgroundGalaxies {
     }
     
     private addGalaxyTexture(material: THREE.MeshBasicMaterial): void {
-        // シェーダーで銀河風のテクスチャを追加
-        material.onBeforeCompile = (shader) => {
-            shader.fragmentShader = shader.fragmentShader.replace(
-                '#include <color_fragment>',
-                `
-                #include <color_fragment>
-                vec3 galaxyColor = vec3(0.1, 0.1, 0.3);
-                float noise = sin(vUv.x * 50.0) * cos(vUv.y * 50.0) * 0.1;
-                diffuseColor.rgb = mix(diffuseColor.rgb, galaxyColor, noise + 0.5);
-                `
-            );
-        };
+        // プロシージャルテクスチャの代わりに、単純なグラデーションカラーを使用
+        const canvas = document.createElement('canvas');
+        canvas.width = 512;
+        canvas.height = 512;
+        const ctx = canvas.getContext('2d')!;
+        
+        // 複数の放射状グラデーションで銀河の雰囲気を作成
+        for (let i = 0; i < 5; i++) {
+            const x = Math.random() * canvas.width;
+            const y = Math.random() * canvas.height;
+            const radius = Math.random() * 200 + 100;
+            
+            const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
+            gradient.addColorStop(0, 'rgba(100, 100, 200, 0.1)');
+            gradient.addColorStop(0.5, 'rgba(50, 50, 150, 0.05)');
+            gradient.addColorStop(1, 'rgba(20, 20, 80, 0)');
+            
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+        
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.needsUpdate = true;
+        material.map = texture;
+        material.needsUpdate = true;
     }
     
     getDisplayMode(): string {

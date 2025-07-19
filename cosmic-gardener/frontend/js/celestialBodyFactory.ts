@@ -84,8 +84,8 @@ export class CelestialBodyFactory {
       errors.push(`Invalid celestial type: ${type}`);
     }
 
-    // 親天体の検証（惑星、衛星などに必要）
-    if (this.requiresParent(type) && !config.parent) {
+    // 親天体の検証（惑星、衛星などに必要）- ただしロード時はスキップ
+    if (!config.isLoading && this.requiresParent(type) && !config.parent) {
       errors.push(`Type ${type} requires a parent celestial body`);
     }
 

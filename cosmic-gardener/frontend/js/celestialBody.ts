@@ -92,9 +92,42 @@ export function evolveLife(planetObject: CelestialBody) {
 }
 
 export function createCelestialBody(type: string, options: any = {}): CelestialBody {
-    // ファクトリーパターンを使用して天体を作成
-    const result = CelestialBodyFactory.create(type as CelestialType, {
-        type: type as CelestialType,
+    // 型の検証と正規化
+    const validTypes: CelestialType[] = ['star', 'planet', 'moon', 'asteroid', 'comet', 'dwarfPlanet', 'black_hole'];
+    const celestialType = validTypes.includes(type as CelestialType) ? type as CelestialType : 'asteroid';
+    
+    // セーブデータからのロード時の処理
+    if (options.isLoading && options.userData) {
+        // userDataから必要な情報を抽出
+        const config: CelestialConfig = {
+            type: celestialType,
+            name: options.userData.name || options.name,
+            position: options.position,
+            velocity: options.velocity,
+            parent: options.parent,
+            mass: options.userData.mass || options.mass,
+            radius: options.userData.radius || options.radius,
+            isLoading: true,
+            userData: options.userData
+        };
+        
+        // ファクトリーパターンを使用して天体を作成
+        const result = CelestialBodyFactory.create(celestialType, config);
+        
+        if (!result.ok) {
+            const error = (result as { ok: false; error: any }).error;
+            console.error('[CELESTIAL] Failed to create celestial body:', error);
+            console.error('[CELESTIAL] Config that failed:', config);
+            showMessage(`天体の作成に失敗しました: ${error.message}`);
+            // フォールバック処理を継続
+        } else {
+            return (result as { ok: true; value: CelestialBody }).value;
+        }
+    }
+    
+    // 通常の作成処理
+    const result = CelestialBodyFactory.create(celestialType, {
+        type: celestialType,
         name: options.name,
         position: options.position,
         velocity: options.velocity,

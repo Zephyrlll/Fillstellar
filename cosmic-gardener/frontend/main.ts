@@ -397,9 +397,9 @@ function init() {
     createStarfield();
     console.log('[INIT] Starfield created');
     
-    // 背景銀河を初期化（デフォルトはmixed）
-    backgroundGalaxies.setDisplayMode('mixed');
-    console.log('[INIT] Background galaxies created');
+    // 背景銀河を初期化（一時的に無効化）
+    // backgroundGalaxies.setDisplayMode('mixed');
+    console.log('[INIT] Background galaxies disabled temporarily');
     
     loadGame();
     console.log('[INIT] Game loaded');

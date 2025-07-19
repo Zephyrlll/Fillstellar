@@ -1,3 +1,4 @@
+import * as THREE from 'three';
 import { gameState } from './state.js';
 
 interface SoundSettings {
@@ -849,6 +850,22 @@ class SoundManager {
         osc3.stop(now + 4);
     }
 
+    // 3D空間でのサウンド再生
+    playSound(type: string, position?: THREE.Vector3): void {
+        if (!this.audioContext || !this.effectsGain || !this.initialized) return;
+        
+        switch (type) {
+            case 'collision':
+                this.playCollisionSound(position);
+                break;
+            case 'explosion':
+                this.playExplosionSound(position);
+                break;
+            default:
+                console.warn(`Unknown sound type: ${type}`);
+        }
+    }
+    
     // UIサウンド
     playUISound(type: string): void {
         if (!this.audioContext || !this.uiGain || !this.initialized) return;
@@ -957,6 +974,90 @@ class SoundManager {
         
         oscillator.start(now);
         oscillator.stop(now + 0.2);
+    }
+    
+    // 衝突音
+    private playCollisionSound(position?: THREE.Vector3): void {
+        if (!this.audioContext || !this.effectsGain) return;
+        
+        const oscillator = this.audioContext.createOscillator();
+        const noise = this.createWhiteNoise(0.1);
+        const gain = this.audioContext.createGain();
+        const filter = this.audioContext.createBiquadFilter();
+        
+        // 低周波の衝撃音
+        oscillator.type = 'sine';
+        oscillator.frequency.value = 60;
+        
+        filter.type = 'lowpass';
+        filter.frequency.value = 200;
+        
+        const now = this.audioContext.currentTime;
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+        
+        oscillator.connect(filter);
+        noise.connect(filter);
+        filter.connect(gain);
+        
+        if (position && this.settings.spatialAudio) {
+            this.connectWithSpatialAudio(gain, position, this.effectsGain);
+        } else {
+            gain.connect(this.effectsGain);
+        }
+        
+        oscillator.start(now);
+        oscillator.stop(now + 0.3);
+        noise.start(now);
+        noise.stop(now + 0.1);
+    }
+    
+    // 爆発音
+    private playExplosionSound(position?: THREE.Vector3): void {
+        if (!this.audioContext || !this.effectsGain) return;
+        
+        const noise = this.createWhiteNoise(0.5);
+        const gain = this.audioContext.createGain();
+        const filter = this.audioContext.createBiquadFilter();
+        
+        filter.type = 'lowpass';
+        filter.frequency.value = 1000;
+        
+        const now = this.audioContext.currentTime;
+        gain.gain.setValueAtTime(0.5, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 1.0);
+        
+        // フィルター周波数をスイープ
+        filter.frequency.setValueAtTime(3000, now);
+        filter.frequency.exponentialRampToValueAtTime(100, now + 0.5);
+        
+        noise.connect(filter);
+        filter.connect(gain);
+        
+        if (position && this.settings.spatialAudio) {
+            this.connectWithSpatialAudio(gain, position, this.effectsGain);
+        } else {
+            gain.connect(this.effectsGain);
+        }
+        
+        noise.start(now);
+        noise.stop(now + 1.0);
+    }
+    
+    // ホワイトノイズ生成
+    private createWhiteNoise(duration: number): AudioBufferSourceNode {
+        const bufferSize = this.audioContext!.sampleRate * duration;
+        const buffer = this.audioContext!.createBuffer(1, bufferSize, this.audioContext!.sampleRate);
+        const output = buffer.getChannelData(0);
+        
+        for (let i = 0; i < bufferSize; i++) {
+            output[i] = Math.random() * 2 - 1;
+        }
+        
+        const noise = this.audioContext!.createBufferSource();
+        noise.buffer = buffer;
+        
+        return noise;
     }
 
     // ユーティリティメソッド
