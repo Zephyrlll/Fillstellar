@@ -154,8 +154,8 @@ function animate() {
     // 軌道トレイルを更新
     orbitTrailSystem.update(gameState.stars);
     
-    // 背景銀河を更新
-    backgroundGalaxies.update(animationDeltaTime);
+    // 背景銀河を更新（カメラ位置を渡す）
+    backgroundGalaxies.update(animationDeltaTime, camera.position);
     
     let totalVelocity = 0;
     let movingBodies = 0;

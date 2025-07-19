@@ -12,8 +12,10 @@ export class BackgroundGalaxies {
     constructor() {
         this.galaxyGroup = new THREE.Group();
         this.galaxyGroup.name = 'backgroundGalaxies';
+        this.galaxyGroup.position.set(0, 0, 0); // 原点に固定
         this.nebulaeGroup = new THREE.Group();
         this.nebulaeGroup.name = 'nebulae';
+        this.nebulaeGroup.position.set(0, 0, 0); // 原点に固定
         scene.add(this.galaxyGroup);
         scene.add(this.nebulaeGroup);
     }
@@ -140,9 +142,9 @@ export class BackgroundGalaxies {
     }
     
     private createSpiralArms(): void {
-        // 4本の渦巻腕を作成
-        const armCount = 4;
-        const particlesPerArm = 1500; // 減らした
+        // 2本の渦巻腕を作成（より現実的）
+        const armCount = 2;
+        const particlesPerArm = 3000; // 2本になったので各腕の星を増やす
         const galaxyRadius = GALAXY_BOUNDARY * 0.8;
         
         for (let arm = 0; arm < armCount; arm++) {
@@ -151,16 +153,16 @@ export class BackgroundGalaxies {
             const colors = [];
             const sizes = [];
             
-            const armAngle = (arm / armCount) * Math.PI * 2;
+            const armAngle = (arm / armCount) * Math.PI * 2; // 180度離れた位置から開始
             
             for (let i = 0; i < particlesPerArm; i++) {
                 // 渦巻の方程式
                 const t = i / particlesPerArm;
                 const radius = t * galaxyRadius;
-                const spiralAngle = armAngle + t * Math.PI * 2.5; // 2.5回転
+                const spiralAngle = armAngle + t * Math.PI * 3; // 3回転でよりタイトな渦巻き
                 
-                // 腕の幅の変化
-                const armWidth = (1 - t) * galaxyRadius * 0.15;
+                // 腕の幅の変化（2本なのでより太く）
+                const armWidth = (1 - t) * galaxyRadius * 0.25;
                 const widthOffset = (Math.random() - 0.5) * armWidth;
                 const heightOffset = (Math.random() - 0.5) * galaxyRadius * 0.02; // 薄い円盤
                 
@@ -194,13 +196,13 @@ export class BackgroundGalaxies {
             }
             
             // ダストレーンを追加（暗い領域）
-            const dustParticles = 300; // 減らした
+            const dustParticles = 600; // 2本なので各腕のダストを増やす
             for (let i = 0; i < dustParticles; i++) {
                 const t = Math.random();
                 const radius = t * galaxyRadius * 0.9;
-                const spiralAngle = armAngle + t * Math.PI * 2.5 - 0.1; // 少しずらす
+                const spiralAngle = armAngle + t * Math.PI * 3 - 0.1; // 少しずらす
                 
-                const dustWidth = (1 - t) * galaxyRadius * 0.08;
+                const dustWidth = (1 - t) * galaxyRadius * 0.12;
                 const widthOffset = (Math.random() - 0.5) * dustWidth;
                 
                 const x = (radius + widthOffset) * Math.cos(spiralAngle);
@@ -355,6 +357,8 @@ export class BackgroundGalaxies {
             distantGalaxy.name = `distantGalaxy_${i}`;
             distantGalaxy.frustumCulled = false;
             distantGalaxy.renderOrder = -2002;
+            // レイヤーマスクを設定して常に描画
+            distantGalaxy.layers.set(0);
             this.galaxyGroup.add(distantGalaxy);
         }
     }
@@ -475,71 +479,611 @@ export class BackgroundGalaxies {
     }
     
     private createNebulae(): void {
-        // 星雲エフェクトを追加
-        const nebulaCount = 8;
+        // より多様な銀河タイプを追加
+        const galaxyTypes = [
+            'spiral', 'barred_spiral', 'elliptical', 'lenticular', 
+            'irregular', 'ring', 'dwarf_elliptical', 'edge_on_spiral'
+        ];
+        const galaxyCount = 12; // 増やす
         
-        for (let i = 0; i < nebulaCount; i++) {
-            // ポイントクラウドで星雲を表現
-            const particleCount = 1000;
+        for (let i = 0; i < galaxyCount; i++) {
+            const galaxyType = galaxyTypes[i % galaxyTypes.length];
+            const group = new THREE.Group();
+            
+            // 銀河の位置を設定
+            const angle = (i / galaxyCount) * Math.PI * 2 + Math.PI / 6;
+            const distance = GALAXY_BOUNDARY * (0.8 + Math.random() * 0.4);
+            const height = (Math.random() - 0.5) * GALAXY_BOUNDARY * 0.5;
+            
+            group.position.set(
+                Math.cos(angle) * distance,
+                height,
+                Math.sin(angle) * distance
+            );
+            
+            // ランダムな傾きを追加
+            group.rotation.x = (Math.random() - 0.5) * Math.PI * 0.6;
+            group.rotation.z = (Math.random() - 0.5) * Math.PI * 0.3;
+            
+            // 各銀河タイプに応じて作成
+            switch (galaxyType) {
+                case 'spiral':
+                    this.createPurpleSpiralGalaxy(group);
+                    break;
+                case 'barred_spiral':
+                    this.createPurpleBarredSpiralGalaxy(group);
+                    break;
+                case 'elliptical':
+                    this.createPurpleEllipticalGalaxy(group);
+                    break;
+                case 'lenticular':
+                    this.createPurpleLenticularGalaxy(group);
+                    break;
+                case 'ring':
+                    this.createPurpleRingGalaxy(group);
+                    break;
+                case 'dwarf_elliptical':
+                    this.createPurpleDwarfEllipticalGalaxy(group);
+                    break;
+                case 'edge_on_spiral':
+                    this.createPurpleEdgeOnSpiralGalaxy(group);
+                    break;
+                case 'irregular':
+                default:
+                    this.createPurpleIrregularGalaxy(group);
+                    break;
+            }
+            
+            group.name = `purpleGalaxy_${i}`;
+            // フラスタムカリングを無効化
+            group.traverse((child) => {
+                child.frustumCulled = false;
+                if (child instanceof THREE.Points) {
+                    child.renderOrder = -1500 - i;
+                }
+            });
+            this.nebulaeGroup.add(group);
+        }
+    }
+    
+    private createPurpleSpiralGalaxy(parent: THREE.Group): void {
+        // 中心バルジ
+        const bulgeGeometry = new THREE.BufferGeometry();
+        const bulgePositions = [];
+        const bulgeColors = [];
+        const bulgeSizes = [];
+        
+        const bulgeStars = 300;
+        for (let i = 0; i < bulgeStars; i++) {
+            const r = Math.pow(Math.random(), 0.5) * 300;
+            const theta = Math.random() * Math.PI * 2;
+            const phi = (Math.random() - 0.5) * Math.PI * 0.3;
+            
+            bulgePositions.push(
+                r * Math.cos(phi) * Math.cos(theta),
+                r * Math.sin(phi) * 0.3,
+                r * Math.cos(phi) * Math.sin(theta)
+            );
+            
+            // 紫系の色
+            const brightness = 1.2 - (r / 300) * 0.5;
+            bulgeColors.push(0.7 * brightness, 0.3 * brightness, 1.0 * brightness);
+            bulgeSizes.push(0.3 + Math.random() * 0.3);
+        }
+        
+        bulgeGeometry.setAttribute('position', new THREE.Float32BufferAttribute(bulgePositions, 3));
+        bulgeGeometry.setAttribute('color', new THREE.Float32BufferAttribute(bulgeColors, 3));
+        bulgeGeometry.setAttribute('size', new THREE.Float32BufferAttribute(bulgeSizes, 1));
+        
+        const bulgeMaterial = new THREE.PointsMaterial({
+            size: 0.8,
+            sizeAttenuation: true,
+            vertexColors: true,
+            transparent: true,
+            opacity: 0.8,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+            fog: false
+        });
+        
+        const bulge = new THREE.Points(bulgeGeometry, bulgeMaterial);
+        parent.add(bulge);
+        
+        // 渦巻き腕（2本）
+        for (let arm = 0; arm < 2; arm++) {
+            const armGeometry = new THREE.BufferGeometry();
+            const armPositions = [];
+            const armColors = [];
+            const armSizes = [];
+            
+            const armStars = 400;
+            const armAngle = arm * Math.PI;
+            
+            for (let i = 0; i < armStars; i++) {
+                const t = i / armStars;
+                const radius = t * 800;
+                const spiralAngle = armAngle + t * Math.PI * 1.5;
+                const spread = (1 - t) * 150;
+                const offset = (Math.random() - 0.5) * spread;
+                
+                armPositions.push(
+                    (radius + offset) * Math.cos(spiralAngle),
+                    (Math.random() - 0.5) * 50,
+                    (radius + offset) * Math.sin(spiralAngle)
+                );
+                
+                // 外側に行くほど青紫に
+                const brightness = 0.9 - t * 0.4;
+                const blueShift = t * 0.3;
+                armColors.push(
+                    (0.6 + blueShift) * brightness,
+                    0.4 * brightness,
+                    1.0 * brightness
+                );
+                armSizes.push(0.2 + Math.random() * 0.4);
+            }
+            
+            armGeometry.setAttribute('position', new THREE.Float32BufferAttribute(armPositions, 3));
+            armGeometry.setAttribute('color', new THREE.Float32BufferAttribute(armColors, 3));
+            armGeometry.setAttribute('size', new THREE.Float32BufferAttribute(armSizes, 1));
+            
+            const armMaterial = new THREE.PointsMaterial({
+                size: 0.6,
+                sizeAttenuation: true,
+                vertexColors: true,
+                transparent: true,
+                opacity: 0.7,
+                blending: THREE.AdditiveBlending,
+                depthWrite: false,
+                fog: false
+            });
+            
+            const spiralArm = new THREE.Points(armGeometry, armMaterial);
+            parent.add(spiralArm);
+        }
+    }
+    
+    private createPurpleEllipticalGalaxy(parent: THREE.Group): void {
+        const geometry = new THREE.BufferGeometry();
+        const positions = [];
+        const colors = [];
+        const sizes = [];
+        
+        const starCount = 800;
+        for (let i = 0; i < starCount; i++) {
+            // 楕円形の分布
+            const r = Math.pow(Math.random(), 0.6) * 600;
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.acos(2 * Math.random() - 1);
+            
+            const x = r * Math.sin(phi) * Math.cos(theta) * 1.5; // 横に伸ばす
+            const y = r * Math.cos(phi) * 0.6; // 縦に圧縮
+            const z = r * Math.sin(phi) * Math.sin(theta);
+            
+            positions.push(x, y, z);
+            
+            // 中心ほど明るい紫
+            const brightness = 1.0 - (r / 600) * 0.6;
+            colors.push(0.8 * brightness, 0.4 * brightness, 1.0 * brightness);
+            sizes.push(0.25 + Math.random() * 0.35);
+        }
+        
+        geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+        geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+        geometry.setAttribute('size', new THREE.Float32BufferAttribute(sizes, 1));
+        
+        const material = new THREE.PointsMaterial({
+            size: 0.7,
+            sizeAttenuation: true,
+            vertexColors: true,
+            transparent: true,
+            opacity: 0.75,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+            fog: false
+        });
+        
+        const elliptical = new THREE.Points(geometry, material);
+        parent.add(elliptical);
+    }
+    
+    private createPurpleIrregularGalaxy(parent: THREE.Group): void {
+        // 不規則銀河（複数の星団）
+        const clusterCount = 3 + Math.floor(Math.random() * 3);
+        
+        for (let c = 0; c < clusterCount; c++) {
             const geometry = new THREE.BufferGeometry();
             const positions = [];
             const colors = [];
             const sizes = [];
             
-            // 星雲の中心位置（より近くに）
-            const centerAngle = (i / nebulaCount) * Math.PI * 2;
-            const centerRadius = GALAXY_BOUNDARY * 1.0;
-            const centerX = Math.cos(centerAngle) * centerRadius;
-            const centerZ = Math.sin(centerAngle) * centerRadius;
-            const centerY = (Math.random() - 0.5) * GALAXY_BOUNDARY;
+            // 各星団の中心
+            const clusterX = (Math.random() - 0.5) * 400;
+            const clusterY = (Math.random() - 0.5) * 200;
+            const clusterZ = (Math.random() - 0.5) * 400;
             
-            // パーティクルを生成
-            for (let j = 0; j < particleCount; j++) {
-                // ガウス分布風の配置
+            const starsInCluster = 200 + Math.floor(Math.random() * 200);
+            
+            for (let i = 0; i < starsInCluster; i++) {
+                // 不規則な分布
+                const r = Math.random() * Math.random() * 300;
                 const theta = Math.random() * Math.PI * 2;
                 const phi = Math.random() * Math.PI;
-                const radius = Math.random() * Math.random() * 2000; // 二乗で中心に集中、より小さく
                 
-                const x = centerX + radius * Math.sin(phi) * Math.cos(theta);
-                const y = centerY + radius * Math.cos(phi);
-                const z = centerZ + radius * Math.sin(phi) * Math.sin(theta);
+                positions.push(
+                    clusterX + r * Math.sin(phi) * Math.cos(theta),
+                    clusterY + r * Math.cos(phi) * 0.7,
+                    clusterZ + r * Math.sin(phi) * Math.sin(theta)
+                );
                 
-                positions.push(x, y, z);
-                
-                // 色のバリエーション（青紫系）
-                const hue = 0.6 + Math.random() * 0.2;
-                const saturation = 0.5 + Math.random() * 0.5;
-                const lightness = 0.3 + Math.random() * 0.4;
+                // ランダムな紫のバリエーション
+                const hue = 0.75 + Math.random() * 0.1;
+                const saturation = 0.7 + Math.random() * 0.3;
+                const lightness = 0.5 + Math.random() * 0.3;
                 const color = new THREE.Color().setHSL(hue, saturation, lightness);
-                colors.push(color.r, color.g, color.b);
                 
-                // サイズのバリエーション
-                sizes.push(Math.random() * 30 + 10);
+                colors.push(color.r, color.g, color.b);
+                sizes.push(0.2 + Math.random() * 0.5);
             }
             
             geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
             geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
             geometry.setAttribute('size', new THREE.Float32BufferAttribute(sizes, 1));
             
-            // バウンディングスフィアを計算
-            geometry.computeBoundingSphere();
-            
             const material = new THREE.PointsMaterial({
-                size: 20,
+                size: 0.6,
                 sizeAttenuation: true,
                 vertexColors: true,
                 transparent: true,
-                opacity: 0.4,
+                opacity: 0.65,
                 blending: THREE.AdditiveBlending,
                 depthWrite: false,
-                fog: false,
-                depthTest: false
+                fog: false
             });
             
-            const nebula = new THREE.Points(geometry, material);
-            nebula.name = `nebula_${i}`;
-            this.nebulaeGroup.add(nebula);
+            const cluster = new THREE.Points(geometry, material);
+            parent.add(cluster);
         }
+    }
+    
+    private createPurpleBarredSpiralGalaxy(parent: THREE.Group): void {
+        // 棒渦巻銀河（中心に棒状構造）
+        // 中心の棒構造
+        const barGeometry = new THREE.BufferGeometry();
+        const barPositions = [];
+        const barColors = [];
+        const barSizes = [];
+        
+        const barStars = 400;
+        for (let i = 0; i < barStars; i++) {
+            // 棒状の分布
+            const t = (Math.random() - 0.5) * 2;
+            const x = t * 400;
+            const y = (Math.random() - 0.5) * 30;
+            const z = (Math.random() - 0.5) * 100 * (1 - Math.abs(t));
+            
+            barPositions.push(x, y, z);
+            
+            const brightness = 1.0 - Math.abs(t) * 0.3;
+            barColors.push(0.8 * brightness, 0.5 * brightness, 1.0 * brightness);
+            barSizes.push(0.4 + Math.random() * 0.4);
+        }
+        
+        barGeometry.setAttribute('position', new THREE.Float32BufferAttribute(barPositions, 3));
+        barGeometry.setAttribute('color', new THREE.Float32BufferAttribute(barColors, 3));
+        barGeometry.setAttribute('size', new THREE.Float32BufferAttribute(barSizes, 1));
+        
+        const barMaterial = new THREE.PointsMaterial({
+            size: 0.8,
+            sizeAttenuation: true,
+            vertexColors: true,
+            transparent: true,
+            opacity: 0.85,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+            fog: false
+        });
+        
+        const bar = new THREE.Points(barGeometry, barMaterial);
+        parent.add(bar);
+        
+        // 棒の端から伸びる渦巻き腕
+        for (let arm = 0; arm < 2; arm++) {
+            const armGeometry = new THREE.BufferGeometry();
+            const armPositions = [];
+            const armColors = [];
+            const armSizes = [];
+            
+            const armStars = 300;
+            const startX = arm === 0 ? 400 : -400;
+            
+            for (let i = 0; i < armStars; i++) {
+                const t = i / armStars;
+                const radius = t * 600;
+                const spiralAngle = t * Math.PI * 1.2;
+                const spread = (1 - t) * 100;
+                
+                const x = startX + radius * Math.cos(spiralAngle) * (arm === 0 ? 1 : -1);
+                const y = (Math.random() - 0.5) * 40;
+                const z = radius * Math.sin(spiralAngle);
+                
+                armPositions.push(
+                    x + (Math.random() - 0.5) * spread,
+                    y,
+                    z + (Math.random() - 0.5) * spread
+                );
+                
+                const brightness = 0.8 - t * 0.4;
+                armColors.push(0.6 * brightness, 0.4 * brightness, 1.0 * brightness);
+                armSizes.push(0.2 + Math.random() * 0.3);
+            }
+            
+            armGeometry.setAttribute('position', new THREE.Float32BufferAttribute(armPositions, 3));
+            armGeometry.setAttribute('color', new THREE.Float32BufferAttribute(armColors, 3));
+            armGeometry.setAttribute('size', new THREE.Float32BufferAttribute(armSizes, 1));
+            
+            const armMaterial = new THREE.PointsMaterial({
+                size: 0.6,
+                sizeAttenuation: true,
+                vertexColors: true,
+                transparent: true,
+                opacity: 0.7,
+                blending: THREE.AdditiveBlending,
+                depthWrite: false,
+                fog: false
+            });
+            
+            const spiralArm = new THREE.Points(armGeometry, armMaterial);
+            parent.add(spiralArm);
+        }
+    }
+    
+    private createPurpleLenticularGalaxy(parent: THREE.Group): void {
+        // レンズ状銀河（楕円と渦巻きの中間）
+        const geometry = new THREE.BufferGeometry();
+        const positions = [];
+        const colors = [];
+        const sizes = [];
+        
+        const starCount = 1000;
+        for (let i = 0; i < starCount; i++) {
+            // レンズ状の分布（中心が厚く、端が薄い）
+            const r = Math.pow(Math.random(), 0.5) * 700;
+            const theta = Math.random() * Math.PI * 2;
+            const heightScale = Math.exp(-r / 200); // 指数関数的に薄くなる
+            
+            const x = r * Math.cos(theta);
+            const y = (Math.random() - 0.5) * 100 * heightScale;
+            const z = r * Math.sin(theta);
+            
+            positions.push(x, y, z);
+            
+            // 中心は明るく、端に行くほど赤方偏移
+            const brightness = 1.0 - (r / 700) * 0.7;
+            const redshift = r / 700 * 0.2;
+            colors.push(
+                (0.7 + redshift) * brightness,
+                0.4 * brightness,
+                (1.0 - redshift) * brightness
+            );
+            sizes.push(0.3 + Math.random() * 0.3);
+        }
+        
+        geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+        geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+        geometry.setAttribute('size', new THREE.Float32BufferAttribute(sizes, 1));
+        
+        const material = new THREE.PointsMaterial({
+            size: 0.7,
+            sizeAttenuation: true,
+            vertexColors: true,
+            transparent: true,
+            opacity: 0.8,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+            fog: false
+        });
+        
+        const lenticular = new THREE.Points(geometry, material);
+        parent.add(lenticular);
+    }
+    
+    private createPurpleRingGalaxy(parent: THREE.Group): void {
+        // リング銀河（中心部とリング構造）
+        // 中心核
+        const coreGeometry = new THREE.BufferGeometry();
+        const corePositions = [];
+        const coreColors = [];
+        const coreSizes = [];
+        
+        const coreStars = 200;
+        for (let i = 0; i < coreStars; i++) {
+            const r = Math.pow(Math.random(), 0.8) * 150;
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.random() * Math.PI;
+            
+            corePositions.push(
+                r * Math.sin(phi) * Math.cos(theta),
+                r * Math.cos(phi) * 0.5,
+                r * Math.sin(phi) * Math.sin(theta)
+            );
+            
+            const brightness = 1.2 - (r / 150) * 0.4;
+            coreColors.push(0.9 * brightness, 0.6 * brightness, 1.0 * brightness);
+            coreSizes.push(0.3 + Math.random() * 0.3);
+        }
+        
+        coreGeometry.setAttribute('position', new THREE.Float32BufferAttribute(corePositions, 3));
+        coreGeometry.setAttribute('color', new THREE.Float32BufferAttribute(coreColors, 3));
+        coreGeometry.setAttribute('size', new THREE.Float32BufferAttribute(coreSizes, 1));
+        
+        const coreMaterial = new THREE.PointsMaterial({
+            size: 0.8,
+            sizeAttenuation: true,
+            vertexColors: true,
+            transparent: true,
+            opacity: 0.9,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+            fog: false
+        });
+        
+        const core = new THREE.Points(coreGeometry, coreMaterial);
+        parent.add(core);
+        
+        // リング構造
+        const ringGeometry = new THREE.BufferGeometry();
+        const ringPositions = [];
+        const ringColors = [];
+        const ringSizes = [];
+        
+        const ringStars = 800;
+        const innerRadius = 400;
+        const ringWidth = 150;
+        
+        for (let i = 0; i < ringStars; i++) {
+            const theta = Math.random() * Math.PI * 2;
+            const r = innerRadius + Math.random() * ringWidth;
+            const y = (Math.random() - 0.5) * 30;
+            
+            ringPositions.push(
+                r * Math.cos(theta),
+                y,
+                r * Math.sin(theta)
+            );
+            
+            // リングは青い若い星が多い
+            const brightness = 0.8 + Math.random() * 0.2;
+            ringColors.push(0.5 * brightness, 0.6 * brightness, 1.0 * brightness);
+            ringSizes.push(0.25 + Math.random() * 0.35);
+        }
+        
+        ringGeometry.setAttribute('position', new THREE.Float32BufferAttribute(ringPositions, 3));
+        ringGeometry.setAttribute('color', new THREE.Float32BufferAttribute(ringColors, 3));
+        ringGeometry.setAttribute('size', new THREE.Float32BufferAttribute(ringSizes, 1));
+        
+        const ringMaterial = new THREE.PointsMaterial({
+            size: 0.7,
+            sizeAttenuation: true,
+            vertexColors: true,
+            transparent: true,
+            opacity: 0.85,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+            fog: false
+        });
+        
+        const ring = new THREE.Points(ringGeometry, ringMaterial);
+        parent.add(ring);
+    }
+    
+    private createPurpleDwarfEllipticalGalaxy(parent: THREE.Group): void {
+        // 矮小楕円銀河（小さく、暗い）
+        const geometry = new THREE.BufferGeometry();
+        const positions = [];
+        const colors = [];
+        const sizes = [];
+        
+        const starCount = 300; // 少ない星
+        for (let i = 0; i < starCount; i++) {
+            const r = Math.pow(Math.random(), 0.4) * 250; // 小さい
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.acos(2 * Math.random() - 1);
+            
+            positions.push(
+                r * Math.sin(phi) * Math.cos(theta),
+                r * Math.cos(phi) * 0.8,
+                r * Math.sin(phi) * Math.sin(theta)
+            );
+            
+            // 全体的に暗め
+            const brightness = 0.6 - (r / 250) * 0.3;
+            colors.push(0.8 * brightness, 0.5 * brightness, 0.9 * brightness);
+            sizes.push(0.2 + Math.random() * 0.2);
+        }
+        
+        geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+        geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+        geometry.setAttribute('size', new THREE.Float32BufferAttribute(sizes, 1));
+        
+        const material = new THREE.PointsMaterial({
+            size: 0.5,
+            sizeAttenuation: true,
+            vertexColors: true,
+            transparent: true,
+            opacity: 0.6,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+            fog: false
+        });
+        
+        const dwarf = new THREE.Points(geometry, material);
+        parent.add(dwarf);
+    }
+    
+    private createPurpleEdgeOnSpiralGalaxy(parent: THREE.Group): void {
+        // エッジオン渦巻銀河（横から見た渦巻銀河）
+        const geometry = new THREE.BufferGeometry();
+        const positions = [];
+        const colors = [];
+        const sizes = [];
+        
+        const starCount = 1200;
+        for (let i = 0; i < starCount; i++) {
+            // 薄い円盤状の分布
+            const x = (Math.random() - 0.5) * 1600;
+            const distFromCenter = Math.abs(x);
+            const thickness = 50 * Math.exp(-distFromCenter / 400); // 中心ほど厚い
+            const y = (Math.random() - 0.5) * thickness;
+            const z = (Math.random() - 0.5) * 200 * Math.exp(-distFromCenter / 300);
+            
+            positions.push(x, y, z);
+            
+            // ダストレーンを表現（中心線は暗い）
+            const dustLane = Math.abs(y) < 10 ? 0.5 : 1.0;
+            const brightness = (0.9 - distFromCenter / 1600 * 0.5) * dustLane;
+            
+            // 中心は黄色っぽく、外側は青っぽく
+            const colorMix = distFromCenter / 800;
+            colors.push(
+                (0.8 - colorMix * 0.2) * brightness,
+                (0.5 - colorMix * 0.1) * brightness,
+                (0.9 + colorMix * 0.1) * brightness
+            );
+            sizes.push(0.2 + Math.random() * 0.3);
+        }
+        
+        // ダストレーン（暗い帯）
+        const dustCount = 300;
+        for (let i = 0; i < dustCount; i++) {
+            const x = (Math.random() - 0.5) * 1400;
+            const y = (Math.random() - 0.5) * 5; // 非常に薄い
+            const z = (Math.random() - 0.5) * 150 * Math.exp(-Math.abs(x) / 400);
+            
+            positions.push(x, y, z);
+            
+            // 暗い茶色っぽい色
+            colors.push(0.2, 0.1, 0.15);
+            sizes.push(0.4 + Math.random() * 0.4);
+        }
+        
+        geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+        geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+        geometry.setAttribute('size', new THREE.Float32BufferAttribute(sizes, 1));
+        
+        const material = new THREE.PointsMaterial({
+            size: 0.6,
+            sizeAttenuation: true,
+            vertexColors: true,
+            transparent: true,
+            opacity: 0.75,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+            fog: false
+        });
+        
+        const edgeOn = new THREE.Points(geometry, material);
+        parent.add(edgeOn);
     }
     
     private createGalaxySprite(): THREE.Texture {
@@ -580,15 +1124,17 @@ export class BackgroundGalaxies {
         return this.displayMode;
     }
     
-    update(deltaTime: number): void {
+    update(deltaTime: number, cameraPosition?: THREE.Vector3): void {
+        // カメラ追従を削除 - 固定位置に配置
+        
         // 銀河全体をゆっくり回転（反時計回り）
         this.galaxyGroup.rotation.y -= this.rotationSpeed * deltaTime * 60; // 60fpsベース
         
         // 星雲も少し違う速度で回転
         this.nebulaeGroup.rotation.y += this.rotationSpeed * 0.3 * deltaTime * 60;
         
-        // 各スパイラルアームを個別に少し動かす
-        for (let i = 0; i < 4; i++) {
+        // 各スパイラルアームを個別に少し動かす（2本）
+        for (let i = 0; i < 2; i++) {
             const arm = this.galaxyGroup.getObjectByName(`spiralArm_${i}`);
             if (arm) {
                 // 渦巻きの中心に向かって少し回転

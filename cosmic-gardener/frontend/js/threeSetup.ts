@@ -6,9 +6,9 @@ import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPa
 
 // --- 基本設定 -----------------------------------------------------------------
 export const scene = new THREE.Scene();
-scene.fog = new THREE.Fog(0x000000, 5000, 12000);
+scene.fog = new THREE.Fog(0x000000, 10000, 100000); // 描画距離を大幅に拡大
 
-export const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 250000);
+export const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 500000); // さらに遠くまで
 camera.position.set(0, 500, 1500); // より近い視点で恒星とブラックホールを観察
 
 const canvas = document.getElementById('game-canvas') as HTMLCanvasElement;
