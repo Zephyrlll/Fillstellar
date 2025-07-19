@@ -39,7 +39,6 @@
     <div id="mobile-nav-right">
       <div id="resource-summary-nav">
         <span id="dust-nav">塵: <span id="dust-value-nav">0</span></span>
-        <span id="energy-nav">E: <span id="energy-value-nav">0</span></span>
         <button id="mobile-info-toggle" class="mobile-info-btn">ℹ️</button>
       </div>
     </div>
@@ -49,7 +48,6 @@
   <div id="mobile-tab-nav">
     <button id="gameTab-mobile" class="mobile-tab active-mobile-tab">ゲーム</button>
     <button id="researchTab-mobile" class="mobile-tab">研究</button>
-    <button id="labTab-mobile" class="mobile-tab">研究室</button>
     <button id="optionsTab-mobile" class="mobile-tab">設定</button>
     <button id="starTab-mobile" class="mobile-tab">恒星</button>
   </div>
@@ -586,6 +584,188 @@
         </div>
       </div>
     </div>
+    
+    <!-- モバイル生産システムコンテンツ -->
+    <div id="mobile-production-content" class="mobile-content">
+      <div class="mobile-content-header">
+        <h3>🏭 生産システム</h3>
+        <button class="mobile-close-btn" onclick="closeMobileModal()">×</button>
+      </div>
+      <div class="mobile-content-body">
+        <!-- 資源生産セクション -->
+        <div class="mobile-section">
+          <h4 class="mobile-section-title">📊 資源生産状況</h4>
+          <div class="mobile-production-stats">
+            <div class="mobile-stat-item">
+              <span class="stat-label">宇宙の塵:</span>
+              <span class="stat-value" id="mobile-dust-production">+0/s</span>
+            </div>
+            <div class="mobile-stat-item">
+              <span class="stat-label">エネルギー:</span>
+              <span class="stat-value" id="mobile-energy-production">+0/s</span>
+            </div>
+            <div class="mobile-stat-item">
+              <span class="stat-label">有機物:</span>
+              <span class="stat-value" id="mobile-organic-production">+0/s</span>
+            </div>
+            <div class="mobile-stat-item">
+              <span class="stat-label">バイオマス:</span>
+              <span class="stat-value" id="mobile-biomass-production">+0/s</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 生産チェーン管理 -->
+        <div class="mobile-section">
+          <h4 class="mobile-section-title">⚙️ 生産チェーン</h4>
+          <div id="mobile-production-chains" class="mobile-production-chains">
+            <p class="mobile-empty-state">アクティブな生産チェーンはありません</p>
+          </div>
+          <button class="mobile-action-btn" id="mobile-add-production-chain">生産チェーンを追加</button>
+        </div>
+        
+        <!-- 自動化設定 -->
+        <div class="mobile-section">
+          <h4 class="mobile-section-title">🤖 自動化</h4>
+          <div class="mobile-setting-item">
+            <label>
+              <input type="checkbox" id="mobile-auto-production"> 自動生産を有効化
+            </label>
+          </div>
+          <div class="mobile-setting-item">
+            <label>
+              <input type="checkbox" id="mobile-auto-upgrade"> 自動アップグレード
+            </label>
+          </div>
+          <div class="mobile-setting-item">
+            <label for="mobile-production-priority">優先資源:</label>
+            <select id="mobile-production-priority">
+              <option value="balanced">バランス</option>
+              <option value="dust">宇宙の塵</option>
+              <option value="energy">エネルギー</option>
+              <option value="organic">有機物</option>
+              <option value="biomass">バイオマス</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- モバイル販売システムコンテンツ -->
+    <div id="mobile-sell-content" class="mobile-content">
+      <div class="mobile-content-header">
+        <h3>💰 資源販売</h3>
+        <button class="mobile-close-btn" onclick="closeMobileModal()">×</button>
+      </div>
+      <div class="mobile-content-body">
+        <!-- 市場価格セクション -->
+        <div class="mobile-section">
+          <h4 class="mobile-section-title">📈 市場価格</h4>
+          <div class="mobile-market-prices">
+            <div class="mobile-price-item">
+              <span class="resource-name">宇宙の塵</span>
+              <span class="resource-price" id="mobile-dust-price">1 CP</span>
+              <span class="price-trend" id="mobile-dust-trend">→</span>
+            </div>
+            <div class="mobile-price-item">
+              <span class="resource-name">エネルギー</span>
+              <span class="resource-price" id="mobile-energy-price">10 CP</span>
+              <span class="price-trend" id="mobile-energy-trend">→</span>
+            </div>
+            <div class="mobile-price-item">
+              <span class="resource-name">有機物</span>
+              <span class="resource-price" id="mobile-organic-price">100 CP</span>
+              <span class="price-trend" id="mobile-organic-trend">→</span>
+            </div>
+            <div class="mobile-price-item">
+              <span class="resource-name">バイオマス</span>
+              <span class="resource-price" id="mobile-biomass-price">500 CP</span>
+              <span class="price-trend" id="mobile-biomass-trend">→</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 販売インターフェース -->
+        <div class="mobile-section">
+          <h4 class="mobile-section-title">🛒 資源を販売</h4>
+          <div class="mobile-sell-interface">
+            <div class="mobile-sell-item">
+              <div class="sell-header">
+                <span class="resource-name">宇宙の塵</span>
+                <span class="resource-amount" id="mobile-dust-amount">0</span>
+              </div>
+              <div class="sell-controls">
+                <input type="range" class="sell-slider" id="mobile-dust-slider" min="0" max="100" value="0">
+                <div class="sell-info">
+                  <span class="sell-amount" id="mobile-dust-sell-amount">0</span>
+                  <span class="sell-value" id="mobile-dust-sell-value">0 CP</span>
+                </div>
+                <button class="mobile-sell-btn" id="mobile-sell-dust">販売</button>
+              </div>
+            </div>
+            
+            <div class="mobile-sell-item">
+              <div class="sell-header">
+                <span class="resource-name">エネルギー</span>
+                <span class="resource-amount" id="mobile-energy-amount">0</span>
+              </div>
+              <div class="sell-controls">
+                <input type="range" class="sell-slider" id="mobile-energy-slider" min="0" max="100" value="0">
+                <div class="sell-info">
+                  <span class="sell-amount" id="mobile-energy-sell-amount">0</span>
+                  <span class="sell-value" id="mobile-energy-sell-value">0 CP</span>
+                </div>
+                <button class="mobile-sell-btn" id="mobile-sell-energy">販売</button>
+              </div>
+            </div>
+            
+            <div class="mobile-sell-item">
+              <div class="sell-header">
+                <span class="resource-name">有機物</span>
+                <span class="resource-amount" id="mobile-organic-amount">0</span>
+              </div>
+              <div class="sell-controls">
+                <input type="range" class="sell-slider" id="mobile-organic-slider" min="0" max="100" value="0">
+                <div class="sell-info">
+                  <span class="sell-amount" id="mobile-organic-sell-amount">0</span>
+                  <span class="sell-value" id="mobile-organic-sell-value">0 CP</span>
+                </div>
+                <button class="mobile-sell-btn" id="mobile-sell-organic">販売</button>
+              </div>
+            </div>
+            
+            <div class="mobile-sell-item">
+              <div class="sell-header">
+                <span class="resource-name">バイオマス</span>
+                <span class="resource-amount" id="mobile-biomass-amount">0</span>
+              </div>
+              <div class="sell-controls">
+                <input type="range" class="sell-slider" id="mobile-biomass-slider" min="0" max="100" value="0">
+                <div class="sell-info">
+                  <span class="sell-amount" id="mobile-biomass-sell-amount">0</span>
+                  <span class="sell-value" id="mobile-biomass-sell-value">0 CP</span>
+                </div>
+                <button class="mobile-sell-btn" id="mobile-sell-biomass">販売</button>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 一括販売ボタン -->
+          <div class="mobile-action-buttons">
+            <button class="mobile-action-btn" id="mobile-sell-all">すべて販売</button>
+            <button class="mobile-action-btn secondary" id="mobile-sell-50">50%販売</button>
+          </div>
+        </div>
+        
+        <!-- 取引履歴 -->
+        <div class="mobile-section">
+          <h4 class="mobile-section-title">📜 取引履歴</h4>
+          <div id="mobile-trade-history" class="mobile-trade-history">
+            <p class="mobile-empty-state">取引履歴はありません</p>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- モバイル専用コンパクト情報パネル -->
@@ -620,19 +800,116 @@
         <span id="mobile-star-count">0</span>
       </div>
     </div>
-    <div id="mobile-lab-content" class="mobile-content">
+    
+    <!-- モバイルインベントリコンテンツ -->
+    <div id="mobile-inventory-content" class="mobile-content">
       <div class="mobile-content-header">
-        <h3>🔬 研究室</h3>
+        <h3>📦 インベントリ</h3>
         <button class="mobile-close-btn" onclick="closeMobileModal()">×</button>
       </div>
       <div class="mobile-content-body">
-        <p style="text-align: center; padding: 50px 20px; color: #8892b0;">
-          モバイル版の研究室は全画面表示で開きます
-        </p>
-        <div style="text-align: center; padding: 20px;">
-          <button id="mobile-open-full-lab" class="mobile-action-btn" style="background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);">
-            研究室を開く
+        <!-- 資源概要セクション -->
+        <div class="mobile-section">
+          <h4 class="mobile-section-title">📊 資源概要</h4>
+          <div class="mobile-inventory-stats">
+            <div class="mobile-stat-item">
+              <span class="stat-label">総資源種類:</span>
+              <span class="stat-value" id="mobile-total-resource-types">0</span>
+            </div>
+            <div class="mobile-stat-item">
+              <span class="stat-label">総価値:</span>
+              <span class="stat-value" id="mobile-total-resource-value">0 CP</span>
+            </div>
+            <div class="mobile-stat-item">
+              <span class="stat-label">最高品質:</span>
+              <span class="stat-value" id="mobile-highest-quality">-</span>
+            </div>
+            <div class="mobile-stat-item">
+              <span class="stat-label">ストレージ使用率:</span>
+              <span class="stat-value" id="mobile-storage-usage">0%</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- カテゴリータブ -->
+        <div class="mobile-inventory-tabs">
+          <button class="mobile-inventory-tab active" data-category="basic">
+            <span class="tab-icon">⚛️</span>
+            <span class="tab-label">基本資源</span>
           </button>
+          <button class="mobile-inventory-tab" data-category="advanced">
+            <span class="tab-icon">💎</span>
+            <span class="tab-label">高度な資源</span>
+          </button>
+          <button class="mobile-inventory-tab" data-category="processed">
+            <span class="tab-icon">⚙️</span>
+            <span class="tab-label">加工資源</span>
+          </button>
+          <button class="mobile-inventory-tab" data-category="special">
+            <span class="tab-icon">✨</span>
+            <span class="tab-label">特殊資源</span>
+          </button>
+        </div>
+        
+        <!-- 資源リスト -->
+        <div class="mobile-inventory-list" id="mobile-inventory-list">
+          <div class="mobile-resource-item" data-resource="cosmicDust">
+            <span class="resource-icon">✨</span>
+            <span class="resource-name">宇宙の塵</span>
+            <span class="resource-amount" id="mobile-inv-dust">0</span>
+          </div>
+          
+          <div class="mobile-resource-item" data-resource="energy">
+            <span class="resource-icon">⚡</span>
+            <span class="resource-name">エネルギー</span>
+            <span class="resource-amount" id="mobile-inv-energy">0</span>
+          </div>
+          
+          <div class="mobile-resource-item" data-resource="organicMatter">
+            <span class="resource-icon">🌱</span>
+            <span class="resource-name">有機物</span>
+            <span class="resource-amount" id="mobile-inv-organic">0</span>
+          </div>
+          
+          <div class="mobile-resource-item" data-resource="biomass">
+            <span class="resource-icon">🌿</span>
+            <span class="resource-name">バイオマス</span>
+            <span class="resource-amount" id="mobile-inv-biomass">0</span>
+          </div>
+          
+          <div class="mobile-resource-item" data-resource="darkMatter">
+            <span class="resource-icon">🌑</span>
+            <span class="resource-name">ダークマター</span>
+            <span class="resource-amount" id="mobile-inv-dark">0</span>
+          </div>
+          
+          <div class="mobile-resource-item" data-resource="thoughtPoints">
+            <span class="resource-icon">💭</span>
+            <span class="resource-name">思考ポイント</span>
+            <span class="resource-amount" id="mobile-inv-thought">0</span>
+          </div>
+        </div>
+        
+        <!-- ソートとフィルター -->
+        <div class="mobile-inventory-controls">
+          <div class="control-group">
+            <label for="mobile-inv-sort">並び替え:</label>
+            <select id="mobile-inv-sort">
+              <option value="name">名前順</option>
+              <option value="amount">数量順</option>
+              <option value="value">価値順</option>
+              <option value="quality">品質順</option>
+            </select>
+          </div>
+          <div class="control-group">
+            <label for="mobile-inv-filter">フィルター:</label>
+            <select id="mobile-inv-filter">
+              <option value="all">すべて表示</option>
+              <option value="available">利用可能</option>
+              <option value="rare">レアのみ</option>
+              <option value="convertible">変換可能</option>
+            </select>
+          </div>
         </div>
       </div>
     </div>

@@ -163,12 +163,36 @@ export function setupEventListeners() {
         showMobileModal('starManagement');
     });
 
-    // Add lab tab for mobile
-    const labTabMobile = document.getElementById('labTab-mobile');
-    if (labTabMobile) labTabMobile.addEventListener('click', () => {
-        soundManager.playUISound('tab');
-        showMobileModal('lab');
-    });
+
+    // Mobile production toggle button
+    const productionToggleButtonMobile = document.getElementById('productionToggleButton-mobile');
+    if (productionToggleButtonMobile) {
+        productionToggleButtonMobile.addEventListener('click', () => {
+            console.log('🎯 Mobile production button clicked!');
+            soundManager.playUISound('tab');
+            showMobileModal('production');
+        });
+    }
+
+    // Mobile resource sell button
+    const floatingResourceSellButtonMobile = document.getElementById('floatingResourceSellButton-mobile');
+    if (floatingResourceSellButtonMobile) {
+        floatingResourceSellButtonMobile.addEventListener('click', () => {
+            console.log('💰 Mobile sell button clicked!');
+            soundManager.playUISound('tab');
+            showMobileModal('sell');
+        });
+    }
+
+    // Mobile inventory toggle button
+    const inventoryToggleButtonMobile = document.getElementById('inventoryToggleButton-mobile');
+    if (inventoryToggleButtonMobile) {
+        inventoryToggleButtonMobile.addEventListener('click', () => {
+            console.log('📦 Mobile inventory button clicked!');
+            soundManager.playUISound('tab');
+            showMobileModal('inventory');
+        });
+    }
 
     // Galaxy map toggle button
     if (ui.galaxyMapToggle) {
@@ -1497,5 +1521,147 @@ export function setupEventListeners() {
         });
     }
 
+    // Mobile sell UI event handlers
+    setupMobileSellEventHandlers();
+    
     const setupInfoPanel = createInfoPanel();
+}
+
+// Setup mobile sell event handlers
+function setupMobileSellEventHandlers() {
+    // Slider change handlers
+    const sliders = [
+        { slider: 'mobile-dust-slider', amount: 'mobile-dust-sell-amount', value: 'mobile-dust-sell-value', resource: 'cosmicDust', price: 1 },
+        { slider: 'mobile-energy-slider', amount: 'mobile-energy-sell-amount', value: 'mobile-energy-sell-value', resource: 'energy', price: 10 },
+        { slider: 'mobile-organic-slider', amount: 'mobile-organic-sell-amount', value: 'mobile-organic-sell-value', resource: 'organicMatter', price: 100 },
+        { slider: 'mobile-biomass-slider', amount: 'mobile-biomass-sell-amount', value: 'mobile-biomass-sell-value', resource: 'biomass', price: 500 }
+    ];
+    
+    sliders.forEach(({ slider, amount, value, resource, price }) => {
+        const sliderElement = document.getElementById(slider) as HTMLInputElement;
+        const amountElement = document.getElementById(amount);
+        const valueElement = document.getElementById(value);
+        
+        if (sliderElement && amountElement && valueElement) {
+            sliderElement.addEventListener('input', () => {
+                const sellAmount = parseInt(sliderElement.value);
+                amountElement.textContent = sellAmount.toLocaleString();
+                valueElement.textContent = `${(sellAmount * price).toLocaleString()} CP`;
+            });
+        }
+    });
+    
+    // Sell buttons
+    const sellButtons = [
+        { button: 'mobile-sell-dust', resource: 'cosmicDust', slider: 'mobile-dust-slider', price: 1 },
+        { button: 'mobile-sell-energy', resource: 'energy', slider: 'mobile-energy-slider', price: 10 },
+        { button: 'mobile-sell-organic', resource: 'organicMatter', slider: 'mobile-organic-slider', price: 100 },
+        { button: 'mobile-sell-biomass', resource: 'biomass', slider: 'mobile-biomass-slider', price: 500 }
+    ];
+    
+    sellButtons.forEach(({ button, resource, slider, price }) => {
+        const buttonElement = document.getElementById(button);
+        const sliderElement = document.getElementById(slider) as HTMLInputElement;
+        
+        if (buttonElement && sliderElement) {
+            buttonElement.addEventListener('click', () => {
+                const sellAmount = parseInt(sliderElement.value);
+                if (sellAmount > 0 && gameState.resources[resource] >= sellAmount) {
+                    // Sell resources
+                    gameStateManager.updateState(state => ({
+                        ...state,
+                        resources: {
+                            ...state.resources,
+                            [resource]: state.resources[resource] - sellAmount
+                        },
+                        cosmicDust: state.cosmicDust + (sellAmount * price)
+                    }));
+                    
+                    soundManager.playUISound('success');
+                    showMessage(`${sellAmount.toLocaleString()} ${resource} を ${(sellAmount * price).toLocaleString()} CP で販売しました`);
+                    
+                    // Reset slider
+                    sliderElement.value = '0';
+                    sliderElement.dispatchEvent(new Event('input'));
+                    
+                    // Update UI
+                    updateUI();
+                    import('./ui.js').then(({ updateMobileSellUI }) => updateMobileSellUI());
+                    
+                    saveGame();
+                }
+            });
+        }
+    });
+    
+    // Sell all button
+    const sellAllButton = document.getElementById('mobile-sell-all');
+    if (sellAllButton) {
+        sellAllButton.addEventListener('click', () => {
+            let totalCP = 0;
+            const prices = { cosmicDust: 1, energy: 10, organicMatter: 100, biomass: 500 };
+            
+            for (const [resource, price] of Object.entries(prices)) {
+                const amount = gameState.resources[resource];
+                if (amount > 0) {
+                    totalCP += amount * price;
+                }
+            }
+            
+            if (totalCP > 0) {
+                gameStateManager.updateState(state => ({
+                    ...state,
+                    resources: {
+                        cosmicDust: 0,
+                        energy: 0,
+                        organicMatter: 0,
+                        biomass: 0,
+                        darkMatter: state.resources.darkMatter,
+                        thoughtPoints: state.resources.thoughtPoints
+                    },
+                    cosmicDust: state.cosmicDust + totalCP
+                }));
+                
+                soundManager.playUISound('success');
+                showMessage(`すべての資源を ${totalCP.toLocaleString()} CP で販売しました`);
+                
+                updateUI();
+                import('./ui.js').then(({ updateMobileSellUI }) => updateMobileSellUI());
+                saveGame();
+            }
+        });
+    }
+    
+    // Sell 50% button
+    const sell50Button = document.getElementById('mobile-sell-50');
+    if (sell50Button) {
+        sell50Button.addEventListener('click', () => {
+            let totalCP = 0;
+            const prices = { cosmicDust: 1, energy: 10, organicMatter: 100, biomass: 500 };
+            const newResources = { ...gameState.resources };
+            
+            for (const [resource, price] of Object.entries(prices)) {
+                const amount = Math.floor(gameState.resources[resource] / 2);
+                if (amount > 0) {
+                    totalCP += amount * price;
+                    newResources[resource] = gameState.resources[resource] - amount;
+                }
+            }
+            
+            if (totalCP > 0) {
+                gameStateManager.updateState(state => ({
+                    ...state,
+                    resources: newResources,
+                    cosmicDust: state.cosmicDust + totalCP
+                }));
+                
+                soundManager.playUISound('success');
+                showMessage(`資源の50%を ${totalCP.toLocaleString()} CP で販売しました`);
+                
+                updateUI();
+                import('./ui.js').then(({ updateMobileSellUI }) => updateMobileSellUI());
+                saveGame();
+            }
+        });
+    }
 }

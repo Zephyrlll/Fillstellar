@@ -1,6 +1,6 @@
 
 import { gameState, gameStateManager, CelestialBody, StarUserData, PlanetUserData } from './state.js';
-import { mathCache } from './utils.js';
+import { mathCache, formatNumber } from './utils.js';
 import { updateProductionUI } from './productionUI.js';
 
 let messageTimeout: any;
@@ -116,6 +116,9 @@ export const ui: { [key: string]: HTMLElement | null } = {
     mobileResearchContent: document.getElementById('mobile-research-content'),
     mobileOptionsContent: document.getElementById('mobile-options-content'),
     mobileStarContent: document.getElementById('mobile-star-content'),
+    mobileProductionContent: document.getElementById('mobile-production-content'),
+    mobileSellContent: document.getElementById('mobile-sell-content'),
+    mobileInventoryContent: document.getElementById('mobile-inventory-content'),
     messageText: document.getElementById('message-text'),
     galaxyMapContainer: document.getElementById('galaxy-map-container'),
     galaxyMapToggle: document.getElementById('galaxy-map-toggle'),
@@ -1007,6 +1010,9 @@ export function showMobileModal(tabName: string) {
     if (ui.mobileResearchContent) ui.mobileResearchContent.classList.remove('active-mobile-content');
     if (ui.mobileOptionsContent) ui.mobileOptionsContent.classList.remove('active-mobile-content');
     if (ui.mobileStarContent) ui.mobileStarContent.classList.remove('active-mobile-content');
+    if (ui.mobileProductionContent) ui.mobileProductionContent.classList.remove('active-mobile-content');
+    if (ui.mobileSellContent) ui.mobileSellContent.classList.remove('active-mobile-content');
+    if (ui.mobileInventoryContent) ui.mobileInventoryContent.classList.remove('active-mobile-content');
     
     // Show the selected content panel
     switch(tabName) {
@@ -1023,6 +1029,18 @@ export function showMobileModal(tabName: string) {
             if (ui.mobileStarContent) ui.mobileStarContent.classList.add('active-mobile-content');
             updateStarList();
             break;
+        case 'production':
+            if (ui.mobileProductionContent) ui.mobileProductionContent.classList.add('active-mobile-content');
+            updateMobileProductionUI();
+            break;
+        case 'sell':
+            if (ui.mobileSellContent) ui.mobileSellContent.classList.add('active-mobile-content');
+            updateMobileSellUI();
+            break;
+        case 'inventory':
+            if (ui.mobileInventoryContent) ui.mobileInventoryContent.classList.add('active-mobile-content');
+            updateMobileInventoryUI();
+            break;
     }
 }
 
@@ -1035,6 +1053,120 @@ export function closeMobileModal() {
 
 // Make closeMobileModal available globally for onclick handlers
 (window as any).closeMobileModal = closeMobileModal;
+
+// Update mobile production UI
+export function updateMobileProductionUI(): void {
+    // Update production rates
+    const dustProduction = document.getElementById('mobile-dust-production');
+    const energyProduction = document.getElementById('mobile-energy-production');
+    const organicProduction = document.getElementById('mobile-organic-production');
+    const biomassProduction = document.getElementById('mobile-biomass-production');
+    
+    if (dustProduction) dustProduction.textContent = `+${mathCache.getDustGenerationRate().toFixed(1)}/s`;
+    if (energyProduction) energyProduction.textContent = `+${mathCache.getEnergyGenerationRate().toFixed(1)}/s`;
+    if (organicProduction) organicProduction.textContent = `+${mathCache.getOrganicMatterGenerationRate().toFixed(1)}/s`;
+    if (biomassProduction) biomassProduction.textContent = `+${mathCache.getBiomassGenerationRate().toFixed(1)}/s`;
+    
+    // TODO: Update production chains display
+}
+
+// Update mobile sell UI
+export function updateMobileSellUI(): void {
+    // Update resource amounts
+    const dustAmount = document.getElementById('mobile-dust-amount');
+    const energyAmount = document.getElementById('mobile-energy-amount');
+    const organicAmount = document.getElementById('mobile-organic-amount');
+    const biomassAmount = document.getElementById('mobile-biomass-amount');
+    
+    if (dustAmount) dustAmount.textContent = formatNumber(gameState.resources.cosmicDust);
+    if (energyAmount) energyAmount.textContent = formatNumber(gameState.resources.energy);
+    if (organicAmount) organicAmount.textContent = formatNumber(gameState.resources.organicMatter);
+    if (biomassAmount) biomassAmount.textContent = formatNumber(gameState.resources.biomass);
+    
+    // Update sliders max values
+    const dustSlider = document.getElementById('mobile-dust-slider') as HTMLInputElement;
+    const energySlider = document.getElementById('mobile-energy-slider') as HTMLInputElement;
+    const organicSlider = document.getElementById('mobile-organic-slider') as HTMLInputElement;
+    const biomassSlider = document.getElementById('mobile-biomass-slider') as HTMLInputElement;
+    
+    if (dustSlider) {
+        dustSlider.max = gameState.resources.cosmicDust.toString();
+        dustSlider.value = '0';
+    }
+    if (energySlider) {
+        energySlider.max = gameState.resources.energy.toString();
+        energySlider.value = '0';
+    }
+    if (organicSlider) {
+        organicSlider.max = gameState.resources.organicMatter.toString();
+        organicSlider.value = '0';
+    }
+    if (biomassSlider) {
+        biomassSlider.max = gameState.resources.biomass.toString();
+        biomassSlider.value = '0';
+    }
+}
+
+// Update mobile inventory UI
+export function updateMobileInventoryUI(): void {
+    // Update resource amounts
+    const dustElement = document.getElementById('mobile-inv-dust');
+    const energyElement = document.getElementById('mobile-inv-energy');
+    const organicElement = document.getElementById('mobile-inv-organic');
+    const biomassElement = document.getElementById('mobile-inv-biomass');
+    const darkElement = document.getElementById('mobile-inv-dark');
+    const thoughtElement = document.getElementById('mobile-inv-thought');
+    
+    if (dustElement) dustElement.textContent = formatNumber(gameState.resources.cosmicDust);
+    if (energyElement) energyElement.textContent = formatNumber(gameState.resources.energy);
+    if (organicElement) organicElement.textContent = formatNumber(gameState.resources.organicMatter);
+    if (biomassElement) biomassElement.textContent = formatNumber(gameState.resources.biomass);
+    if (darkElement) darkElement.textContent = formatNumber(gameState.resources.darkMatter);
+    if (thoughtElement) thoughtElement.textContent = formatNumber(gameState.resources.thoughtPoints);
+    
+    // Update stats
+    const totalTypes = document.getElementById('mobile-total-resource-types');
+    const totalValue = document.getElementById('mobile-total-resource-value');
+    const highestQuality = document.getElementById('mobile-highest-quality');
+    const storageUsage = document.getElementById('mobile-storage-usage');
+    
+    if (totalTypes) {
+        const resourceCount = Object.values(gameState.resources).filter(v => v > 0).length;
+        totalTypes.textContent = resourceCount.toString();
+    }
+    
+    if (totalValue) {
+        const value = 
+            gameState.resources.cosmicDust * 1 +
+            gameState.resources.energy * 10 +
+            gameState.resources.organicMatter * 100 +
+            gameState.resources.biomass * 500 +
+            gameState.resources.darkMatter * 10000 +
+            gameState.resources.thoughtPoints * 5000;
+        totalValue.textContent = formatNumber(value) + ' CP';
+    }
+    
+    if (highestQuality) {
+        if (gameState.resources.darkMatter > 0) {
+            highestQuality.textContent = '伝説';
+            highestQuality.className = 'stat-value quality-legendary';
+        } else if (gameState.resources.thoughtPoints > 0) {
+            highestQuality.textContent = '完璧';
+            highestQuality.className = 'stat-value quality-perfect';
+        } else {
+            highestQuality.textContent = '標準';
+            highestQuality.className = 'stat-value';
+        }
+    }
+    
+    if (storageUsage) {
+        // Simulate storage usage based on resource amounts
+        const totalResources = Object.values(gameState.resources).reduce((a, b) => a + b, 0);
+        const maxStorage = 1000000; // Arbitrary max storage
+        const usage = Math.min(100, (totalResources / maxStorage) * 100);
+        storageUsage.textContent = usage.toFixed(1) + '%';
+    }
+}
 
 // Update all settings UI after loading
 export function updateAllSettingsUI(): void {

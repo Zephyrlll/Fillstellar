@@ -18,7 +18,8 @@
       "Bash(grep:*)",
       "Bash(curl:*)",
       "Bash(node:*)",
-      "Bash(mv:*)"
+      "Bash(mv:*)",
+      "Bash(sed:*)"
     ],
     "deny": []
   }
