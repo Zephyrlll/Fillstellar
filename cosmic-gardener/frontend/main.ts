@@ -34,6 +34,8 @@ import { physicsConfig } from './js/physicsConfig.ts';
 import './js/debugPhysics.ts';
 // Orbit trails
 import { orbitTrailSystem } from './js/orbitTrails.ts';
+// Background galaxies
+import { backgroundGalaxies } from './js/backgroundGalaxies.ts';
 
 // Expose graphicsEngine globally for synchronous access from saveload.ts and debugging
 (window as any).graphicsEngine = graphicsEngine;
@@ -63,10 +65,11 @@ function createStarfield() {
         blending: THREE.NormalBlending // More stable blending for high resolution
     });
     const starsVertices = [];
+    const galaxySize = GALAXY_BOUNDARY * 2; // 全宇宙範囲をカバー
     for (let i = 0; i < 8000; i++) {
-        const x = (Math.random() - 0.5) * 20000;
-        const y = (Math.random() - 0.5) * 20000;
-        const z = (Math.random() - 0.5) * 20000;
+        const x = (Math.random() - 0.5) * galaxySize;
+        const y = (Math.random() - 0.5) * galaxySize;
+        const z = (Math.random() - 0.5) * galaxySize;
         starsVertices.push(x, y, z);
     }
     starsGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starsVertices, 3));
@@ -77,11 +80,14 @@ function createStarfield() {
     starfield.renderOrder = -1000; // 最背景として描画
     starfield.frustumCulled = false; // フラスタムカリングを無効化
     
-    // Store initial settings
+    // Store original positions for particle density control
     starfield.userData = {
-        originalPositions: null, // Will be set by graphics engine
+        originalPositions: new Float32Array(starsVertices), // Store copy of original positions
         isStarfield: true
     };
+    
+    console.log('[STARFIELD] Created with', starsVertices.length / 3, 'stars');
+    console.log('[STARFIELD] Original positions stored:', starfield.userData.originalPositions.length / 3, 'points');
     
     scene.add(starfield);
 }
@@ -390,6 +396,11 @@ function init() {
     
     createStarfield();
     console.log('[INIT] Starfield created');
+    
+    // 背景銀河を初期化（デフォルトはmixed）
+    backgroundGalaxies.setDisplayMode('mixed');
+    console.log('[INIT] Background galaxies created');
+    
     loadGame();
     console.log('[INIT] Game loaded');
     

@@ -18,6 +18,7 @@ export class GraphicsEngine {
     
     // Apply all current graphics settings
     applyAllSettings(): void {
+        console.log('[GraphicsEngine] applyAllSettings() called');
         const graphics = gameStateManager.getState().graphics;
         
         this.applyResolutionScale(graphics.resolutionScale);
@@ -29,6 +30,7 @@ export class GraphicsEngine {
         this.applyFogEffect(graphics.fogEffect);
         this.applyRenderPrecision(graphics.renderPrecision);
         this.applyUIAnimations(graphics.uiAnimations);
+        this.applyParticleDensity(graphics.particleDensity); // 追加！
         
         // Update frame rate limiter
         this.frameRateLimiter.setTargetFPS(graphics.frameRateLimit);
@@ -103,6 +105,7 @@ export class GraphicsEngine {
         }
         
         if (this.previousSettings.particleDensity !== graphics.particleDensity) {
+            console.log('[GraphicsEngine] Particle density changed from', this.previousSettings.particleDensity, 'to', graphics.particleDensity);
             this.applyParticleDensity(graphics.particleDensity);
         }
         
@@ -345,9 +348,50 @@ export class GraphicsEngine {
     
     // Particle density
     private applyParticleDensity(density: number): void {
-        // This would be implemented with your particle system
-        // For now, just log the change
         console.log(`✨ Particle density set to: ${Math.round(density * 100)}%`);
+        
+        // Find and update the starfield
+        const starfield = scene.getObjectByName('starfield');
+        console.log('✨ Scene children:', scene.children.map(c => c.name || c.type));
+        console.log('✨ Starfield object:', starfield);
+        
+        if (starfield && starfield instanceof THREE.Points) {
+            console.log('✨ Starfield found and is Points object');
+            const geometry = starfield.geometry as THREE.BufferGeometry;
+            const positionAttribute = geometry.getAttribute('position');
+            
+            console.log('✨ Starfield userData:', starfield.userData);
+            console.log('✨ Position attribute:', positionAttribute);
+            
+            if (positionAttribute && starfield.userData.originalPositions) {
+                // Use cached original positions
+                const originalPositions = starfield.userData.originalPositions;
+                const totalPoints = originalPositions.length / 3;
+                const visiblePoints = Math.floor(totalPoints * density);
+                
+                console.log(`✨ Original points: ${totalPoints}, Visible points: ${visiblePoints}`);
+                
+                // Create new position array with visible points
+                const newPositions = new Float32Array(visiblePoints * 3);
+                for (let i = 0; i < visiblePoints * 3; i++) {
+                    newPositions[i] = originalPositions[i];
+                }
+                
+                // Update geometry
+                geometry.setAttribute('position', new THREE.BufferAttribute(newPositions, 3));
+                geometry.attributes.position.needsUpdate = true;
+                
+                console.log(`✨ Starfield updated: ${visiblePoints}/${totalPoints} stars visible`);
+            } else {
+                console.warn('✨ Missing position attribute or originalPositions');
+                console.warn('✨ positionAttribute:', !!positionAttribute);
+                console.warn('✨ originalPositions:', !!starfield.userData.originalPositions);
+            }
+        } else {
+            console.warn('✨ Starfield not found or not Points object');
+            console.warn('✨ starfield:', starfield);
+            console.warn('✨ instanceof Points:', starfield instanceof THREE.Points);
+        }
     }
     
     // UI animations

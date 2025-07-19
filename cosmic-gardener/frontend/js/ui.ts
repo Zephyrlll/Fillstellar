@@ -797,10 +797,16 @@ export function updateGraphicsUI(): void {
     }
     
     // Update particle density
-    if (ui.particleDensityRange && ui.particleDensityValue) {
+    const particleDensitySelect = document.getElementById('particleDensitySelect') as HTMLSelectElement;
+    if (particleDensitySelect) {
         const densityPercent = Math.round(graphics.particleDensity * 100);
-        (ui.particleDensityRange as HTMLInputElement).value = densityPercent.toString();
-        (ui.particleDensityValue as HTMLElement).textContent = `${densityPercent}%`;
+        particleDensitySelect.value = densityPercent.toString();
+    }
+    
+    // Update mobile particle density
+    if (ui.mobileParticleDensitySelect) {
+        const densityPercent = Math.round(graphics.particleDensity * 100);
+        (ui.mobileParticleDensitySelect as HTMLSelectElement).value = densityPercent.toString();
     }
     
     // Update all select elements

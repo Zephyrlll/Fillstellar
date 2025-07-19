@@ -895,12 +895,16 @@ export function setupEventListeners() {
         });
     }
     
-    // Particle density slider
-    if (ui.particleDensityRange) {
-        ui.particleDensityRange.addEventListener('input', (event) => {
-            const target = event.target as HTMLInputElement;
+    // Particle density select (desktop)
+    const particleDensitySelect = document.getElementById('particleDensitySelect') as HTMLSelectElement;
+    if (particleDensitySelect) {
+        console.log('[EVENTS] Particle density select found, adding listener');
+        particleDensitySelect.addEventListener('change', (event) => {
+            const target = event.target as HTMLSelectElement;
             const densityPercent = parseInt(target.value);
             const density = densityPercent / 100;
+            
+            console.log('[EVENTS] Particle density changed:', densityPercent + '%', 'density:', density);
             
             gameStateManager.updateState(state => ({
                 ...state,
@@ -911,18 +915,17 @@ export function setupEventListeners() {
                 }
             }));
             
-            // Update display value
-            if (ui.particleDensityValue) {
-                ui.particleDensityValue.textContent = `${densityPercent}%`;
-            }
-            
             // Update preset selector to show custom
             if (ui.graphicsPresetSelect) {
                 (ui.graphicsPresetSelect as HTMLSelectElement).value = 'custom';
             }
             
+            console.log('[EVENTS] Calling graphicsEngine.applyAllSettings()');
+            graphicsEngine.applyAllSettings();
             saveGame();
         });
+    } else {
+        console.warn('[EVENTS] Particle density select NOT found!');
     }
     
     // Individual graphics setting selects
@@ -1050,10 +1053,12 @@ export function setupEventListeners() {
                 ...state,
                 graphics: {
                     ...state.graphics,
-                    particleDensity: density
+                    particleDensity: density,
+                    preset: 'custom'
                 }
             }));
             
+            graphicsEngine.applyAllSettings();
             saveGame();
         });
     }
