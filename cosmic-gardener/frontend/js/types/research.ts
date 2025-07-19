@@ -8,10 +8,24 @@ export interface ResearchCategory {
 }
 
 export interface ResearchCost {
+  // Basic resources
   darkMatter?: number;
   thoughtPoints?: number;
   energy?: number;
   cosmicDust?: number;
+  // Advanced resources
+  refinedMetal?: number;
+  processedMetal?: number;
+  ultraAlloy?: number;
+  quantumCrystal?: number;
+  hyperCrystal?: number;
+  quantumPolymer?: number;
+  stabilizedEnergy?: number;
+  concentratedEnergy?: number;
+  dimensionalEssence?: number;
+  exoticMatter?: number;
+  silicon?: number;
+  [key: string]: number | undefined; // Allow other resource types
 }
 
 export interface ResearchEffect {
@@ -27,6 +41,10 @@ export type ResearchEffectType =
   | 'dark_matter_generation_multiplier'
   | 'bio_resource_multiplier'
   | 'dust_storage_multiplier'
+  | 'population_growth_multiplier'
+  | 'thought_generation_multiplier'
+  | 'conversion_efficiency_multiplier'
+  | 'cosmic_activity_multiplier'
   // Celestial body unlocks
   | 'unlock_celestial_body'
   // Life effects
@@ -39,6 +57,10 @@ export type ResearchEffectType =
   | 'unlock_time_multiplier'
   | 'research_speed_multiplier'
   | 'enable_dyson_sphere'
+  | 'unlock_special_conversion'
+  | 'unlock_auto_converter'
+  | 'unlock_visualization'
+  | 'unlock_feature'
   // Cosmic effects
   | 'enable_teleportation'
   | 'unlock_multiverse'
@@ -86,8 +108,10 @@ export function isResearchAvailable(
 
 export function canAffordResearch(
   item: ResearchItem,
-  resources: any // TODO: Use proper resource type
+  resources: any, // Basic resources
+  advancedResources?: any // Advanced resources storage
 ): boolean {
+  // Check basic resources
   if (item.cost.darkMatter && resources.darkMatter < item.cost.darkMatter) {
     return false;
   }
@@ -100,6 +124,20 @@ export function canAffordResearch(
   if (item.cost.cosmicDust && resources.cosmicDust < item.cost.cosmicDust) {
     return false;
   }
+  
+  // Check advanced resources if they exist in cost
+  const advancedCosts = Object.keys(item.cost).filter(key => 
+    !['darkMatter', 'thoughtPoints', 'energy', 'cosmicDust'].includes(key)
+  );
+  
+  for (const resourceType of advancedCosts) {
+    const required = (item.cost as any)[resourceType];
+    const available = advancedResources?.[resourceType]?.amount || 0;
+    if (available < required) {
+      return false;
+    }
+  }
+  
   return true;
 }
 

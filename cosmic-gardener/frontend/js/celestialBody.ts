@@ -5,7 +5,7 @@ import { showMessage } from './ui.js';
 import { addTimelineLog } from './timeline.js';
 import { soundManager } from './sound.js';
 import { CelestialBodyFactory, createStar, createPlanet } from './celestialBodyFactory.js';
-import { CelestialType } from './types/celestial.js';
+import { CelestialType, CelestialConfig } from './types/celestial.js';
 
 export function checkLifeSpawn(planetObject: CelestialBody) {
     const userData = planetObject.userData as PlanetUserData;
@@ -17,7 +17,11 @@ export function checkLifeSpawn(planetObject: CelestialBody) {
         return;
     }
 
-    const spawnChance = (userData.habitability / 100) * 0.0001;
+    let spawnChance = (userData.habitability / 100) * 0.0001;
+    // Apply research multiplier
+    if (gameState.research?.lifeSpawnChanceMultiplier) {
+        spawnChance *= gameState.research.lifeSpawnChanceMultiplier;
+    }
     if (Math.random() < spawnChance) {
         userData.hasLife = true;
         userData.lifeStage = 'microbial';
@@ -46,11 +50,18 @@ export function evolveLife(planetObject: CelestialBody) {
     if (!userData.hasLife) return;
     const currentStage = userData.lifeStage;
     const ageInYears = gameState.gameYear - userData.creationYear;
+    
+    // Apply research multiplier to evolution thresholds
+    let evolutionMultiplier = 1;
+    if (gameState.research?.evolutionSpeedMultiplier) {
+        evolutionMultiplier = gameState.research.evolutionSpeedMultiplier;
+    }
+    
     let nextStage: string | null = null;
     switch (currentStage) {
-        case 'microbial': if (ageInYears >= 50) nextStage = 'plant'; break;
-        case 'plant': if (ageInYears >= 100) nextStage = 'animal'; break;
-        case 'animal': if (ageInYears >= 200) nextStage = 'intelligent'; break;
+        case 'microbial': if (ageInYears >= 50 / evolutionMultiplier) nextStage = 'plant'; break;
+        case 'plant': if (ageInYears >= 100 / evolutionMultiplier) nextStage = 'animal'; break;
+        case 'animal': if (ageInYears >= 200 / evolutionMultiplier) nextStage = 'intelligent'; break;
     }
     if (nextStage) {
         userData.lifeStage = nextStage;

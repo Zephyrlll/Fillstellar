@@ -44,9 +44,14 @@ export const researchItems: ResearchItem[] = [
     description: '宇宙の塵の生成効率を2倍に向上させる',
     category: 'fundamental',
     icon: '💫',
-    cost: { darkMatter: 1 },
+    cost: {
+      darkMatter: 1
+    },
     effects: [
-      { type: 'dust_generation_multiplier', value: 2.0 }
+      {
+        type: 'dust_generation_multiplier',
+        value: 2.0
+      }
     ],
     requirements: [],
     unlocks: []
@@ -57,9 +62,14 @@ export const researchItems: ResearchItem[] = [
     description: 'エネルギー変換効率を2倍に向上',
     category: 'fundamental',
     icon: '⚡',
-    cost: { darkMatter: 2 },
+    cost: {
+      darkMatter: 2
+    },
     effects: [
-      { type: 'energy_conversion_multiplier', value: 2.0 }
+      {
+        type: 'energy_conversion_multiplier',
+        value: 2.0
+      }
     ],
     requirements: [],
     unlocks: []
@@ -70,9 +80,14 @@ export const researchItems: ResearchItem[] = [
     description: '塵の保存効率を向上させ、最大保存量を10倍に',
     category: 'fundamental',
     icon: '🗜️',
-    cost: { darkMatter: 3 },
+    cost: {
+      darkMatter: 3
+    },
     effects: [
-      { type: 'dust_storage_multiplier', value: 10.0 }
+      {
+        type: 'dust_storage_multiplier',
+        value: 10.0
+      }
     ],
     requirements: ['enhanced_dust_generation'],
     unlocks: []
@@ -83,9 +98,16 @@ export const researchItems: ResearchItem[] = [
     description: 'すべての基本資源の生成量を1.5倍に',
     category: 'fundamental',
     icon: '🔬',
-    cost: { darkMatter: 5 },
+    cost: {
+      thoughtPoints: 200,
+      quantumCrystal: 10,
+      stabilizedEnergy: 20
+    },
     effects: [
-      { type: 'all_resource_multiplier', value: 1.5 }
+      {
+        type: 'all_resource_multiplier',
+        value: 1.5
+      }
     ],
     requirements: ['enhanced_dust_generation', 'advanced_energy_conversion'],
     unlocks: []
@@ -98,9 +120,14 @@ export const researchItems: ResearchItem[] = [
     description: '衛星の作成をアンロック',
     category: 'celestial',
     icon: '🌙',
-    cost: { darkMatter: 1 },
+    cost: {
+      darkMatter: 1
+    },
     effects: [
-      { type: 'unlock_celestial_body', value: 'moon' }
+      {
+        type: 'unlock_celestial_body',
+        value: 'moon'
+      }
     ],
     requirements: [],
     unlocks: ['moon']
@@ -111,9 +138,14 @@ export const researchItems: ResearchItem[] = [
     description: '準惑星の作成をアンロック',
     category: 'celestial',
     icon: '🪨',
-    cost: { darkMatter: 2 },
+    cost: {
+      darkMatter: 2
+    },
     effects: [
-      { type: 'unlock_celestial_body', value: 'dwarf_planet' }
+      {
+        type: 'unlock_celestial_body',
+        value: 'dwarf_planet'
+      }
     ],
     requirements: ['orbital_mechanics'],
     unlocks: ['dwarf_planet']
@@ -124,9 +156,14 @@ export const researchItems: ResearchItem[] = [
     description: '惑星の作成をアンロック',
     category: 'celestial',
     icon: '🪐',
-    cost: { darkMatter: 3 },
+    cost: {
+      darkMatter: 3
+    },
     effects: [
-      { type: 'unlock_celestial_body', value: 'planet' }
+      {
+        type: 'unlock_celestial_body',
+        value: 'planet'
+      }
     ],
     requirements: ['dwarf_planet_science'],
     unlocks: ['planet']
@@ -137,9 +174,16 @@ export const researchItems: ResearchItem[] = [
     description: '恒星の作成をアンロック',
     category: 'celestial',
     icon: '⭐',
-    cost: { darkMatter: 5 },
+    cost: {
+      thoughtPoints: 500,
+      refinedMetal: 50,
+      hyperCrystal: 20
+    },
     effects: [
-      { type: 'unlock_celestial_body', value: 'star' }
+      {
+        type: 'unlock_celestial_body',
+        value: 'star'
+      }
     ],
     requirements: ['planetary_formation'],
     unlocks: ['star']
@@ -150,9 +194,16 @@ export const researchItems: ResearchItem[] = [
     description: 'ブラックホールの創造をアンロック',
     category: 'celestial',
     icon: '🕳️',
-    cost: { darkMatter: 10 },
+    cost: {
+      thoughtPoints: 1000,
+      dimensionalEssence: 10,
+      exoticMatter: 5
+    },
     effects: [
-      { type: 'unlock_celestial_body', value: 'black_hole' }
+      {
+        type: 'unlock_celestial_body',
+        value: 'black_hole'
+      }
     ],
     requirements: ['stellar_genesis'],
     unlocks: ['black_hole']
@@ -163,9 +214,14 @@ export const researchItems: ResearchItem[] = [
     description: '天体の軌道を自由に調整可能に',
     category: 'celestial',
     icon: '🎯',
-    cost: { darkMatter: 8 },
+    cost: {
+      darkMatter: 8
+    },
     effects: [
-      { type: 'enable_orbit_control', value: true }
+      {
+        type: 'enable_orbit_control',
+        value: true
+      }
     ],
     requirements: ['stellar_genesis'],
     unlocks: []
@@ -178,9 +234,14 @@ export const researchItems: ResearchItem[] = [
     description: '惑星での生命誕生確率を2倍に',
     category: 'life',
     icon: '🧪',
-    cost: { darkMatter: 2 },
+    cost: {
+      darkMatter: 2
+    },
     effects: [
-      { type: 'life_spawn_chance_multiplier', value: 2.0 }
+      {
+        type: 'life_spawn_chance_multiplier',
+        value: 2.0
+      }
     ],
     requirements: [],
     unlocks: []
@@ -191,9 +252,14 @@ export const researchItems: ResearchItem[] = [
     description: '生命の進化速度を3倍に加速',
     category: 'life',
     icon: '🧬',
-    cost: { darkMatter: 3 },
+    cost: {
+      darkMatter: 3
+    },
     effects: [
-      { type: 'evolution_speed_multiplier', value: 3.0 }
+      {
+        type: 'evolution_speed_multiplier',
+        value: 3.0
+      }
     ],
     requirements: ['primordial_soup'],
     unlocks: []
@@ -204,9 +270,14 @@ export const researchItems: ResearchItem[] = [
     description: '知的生命体への進化をアンロック',
     category: 'life',
     icon: '🧠',
-    cost: { darkMatter: 5 },
+    cost: {
+      darkMatter: 5
+    },
     effects: [
-      { type: 'unlock_life_stage', value: 'intelligent' }
+      {
+        type: 'unlock_life_stage',
+        value: 'intelligent'
+      }
     ],
     requirements: ['evolutionary_acceleration'],
     unlocks: ['intelligent_life_stage']
@@ -217,9 +288,14 @@ export const researchItems: ResearchItem[] = [
     description: '文明が他の星系に拡張可能に',
     category: 'life',
     icon: '🚀',
-    cost: { darkMatter: 10 },
+    cost: {
+      darkMatter: 10
+    },
     effects: [
-      { type: 'enable_interstellar_expansion', value: true }
+      {
+        type: 'enable_interstellar_expansion',
+        value: true
+      }
     ],
     requirements: ['intelligent_life'],
     unlocks: []
@@ -230,9 +306,14 @@ export const researchItems: ResearchItem[] = [
     description: '生命体から得られる資源を2倍に',
     category: 'life',
     icon: '🔬',
-    cost: { darkMatter: 4 },
+    cost: {
+      darkMatter: 4
+    },
     effects: [
-      { type: 'bio_resource_multiplier', value: 2.0 }
+      {
+        type: 'bio_resource_multiplier',
+        value: 2.0
+      }
     ],
     requirements: ['evolutionary_acceleration'],
     unlocks: []
@@ -245,9 +326,16 @@ export const researchItems: ResearchItem[] = [
     description: '資源収集の自動化を開始',
     category: 'technology',
     icon: '🤖',
-    cost: { darkMatter: 3 },
+    cost: {
+      thoughtPoints: 300,
+      processedMetal: 30,
+      silicon: 20
+    },
     effects: [
-      { type: 'enable_automation', value: 'basic' }
+      {
+        type: 'enable_automation',
+        value: 'basic'
+      }
     ],
     requirements: [],
     unlocks: ['basic_automation']
@@ -258,9 +346,14 @@ export const researchItems: ResearchItem[] = [
     description: 'ゲーム速度を2倍に加速可能に',
     category: 'technology',
     icon: '⏩',
-    cost: { thoughtPoints: 10 },
+    cost: {
+      thoughtPoints: 10
+    },
     effects: [
-      { type: 'unlock_time_multiplier', value: 2 }
+      {
+        type: 'unlock_time_multiplier',
+        value: 2
+      }
     ],
     requirements: [],
     unlocks: ['time_2x']
@@ -271,9 +364,14 @@ export const researchItems: ResearchItem[] = [
     description: 'ゲーム速度を5倍に加速可能に',
     category: 'technology',
     icon: '⏩',
-    cost: { thoughtPoints: 50 },
+    cost: {
+      thoughtPoints: 50
+    },
     effects: [
-      { type: 'unlock_time_multiplier', value: 5 }
+      {
+        type: 'unlock_time_multiplier',
+        value: 5
+      }
     ],
     requirements: ['time_acceleration_2x'],
     unlocks: ['time_5x']
@@ -284,9 +382,14 @@ export const researchItems: ResearchItem[] = [
     description: 'ゲーム速度を10倍に加速可能に',
     category: 'technology',
     icon: '⏩',
-    cost: { thoughtPoints: 100 },
+    cost: {
+      thoughtPoints: 100
+    },
     effects: [
-      { type: 'unlock_time_multiplier', value: 10 }
+      {
+        type: 'unlock_time_multiplier',
+        value: 10
+      }
     ],
     requirements: ['time_acceleration_5x'],
     unlocks: ['time_10x']
@@ -297,9 +400,16 @@ export const researchItems: ResearchItem[] = [
     description: '研究速度を5倍に加速',
     category: 'technology',
     icon: '💻',
-    cost: { darkMatter: 7 },
+    cost: {
+      thoughtPoints: 1000,
+      quantumCrystal: 50,
+      quantumPolymer: 30
+    },
     effects: [
-      { type: 'research_speed_multiplier', value: 5.0 }
+      {
+        type: 'research_speed_multiplier',
+        value: 5.0
+      }
     ],
     requirements: ['automation_basics'],
     unlocks: []
@@ -310,9 +420,17 @@ export const researchItems: ResearchItem[] = [
     description: '恒星からエネルギーを直接収集',
     category: 'technology',
     icon: '🔆',
-    cost: { darkMatter: 15 },
+    cost: {
+      thoughtPoints: 5000,
+      ultraAlloy: 100,
+      concentratedEnergy: 50,
+      dimensionalEssence: 20
+    },
     effects: [
-      { type: 'enable_dyson_sphere', value: true }
+      {
+        type: 'enable_dyson_sphere',
+        value: true
+      }
     ],
     requirements: ['quantum_computing'],
     unlocks: ['dyson_sphere_construction']
@@ -325,9 +443,14 @@ export const researchItems: ResearchItem[] = [
     description: 'ダークマター生成量を3倍に',
     category: 'cosmic',
     icon: '🌑',
-    cost: { darkMatter: 5 },
+    cost: {
+      darkMatter: 5
+    },
     effects: [
-      { type: 'dark_matter_generation_multiplier', value: 3.0 }
+      {
+        type: 'dark_matter_generation_multiplier',
+        value: 3.0
+      }
     ],
     requirements: [],
     unlocks: []
@@ -338,9 +461,14 @@ export const researchItems: ResearchItem[] = [
     description: '瞬間移動技術をアンロック',
     category: 'cosmic',
     icon: '🌀',
-    cost: { darkMatter: 10 },
+    cost: {
+      darkMatter: 10
+    },
     effects: [
-      { type: 'enable_teleportation', value: true }
+      {
+        type: 'enable_teleportation',
+        value: true
+      }
     ],
     requirements: ['dark_matter_manipulation'],
     unlocks: ['teleportation']
@@ -351,9 +479,14 @@ export const researchItems: ResearchItem[] = [
     description: '並行宇宙へのアクセスを可能に',
     category: 'cosmic',
     icon: '🔮',
-    cost: { darkMatter: 20 },
+    cost: {
+      darkMatter: 20
+    },
     effects: [
-      { type: 'unlock_multiverse', value: true }
+      {
+        type: 'unlock_multiverse',
+        value: true
+      }
     ],
     requirements: ['wormhole_theory'],
     unlocks: ['multiverse_access']
@@ -364,9 +497,14 @@ export const researchItems: ResearchItem[] = [
     description: 'すべての知的生命体と接続',
     category: 'cosmic',
     icon: '🧘',
-    cost: { thoughtPoints: 1000 },
+    cost: {
+      thoughtPoints: 1000
+    },
     effects: [
-      { type: 'enable_cosmic_consciousness', value: true }
+      {
+        type: 'enable_cosmic_consciousness',
+        value: true
+      }
     ],
     requirements: ['multiverse_theory'],
     unlocks: []
@@ -377,9 +515,15 @@ export const researchItems: ResearchItem[] = [
     description: '物理法則を部分的に書き換え可能に',
     category: 'cosmic',
     icon: '✨',
-    cost: { darkMatter: 50, thoughtPoints: 500 },
+    cost: {
+      darkMatter: 50,
+      thoughtPoints: 500
+    },
     effects: [
-      { type: 'enable_reality_manipulation', value: true }
+      {
+        type: 'enable_reality_manipulation',
+        value: true
+      }
     ],
     requirements: ['cosmic_consciousness'],
     unlocks: []

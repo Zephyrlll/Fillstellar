@@ -1,10 +1,11 @@
 // Resource Sell Modal for Cosmic Gardener
 // Provides UI for selling resources in the market
 
-import { gameState } from '@/state';
-import { ResourceType, QualityTier, RESOURCE_METADATA } from '@/resourceSystem';
-import { marketSystem } from '@/marketSystem';
-import { currencyManager, CurrencyType } from '@/currencySystem';
+import { gameStateManager } from './state.js';
+import { ResourceType, QualityTier, RESOURCE_METADATA } from './resourceSystem.js';
+import { marketSystem } from './marketSystem.js';
+import { currencyManager, CurrencyType } from './currencySystem.js';
+import { updateUI } from './ui.js';
 
 export interface SellModalOptions {
     resourceType?: ResourceType;
@@ -267,7 +268,12 @@ class ResourceSellModal {
         const resourceSelect = this.modal.querySelector('#resource-type-select') as HTMLSelectElement;
         resourceSelect?.addEventListener('change', (e) => {
             const target = e.target as HTMLSelectElement;
-            this.selectResource(target.value as ResourceType);
+            // Convert string key to ResourceType enum value
+            const resourceKey = target.value;
+            const resourceType = Object.values(ResourceType).find(rt => rt === resourceKey);
+            if (resourceType) {
+                this.selectResource(resourceType as ResourceType);
+            }
         });
 
         // Quantity controls
@@ -308,8 +314,12 @@ class ResourceSellModal {
         
         if (this.currentResourceType) {
             const resourceSelect = this.modal.querySelector('#resource-type-select') as HTMLSelectElement;
-            resourceSelect.value = this.currentResourceType;
-            this.selectResource(this.currentResourceType);
+            // Ensure currentResourceType is a valid ResourceType enum value
+            const validResourceType = Object.values(ResourceType).find(rt => rt === this.currentResourceType);
+            if (validResourceType) {
+                resourceSelect.value = validResourceType;
+                this.selectResource(validResourceType as ResourceType);
+            }
         }
 
         this.modal.style.display = 'flex';
@@ -344,13 +354,24 @@ class ResourceSellModal {
             resourceSelect.removeChild(resourceSelect.lastChild!);
         }
 
-        // Add options for resources the player has
-        Object.entries(gameState.resources).forEach(([resourceType, amount]) => {
-            if (amount > 0 && RESOURCE_METADATA[resourceType as ResourceType]) {
-                const metadata = RESOURCE_METADATA[resourceType as ResourceType];
+        // Add options for basic resources the player has
+        const basicResourceTypes = [
+            ResourceType.COSMIC_DUST,
+            ResourceType.ENERGY,
+            ResourceType.ORGANIC_MATTER,
+            ResourceType.BIOMASS,
+            ResourceType.DARK_MATTER,
+            ResourceType.THOUGHT_POINTS
+        ];
+        
+        const currentState = gameStateManager.getState();
+        basicResourceTypes.forEach(resourceType => {
+            const amount = currentState.resources[resourceType] || 0;
+            if (amount > 0) {
+                const metadata = RESOURCE_METADATA[resourceType];
                 const option = document.createElement('option');
                 option.value = resourceType;
-                option.textContent = `${metadata.icon} ${metadata.name} (${amount.toLocaleString()})`;
+                option.textContent = `${metadata.icon} ${metadata.name} (${Math.floor(amount).toLocaleString()})`;
                 resourceSelect.appendChild(option);
             }
         });
@@ -377,15 +398,16 @@ class ResourceSellModal {
         iconEl.textContent = metadata.icon;
         nameEl.textContent = metadata.name;
         descEl.textContent = metadata.description;
-        availableEl.textContent = (gameState.resources[resourceType] || 0).toLocaleString();
+        const currentState = gameStateManager.getState();
+        availableEl.textContent = (currentState.resources[resourceType] || 0).toLocaleString();
 
         const marketPrice = marketSystem.getCurrentPrice(resourceType);
         priceEl.textContent = marketSystem.formatPrice(marketPrice);
 
         // Set max quantity
         const quantityInput = this.modal.querySelector('#sell-quantity') as HTMLInputElement;
-        quantityInput.max = (gameState.resources[resourceType] || 0).toString();
-        quantityInput.value = Math.min(1, gameState.resources[resourceType] || 0).toString();
+        quantityInput.max = (currentState.resources[resourceType] || 0).toString();
+        quantityInput.value = Math.min(1, currentState.resources[resourceType] || 0).toString();
 
         this.updatePreview();
     }
@@ -393,7 +415,8 @@ class ResourceSellModal {
     private setQuantityPercent(percent: number): void {
         if (!this.currentResourceType || !this.modal) return;
 
-        const available = gameState.resources[this.currentResourceType] || 0;
+        const currentState = gameStateManager.getState();
+        const available = currentState.resources[this.currentResourceType] || 0;
         const quantity = Math.floor(available * percent / 100);
         
         const quantityInput = this.modal.querySelector('#sell-quantity') as HTMLInputElement;
@@ -427,7 +450,8 @@ class ResourceSellModal {
 
         // Enable/disable sell button
         const sellBtn = this.modal.querySelector('#confirm-sell') as HTMLButtonElement;
-        const available = gameState.resources[this.currentResourceType] || 0;
+        const currentState = gameStateManager.getState();
+        const available = currentState.resources[this.currentResourceType] || 0;
         sellBtn.disabled = quantity <= 0 || quantity > available;
     }
 
@@ -447,7 +471,8 @@ class ResourceSellModal {
             return;
         }
 
-        const available = gameState.resources[this.currentResourceType] || 0;
+        const currentState = gameStateManager.getState();
+        const available = currentState.resources[this.currentResourceType] || 0;
         if (quantity > available) {
             alert('Insufficient resources');
             return;
@@ -461,6 +486,9 @@ class ResourceSellModal {
         
         if (success) {
             console.log(`[SELL_MODAL] Successfully sold ${quantity} ${this.currentResourceType} for ${earnings} ${currency}`);
+            
+            // Update UI immediately after sale
+            updateUI();
             
             // Call completion callback
             if (this.onSellCompleteCallback) {
@@ -483,3 +511,8 @@ class ResourceSellModal {
 
 // Export singleton instance
 export const resourceSellModal = new ResourceSellModal();
+
+// Export convenience function for backward compatibility
+export function showResourceSellModal(options?: SellModalOptions): void {
+    resourceSellModal.open(options);
+}

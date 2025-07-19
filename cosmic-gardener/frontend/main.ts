@@ -22,6 +22,10 @@ import { setupDeviceDetection } from './js/deviceDetection.ts';
 import { catalystManager, CatalystType } from './js/catalystSystem.ts';
 // @ts-ignore
 import { currencyManager } from './js/currencySystem.ts';
+// @ts-ignore
+import { marketSystem } from './js/marketSystem.ts';
+// @ts-ignore
+import { showResourceSellModal } from './js/resourceSellModal.ts';
 // Graphics system imports
 import { performanceMonitor } from './js/performanceMonitor.ts';
 import { graphicsEngine } from './js/graphicsEngine.ts';
@@ -30,6 +34,8 @@ import { updatePerformanceDisplay } from './js/ui.ts';
 import { starfieldOptimizer } from './js/starfieldOptimizer.ts';
 // Research Lab UI
 import { initializeResearchLab } from './js/researchLab.ts';
+// Inventory UI
+import { initializeInventory } from './js/inventory.ts';
 // Physics config
 import { physicsConfig } from './js/physicsConfig.ts';
 // Debug physics
@@ -190,11 +196,17 @@ function animate() {
     }
 
     let dustRate = 1 + gameState.dustUpgradeLevel * 0.5 + (gameState.researchEnhancedDust ? 2 : 0);
+    // Apply research multipliers
+    if (gameState.research?.dustGenerationMultiplier) {
+        dustRate *= gameState.research.dustGenerationMultiplier;
+    }
     let energyRate = 0;
     let intelligentLifeCount = 0;
     let totalPopulation = 0;
 
     spatialGrid.clear();
+    
+    let darkMatterRate = 0;
     
     gameState.stars.forEach(body => {
         spatialGrid.insert(body);
@@ -210,6 +222,10 @@ function animate() {
         switch (body.userData.type) {
             case 'star':
                 energyRate += (body.userData.mass as number) / 1000;
+                break;
+            case 'black_hole':
+                // Black holes generate dark matter based on nearby matter
+                darkMatterRate += Math.log10((body.userData.mass as number) + 1) * 0.001;
                 break;
             case 'asteroid':
             case 'comet':
@@ -231,6 +247,10 @@ function animate() {
                             organicRate = 1.0; biomassRate = 0.5; populationGrowthRate = 0.5;
                             intelligentLifeCount++;
                             let thoughtPointRate = (((body.userData as PlanetUserData).population || 0) / 1000000) * (1 + gameState.cosmicActivity / 10000);
+                            // Apply research multiplier
+                            if (gameState.research?.thoughtGenerationMultiplier) {
+                                thoughtPointRate *= gameState.research.thoughtGenerationMultiplier;
+                            }
                             const thoughtPointsToAdd = thoughtPointRate * deltaTime;
                             
                             // Only add to batch if significant amount
@@ -274,6 +294,15 @@ function animate() {
     }
 
     if (gameState.researchAdvancedEnergy) energyRate *= 2;
+    // Apply research multipliers
+    if (gameState.research?.energyConversionMultiplier) {
+        energyRate *= gameState.research.energyConversionMultiplier;
+    }
+    
+    // Apply research multiplier to dark matter generation
+    if (gameState.research?.darkMatterGenerationMultiplier) {
+        darkMatterRate *= gameState.research.darkMatterGenerationMultiplier;
+    }
     
     const thoughtSpeed = mathCache.getThoughtSpeed();
     batchUpdates.push(state => ({
@@ -283,7 +312,8 @@ function animate() {
         resourceAccumulators: {
             ...state.resourceAccumulators,
             cosmicDust: state.resourceAccumulators.cosmicDust + dustRate * deltaTime,
-            energy: state.resourceAccumulators.energy + energyRate * deltaTime
+            energy: state.resourceAccumulators.energy + energyRate * deltaTime,
+            darkMatter: (state.resourceAccumulators.darkMatter || 0) + darkMatterRate * deltaTime
         }
     }));
 
@@ -314,6 +344,19 @@ function animate() {
             newState.resourceAccumulators = {
                 ...newState.resourceAccumulators,
                 energy: newState.resourceAccumulators.energy - energyToAdd
+            };
+        }
+        
+        if (newState.resourceAccumulators.darkMatter && newState.resourceAccumulators.darkMatter >= 0.001) {
+            const darkMatterToAdd = newState.resourceAccumulators.darkMatter;
+            newState.darkMatter = (newState.darkMatter || 0) + darkMatterToAdd;
+            newState.resources = {
+                ...newState.resources,
+                darkMatter: (newState.resources.darkMatter || 0) + darkMatterToAdd
+            };
+            newState.resourceAccumulators = {
+                ...newState.resourceAccumulators,
+                darkMatter: 0
             };
         }
         
@@ -465,6 +508,15 @@ function init() {
     // Initialize currency system
     currencyManager.initializeCurrencies();
     
+    // Initialize market system
+    marketSystem.update();
+    
+    // Expose systems globally for debugging and HTML access
+    (window as any).currencyManager = currencyManager;
+    (window as any).marketSystem = marketSystem;
+    (window as any).showResourceSellModal = showResourceSellModal;
+    console.log('[INIT] Currency and market systems initialized and exposed to window');
+    
     // Debug: Check UI elements
     // console.log('[UI] Checking UI elements after initialization...');
     // console.log('[UI] overlayResourceSellButton:', ui.overlayResourceSellButton);
@@ -583,6 +635,7 @@ function init() {
         // console.log('[INIT] DOM already loaded, setting up event listeners now...');
         setupEventListeners();
         initializeResearchLab();
+        initializeInventory();
     }
     
     // WebSocket接続の初期化

@@ -169,12 +169,27 @@ export interface GameState {
         organicMatter: number;
         biomass: number;
         thoughtPoints: number;
+        darkMatter?: number;
     };
     thoughtSpeedMps: number;
     cosmicActivity: number;
     physics: PhysicsState;
     researchEnhancedDust: boolean;
     researchAdvancedEnergy: boolean;
+    research?: {
+        completedResearch?: string[];
+        dustGenerationMultiplier?: number;
+        energyConversionMultiplier?: number;
+        allResourceMultiplier?: number;
+        lifeSpawnChanceMultiplier?: number;
+        evolutionSpeedMultiplier?: number;
+        populationGrowthMultiplier?: number;
+        thoughtGenerationMultiplier?: number;
+        researchSpeedMultiplier?: number;
+        darkMatterGenerationMultiplier?: number;
+        conversionEfficiencyMultiplier?: number;
+        cosmicActivityMultiplier?: number;
+    };
     unlockedCelestialBodies: { [key: string]: boolean };
     graphicsQuality: string; // Legacy field for backward compatibility
     graphics: GraphicsState; // New detailed graphics settings
@@ -433,6 +448,11 @@ export class GameStateManager {
     }
 
     private isFrameworkObject(obj: any): boolean {
+        // Skip null and undefined
+        if (obj == null) {
+            return false;
+        }
+        
         // Skip Three.js objects
         if (obj.isVector3 || obj.isVector2 || obj.isQuaternion || obj.isMatrix4 ||
             obj.isObject3D || obj.isMesh || obj.isGeometry || obj.isMaterial ||
@@ -490,7 +510,8 @@ const initialGameState: GameState = {
         energy: 0,
         organicMatter: 0,
         biomass: 0,
-        thoughtPoints: 0
+        thoughtPoints: 0,
+        darkMatter: 0
     },
     thoughtSpeedMps: 0,
     cosmicActivity: 0,

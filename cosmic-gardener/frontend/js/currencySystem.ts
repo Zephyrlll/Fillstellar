@@ -1,8 +1,8 @@
 // Currency System for Cosmic Gardener
 // Manages various currencies and exchange systems
 
-import { gameState, gameStateManager } from '@/state';
-import { ResourceType } from '@/resourceSystem';
+import { gameState, gameStateManager } from './state.js';
+import { ResourceType } from './resourceSystem.js';
 
 export enum CurrencyType {
     COSMIC_CREDITS = 'cosmicCredits',
@@ -46,10 +46,12 @@ class CurrencyManager {
 
         console.log('[CURRENCY] Initializing currency system...');
 
+        const currentState = gameStateManager.getState();
+
         // Initialize base currencies
         this.currencies.set(CurrencyType.COSMIC_CREDITS, {
             type: CurrencyType.COSMIC_CREDITS,
-            amount: gameState.cosmicCredits || 0,
+            amount: currentState.cosmicCredits || 0,
             icon: '💰',
             name: 'Cosmic Credits',
             description: 'The universal currency of the cosmos',
@@ -63,7 +65,7 @@ class CurrencyManager {
 
         this.currencies.set(CurrencyType.QUANTUM_COINS, {
             type: CurrencyType.QUANTUM_COINS,
-            amount: gameState.quantumCoins || 0,
+            amount: currentState.quantumCoins || 0,
             icon: '🪙',
             name: 'Quantum Coins',
             description: 'Currency that exists in superposition',
@@ -77,7 +79,7 @@ class CurrencyManager {
 
         this.currencies.set(CurrencyType.STELLAR_SHARDS, {
             type: CurrencyType.STELLAR_SHARDS,
-            amount: gameState.stellarShards || 0,
+            amount: currentState.stellarShards || 0,
             icon: '✨',
             name: 'Stellar Shards',
             description: 'Fragments of crystallized starlight',
@@ -91,7 +93,7 @@ class CurrencyManager {
 
         this.currencies.set(CurrencyType.VOID_TOKENS, {
             type: CurrencyType.VOID_TOKENS,
-            amount: gameState.voidTokens || 0,
+            amount: currentState.voidTokens || 0,
             icon: '⚫',
             name: 'Void Tokens',
             description: 'Currency from the spaces between reality',
@@ -272,8 +274,12 @@ class CurrencyManager {
     }
 
     sellResource(resourceType: ResourceType, amount: number, targetCurrency: CurrencyType): boolean {
+        // Get current state
+        const currentState = gameStateManager.getState();
+        
         // Check if player has enough resources
-        const currentAmount = gameState.resources[resourceType] || 0;
+        const currentAmount = currentState.resources[resourceType] || 0;
+        
         if (currentAmount < amount) {
             console.warn(`[CURRENCY] Insufficient ${resourceType}. Required: ${amount}, Available: ${currentAmount}`);
             return false;

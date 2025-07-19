@@ -166,14 +166,14 @@ export function loadGame(): void {
     
     if (parsedState.saveVersion === '2.1-graphics-system') {
         // Migrate to device detection version
-        parsedState.deviceInfo = {
+        parsedState.deviceInfo = parsedState.deviceInfo || {
             isMobile: false,
             isDesktop: true,
-            screenWidth: 0,
-            screenHeight: 0,
-            userAgent: '',
-            hasTouchSupport: false,
-            lastDetectionTime: 0
+            screenWidth: window.innerWidth || 0,
+            screenHeight: window.innerHeight || 0,
+            userAgent: navigator.userAgent || '',
+            hasTouchSupport: 'ontouchstart' in window,
+            lastDetectionTime: Date.now()
         };
         parsedState.saveVersion = '2.2-device-detection';
     }
@@ -186,10 +186,42 @@ export function loadGame(): void {
 
         const { stars, focusedObjectUUID, discoveredTechnologies, availableFacilities, conversionEngineState, ...restOfState } = parsedState;
         
+        // Filter out null/undefined values from restOfState
+        const cleanedState: any = {};
+        for (const [key, value] of Object.entries(restOfState)) {
+            if (value !== null && value !== undefined) {
+                cleanedState[key] = value;
+            }
+        }
+        
+        // Ensure critical fields exist
+        if (!cleanedState.resources) {
+            cleanedState.resources = {
+                cosmicDust: cleanedState.cosmicDust || 150000,
+                energy: cleanedState.energy || 0,
+                organicMatter: cleanedState.organicMatter || 0,
+                biomass: cleanedState.biomass || 0,
+                darkMatter: cleanedState.darkMatter || 0,
+                thoughtPoints: cleanedState.thoughtPoints || 0
+            };
+        }
+        
+        if (!cleanedState.deviceInfo) {
+            cleanedState.deviceInfo = {
+                isMobile: false,
+                isDesktop: true,
+                screenWidth: window.innerWidth || 0,
+                screenHeight: window.innerHeight || 0,
+                userAgent: navigator.userAgent || '',
+                hasTouchSupport: 'ontouchstart' in window,
+                lastDetectionTime: Date.now()
+            };
+        }
+        
         // Use gameStateManager to update state
         gameStateManager.updateState(state => ({
             ...state,
-            ...restOfState,
+            ...cleanedState,
             discoveredTechnologies: new Set(discoveredTechnologies || []),
             availableFacilities: new Set(availableFacilities || ['basic_converter']),
             focusedObject: null

@@ -12,7 +12,7 @@ import {
     RESOURCE_METADATA
 } from './resourceSystem.js';
 import { CONVERSION_RECIPES, calculateRecipeOutput } from './conversionRecipes.js';
-import { gameState } from './state.js';
+import { gameState, gameStateManager } from './state.js';
 import { showMessage } from './ui.js';
 import { addTimelineLog } from './timeline.js';
 import { resourceFlowDisplay } from './resourceFlowDisplay.js';
@@ -160,48 +160,63 @@ export class ConversionEngine {
     
     // Modify resource amount (add or subtract)
     private modifyResource(type: ResourceType, amount: number, quality: QualityTier): void {
-        // Initialize advanced resources if needed
-        if (!gameState.advancedResources) {
-            gameState.advancedResources = {};
-        }
-        
-        // Handle basic resources
-        const basicResourceMap: Partial<Record<ResourceType, keyof typeof gameState.resources>> = {
-            [ResourceType.COSMIC_DUST]: 'cosmicDust',
-            [ResourceType.ENERGY]: 'energy',
-            [ResourceType.ORGANIC_MATTER]: 'organicMatter',
-            [ResourceType.BIOMASS]: 'biomass',
-            [ResourceType.DARK_MATTER]: 'darkMatter',
-            [ResourceType.THOUGHT_POINTS]: 'thoughtPoints'
-        };
-        
-        if (type in basicResourceMap) {
-            const resourceKey = basicResourceMap[type];
-            if (resourceKey) {
-                gameState.resources[resourceKey] = Math.max(0, gameState.resources[resourceKey] + amount);
-                return;
+        gameStateManager.updateState(state => {
+            const newState = { ...state };
+            
+            // Initialize advanced resources if needed
+            if (!newState.advancedResources) {
+                newState.advancedResources = {};
             }
-        }
-        
-        // Handle advanced resources
-        if (!gameState.advancedResources![type]) {
-            gameState.advancedResources![type] = {
-                amount: 0,
-                quality: quality,
-                accumulator: 0
+            
+            // Handle basic resources
+            const basicResourceMap: Partial<Record<ResourceType, keyof typeof state.resources>> = {
+                [ResourceType.COSMIC_DUST]: 'cosmicDust',
+                [ResourceType.ENERGY]: 'energy',
+                [ResourceType.ORGANIC_MATTER]: 'organicMatter',
+                [ResourceType.BIOMASS]: 'biomass',
+                [ResourceType.DARK_MATTER]: 'darkMatter',
+                [ResourceType.THOUGHT_POINTS]: 'thoughtPoints'
             };
-        }
-        
-        const storage = gameState.advancedResources![type];
-        
-        if (amount > 0) {
-            // When adding resources, calculate weighted average quality
-            const totalAmount = storage.amount + amount;
-            const weightedQuality = (storage.amount * storage.quality + amount * quality) / totalAmount;
-            storage.quality = Math.round(weightedQuality);
-        }
-        
-        storage.amount = Math.max(0, storage.amount + amount);
+            
+            if (type in basicResourceMap) {
+                const resourceKey = basicResourceMap[type];
+                if (resourceKey) {
+                    newState.resources = {
+                        ...state.resources,
+                        [resourceKey]: Math.max(0, state.resources[resourceKey] + amount)
+                    };
+                    return newState;
+                }
+            }
+            
+            // Handle advanced resources
+            const advancedResources = { ...newState.advancedResources };
+            
+            if (!advancedResources[type]) {
+                advancedResources[type] = {
+                    amount: 0,
+                    quality: quality,
+                    accumulator: 0
+                };
+            } else {
+                // Create a copy of the resource storage
+                advancedResources[type] = { ...advancedResources[type] };
+            }
+            
+            const storage = advancedResources[type];
+            
+            if (amount > 0) {
+                // When adding resources, calculate weighted average quality
+                const totalAmount = storage.amount + amount;
+                const weightedQuality = (storage.amount * storage.quality + amount * quality) / totalAmount;
+                storage.quality = Math.round(weightedQuality);
+            }
+            
+            storage.amount = Math.max(0, storage.amount + amount);
+            newState.advancedResources = advancedResources;
+            
+            return newState;
+        });
     }
     
     // Check waste capacity and apply penalties

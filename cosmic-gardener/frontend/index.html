@@ -32,6 +32,9 @@
       <button id="researchLabToggleButton-mobile" class="mobile-nav-btn research-lab-btn" title="研究室を開く">
         🔬
       </button>
+      <button id="inventoryToggleButton-mobile" class="mobile-nav-btn inventory-btn" title="インベントリを開く">
+        📦
+      </button>
     </div>
     <div id="mobile-nav-right">
       <div id="resource-summary-nav">
@@ -1191,6 +1194,10 @@
             <div class="btn-icon">🔬</div>
             <div class="btn-label">研究室</div>
         </button>
+        <button id="inventoryToggleButton" class="floating-btn inventory-btn" title="インベントリを開く">
+            <div class="btn-icon">📦</div>
+            <div class="btn-label">インベントリ</div>
+        </button>
     </div>
 
     <!-- 銀河マップコンテナ -->
@@ -1246,7 +1253,10 @@
   <div id="production-panel" class="production-panel">
     <div class="production-panel-header">
       <h1>🏭 資源生産システム</h1>
-      <button id="productionPanelCloseButton" class="close-btn">×</button>
+      <div class="header-buttons">
+        <button id="openInventoryFromProduction" class="header-btn inventory-link">📦 インベントリ</button>
+        <button id="productionPanelCloseButton" class="close-btn">×</button>
+      </div>
     </div>
     
     <div class="production-panel-content">
@@ -1437,6 +1447,12 @@
 
         <!-- 研究進捗サイドバー -->
         <div class="research-sidebar">
+          <div class="quick-links">
+            <button id="openInventoryFromResearch" class="quick-link-btn">
+              <span class="link-icon">📦</span>
+              <span class="link-text">インベントリを開く</span>
+            </button>
+          </div>
           <div class="research-progress-section">
             <h3>研究進捗</h3>
             <div class="progress-stats">
@@ -1526,7 +1542,7 @@
             console.log('🔧 Attempting direct module imports...');
             
             // Load currency system
-            import('./js/currencySystem.ts')
+            import('./js/currencySystem.js')
                 .then((currencyModule) => {
                     console.log('🔧 currencySystem module loaded:', currencyModule);
                     if (currencyModule.currencyManager) {
@@ -1540,7 +1556,7 @@
                 });
             
             // Load market system
-            import('./js/marketSystem.ts')
+            import('./js/marketSystem.js')
                 .then((marketModule) => {
                     console.log('🔧 marketSystem module loaded:', marketModule);
                     if (marketModule.marketSystem) {
@@ -1554,7 +1570,7 @@
                 });
             
             // Load modal system
-            import('/js/resourceSellModal.ts')
+            import('./js/resourceSellModal.js')
                 .then((module) => {
                     console.log('🔧 resourceSellModal module loaded:', module);
                     if (module.showResourceSellModal) {
@@ -1749,5 +1765,68 @@
         });
     }
   </script>
+
+  <!-- インベントリUI (フルスクリーンオーバーレイ) -->
+  <div id="inventory-overlay" class="inventory-overlay">
+    <div class="inventory-container">
+      <!-- ヘッダー -->
+      <div class="inventory-header">
+        <div class="inventory-title">
+          <div class="inventory-icon">📦</div>
+          <h1>宇宙インベントリ</h1>
+          <div class="inventory-subtitle">Cosmic Inventory</div>
+        </div>
+        <button id="inventoryCloseButton" class="inventory-close-btn">
+          <span class="close-icon">✕</span>
+        </button>
+      </div>
+
+      <!-- メインコンテンツ -->
+      <div class="inventory-main">
+        <!-- カテゴリタブ -->
+        <div class="inventory-tabs">
+          <div class="inventory-tab active" data-category="basic">
+            <div class="tab-icon">⚛️</div>
+            <div class="tab-label">基本資源</div>
+          </div>
+          <div class="inventory-tab" data-category="advanced">
+            <div class="tab-icon">💎</div>
+            <div class="tab-label">高度な資源</div>
+          </div>
+          <div class="inventory-tab" data-category="processed">
+            <div class="tab-icon">⚙️</div>
+            <div class="tab-label">加工資源</div>
+          </div>
+          <div class="inventory-tab" data-category="special">
+            <div class="tab-icon">🌟</div>
+            <div class="tab-label">特殊資源</div>
+          </div>
+        </div>
+
+        <!-- リソースグリッド -->
+        <div class="inventory-grid" id="inventory-grid">
+          <!-- 動的に生成されるリソースカード -->
+        </div>
+      </div>
+
+      <!-- フッター -->
+      <div class="inventory-footer">
+        <div class="inventory-stats">
+          <div class="stat-item">
+            <span class="stat-label">総資源種類:</span>
+            <span class="stat-value" id="totalResourceTypes">0</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">総価値:</span>
+            <span class="stat-value" id="totalResourceValue">0</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">最高品質:</span>
+            <span class="stat-value" id="highestQuality">-</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </body>
 </html>

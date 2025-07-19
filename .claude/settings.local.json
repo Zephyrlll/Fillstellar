@@ -16,7 +16,9 @@
       "Bash(mkdir:*)",
       "Bash(cp:*)",
       "Bash(grep:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(node:*)",
+      "Bash(mv:*)"
     ],
     "deny": []
   }

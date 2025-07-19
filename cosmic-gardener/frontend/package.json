@@ -42,6 +42,7 @@
   "homepage": "https://github.com/Zephyrlll/Space_Idle_Game#readme",
   "description": "A 3D space simulation idle game where players create and manage cosmic objects from dust to stars",
   "dependencies": {
+    "js-yaml": "^4.1.0",
     "three": "^0.178.0",
     "vite": "^4.5.3"
   },

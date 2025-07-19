@@ -484,16 +484,33 @@ export class GraphicsEngine {
                 
                 // Create new position array with visible points
                 const newPositions = new Float32Array(visiblePoints * 3);
+                let hasValidData = false;
                 for (let i = 0; i < visiblePoints * 3; i++) {
-                    newPositions[i] = originalPositions[i];
+                    const value = originalPositions[i];
+                    if (isFinite(value)) {
+                        newPositions[i] = value;
+                        hasValidData = true;
+                    } else {
+                        // デフォルト値を設定
+                        newPositions[i] = 0;
+                        console.warn(`✨ NaN value found at index ${i}, using default 0`);
+                    }
                 }
                 
-                // Update geometry
-                geometry.setAttribute('position', new THREE.BufferAttribute(newPositions, 3));
-                geometry.attributes.position.needsUpdate = true;
-                
-                // Recompute bounding sphere to avoid NaN errors
-                geometry.computeBoundingSphere();
+                // Update geometry only if we have valid data
+                if (hasValidData) {
+                    geometry.setAttribute('position', new THREE.BufferAttribute(newPositions, 3));
+                    geometry.attributes.position.needsUpdate = true;
+                    
+                    // Recompute bounding sphere only if data is valid
+                    try {
+                        geometry.computeBoundingSphere();
+                    } catch (error) {
+                        console.error('✨ Error computing bounding sphere:', error);
+                    }
+                } else {
+                    console.error('✨ No valid position data found in starfield');
+                }
                 
                 console.log(`✨ Starfield updated: ${visiblePoints}/${totalPoints} stars visible`);
             } else {

@@ -131,6 +131,7 @@ export const ui: { [key: string]: HTMLElement | null } = {
     overlayEnergy: document.getElementById('overlayEnergy'),
     overlayStarCount: document.getElementById('overlayStarCount'),
     overlayThoughtPoints: document.getElementById('overlayThoughtPoints'),
+    overlayCurrencyCosmicDust: document.getElementById('overlayCurrencyCosmicDust'),
     overlayCosmicActivity: document.getElementById('overlayCosmicActivity'),
     overlayPopulation: document.getElementById('overlayPopulation'),
     resetGameButton: document.getElementById('resetGameButton'),
@@ -291,13 +292,24 @@ function updateFocusedBodyUI() {
 }
 
 export function updateUI() {
+    // Get fresh state on each call
+    const state = gameStateManager.getState();
+    
+    // Use resources from the resources object
+    const cosmicDust = state.resources.cosmicDust;
+    const energy = state.resources.energy;
+    const organicMatter = state.resources.organicMatter;
+    const biomass = state.resources.biomass;
+    const darkMatter = state.resources.darkMatter;
+    const thoughtPoints = state.resources.thoughtPoints;
+    
     const {
-        gameYear, cosmicDust, energy, organicMatter, biomass, darkMatter, thoughtPoints,
+        gameYear,
         dustUpgradeLevel, darkMatterConverterLevel,
         researchEnhancedDust, researchAdvancedEnergy,
         unlockedCelestialBodies,
         currentDustRate, cachedTotalPopulation
-    } = gameState;
+    } = state;
 
     const currentGameYear = Math.floor(gameYear);
     const currentCosmicDust = Math.floor(cosmicDust);
@@ -410,11 +422,12 @@ export function updateUI() {
     // 右下のオーバーレイパネルの更新
     if (ui.overlayCosmicDust) ui.overlayCosmicDust.textContent = String(currentCosmicDust);
     if (ui.overlayEnergy) ui.overlayEnergy.textContent = String(currentEnergy);
-    if (ui.overlayStarCount) ui.overlayStarCount.textContent = String(gameState.stars.length);
+    if (ui.overlayStarCount) ui.overlayStarCount.textContent = String(state.stars.length);
     if (ui.overlayThoughtPoints) ui.overlayThoughtPoints.textContent = String(currentThoughtPoints);
+    if (ui.overlayCurrencyCosmicDust) ui.overlayCurrencyCosmicDust.textContent = `${Math.floor(state.cosmicCredits || 0)} CC`;
     
     // 宇宙活動度の計算（天体の総数 + エネルギー生産率）
-    const cosmicActivity = gameState.stars.length + Math.floor(currentDustRate || 0);
+    const cosmicActivity = state.stars.length + Math.floor(currentDustRate || 0);
     if (ui.overlayCosmicActivity) ui.overlayCosmicActivity.textContent = String(cosmicActivity);
     
     // 総人口の表示

@@ -128,7 +128,9 @@ description: 高度な宇宙現象と理論の研究
   category: fundamental
   icon: 🔬
   cost:
-    darkMatter: 5
+    thoughtPoints: 200
+    quantumCrystal: 10
+    stabilizedEnergy: 20
   effects:
     - type: all_resource_multiplier
       value: 1.5
@@ -191,7 +193,9 @@ description: 高度な宇宙現象と理論の研究
   category: celestial
   icon: ⭐
   cost:
-    darkMatter: 5
+    thoughtPoints: 500
+    refinedMetal: 50
+    hyperCrystal: 20
   effects:
     - type: unlock_celestial_body
       value: star
@@ -206,7 +210,9 @@ description: 高度な宇宙現象と理論の研究
   category: celestial
   icon: 🕳️
   cost:
-    darkMatter: 10
+    thoughtPoints: 1000
+    dimensionalEssence: 10
+    exoticMatter: 5
   effects:
     - type: unlock_celestial_body
       value: black_hole
@@ -313,7 +319,9 @@ description: 高度な宇宙現象と理論の研究
   category: technology
   icon: 🤖
   cost:
-    darkMatter: 3
+    thoughtPoints: 300
+    processedMetal: 30
+    silicon: 20
   effects:
     - type: enable_automation
       value: basic
@@ -371,7 +379,9 @@ description: 高度な宇宙現象と理論の研究
   category: technology
   icon: 💻
   cost:
-    darkMatter: 7
+    thoughtPoints: 1000
+    quantumCrystal: 50
+    quantumPolymer: 30
   effects:
     - type: research_speed_multiplier
       value: 5.0
@@ -385,7 +395,10 @@ description: 高度な宇宙現象と理論の研究
   category: technology
   icon: 🔆
   cost:
-    darkMatter: 15
+    thoughtPoints: 5000
+    ultraAlloy: 100
+    concentratedEnergy: 50
+    dimensionalEssence: 20
   effects:
     - type: enable_dyson_sphere
       value: true
