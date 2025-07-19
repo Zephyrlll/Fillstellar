@@ -277,10 +277,17 @@ export function updatePhysics(deltaTime: number) {
             // });
         }
         
-        // Handle collisions
-        collisions.forEach(collision => {
+        // Handle collisions - limit to prevent excessive updates
+        const maxCollisionsPerFrame = 3;
+        const collisionsToProcess = collisions.slice(0, maxCollisionsPerFrame);
+        
+        collisionsToProcess.forEach(collision => {
             handleCollision(collision.body1, collision.body2);
         });
+        
+        if (collisions.length > maxCollisionsPerFrame) {
+            console.log(`[PHYSICS] Processing ${maxCollisionsPerFrame} of ${collisions.length} collisions this frame`);
+        }
     }
 
     // Update physics for remaining bodies

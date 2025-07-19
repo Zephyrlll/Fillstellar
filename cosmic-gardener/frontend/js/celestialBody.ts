@@ -141,19 +141,30 @@ export function createCelestialBody(type: string, options: any = {}): CelestialB
     if (!result.ok) {
         const error = (result as { ok: false; error: any }).error;
         console.error('[CELESTIAL] Failed to create celestial body:', error);
-        showMessage(`天体の作成に失敗しました: ${error.message}`);
+        console.error('[CELESTIAL] Failed configuration:', {
+            type: celestialType,
+            options: options
+        });
+        if (error.details && error.details.errors) {
+            console.error('[CELESTIAL] Validation errors:', error.details.errors);
+        }
+        // メッセージは表示しない（破片生成時にスパムになるため）
+        // showMessage(`天体の作成に失敗しました: ${error.message}`);
+        
         // フォールバック: デフォルトのメッシュを返す
+        const fallbackRadius = options.radius || 1;
         const fallbackMesh = new THREE.Mesh(
-            new THREE.SphereGeometry(1, 32, 32),
-            new THREE.MeshStandardMaterial({ color: 0xff00ff })
+            new THREE.SphereGeometry(fallbackRadius, 32, 32),
+            new THREE.MeshStandardMaterial({ color: 0x808080 })
         );
         fallbackMesh.userData = {
             type: type,
-            name: 'error-body',
+            name: options.name || 'error-body',
             creationYear: gameState.gameYear,
-            mass: 1,
-            radius: 1,
-            velocity: new THREE.Vector3(0, 0, 0),
+            mass: options.mass || 1,
+            radius: fallbackRadius,
+            velocity: options.velocity || new THREE.Vector3(0, 0, 0),
+            position: options.position || new THREE.Vector3(0, 0, 0),
             acceleration: new THREE.Vector3(0, 0, 0),
             isStatic: false
         };

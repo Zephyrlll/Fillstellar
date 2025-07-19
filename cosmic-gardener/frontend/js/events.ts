@@ -10,6 +10,7 @@ import { addTimelineLog } from './timeline.js';
 import { soundManager } from './sound.js';
 import { graphicsEngine } from './graphicsEngine.js';
 import { physicsConfig } from './physicsConfig.js';
+import { backgroundGalaxies } from './backgroundGalaxies.js';
 
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
@@ -964,6 +965,28 @@ export function setupEventListeners() {
             });
         }
     });
+    
+    // Background galaxy select (desktop)
+    const backgroundGalaxySelect = document.getElementById('backgroundGalaxySelect') as HTMLSelectElement;
+    if (backgroundGalaxySelect) {
+        backgroundGalaxySelect.addEventListener('change', (event) => {
+            const target = event.target as HTMLSelectElement;
+            const mode = target.value as 'none' | 'skybox' | 'sprites' | 'mixed';
+            backgroundGalaxies.setDisplayMode(mode);
+            console.log('[EVENTS] Background galaxy mode changed to:', mode);
+        });
+    }
+    
+    // Background galaxy select (mobile)
+    const mobileBackgroundGalaxySelect = document.getElementById('mobile-backgroundGalaxySelect') as HTMLSelectElement;
+    if (mobileBackgroundGalaxySelect) {
+        mobileBackgroundGalaxySelect.addEventListener('change', (event) => {
+            const target = event.target as HTMLSelectElement;
+            const mode = target.value as 'none' | 'skybox' | 'sprites' | 'mixed';
+            backgroundGalaxies.setDisplayMode(mode);
+            console.log('[EVENTS] Background galaxy mode changed to:', mode);
+        });
+    }
     
     // Frame rate limit select
     if (ui.frameRateLimitSelect) {

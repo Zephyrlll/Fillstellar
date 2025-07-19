@@ -154,6 +154,9 @@ function animate() {
     // 軌道トレイルを更新
     orbitTrailSystem.update(gameState.stars);
     
+    // 背景銀河を更新
+    backgroundGalaxies.update(animationDeltaTime);
+    
     let totalVelocity = 0;
     let movingBodies = 0;
     gameState.stars.forEach(body => {
@@ -185,7 +188,7 @@ function animate() {
     gameState.stars.forEach(body => {
         spatialGrid.insert(body);
         
-        body.rotation.y += 0.01 * animationDeltaTime;
+        body.rotation.y -= 0.01 * animationDeltaTime; // 反時計回りに変更
 
         if (body.userData.type === 'planet') {
             if ((body.userData as PlanetUserData).hasLife) {
@@ -346,7 +349,12 @@ function animate() {
     // Update graphics engine for setting changes
     graphicsEngine.update();
     
-    composer.render();
+    // NaNエラーのデバッグ用にtry-catchを追加
+    try {
+        composer.render();
+    } catch (error) {
+        console.error('[RENDER] Error during rendering:', error);
+    }
     
     // Debug: Check if scene has objects
     if (animationCount === 1) {
@@ -397,9 +405,9 @@ function init() {
     createStarfield();
     console.log('[INIT] Starfield created');
     
-    // 背景銀河を初期化（一時的に無効化）
-    // backgroundGalaxies.setDisplayMode('mixed');
-    console.log('[INIT] Background galaxies disabled temporarily');
+    // 背景銀河を初期化（デフォルトはmixed）
+    backgroundGalaxies.setDisplayMode('mixed');
+    console.log('[INIT] Background galaxies created');
     
     loadGame();
     console.log('[INIT] Game loaded');

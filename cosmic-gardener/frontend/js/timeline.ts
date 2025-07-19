@@ -1,12 +1,23 @@
 import { gameState, gameStateManager } from './state.js';
 
+// タイムラインログの更新頻度を制限
+let lastLogTime = 0;
+const LOG_THROTTLE_MS = 100; // 100ms = 0.1秒の間隔を開ける
+
 export function addTimelineLog(message: string, type = 'event') {
+    // 更新頻度の制限
+    const now = Date.now();
+    if (now - lastLogTime < LOG_THROTTLE_MS) {
+        return; // スキップ
+    }
+    lastLogTime = now;
+    
     const logEntry = {
-        id: Date.now() + Math.random(),
+        id: now + Math.random(),
         year: Math.floor(gameState.gameYear),
         message: message,
         type: type,
-        timestamp: Date.now()
+        timestamp: now
     };
     
     gameStateManager.updateState(state => {

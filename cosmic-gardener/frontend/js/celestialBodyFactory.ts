@@ -125,7 +125,9 @@ export class CelestialBodyFactory {
 
   // 親天体が必要かチェック
   private requiresParent(type: CelestialType): boolean {
-    return ['planet', 'moon', 'asteroid', 'comet', 'dwarfPlanet'].includes(type);
+    // 衛星と準惑星のみ親天体が必要
+    // 小惑星と彗星は独立した天体として存在可能
+    return ['moon', 'dwarfPlanet'].includes(type);
   }
 
   // ベクトルの妥当性チェック
@@ -219,9 +221,9 @@ export class CelestialBodyFactory {
       case 'moon':
         return this.createMoonData(config.parent);
       case 'asteroid':
-        return this.createAsteroidData(config.parent);
+        return this.createAsteroidData(config.parent, config);
       case 'comet':
-        return this.createCometData(config.parent);
+        return this.createCometData(config.parent, config);
       case 'dwarfPlanet':
         return this.createDwarfPlanetData(config.parent);
       case 'black_hole':
@@ -346,19 +348,47 @@ export class CelestialBodyFactory {
     return { mass, radius, data: {} };
   }
 
-  private createAsteroidData(parent: CelestialBody | undefined): { mass: number; radius: number; data: any } | null {
-    if (!parent || !parent.userData) return null;
-    const parentMass = parent.userData.mass as number;
-    const mass = parentMass * (Math.random() * 0.00001 + 0.000001);
-    const radius = Math.max(Math.cbrt(mass) * 1.0, 0.8);
+  private createAsteroidData(parent: CelestialBody | undefined, config: CelestialConfig): { mass: number; radius: number; data: any } | null {
+    let mass: number;
+    let radius: number;
+    
+    if (parent && parent.userData) {
+      // 親天体がある場合は、その質量に基づいて計算
+      const parentMass = parent.userData.mass as number;
+      mass = parentMass * (Math.random() * 0.00001 + 0.000001);
+      radius = Math.max(Math.cbrt(mass) * 1.0, 0.8);
+    } else if (config.mass !== undefined && config.radius !== undefined) {
+      // 親天体がない場合は、設定値を使用（衝突の破片など）
+      mass = config.mass;
+      radius = config.radius;
+    } else {
+      // どちらもない場合はデフォルト値
+      mass = 10 + Math.random() * 90;  // 10-100の範囲
+      radius = Math.max(Math.cbrt(mass) * 0.5, 0.5);
+    }
+    
     return { mass, radius, data: {} };
   }
 
-  private createCometData(parent: CelestialBody | undefined): { mass: number; radius: number; data: any } | null {
-    if (!parent || !parent.userData) return null;
-    const parentMass = parent.userData.mass as number;
-    const mass = parentMass * (Math.random() * 0.000005 + 0.0000005);
-    const radius = Math.max(Math.cbrt(mass) * 1.2, 1.0);
+  private createCometData(parent: CelestialBody | undefined, config: CelestialConfig): { mass: number; radius: number; data: any } | null {
+    let mass: number;
+    let radius: number;
+    
+    if (parent && parent.userData) {
+      // 親天体がある場合は、その質量に基づいて計算
+      const parentMass = parent.userData.mass as number;
+      mass = parentMass * (Math.random() * 0.000005 + 0.0000005);
+      radius = Math.max(Math.cbrt(mass) * 1.2, 1.0);
+    } else if (config.mass !== undefined && config.radius !== undefined) {
+      // 親天体がない場合は、設定値を使用
+      mass = config.mass;
+      radius = config.radius;
+    } else {
+      // どちらもない場合はデフォルト値
+      mass = 5 + Math.random() * 45;  // 5-50の範囲（小惑星より小さめ）
+      radius = Math.max(Math.cbrt(mass) * 0.8, 0.8);
+    }
+    
     return { mass, radius, data: {} };
   }
 
@@ -501,7 +531,11 @@ export class CelestialBodyFactory {
   }
 
   private createAsteroidObject(params: any): THREE.Mesh {
-    const asteroidGeom = this.createRealisticAsteroid(params.radius);
+    // パラメータの検証
+    const safeRadius = (isFinite(params.radius) && params.radius > 0) ? params.radius : 1;
+    
+    // シンプルな球体ジオメトリを使用（NaNエラーを回避）
+    const asteroidGeom = celestialObjectPools.getSphereGeometry(1);
     const asteroidMaterial = new THREE.MeshStandardMaterial({ 
       color: 0x888888, 
       roughness: 0.9, 
@@ -511,8 +545,11 @@ export class CelestialBodyFactory {
     });
     const body = new THREE.Mesh(asteroidGeom, asteroidMaterial);
     
+    // スケールで実際の半径を設定
+    body.scale.set(safeRadius, safeRadius, safeRadius);
+    
     // アウトライン追加
-    this.addOutline(body, params.radius, 0xaaaaaa, 0.15);
+    this.addOutline(body, safeRadius, 0xaaaaaa, 0.15);
     
     return body;
   }
@@ -707,20 +744,45 @@ export class CelestialBodyFactory {
   }
 
   private createRealisticAsteroid(radius: number): THREE.BufferGeometry {
-    const geometry = new THREE.SphereGeometry(radius, 32, 32);
+    // 半径の検証とデフォルト値
+    const safeRadius = (isFinite(radius) && radius > 0) ? radius : 1;
+    
+    // デバッグ情報
+    if (!isFinite(safeRadius)) {
+      console.error('[ASTEROID] Invalid radius for asteroid:', radius, 'using default: 1');
+    }
+    
+    // 単位サイズ（半径1）でジオメトリを作成
+    const geometry = new THREE.SphereGeometry(1, 16, 16); // 頂点数を減らしてパフォーマンス向上
     const position = geometry.attributes.position;
     const vertex = new THREE.Vector3();
     
     for (let i = 0; i < position.count; i++){
       vertex.fromBufferAttribute(position, i);
-      vertex.multiplyScalar(1 + (Math.random() - 0.5) * 0.6);
+      
+      // ランダムな凹凸を追加
+      const randomScale = 1 + (Math.random() - 0.5) * 0.4;
+      vertex.multiplyScalar(randomScale);
+      
+      // 時々深いクレーターを作成
       if (Math.random() < 0.1) {
-        vertex.multiplyScalar(0.9 + Math.random() * 0.05);
+        vertex.multiplyScalar(0.85 + Math.random() * 0.1);
       }
+      
+      // 最終的にradius倍する
+      vertex.multiplyScalar(safeRadius);
+      
+      // NaNチェック
+      if (!isFinite(vertex.x) || !isFinite(vertex.y) || !isFinite(vertex.z)) {
+        console.error('[ASTEROID] NaN vertex detected at index:', i);
+        vertex.set(safeRadius, 0, 0); // フォールバック
+      }
+      
       position.setXYZ(i, vertex.x, vertex.y, vertex.z);
     }
     
     geometry.computeVertexNormals();
+    geometry.computeBoundingSphere();
     return geometry;
   }
 

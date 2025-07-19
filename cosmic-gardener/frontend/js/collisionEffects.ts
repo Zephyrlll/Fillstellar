@@ -66,11 +66,24 @@ export class CollisionEffects {
     
     // 衝突処理
     static processCollision(body1: CelestialBody, body2: CelestialBody): CollisionResult {
+        // 入力検証
+        if (!body1.userData.velocity) body1.userData.velocity = new THREE.Vector3(0, 0, 0);
+        if (!body2.userData.velocity) body2.userData.velocity = new THREE.Vector3(0, 0, 0);
+        if (!body1.userData.mass || body1.userData.mass <= 0) body1.userData.mass = 1;
+        if (!body2.userData.mass || body2.userData.mass <= 0) body2.userData.mass = 1;
+        
         const relativeVelocity = body2.userData.velocity.clone().sub(body1.userData.velocity);
         const collisionType = this.determineCollisionType(body1, body2, relativeVelocity);
         const collisionEnergy = 0.5 * body1.userData.mass * body2.userData.mass / 
                                (body1.userData.mass + body2.userData.mass) * 
                                relativeVelocity.lengthSq();
+        
+        // エネルギーのNaNチェック
+        if (!isFinite(collisionEnergy)) {
+            console.warn('[COLLISION] Invalid collision energy, using default');
+            const defaultEnergy = 1000;
+            return this.processMerge(body1, body2, defaultEnergy);
+        }
         
         switch (collisionType) {
             case 'merge':
@@ -147,40 +160,89 @@ export class CollisionEffects {
         const totalMass = body1.userData.mass + body2.userData.mass;
         const collisionPoint = body1.position.clone().add(body2.position).multiplyScalar(0.5);
         
-        // デブリの数を計算（エネルギーに基づく）
-        const debrisCount = Math.min(Math.floor(Math.sqrt(energy / 1000)) + 2, 10);
+        // デブリの数を計算（エネルギーに基づく）- 更新過多を防ぐため上限を下げる
+        const safeEnergy = isFinite(energy) ? energy : 1000;
+        const debrisCount = Math.min(Math.floor(Math.sqrt(safeEnergy / 1000)) + 2, 5); // 最大5個に制限
         const debrisMass = totalMass * 0.3 / debrisCount; // 30%がデブリに
         
+        // 質量の検証
+        if (!isFinite(debrisMass) || debrisMass <= 0) {
+            console.warn('[COLLISION] Invalid debris mass, skipping fragmentation');
+            return this.processMerge(body1, body2, energy);
+        }
+        
         // デブリ生成
+        const newFragments: CelestialBody[] = [];
         for (let i = 0; i < debrisCount; i++) {
             const angle = (i / debrisCount) * Math.PI * 2;
             const speed = Math.sqrt(energy / totalMass) * (0.5 + Math.random() * 0.5);
             
-            const velocity = new THREE.Vector3(
+            const fragmentVelocity = new THREE.Vector3(
                 Math.cos(angle) * speed,
                 (Math.random() - 0.5) * speed * 0.5,
                 Math.sin(angle) * speed
             );
             
-            const position = collisionPoint.clone().add(
-                velocity.clone().normalize().multiplyScalar(
+            // 位置と速度を計算（NaNチェック付き）
+            const fragmentDirection = fragmentVelocity.clone().normalize();
+            if (!isFinite(fragmentDirection.x) || !isFinite(fragmentDirection.y) || !isFinite(fragmentDirection.z)) {
+                // normalize()が失敗した場合はランダムな方向を使用
+                fragmentDirection.set(
+                    Math.cos(angle),
+                    (Math.random() - 0.5) * 0.5,
+                    Math.sin(angle)
+                );
+            }
+            
+            const fragmentPosition = collisionPoint.clone().add(
+                fragmentDirection.multiplyScalar(
                     (body1.userData.radius + body2.userData.radius) * 0.5
                 )
             );
             
+            // 親天体の平均速度を計算
+            const parentVelocity = body1.userData.velocity.clone().add(body2.userData.velocity).multiplyScalar(0.5);
+            const finalVelocity = fragmentVelocity.clone().add(parentVelocity);
+            const fragmentRadius = Math.pow(debrisMass / 100, 1/3);
+            
+            // NaNチェック
+            if (!isFinite(fragmentPosition.x) || !isFinite(fragmentPosition.y) || !isFinite(fragmentPosition.z)) {
+                console.warn('[COLLISION] Invalid fragment position, using collision point');
+                fragmentPosition.copy(collisionPoint);
+            }
+            
+            if (!isFinite(finalVelocity.x) || !isFinite(finalVelocity.y) || !isFinite(finalVelocity.z)) {
+                console.warn('[COLLISION] Invalid fragment velocity, using zero velocity');
+                finalVelocity.set(0, 0, 0);
+            }
+            
+            if (!isFinite(fragmentRadius) || fragmentRadius <= 0) {
+                console.warn('[COLLISION] Invalid fragment radius, using default');
+                continue; // この破片をスキップ
+            }
+            
             const fragment = createCelestialBody('asteroid', {
                 name: `${body1.userData.name}の破片`,
                 mass: debrisMass,
-                radius: Math.pow(debrisMass / 100, 1/3),
-                position,
-                velocity: velocity.add(body1.userData.velocity.clone().add(body2.userData.velocity).multiplyScalar(0.5))
+                radius: fragmentRadius,
+                position: fragmentPosition.clone(), // クローンを渡す
+                velocity: finalVelocity.clone() // クローンを渡す
             });
             
-            debris.push(fragment);
-            scene.add(fragment);
+            if (fragment) {
+                debris.push(fragment);
+                scene.add(fragment);
+                newFragments.push(fragment);
+            } else {
+                console.error('[COLLISION] Failed to create debris fragment');
+            }
+        }
+        
+        // 一度にすべての破片を追加
+        if (newFragments.length > 0) {
             gameStateManager.updateState(state => ({
                 ...state,
-                stars: [...state.stars, fragment]
+                stars: [...state.stars, ...newFragments]
             }));
         }
         
