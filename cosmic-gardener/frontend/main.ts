@@ -114,15 +114,16 @@ function animate() {
     // Reset update counter at the start of each frame
     gameStateManager.resetUpdateCounter();
     
-    // Update performance monitor
-    performanceMonitor.update();
-    
     // Check frame rate limiter - skip rendering if limited
-    if (!graphicsEngine.getFrameRateLimiter().shouldRender()) {
+    const shouldRender = graphicsEngine.getFrameRateLimiter().shouldRender();
+    if (!shouldRender) {
         // Reset update counter even when skipping frame
         gameStateManager.resetUpdateCounter();
         return;
     }
+    
+    // Update performance monitor only for rendered frames
+    performanceMonitor.update();
     
     const now = Date.now();
     
