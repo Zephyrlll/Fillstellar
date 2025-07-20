@@ -42,7 +42,7 @@ export class Dashboard {
     this.container.innerHTML = `
       <div class="dashboard-header">
         <h3>宇宙の庭 - ダッシュボード</h3>
-        <button class="dashboard-minimize" title="最小化">_</button>
+        <button class="dashboard-close" title="閉じる">×</button>
       </div>
       
       <div class="dashboard-content">
@@ -63,7 +63,7 @@ export class Dashboard {
         
         <div class="mini-map">
           <h4>宇宙マップ</h4>
-          <canvas id="mini-map-canvas" width="200" height="200"></canvas>
+          <canvas id="mini-map-canvas" width="560" height="200"></canvas>
           <div class="celestial-count">
             天体数: ${gameState.stars.length}
           </div>
@@ -72,9 +72,9 @@ export class Dashboard {
     `;
     
     // Setup event listeners
-    const minimizeBtn = this.container.querySelector('.dashboard-minimize');
-    if (minimizeBtn) {
-      minimizeBtn.addEventListener('click', () => this.toggleMinimize());
+    const closeBtn = this.container.querySelector('.dashboard-close');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', () => this.hide());
     }
     
     // Render minimap
@@ -327,17 +327,30 @@ export class Dashboard {
     return resource.replace(/([A-Z])/g, '-$1').toLowerCase();
   }
   
-  private toggleMinimize(): void {
+  hide(): void {
     if (!this.container) return;
     
-    this.container.classList.toggle('minimized');
+    animationSystem.fadeOut({
+      targets: this.container,
+      duration: 300,
+      complete: () => {
+        this.container?.classList.add('hidden');
+        this.stopUpdating();
+      }
+    });
+  }
+  
+  show(): void {
+    if (!this.container) return;
     
-    if (this.container.classList.contains('minimized')) {
-      this.stopUpdating();
-    } else {
-      this.startUpdating();
-      this.render(); // Re-render when maximized
-    }
+    this.container.classList.remove('hidden');
+    this.startUpdating();
+    this.render();
+    
+    animationSystem.fadeIn({
+      targets: this.container,
+      duration: 300
+    });
   }
   
   private startUpdating(): void {

@@ -266,37 +266,13 @@ export class MenuSystem {
   
   // Action implementations
   private toggleDashboard(): void {
-    const dashboard = document.getElementById('dashboard');
-    if (dashboard) {
-      if (dashboard.classList.contains('hidden')) {
-        // Show dashboard with animation
-        dashboard.classList.remove('hidden');
-        dashboard.style.display = 'block';
-        
-        animationSystem.slideInLeft({
-          targets: dashboard,
-          duration: 400,
-          easing: 'easeOutCubic'
-        });
-        
-        // Trigger an update
-        const dashboardInstance = (window as any).dashboard;
-        if (dashboardInstance && dashboardInstance.update) {
-          dashboardInstance.update();
-        }
+    const dashboardInstance = (window as any).dashboard;
+    if (dashboardInstance) {
+      const dashboard = document.getElementById('dashboard');
+      if (dashboard && dashboard.classList.contains('hidden')) {
+        dashboardInstance.show();
       } else {
-        // Hide dashboard with animation
-        animationSystem.animate({
-          targets: dashboard,
-          translateX: '-100%',
-          opacity: 0,
-          duration: 400,
-          easing: 'easeInCubic',
-          complete: () => {
-            dashboard.classList.add('hidden');
-            dashboard.style.display = 'none';
-          }
-        });
+        dashboardInstance.hide();
       }
     }
   }

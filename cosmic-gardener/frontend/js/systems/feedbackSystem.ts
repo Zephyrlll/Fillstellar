@@ -16,6 +16,17 @@ export class FeedbackSystem {
   private popupContainer: HTMLDivElement;
   private activeToasts: Set<HTMLElement> = new Set();
   
+  // Notification queue system
+  private notificationQueue: Array<{
+    type: 'achievement' | 'toast';
+    data: any;
+  }> = [];
+  private isProcessingQueue: boolean = false;
+  private activeNotifications: Set<HTMLElement> = new Set();
+  private maxActiveNotifications: number = 3;
+  private notificationDelay: number = 300; // Delay between notifications
+  private notificationDuration: number = 4000; // How long each notification stays
+  
   constructor(camera: THREE.Camera, renderer: THREE.WebGLRenderer) {
     this.camera = camera;
     this.renderer = renderer;
@@ -108,8 +119,57 @@ export class FeedbackSystem {
     description: string;
     icon?: string;
   }): void {
+    // Add to queue instead of showing immediately
+    this.notificationQueue.push({
+      type: 'achievement',
+      data: achievement
+    });
+    
+    this.processNotificationQueue();
+  }
+  
+  // Process the notification queue
+  private processNotificationQueue(): void {
+    if (this.isProcessingQueue || this.notificationQueue.length === 0) {
+      return;
+    }
+    
+    if (this.activeNotifications.size >= this.maxActiveNotifications) {
+      // Wait for a notification to finish
+      setTimeout(() => this.processNotificationQueue(), 500);
+      return;
+    }
+    
+    this.isProcessingQueue = true;
+    const item = this.notificationQueue.shift();
+    
+    if (item) {
+      if (item.type === 'achievement') {
+        this.showAchievementNotificationImmediate(item.data);
+      }
+    }
+    
+    this.isProcessingQueue = false;
+    
+    // Process next item after a short delay
+    if (this.notificationQueue.length > 0) {
+      setTimeout(() => this.processNotificationQueue(), this.notificationDelay);
+    }
+  }
+  
+  // Actually show the achievement notification
+  private showAchievementNotificationImmediate(achievement: {
+    name: string;
+    description: string;
+    icon?: string;
+  }): void {
     const notification = document.createElement('div');
     notification.className = 'achievement-notification';
+    
+    // Calculate position based on active notifications
+    const offset = this.activeNotifications.size * 110; // 100px height + 10px gap
+    notification.style.top = `${20 + offset}px`;
+    
     notification.innerHTML = `
       <div class="achievement-icon">${achievement.icon || '🏆'}</div>
       <div class="achievement-content">
@@ -120,6 +180,7 @@ export class FeedbackSystem {
     `;
     
     document.body.appendChild(notification);
+    this.activeNotifications.add(notification);
     
     // Use animation system for achievement unlock
     animationSystem.achievementUnlock(notification);
@@ -134,9 +195,27 @@ export class FeedbackSystem {
       animationSystem.fadeOut({
         targets: notification,
         duration: 500,
-        complete: () => notification.remove()
+        complete: () => {
+          notification.remove();
+          this.activeNotifications.delete(notification);
+          this.repositionNotifications();
+        }
       });
-    }, 4000);
+    }, this.notificationDuration);
+  }
+  
+  // Reposition notifications after one is removed
+  private repositionNotifications(): void {
+    const notifications = Array.from(this.activeNotifications);
+    notifications.forEach((notification, index) => {
+      const newTop = 20 + (index * 110);
+      animationSystem.animate({
+        targets: notification,
+        top: `${newTop}px`,
+        duration: 300,
+        easing: 'easeOutCubic'
+      });
+    });
   }
   
   // Show important event banner

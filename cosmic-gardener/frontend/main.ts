@@ -42,6 +42,14 @@ import { showResourceSellModal } from './js/resourceSellModal.ts';
 import { performanceMonitor } from './js/performanceMonitor.ts';
 import { graphicsEngine } from './js/graphicsEngine.ts';
 import { updatePerformanceDisplay } from './js/ui.ts';
+// Performance optimization imports
+import { performanceMonitor as newPerformanceMonitor } from './js/systems/performanceMonitor.ts';
+import { uiOptimizer } from './js/systems/uiOptimizer.ts';
+import { RenderOptimizer } from './js/systems/renderOptimizer.ts';
+// Balance system imports
+import { balanceManager } from './js/systems/balanceConfig.ts';
+import { balanceAdjustments } from './js/systems/balanceAdjustments.ts';
+import { balanceDebugUI } from './js/systems/balanceDebugUI.ts';
 // Starfield optimization
 import { starfieldOptimizer } from './js/starfieldOptimizer.ts';
 // Research Lab UI
@@ -77,6 +85,10 @@ function initializeIdleGameSystems() {
     saveSystem.load().then(savedState => {
         if (savedState) {
             console.log('[IDLE] Loading saved game...');
+            
+            // Apply balance migrations if needed
+            const saveVersion = savedState.saveVersion || '0.0.0';
+            balanceAdjustments.applyBalanceMigrations(saveVersion);
             
             // Calculate offline progress if applicable
             if (savedState.lastSaveTime) {
@@ -200,6 +212,7 @@ const achievementSystem = new AchievementSystem();
 let achievementUI: AchievementUI;
 const menuSystem = new MenuSystem();
 const uiPositionManager = new UIPositionManager();
+let renderOptimizer: RenderOptimizer;
 
 // Expose graphicsEngine globally for synchronous access from saveload.ts and debugging
 (window as any).graphicsEngine = graphicsEngine;
@@ -261,6 +274,9 @@ function createStarfield() {
 }
 
 let animationCount = 0;
+let balanceUpdateTimer = 0;
+const balanceUpdateInterval = 5; // Update balance every 5 seconds
+
 function animate() {
     if (animationCount < 5) {
         console.log('[ANIMATE] Animation frame:', animationCount);
@@ -281,6 +297,20 @@ function animate() {
     
     // Update performance monitor only for rendered frames
     performanceMonitor.update();
+    newPerformanceMonitor.update();
+    
+    // Update object count for performance monitoring
+    newPerformanceMonitor.updateObjectCount(scene.children.length);
+    
+    // Perform frustum culling for better performance
+    const culledCount = renderOptimizer.performFrustumCulling();
+    
+    // Adjust quality based on FPS
+    const currentFPS = newPerformanceMonitor.getMetrics().fps;
+    renderOptimizer.adjustQualityForFPS(currentFPS);
+    
+    // Update LOD for celestial bodies
+    renderOptimizer.updateLOD(gameState.stars);
     
     const now = Date.now();
     
@@ -359,10 +389,16 @@ function animate() {
         batchUpdates.push(state => ({ ...state, cosmicActivity: newCosmicActivity }));
     }
 
-    let dustRate = 1 + gameState.dustUpgradeLevel * 0.5 + (gameState.researchEnhancedDust ? 2 : 0);
+    // Get base dust rate from balance config
+    const baseDustRate = balanceManager.getResourceRate('cosmicDust', gameState.dustUpgradeLevel);
+    let dustRate = baseDustRate + (gameState.researchEnhancedDust ? 2 : 0);
     // Apply research multipliers
     if (gameState.research?.dustGenerationMultiplier) {
         dustRate *= gameState.research.dustGenerationMultiplier;
+    }
+    // Apply dynamic balance multipliers
+    if (gameState.balancedRates?.cosmicDust) {
+        dustRate *= gameState.balancedRates.cosmicDust;
     }
     let energyRate = 0;
     let intelligentLifeCount = 0;
@@ -620,6 +656,13 @@ function animate() {
         debouncedUpdateGalaxyMap();
         galaxyMapUpdateTimer = 0;
     }
+    
+    // Update balance adjustments periodically
+    balanceUpdateTimer += deltaTime;
+    if (balanceUpdateTimer >= balanceUpdateInterval) {
+        balanceAdjustments.applyDynamicBalance();
+        balanceUpdateTimer = 0;
+    }
 }
 
 function init() {
@@ -686,6 +729,13 @@ function init() {
     // Initialize UI position manager
     uiPositionManager.init();
     console.log('[INIT] UI position manager initialized');
+    
+    // Initialize render optimizer
+    renderOptimizer = RenderOptimizer.getInstance(renderer, scene, camera);
+    console.log('[INIT] Render optimizer initialized');
+    
+    // Initialize balance debug UI (F4 to toggle)
+    console.log('[INIT] Balance debug UI initialized (Press F4 to toggle)');
     
     // Initialize catalyst system with some starter catalysts for testing
     // @ts-ignore
@@ -839,6 +889,14 @@ function init() {
         document.addEventListener('DOMContentLoaded', () => {
             // console.log('[INIT] DOM loaded, setting up event listeners...');
             setupEventListeners();
+            
+            // Add performance monitor toggle (F3 key)
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'F3') {
+                    e.preventDefault();
+                    newPerformanceMonitor.toggle();
+                }
+            });
             initializeResearchLab();
             
             // Start auto-save after DOM is ready
@@ -858,6 +916,14 @@ function init() {
     } else {
         // console.log('[INIT] DOM already loaded, setting up event listeners now...');
         setupEventListeners();
+        
+        // Add performance monitor toggle (F3 key)
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'F3') {
+                e.preventDefault();
+                newPerformanceMonitor.toggle();
+            }
+        });
         initializeResearchLab();
         initializeInventory();
         

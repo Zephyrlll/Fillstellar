@@ -2,6 +2,7 @@
 import { gameState, gameStateManager, CelestialBody, StarUserData, PlanetUserData } from './state.js';
 import { mathCache, formatNumber } from './utils.js';
 import { updateProductionUI } from './productionUI.js';
+import { uiOptimizer } from './systems/uiOptimizer.js';
 
 let messageTimeout: any;
 
@@ -738,6 +739,9 @@ function updateGalaxyMap() {
     map.appendChild(fragment);
 }
 
+// Create throttled version of updateGalaxyMap
+const throttledUpdateGalaxyMap = uiOptimizer.throttle('galaxy-map', updateGalaxyMap, 200);
+
 export function debouncedUpdateGalaxyMap() {
     const blackHole = gameState.stars.find(s => s.userData.type === 'black_hole');
     const currentStarCount = gameState.stars.length;
@@ -750,7 +754,7 @@ export function debouncedUpdateGalaxyMap() {
         previousGalaxyMapState.blackHolePosition !== currentBlackHolePos;
     
     if (significantChange) {
-        updateGalaxyMap();
+        throttledUpdateGalaxyMap();
         previousGalaxyMapState.starCount = currentStarCount;
         (previousUIValues as any).isMapVisible = currentIsMapVisible;
         previousGalaxyMapState.blackHolePosition = currentBlackHolePos;

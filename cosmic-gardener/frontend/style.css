@@ -232,15 +232,53 @@
 /* Dashboard Styles */
 .dashboard {
   position: fixed;
-  top: 120px;
-  left: 20px;
-  width: 320px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 700px;
+  max-width: 90vw;
+  max-height: 85vh;
+  overflow-y: auto;
   background: linear-gradient(135deg, rgba(13, 27, 42, 0.95), rgba(27, 38, 59, 0.95));
   border: 2px solid rgba(74, 158, 255, 0.3);
   border-radius: 12px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
   z-index: 1000;
   transition: all 0.3s ease;
+}
+
+/* Custom scrollbar for dashboard */
+.dashboard::-webkit-scrollbar {
+  width: 8px;
+}
+
+.dashboard::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+.dashboard::-webkit-scrollbar-thumb {
+  background: rgba(74, 158, 255, 0.4);
+  border-radius: 4px;
+}
+
+.dashboard::-webkit-scrollbar-thumb:hover {
+  background: rgba(74, 158, 255, 0.6);
+}
+
+/* Responsive layout for smaller screens */
+@media (max-width: 768px) {
+  .dashboard {
+    width: 95vw;
+  }
+  
+  .dashboard-content {
+    grid-template-columns: 1fr;
+  }
+  
+  .dashboard-content .mini-map {
+    grid-column: span 1;
+  }
 }
 
 .dashboard.minimized {
@@ -258,7 +296,6 @@
   align-items: center;
   padding: 12px 16px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  cursor: move;
 }
 
 .dashboard-header h3 {
@@ -267,7 +304,7 @@
   color: #4a9eff;
 }
 
-.dashboard-minimize {
+.dashboard-close {
   background: none;
   border: 1px solid rgba(255, 255, 255, 0.2);
   color: #ffffff;
@@ -275,26 +312,36 @@
   height: 24px;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 16px;
+  font-size: 20px;
   line-height: 1;
   transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.dashboard-minimize:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.3);
+.dashboard-close:hover {
+  background: rgba(255, 67, 54, 0.2);
+  border-color: rgba(255, 67, 54, 0.4);
+  color: #ff4336;
 }
 
 .dashboard-content {
   padding: 16px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
 }
 
 .dashboard-content > div {
-  margin-bottom: 16px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 12px;
 }
 
-.dashboard-content > div:last-child {
-  margin-bottom: 0;
+.dashboard-content .mini-map {
+  grid-column: span 2;
 }
 
 .dashboard-content h4 {
@@ -615,25 +662,27 @@
 /* Achievement Notification */
 .achievement-notification {
   position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%) scale(0.8);
+  top: 20px;
+  right: 20px;
+  transform: translateX(400px);
   background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 140, 0, 0.2));
   border: 2px solid rgba(255, 215, 0, 0.8);
   border-radius: 16px;
-  padding: 24px 32px;
+  padding: 16px 24px;
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 16px;
   box-shadow: 0 0 40px rgba(255, 215, 0, 0.4);
   z-index: 10002;
   opacity: 0;
-  transition: all 0.5s ease;
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  width: 380px;
+  max-width: calc(100vw - 40px);
 }
 
 .achievement-notification.visible {
   opacity: 1;
-  transform: translate(-50%, -50%) scale(1);
+  transform: translateX(0);
 }
 
 .achievement-icon {

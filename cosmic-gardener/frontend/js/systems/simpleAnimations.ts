@@ -180,12 +180,9 @@ export class SimpleAnimationSystem {
   
   // 実績アンロックアニメーション
   achievementUnlock(element: HTMLElement): void {
-    element.style.transform = 'scale(0) rotate(0deg)';
-    element.style.opacity = '0';
+    // For right-side notifications, slide in from right
+    element.classList.add('visible');
     element.style.display = 'block';
-    
-    // Use CSS animation
-    element.style.animation = 'achievementUnlock 1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards';
   }
   
   // リソース取得アニメーション
