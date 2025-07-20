@@ -141,7 +141,9 @@ function animate() {
         }
     }
     
-    const deltaTime = rawDeltaTime * timeMultiplier;
+    // シミュレーション速度を0.2倍に設定
+    const simulationSpeed = 0.2;
+    const deltaTime = rawDeltaTime * timeMultiplier * simulationSpeed;
     const animationDeltaTime = deltaTime;
     
     if (!isFinite(animationDeltaTime) || animationDeltaTime <= 0) {
@@ -382,8 +384,15 @@ function animate() {
     if (gameState.focusedObject) {
         const targetPosition = gameState.focusedObject.position.clone();
         
-        // フォーカス対象への滑らかな移動のみ（距離調整は行わない）
-        controls.target.lerp(targetPosition, 0.05);
+        // カメラの現在の天体からの相対位置を計算
+        const currentOffset = camera.position.clone().sub(controls.target);
+        
+        // 新しいカメラ位置を計算（天体の位置 + 現在のオフセット）
+        const newCameraPosition = targetPosition.clone().add(currentOffset);
+        
+        // カメラ位置と注視点を即座に更新
+        camera.position.copy(newCameraPosition);
+        controls.target.copy(targetPosition);
     }
 
     const edgeGlow = scene.getObjectByName('black_hole_edge_glow');

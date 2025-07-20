@@ -23,6 +23,27 @@ function focusOnStar(star: CelestialBody) {
         focusedObject: star
     }));
     console.log("[GAME] Focused on:", star.userData.name);
+    
+    // カメラを即座に天体の位置に設定
+    import('./threeSetup.js').then(({ camera, controls }) => {
+        // 天体の位置を取得
+        const targetPosition = star.position.clone();
+        
+        // 天体の半径を考慮して適切な距離を計算
+        const bodyRadius = star.userData.radius || 10;
+        const viewDistance = Math.max(bodyRadius * 4, 100); // 天体の4倍の距離、最小100ユニット
+        
+        // カメラの新しい位置を計算（天体から斜め上の位置）
+        const offset = new THREE.Vector3(viewDistance, viewDistance * 0.5, viewDistance);
+        const newCameraPosition = targetPosition.clone().add(offset);
+        
+        // カメラ位置と注視点を即座に設定
+        camera.position.copy(newCameraPosition);
+        controls.target.copy(targetPosition);
+        
+        // コントロールを更新
+        controls.update();
+    });
 }
 
 let eventListenersSetup = false;
@@ -78,6 +99,52 @@ export function setupEventListeners() {
     if (eventListenersSetup) return;
     eventListenersSetup = true;
     
+    // UI要素上でのマウス操作時にOrbitControlsを無効化
+    const handleUIMouseEnter = () => {
+        import('./threeSetup.js').then(({ controls }) => {
+            controls.enableZoom = false;
+        });
+    };
+    
+    const handleUIMouseLeave = () => {
+        import('./threeSetup.js').then(({ controls }) => {
+            controls.enableZoom = true;
+        });
+    };
+    
+    // UIエリアとタブコンテンツにイベントリスナーを追加
+    if (ui.uiArea) {
+        ui.uiArea.addEventListener('mouseenter', handleUIMouseEnter);
+        ui.uiArea.addEventListener('mouseleave', handleUIMouseLeave);
+    }
+    
+    // すべてのタブコンテンツにも同様のリスナーを追加
+    const tabContents = document.querySelectorAll('.tab-content');
+    tabContents.forEach(tabContent => {
+        tabContent.addEventListener('mouseenter', handleUIMouseEnter);
+        tabContent.addEventListener('mouseleave', handleUIMouseLeave);
+    });
+    
+    // プロダクションパネル
+    const productionPanel = document.getElementById('productionPanel');
+    if (productionPanel) {
+        productionPanel.addEventListener('mouseenter', handleUIMouseEnter);
+        productionPanel.addEventListener('mouseleave', handleUIMouseLeave);
+    }
+    
+    // モバイルモーダル
+    const mobileModal = document.getElementById('mobileModal');
+    if (mobileModal) {
+        mobileModal.addEventListener('mouseenter', handleUIMouseEnter);
+        mobileModal.addEventListener('mouseleave', handleUIMouseLeave);
+    }
+    
+    // 銀河マップコンテナ
+    if (ui.galaxyMapContainer) {
+        ui.galaxyMapContainer.addEventListener('mouseenter', handleUIMouseEnter);
+        ui.galaxyMapContainer.addEventListener('mouseleave', handleUIMouseLeave);
+    }
+    
     window.addEventListener('resize', () => {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
@@ -85,6 +152,45 @@ export function setupEventListeners() {
         composer.setSize(window.innerWidth, window.innerHeight);
         debouncedUpdateGalaxyMap();
     });
+    
+    // フォーカス中の天体への距離を保持するためのホイールイベント処理
+    window.addEventListener('wheel', (event) => {
+        // UIエリア上でのホイール操作は無視
+        const target = event.target as HTMLElement;
+        if (ui.uiArea && ui.uiArea.contains(target)) {
+            return;
+        }
+        
+        // タブコンテンツエリア上でのホイール操作も無視
+        const tabContents = document.querySelectorAll('.tab-content');
+        for (const tabContent of tabContents) {
+            if (tabContent.contains(target)) {
+                return;
+            }
+        }
+        
+        if (gameState.focusedObject) {
+            // フォーカスモードでは、ズームの代わりに天体からの距離を調整
+            event.preventDefault();
+            
+            import('./threeSetup.js').then(({ camera, controls }) => {
+                const delta = event.deltaY > 0 ? 1.1 : 0.9;
+                const currentOffset = camera.position.clone().sub(controls.target);
+                const newOffsetLength = currentOffset.length() * delta;
+                
+                // 最小・最大距離の制限を適用
+                const clampedLength = Math.max(controls.minDistance, Math.min(controls.maxDistance, newOffsetLength));
+                
+                // 新しいオフセットを計算
+                currentOffset.normalize().multiplyScalar(clampedLength);
+                const newCameraPosition = controls.target.clone().add(currentOffset);
+                
+                // カメラ位置を更新
+                camera.position.copy(newCameraPosition);
+                controls.update();
+            });
+        }
+    }, { passive: false });
 
     window.addEventListener('keydown', (event) => {
         if (event.code === 'KeyW') keys.w = true;
@@ -103,6 +209,14 @@ export function setupEventListeners() {
                 isMapVisible: !state.isMapVisible
             }));
             debouncedUpdateGalaxyMap();
+        }
+        // ESCキーでフォーカスを解除
+        if (event.code === 'Escape' && gameState.focusedObject) {
+            gameStateManager.updateState(state => ({
+                ...state,
+                focusedObject: null
+            }));
+            showMessage('天体フォーカスを解除しました');
         }
     });
 
