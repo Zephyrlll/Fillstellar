@@ -23,27 +23,8 @@ function focusOnStar(star: CelestialBody) {
         focusedObject: star
     }));
     console.log("[GAME] Focused on:", star.userData.name);
-    
-    // カメラを即座に天体の位置に設定
-    import('./threeSetup.js').then(({ camera, controls }) => {
-        // 天体の位置を取得
-        const targetPosition = star.position.clone();
-        
-        // 天体の半径を考慮して適切な距離を計算
-        const bodyRadius = star.userData.radius || 10;
-        const viewDistance = Math.max(bodyRadius * 4, 100); // 天体の4倍の距離、最小100ユニット
-        
-        // カメラの新しい位置を計算（天体から斜め上の位置）
-        const offset = new THREE.Vector3(viewDistance, viewDistance * 0.5, viewDistance);
-        const newCameraPosition = targetPosition.clone().add(offset);
-        
-        // カメラ位置と注視点を即座に設定
-        camera.position.copy(newCameraPosition);
-        controls.target.copy(targetPosition);
-        
-        // コントロールを更新
-        controls.update();
-    });
+    // カメラの即座のリセットは行わない
+    // メインループで天体を追従するだけ
 }
 
 let eventListenersSetup = false;
