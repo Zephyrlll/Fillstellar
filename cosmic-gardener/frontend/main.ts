@@ -13,6 +13,8 @@ import { Dashboard } from './js/systems/dashboard.ts';
 import { FeedbackSystem } from './js/systems/feedbackSystem.ts';
 import { AchievementSystem } from './js/systems/achievements.ts';
 import { AchievementUI } from './js/systems/achievementUI.ts';
+import { MenuSystem } from './js/systems/menuSystem.ts';
+import { UIPositionManager } from './js/systems/uiPositionManager.ts';
 import { updateUI, debouncedUpdateGalaxyMap, ui } from './js/ui.ts';
 import { createCelestialBody, checkLifeSpawn, evolveLife } from './js/celestialBody.ts';
 import { spatialGrid, updatePhysics } from './js/physics.ts';
@@ -196,6 +198,8 @@ const dashboard = new Dashboard();
 let feedbackSystem: FeedbackSystem;
 const achievementSystem = new AchievementSystem();
 let achievementUI: AchievementUI;
+const menuSystem = new MenuSystem();
+const uiPositionManager = new UIPositionManager();
 
 // Expose graphicsEngine globally for synchronous access from saveload.ts and debugging
 (window as any).graphicsEngine = graphicsEngine;
@@ -655,6 +659,9 @@ function init() {
     dashboard.init();
     console.log('[INIT] Dashboard initialized');
     
+    // Expose dashboard globally for menu system
+    (window as any).dashboard = dashboard;
+    
     // Initialize feedback system
     feedbackSystem = new FeedbackSystem(camera, renderer);
     console.log('[INIT] Feedback system initialized');
@@ -670,6 +677,15 @@ function init() {
     
     // Expose achievement system globally for debugging
     (window as any).achievementSystem = achievementSystem;
+    
+    // Initialize menu system
+    menuSystem.init();
+    menuSystem.hideExistingButtons();
+    console.log('[INIT] Menu system initialized');
+    
+    // Initialize UI position manager
+    uiPositionManager.init();
+    console.log('[INIT] UI position manager initialized');
     
     // Initialize catalyst system with some starter catalysts for testing
     // @ts-ignore

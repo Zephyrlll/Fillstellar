@@ -39,6 +39,8 @@ export default defineConfig({
         manualChunks: {
           // Split Three.js into its own chunk
           three: ['three'],
+          // Split anime.js into its own chunk
+          animejs: ['animejs'],
         },
         // Ensure proper file naming
         entryFileNames: 'assets/[name].[hash].js',
@@ -51,7 +53,7 @@ export default defineConfig({
   },
   
   optimizeDeps: {
-    include: ['three'],
+    include: ['three', 'animejs'],
     exclude: [],
   },
   

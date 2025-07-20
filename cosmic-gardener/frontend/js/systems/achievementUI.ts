@@ -1,5 +1,6 @@
 import { AchievementSystem } from './achievements.js';
 import { AchievementCategory, AchievementProgress } from '../types/achievements.js';
+import { animationSystem } from './simpleAnimations.js';
 
 export class AchievementUI {
   private container: HTMLDivElement | null = null;
@@ -22,6 +23,9 @@ export class AchievementUI {
     button.className = 'achievement-toggle-button';
     button.innerHTML = '🏆';
     button.title = '実績';
+    button.style.position = 'fixed';
+    button.style.top = '80px';
+    button.style.right = '80px';
     
     // Show unlock count
     const progress = this.achievementSystem.getOverallProgress();
@@ -254,9 +258,15 @@ export class AchievementUI {
     // Refresh display
     this.render();
     
+    // Reset transform and animate panel in
+    this.container.style.transform = 'translateX(-50%) scale(0.9)';
+    this.container.style.opacity = '0';
+    
     requestAnimationFrame(() => {
       if (this.container) {
         this.container.classList.add('visible');
+        this.container.style.transform = 'translateX(-50%) scale(1)';
+        this.container.style.opacity = '1';
       }
     });
   }
@@ -265,7 +275,11 @@ export class AchievementUI {
     if (!this.container) return;
     
     this.isOpen = false;
+    
+    // Animate panel out
     this.container.classList.remove('visible');
+    this.container.style.transform = 'translateX(-50%) scale(0.9)';
+    this.container.style.opacity = '0';
     
     setTimeout(() => {
       if (this.container && !this.isOpen) {

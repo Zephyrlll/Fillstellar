@@ -1,5 +1,6 @@
 import { gameState } from '../state.js';
 import { formatNumber } from '../utils.js';
+import { animationSystem } from './simpleAnimations.js';
 
 export class Dashboard {
   private container: HTMLDivElement | null = null;
@@ -29,7 +30,7 @@ export class Dashboard {
     
     this.container = document.createElement('div');
     this.container.id = 'dashboard';
-    this.container.className = 'dashboard';
+    this.container.className = 'dashboard hidden';
     
     document.body.appendChild(this.container);
     this.render();

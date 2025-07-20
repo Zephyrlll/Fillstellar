@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Noto+Sans+JP:wght@400;700&display=swap');
+@import url('./css/menu.css');
 
 /* Idle Game Notification Styles */
 .notification {
@@ -231,7 +232,7 @@
 /* Dashboard Styles */
 .dashboard {
   position: fixed;
-  top: 80px;
+  top: 120px;
   left: 20px;
   width: 320px;
   background: linear-gradient(135deg, rgba(13, 27, 42, 0.95), rgba(27, 38, 59, 0.95));
@@ -245,6 +246,10 @@
 .dashboard.minimized {
   height: 48px;
   overflow: hidden;
+}
+
+.dashboard.hidden {
+  display: none;
 }
 
 .dashboard-header {
@@ -742,15 +747,15 @@
 /* Achievement Toggle Button */
 .achievement-toggle-button {
   position: fixed;
-  bottom: 20px;
-  right: 20px;
-  width: 60px;
-  height: 60px;
+  top: 80px;
+  right: 80px;
+  width: 50px;
+  height: 50px;
   background: linear-gradient(135deg, #4a9eff, #1976d2);
   border: none;
   border-radius: 50%;
   color: #ffffff;
-  font-size: 28px;
+  font-size: 24px;
   cursor: pointer;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   transition: all 0.3s ease;
@@ -779,12 +784,13 @@
 /* Achievement Panel */
 .achievement-panel {
   position: fixed;
-  top: 50%;
+  top: 10%;
   left: 50%;
-  transform: translate(-50%, -50%) scale(0.9);
+  transform: translateX(-50%) scale(0.9);
   width: 90%;
   max-width: 800px;
   height: 80vh;
+  max-height: 80vh;
   background: linear-gradient(135deg, rgba(13, 27, 42, 0.98), rgba(27, 38, 59, 0.98));
   border: 2px solid rgba(74, 158, 255, 0.3);
   border-radius: 16px;
@@ -799,7 +805,7 @@
 
 .achievement-panel.visible {
   opacity: 1;
-  transform: translate(-50%, -50%) scale(1);
+  transform: translateX(-50%) scale(1);
 }
 
 .achievement-header {
@@ -808,6 +814,7 @@
   align-items: center;
   padding: 20px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  flex-shrink: 0;
 }
 
 .achievement-header h2 {
@@ -840,6 +847,7 @@
   height: 30px;
   background: rgba(255, 255, 255, 0.1);
   margin: 0 20px;
+  flex-shrink: 0;
 }
 
 .achievement-progress-fill {
@@ -866,6 +874,7 @@
   padding: 16px 20px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   overflow-x: auto;
+  flex-shrink: 0;
 }
 
 .category-button {
@@ -905,12 +914,14 @@
 
 /* Achievement List */
 .achievement-list {
-  flex: 1;
+  flex: 1 1 auto;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 20px;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  display: flex;
+  flex-direction: column;
   gap: 12px;
+  min-height: 0;
 }
 
 .achievement-item {

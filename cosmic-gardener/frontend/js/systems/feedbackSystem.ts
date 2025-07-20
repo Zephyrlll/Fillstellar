@@ -1,5 +1,6 @@
 import { formatNumber } from '../utils.js';
 import * as THREE from 'three';
+import { animationSystem } from './simpleAnimations.js';
 
 export interface ToastOptions {
   message: string;
@@ -48,15 +49,8 @@ export class FeedbackSystem {
     
     this.popupContainer.appendChild(popup);
     
-    // Trigger animation after next frame
-    requestAnimationFrame(() => {
-      popup.classList.add('animate');
-    });
-    
-    // Remove after animation
-    setTimeout(() => {
-      popup.remove();
-    }, 1500);
+    // Use animation system for smooth animation
+    animationSystem.resourceGain(popup);
   }
   
   // Show toast notification
@@ -89,9 +83,11 @@ export class FeedbackSystem {
     this.toastContainer.appendChild(toast);
     this.activeToasts.add(toast);
     
-    // Fade in
-    requestAnimationFrame(() => {
-      toast.classList.add('visible');
+    // Use animation system for toast animation
+    animationSystem.slideInRight({
+      targets: toast,
+      duration: 400,
+      easing: 'easeOutCubic'
     });
     
     // Close button
@@ -125,10 +121,8 @@ export class FeedbackSystem {
     
     document.body.appendChild(notification);
     
-    // Animate in
-    requestAnimationFrame(() => {
-      notification.classList.add('visible');
-    });
+    // Use animation system for achievement unlock
+    animationSystem.achievementUnlock(notification);
     
     // Play sound if enabled
     if ((window as any).gameSettings?.soundEnabled) {
@@ -137,8 +131,11 @@ export class FeedbackSystem {
     
     // Remove after animation
     setTimeout(() => {
-      notification.classList.remove('visible');
-      setTimeout(() => notification.remove(), 500);
+      animationSystem.fadeOut({
+        targets: notification,
+        duration: 500,
+        complete: () => notification.remove()
+      });
     }, 4000);
   }
   
@@ -196,21 +193,33 @@ export class FeedbackSystem {
   }
   
   private removeToast(toast: HTMLElement): void {
-    toast.classList.remove('visible');
-    this.activeToasts.delete(toast);
-    
-    // Reposition remaining toasts
+    animationSystem.fadeOut({
+      targets: toast,
+      duration: 300,
+      complete: () => {
+        toast.remove();
+        this.activeToasts.delete(toast);
+        this.repositionToasts();
+      }
+    });
+  }
+  
+  private repositionToasts(): void {
     const toasts = Array.from(this.activeToasts);
     toasts.forEach((t, index) => {
       const position = t.className.includes('top') ? 'top' : 'bottom';
-      if (position === 'top') {
-        t.style.top = `${20 + index * 70}px`;
-      } else {
-        t.style.bottom = `${20 + index * 70}px`;
-      }
+      const newPosition = 20 + index * 70;
+      
+      // Animate repositioning
+      const animation: any = {
+        targets: t,
+        duration: 300,
+        easing: 'easeOutQuad'
+      };
+      
+      animation[position] = newPosition;
+      animationSystem.animate(animation);
     });
-    
-    setTimeout(() => toast.remove(), 300);
   }
   
   private getToastIcon(type: string): string {
