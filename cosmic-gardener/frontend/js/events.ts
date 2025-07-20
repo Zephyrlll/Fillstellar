@@ -83,13 +83,13 @@ export function setupEventListeners() {
     // UI要素上でのマウス操作時にOrbitControlsを無効化
     const handleUIMouseEnter = () => {
         import('./threeSetup.js').then(({ controls }) => {
-            controls.enableZoom = false;
+            controls.enabled = false;  // OrbitControlsを完全に無効化
         });
     };
     
     const handleUIMouseLeave = () => {
         import('./threeSetup.js').then(({ controls }) => {
-            controls.enableZoom = true;
+            controls.enabled = true;   // OrbitControlsを再度有効化
         });
     };
     
@@ -134,44 +134,8 @@ export function setupEventListeners() {
         debouncedUpdateGalaxyMap();
     });
     
-    // フォーカス中の天体への距離を保持するためのホイールイベント処理
-    window.addEventListener('wheel', (event) => {
-        // UIエリア上でのホイール操作は無視
-        const target = event.target as HTMLElement;
-        if (ui.uiArea && ui.uiArea.contains(target)) {
-            return;
-        }
-        
-        // タブコンテンツエリア上でのホイール操作も無視
-        const tabContents = document.querySelectorAll('.tab-content');
-        for (const tabContent of tabContents) {
-            if (tabContent.contains(target)) {
-                return;
-            }
-        }
-        
-        if (gameState.focusedObject) {
-            // フォーカスモードでは、ズームの代わりに天体からの距離を調整
-            event.preventDefault();
-            
-            import('./threeSetup.js').then(({ camera, controls }) => {
-                const delta = event.deltaY > 0 ? 1.1 : 0.9;
-                const currentOffset = camera.position.clone().sub(controls.target);
-                const newOffsetLength = currentOffset.length() * delta;
-                
-                // 最小・最大距離の制限を適用
-                const clampedLength = Math.max(controls.minDistance, Math.min(controls.maxDistance, newOffsetLength));
-                
-                // 新しいオフセットを計算
-                currentOffset.normalize().multiplyScalar(clampedLength);
-                const newCameraPosition = controls.target.clone().add(currentOffset);
-                
-                // カメラ位置を更新
-                camera.position.copy(newCameraPosition);
-                controls.update();
-            });
-        }
-    }, { passive: false });
+    // フォーカス中の天体への距離調整は、OrbitControlsが有効な時のみ動作する
+    // UI上ではOrbitControlsが無効化されているため、追加の処理は不要
 
     window.addEventListener('keydown', (event) => {
         if (event.code === 'KeyW') keys.w = true;
