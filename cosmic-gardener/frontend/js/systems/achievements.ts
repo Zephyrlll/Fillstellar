@@ -137,40 +137,37 @@ export class AchievementSystem {
   private grantReward(achievement: Achievement): void {
     if (!achievement.reward) return;
     
-    // Grant resources
-    if (achievement.reward.resources) {
-      gameStateManager.updateState(state => {
-        const newState = { ...state };
-        
-        for (const [resource, amount] of Object.entries(achievement.reward!.resources || {})) {
+    // Combine all updates into a single state update to avoid excessive updates
+    gameStateManager.updateState(state => {
+      let newState = { ...state };
+      
+      // Grant resources
+      if (achievement.reward!.resources) {
+        for (const [resource, amount] of Object.entries(achievement.reward!.resources)) {
           if (resource in newState) {
-            (newState as any)[resource] += amount;
+            (newState as any)[resource] = (newState as any)[resource] + amount;
           }
         }
+      }
+      
+      // Apply multipliers
+      if (achievement.reward!.multipliers) {
+        const achievementMultipliers = newState.achievementMultipliers ? 
+          { ...newState.achievementMultipliers } : {};
         
-        return newState;
-      });
-    }
-    
-    // Apply multipliers
-    if (achievement.reward.multipliers) {
-      gameStateManager.updateState(state => {
-        const newState = { ...state };
-        
-        // Store multipliers in research object (temporary solution)
-        if (!newState.achievementMultipliers) {
-          (newState as any).achievementMultipliers = {};
-        }
-        
-        for (const [multiplier, value] of Object.entries(achievement.reward!.multipliers || {})) {
+        for (const [multiplier, value] of Object.entries(achievement.reward!.multipliers)) {
           const key = achievement.reward!.permanent ? `${multiplier}_permanent` : multiplier;
-          (newState as any).achievementMultipliers[key] = 
-            ((newState as any).achievementMultipliers[key] || 1) * value;
+          achievementMultipliers[key] = (achievementMultipliers[key] || 1) * value;
         }
         
-        return newState;
-      });
-    }
+        newState = {
+          ...newState,
+          achievementMultipliers
+        };
+      }
+      
+      return newState;
+    });
   }
   
   isUnlocked(achievementId: string): boolean {

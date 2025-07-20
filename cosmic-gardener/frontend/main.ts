@@ -17,6 +17,12 @@ import { MenuSystem } from './js/systems/menuSystem.ts';
 import { UIPositionManager } from './js/systems/uiPositionManager.ts';
 import { PrestigeUI } from './js/systems/prestigeUI.ts';
 import { prestigeSystem } from './js/systems/prestigeSystem.ts';
+import { phaseManager } from './js/systems/phaseManager.ts';
+import { phaseUI } from './js/systems/phaseUI.ts';
+import { unlockManager } from './js/systems/unlockManager.ts';
+import { tutorialSystem } from './js/systems/tutorialSystem.ts';
+import { tutorialUI } from './js/systems/tutorialUI.ts';
+import { resetTutorial } from './js/resetTutorial.ts';
 import { updateUI, debouncedUpdateGalaxyMap, ui } from './js/ui.ts';
 import { createCelestialBody, checkLifeSpawn, evolveLife } from './js/celestialBody.ts';
 import { spatialGrid, updatePhysics } from './js/physics.ts';
@@ -280,6 +286,8 @@ function createStarfield() {
 let animationCount = 0;
 let balanceUpdateTimer = 0;
 const balanceUpdateInterval = 5; // Update balance every 5 seconds
+let unlockCheckTimer = 0;
+const unlockCheckInterval = 2; // Check unlocks every 2 seconds
 
 function animate() {
     if (animationCount < 5) {
@@ -667,6 +675,13 @@ function animate() {
         balanceAdjustments.applyDynamicBalance();
         balanceUpdateTimer = 0;
     }
+    
+    // Check for unlocks periodically
+    unlockCheckTimer += deltaTime;
+    if (unlockCheckTimer >= unlockCheckInterval) {
+        unlockManager.checkUnlocks();
+        unlockCheckTimer = 0;
+    }
 }
 
 function init() {
@@ -729,9 +744,28 @@ function init() {
     prestigeUI.init();
     console.log('[INIT] Prestige system initialized');
     
-    // Expose prestige system globally
+    // Initialize phase system
+    phaseManager.init();
+    phaseUI.init();
+    console.log('[INIT] Phase system initialized');
+    
+    // Initialize unlock system
+    unlockManager.checkUnlocks();
+    console.log('[INIT] Unlock system initialized');
+    
+    // Initialize tutorial system
+    tutorialSystem.init();
+    tutorialUI.init();
+    console.log('[INIT] Tutorial system initialized');
+    
+    // Expose systems globally
     (window as any).prestigeUI = prestigeUI;
     (window as any).prestigeSystem = prestigeSystem;
+    (window as any).phaseManager = phaseManager;
+    (window as any).phaseUI = phaseUI;
+    (window as any).unlockManager = unlockManager;
+    (window as any).tutorialSystem = tutorialSystem;
+    (window as any).tutorialUI = tutorialUI;
     
     // Initialize menu system
     menuSystem.init();

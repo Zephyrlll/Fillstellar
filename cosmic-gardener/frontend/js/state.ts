@@ -259,7 +259,10 @@ export interface GameState {
     // Game phase system
     currentGamePhase?: number;
     unlockedPhases?: Set<number>;
-    phaseProgress?: Record<string, number>;
+    phaseProgress?: Array<[number, any]>;  // Array of [phaseId, progress] for serialization
+    phaseAdvanceNotified?: boolean;
+    // Achievement multipliers
+    achievementMultipliers?: Record<string, number>;
 }
 
 // --- State Management Types ---

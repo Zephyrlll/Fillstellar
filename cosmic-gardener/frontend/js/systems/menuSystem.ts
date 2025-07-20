@@ -380,7 +380,10 @@ export class MenuSystem {
   }
   
   private openTutorial(): void {
-    console.log('[MENU] Tutorial not implemented');
+    const tutorialUI = (window as any).tutorialUI;
+    if (tutorialUI) {
+      tutorialUI.show();
+    }
   }
   
   private openControls(): void {
