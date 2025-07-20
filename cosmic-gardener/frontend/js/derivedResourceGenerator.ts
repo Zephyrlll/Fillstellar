@@ -19,60 +19,60 @@ const GENERATION_RULES: DerivedResourceRule[] = [
     {
         sourceResource: ResourceType.COSMIC_DUST,
         derivedResources: [
-            { type: ResourceType.IRON_DUST, rate: 0.15, qualityBonus: 0 },      // 8% → 15%
-            { type: ResourceType.CARBON_DUST, rate: 0.12, qualityBonus: 0 },    // 6% → 12%
-            { type: ResourceType.SILICON_DUST, rate: 0.08, qualityBonus: 0.1 }, // 4% → 8%
-            { type: ResourceType.RARE_EARTH_DUST, rate: 0.03, qualityBonus: 0.2 }, // 1% → 3%
+            { type: ResourceType.IRON_DUST, rate: 0.08, qualityBonus: 0 },      // 基本
+            { type: ResourceType.CARBON_DUST, rate: 0.06, qualityBonus: 0 },    // 基本
+            { type: ResourceType.SILICON_DUST, rate: 0.02, qualityBonus: 0.1 }, // 少し希少
+            { type: ResourceType.RARE_EARTH_DUST, rate: 0.00001, qualityBonus: 0.3 }, // 超絶レア 0.001%
         ]
     },
     // エネルギーから各種エネルギーを生成
     {
         sourceResource: ResourceType.ENERGY,
         derivedResources: [
-            { type: ResourceType.THERMAL_ENERGY, rate: 0.12, qualityBonus: 0 },
-            { type: ResourceType.ELECTRIC_ENERGY, rate: 0.08, qualityBonus: 0.1 },
-            { type: ResourceType.NUCLEAR_ENERGY, rate: 0.02, qualityBonus: 0.2 },
-            { type: ResourceType.QUANTUM_ENERGY, rate: 0.005, qualityBonus: 0.3 },
+            { type: ResourceType.THERMAL_ENERGY, rate: 0.07, qualityBonus: 0 },     // 基本
+            { type: ResourceType.ELECTRIC_ENERGY, rate: 0.05, qualityBonus: 0 },    // 基本
+            { type: ResourceType.NUCLEAR_ENERGY, rate: 0.015, qualityBonus: 0.1 },  // 少し希少
+            { type: ResourceType.QUANTUM_ENERGY, rate: 0.00001, qualityBonus: 0.3 }, // 超絶レア 0.001%
         ]
     },
     // 有機物から各種有機物を生成
     {
         sourceResource: ResourceType.ORGANIC_MATTER,
         derivedResources: [
-            { type: ResourceType.SIMPLE_ORGANICS, rate: 0.15, qualityBonus: 0 },
-            { type: ResourceType.COMPLEX_ORGANICS, rate: 0.08, qualityBonus: 0.1 },
-            { type: ResourceType.GENETIC_MATERIAL, rate: 0.03, qualityBonus: 0.2 },
-            { type: ResourceType.ENZYMES, rate: 0.02, qualityBonus: 0.15 },
+            { type: ResourceType.SIMPLE_ORGANICS, rate: 0.06, qualityBonus: 0 },      // 基本
+            { type: ResourceType.COMPLEX_ORGANICS, rate: 0.04, qualityBonus: 0 },     // 基本
+            { type: ResourceType.GENETIC_MATERIAL, rate: 0.01, qualityBonus: 0.1 },   // 少し希少
+            { type: ResourceType.ENZYMES, rate: 0.00001, qualityBonus: 0.3 },         // 超絶レア 0.001%
         ]
     },
     // バイオマスから各種バイオマスを生成
     {
         sourceResource: ResourceType.BIOMASS,
         derivedResources: [
-            { type: ResourceType.MICROBIAL_BIOMASS, rate: 0.10, qualityBonus: 0 },
-            { type: ResourceType.PLANT_BIOMASS, rate: 0.06, qualityBonus: 0.1 },
-            { type: ResourceType.ANIMAL_BIOMASS, rate: 0.03, qualityBonus: 0.15 },
-            { type: ResourceType.INTELLIGENT_BIOMASS, rate: 0.01, qualityBonus: 0.25 },
+            { type: ResourceType.MICROBIAL_BIOMASS, rate: 0.05, qualityBonus: 0 },      // 基本
+            { type: ResourceType.PLANT_BIOMASS, rate: 0.03, qualityBonus: 0 },          // 基本
+            { type: ResourceType.ANIMAL_BIOMASS, rate: 0.01, qualityBonus: 0.1 },       // 少し希少
+            { type: ResourceType.INTELLIGENT_BIOMASS, rate: 0.00001, qualityBonus: 0.3 }, // 超絶レア 0.001%
         ]
     },
     // ダークマターから各種ダークマターを生成
     {
         sourceResource: ResourceType.DARK_MATTER,
         derivedResources: [
-            { type: ResourceType.STABLE_DARK_MATTER, rate: 0.08, qualityBonus: 0.1 },
-            { type: ResourceType.VOLATILE_DARK_MATTER, rate: 0.12, qualityBonus: 0 },
-            { type: ResourceType.EXOTIC_DARK_MATTER, rate: 0.04, qualityBonus: 0.2 },
-            { type: ResourceType.PRIMORDIAL_DARK_MATTER, rate: 0.01, qualityBonus: 0.3 },
+            { type: ResourceType.STABLE_DARK_MATTER, rate: 0.05, qualityBonus: 0 },         // 基本
+            { type: ResourceType.VOLATILE_DARK_MATTER, rate: 0.04, qualityBonus: 0 },       // 基本
+            { type: ResourceType.EXOTIC_DARK_MATTER, rate: 0.02, qualityBonus: 0.15 },      // 少し希少
+            { type: ResourceType.PRIMORDIAL_DARK_MATTER, rate: 0.00001, qualityBonus: 0.3 }, // 超絶レア 0.001%
         ]
     },
     // 思考ポイントから各種思考を生成
     {
         sourceResource: ResourceType.THOUGHT_POINTS,
         derivedResources: [
-            { type: ResourceType.BASIC_THOUGHTS, rate: 0.10, qualityBonus: 0 },
-            { type: ResourceType.CREATIVE_THOUGHTS, rate: 0.06, qualityBonus: 0.1 },
-            { type: ResourceType.SCIENTIFIC_THOUGHTS, rate: 0.04, qualityBonus: 0.15 },
-            { type: ResourceType.PHILOSOPHICAL_THOUGHTS, rate: 0.02, qualityBonus: 0.2 },
+            { type: ResourceType.BASIC_THOUGHTS, rate: 0.06, qualityBonus: 0 },            // 基本
+            { type: ResourceType.CREATIVE_THOUGHTS, rate: 0.05, qualityBonus: 0 },         // 基本
+            { type: ResourceType.SCIENTIFIC_THOUGHTS, rate: 0.02, qualityBonus: 0.15 },    // 少し希少
+            { type: ResourceType.PHILOSOPHICAL_THOUGHTS, rate: 0.00001, qualityBonus: 0.3 }, // 超絶レア 0.001%
         ]
     }
 ];
