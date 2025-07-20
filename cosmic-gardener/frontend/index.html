@@ -483,6 +483,34 @@
             <button id="mobile-resetGraphicsButton" class="mobile-action-btn secondary">グラフィック設定をリセット</button>
           </div>
         </div>
+        
+        <!-- セーブ/ロード設定セクション -->
+        <div class="mobile-section">
+          <h4 class="mobile-section-title">💾 セーブ/ロード</h4>
+          
+          <!-- セーブボタン -->
+          <div class="mobile-setting-item">
+            <button id="mobile-saveGameButton" class="mobile-action-btn">💾 ゲームをセーブ</button>
+          </div>
+          
+          <!-- ロードボタン -->
+          <div class="mobile-setting-item">
+            <button id="mobile-loadGameButton" class="mobile-action-btn">📂 ゲームをロード</button>
+          </div>
+          
+          <!-- 自動セーブ設定 -->
+          <div class="mobile-setting-item">
+            <label class="mobile-checkbox-label">
+              <input type="checkbox" id="mobile-autoSaveCheckbox" checked>
+              <span>自動セーブ（30秒ごと）</span>
+            </label>
+          </div>
+          
+          <!-- 最終セーブ時刻 -->
+          <div class="mobile-setting-item">
+            <p class="mobile-save-info">最終セーブ: <span id="mobile-lastSaveTime">未セーブ</span></p>
+          </div>
+        </div>
       </div>
     </div>
     <div id="mobile-star-content" class="mobile-content">
@@ -1287,6 +1315,30 @@
                       
                       <div class="option-item">
                           <button id="resetCameraButton" class="reset-button">カメラ位置をリセット</button>
+                      </div>
+                      
+                      <!-- セーブ/ロード機能 -->
+                      <div class="option-item">
+                          <h4>💾 セーブ/ロード</h4>
+                      </div>
+                      
+                      <div class="option-item">
+                          <button id="saveGameButton" class="save-button">💾 ゲームをセーブ</button>
+                      </div>
+                      
+                      <div class="option-item">
+                          <button id="loadGameButton" class="load-button">📂 ゲームをロード</button>
+                      </div>
+                      
+                      <div class="option-item">
+                          <label>
+                              <input type="checkbox" id="autoSaveCheckbox" checked>
+                              自動セーブを有効にする（30秒ごと）
+                          </label>
+                      </div>
+                      
+                      <div class="option-item">
+                          <p class="save-info">最終セーブ: <span id="lastSaveTime">未セーブ</span></p>
                       </div>
                       
                   </div>

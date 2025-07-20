@@ -3,6 +3,16 @@ import * as THREE from 'three';
 import { scene, camera, renderer, composer, controls } from './js/threeSetup.ts';
 import { gameState, gameStateManager, PlanetUserData } from './js/state.ts';
 import { saveGame, loadGame } from './js/saveload.ts';
+import { SaveSystem } from './js/systems/saveSystem.ts';
+import { OfflineCalculator } from './js/systems/offlineProgress.ts';
+import { PerformanceOptimizer } from './js/systems/performanceOptimizer.ts';
+import { GameErrorHandler } from './js/systems/errorHandler.ts';
+import { GameNotification } from './js/types/idle.ts';
+import { OfflineReportModal } from './js/systems/offlineReportModal.ts';
+import { Dashboard } from './js/systems/dashboard.ts';
+import { FeedbackSystem } from './js/systems/feedbackSystem.ts';
+import { AchievementSystem } from './js/systems/achievements.ts';
+import { AchievementUI } from './js/systems/achievementUI.ts';
 import { updateUI, debouncedUpdateGalaxyMap, ui } from './js/ui.ts';
 import { createCelestialBody, checkLifeSpawn, evolveLife } from './js/celestialBody.ts';
 import { spatialGrid, updatePhysics } from './js/physics.ts';
@@ -44,10 +54,148 @@ import './js/debugPhysics.ts';
 import { orbitTrailSystem } from './js/orbitTrails.ts';
 // Background galaxies
 import { backgroundGalaxies } from './js/backgroundGalaxies.ts';
+
+// Idle game initialization function
+function initializeIdleGameSystems() {
+    console.log('[IDLE] Initializing idle game systems...');
+    
+    // Set up notification callbacks
+    saveSystem.setNotificationCallback(showGameNotification);
+    errorHandler.setNotificationCallback(showGameNotification);
+    
+    // Set up error handling
+    window.onerror = (message, source, lineno, colno, error) => {
+        if (error) {
+            errorHandler.handleError(error, 'RUNTIME_ERROR', source, lineno, colno);
+        }
+        return true;
+    };
+    
+    // Load saved game if exists
+    saveSystem.load().then(savedState => {
+        if (savedState) {
+            console.log('[IDLE] Loading saved game...');
+            
+            // Calculate offline progress if applicable
+            if (savedState.lastSaveTime) {
+                const offlineProgress = offlineCalculator.calculateProgress(
+                    savedState,
+                    savedState.lastSaveTime
+                );
+                
+                if (offlineProgress.duration > 0) {
+                    // Apply offline progress
+                    offlineCalculator.applyOfflineProgress(savedState, offlineProgress);
+                    
+                    // Show offline report modal
+                    const modal = new OfflineReportModal(offlineProgress);
+                    modal.show();
+                }
+            }
+            
+            // Update game state
+            Object.assign(gameState, savedState);
+            gameState.lastActiveTime = Date.now();
+        }
+    }).catch(error => {
+        errorHandler.handleError(error, 'SAVE_LOAD_ERROR');
+    });
+    
+    console.log('[IDLE] Idle game systems initialized');
+}
+
+// Notification display function
+function showGameNotification(notification: GameNotification) {
+    const notificationContainer = document.getElementById('notification-container') || createNotificationContainer();
+    
+    const notificationEl = document.createElement('div');
+    notificationEl.className = `notification notification-${notification.type}`;
+    notificationEl.textContent = notification.message;
+    
+    notificationContainer.appendChild(notificationEl);
+    
+    // Auto-remove after duration
+    if (notification.duration) {
+        setTimeout(() => {
+            notificationEl.classList.add('fade-out');
+            setTimeout(() => notificationEl.remove(), 300);
+        }, notification.duration);
+    }
+}
+
+// Create notification container if it doesn't exist
+function createNotificationContainer(): HTMLElement {
+    const container = document.createElement('div');
+    container.id = 'notification-container';
+    container.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 10000;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        pointer-events: none;
+    `;
+    document.body.appendChild(container);
+    return container;
+}
+
+// Offline progress modal
+// Removed - now using OfflineReportModal class
+// function showOfflineProgressModal(report: string) {
+//     const modal = document.createElement('div');
+//     modal.className = 'offline-progress-modal';
+//     modal.innerHTML = `
+//         <div class="modal-content">
+//             <h2>Offline Progress</h2>
+//             <pre>${report}</pre>
+//             <button onclick="this.closest('.offline-progress-modal').remove()">Continue</button>
+//         </div>
+//     `;
+//     
+//     // Add basic styles
+//     modal.style.cssText = `
+//         position: fixed;
+//         inset: 0;
+//         background: rgba(0, 0, 0, 0.8);
+//         display: flex;
+//         align-items: center;
+//         justify-content: center;
+//         z-index: 20000;
+//     `;
+//     
+//     const content = modal.querySelector('.modal-content') as HTMLElement;
+//     if (content) {
+//         content.style.cssText = `
+//             background: #1a1a2e;
+//             padding: 30px;
+//             border-radius: 10px;
+//             border: 2px solid #16213e;
+//             color: #eee;
+//             max-width: 500px;
+//             width: 90%;
+//             max-height: 80vh;
+//             overflow-y: auto;
+//         `;
+//     }
+//     
+//     document.body.appendChild(modal);
+// }
 // Black hole gas effect
 import { blackHoleGas } from './js/blackHoleGas.ts';
 // Derived resource generator
 import { DerivedResourceGenerator } from './js/derivedResourceGenerator.ts';
+
+// Initialize idle game systems
+const saveSystem = new SaveSystem();
+const offlineCalculator = new OfflineCalculator();
+const performanceOptimizer = new PerformanceOptimizer();
+const errorHandler = new GameErrorHandler();
+const dashboard = new Dashboard();
+let feedbackSystem: FeedbackSystem;
+const achievementSystem = new AchievementSystem();
+let achievementUI: AchievementUI;
 
 // Expose graphicsEngine globally for synchronous access from saveload.ts and debugging
 (window as any).graphicsEngine = graphicsEngine;
@@ -491,6 +639,9 @@ function init() {
     backgroundGalaxies.setDisplayMode('mixed');
     console.log('[INIT] Background galaxies created');
     
+    // Initialize idle game systems
+    initializeIdleGameSystems();
+    
     loadGame();
     console.log('[INIT] Game loaded');
     
@@ -499,6 +650,26 @@ function init() {
     
     // Initialize production chain UI (create UI elements)
     productionChainUI.createUI();
+    
+    // Initialize dashboard
+    dashboard.init();
+    console.log('[INIT] Dashboard initialized');
+    
+    // Initialize feedback system
+    feedbackSystem = new FeedbackSystem(camera, renderer);
+    console.log('[INIT] Feedback system initialized');
+    
+    // Expose feedback system globally for other modules
+    (window as any).feedbackSystem = feedbackSystem;
+    
+    // Initialize achievement system
+    achievementSystem.init(feedbackSystem);
+    achievementUI = new AchievementUI(achievementSystem);
+    achievementUI.init();
+    console.log('[INIT] Achievement system initialized');
+    
+    // Expose achievement system globally for debugging
+    (window as any).achievementSystem = achievementSystem;
     
     // Initialize catalyst system with some starter catalysts for testing
     // @ts-ignore
@@ -653,12 +824,37 @@ function init() {
             // console.log('[INIT] DOM loaded, setting up event listeners...');
             setupEventListeners();
             initializeResearchLab();
+            
+            // Start auto-save after DOM is ready
+            saveSystem.startAutoSave(() => gameState);
+            
+            // Test feedback system (remove in production)
+            setTimeout(() => {
+                if (feedbackSystem) {
+                    feedbackSystem.showToast({
+                        message: 'アイドルゲームシステムが起動しました！',
+                        type: 'success',
+                        duration: 5000
+                    });
+                }
+            }, 1000);
         });
     } else {
         // console.log('[INIT] DOM already loaded, setting up event listeners now...');
         setupEventListeners();
         initializeResearchLab();
         initializeInventory();
+        
+        // Test feedback system (remove in production)
+        setTimeout(() => {
+            if (feedbackSystem) {
+                feedbackSystem.showToast({
+                    message: 'アイドルゲームシステムが起動しました！',
+                    type: 'success',
+                    duration: 5000
+                });
+            }
+        }, 1000);
     }
     
     // WebSocket接続の初期化

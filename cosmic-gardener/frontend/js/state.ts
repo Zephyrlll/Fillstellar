@@ -244,6 +244,11 @@ export interface GameState {
         hasTouchSupport: boolean;
         lastDetectionTime: number;
     };
+    // Idle game systems
+    lastSaveTime?: number;
+    offlineTime?: number;
+    totalPlayTime?: number;
+    lastActiveTime?: number;
 }
 
 // --- State Management Types ---

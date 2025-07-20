@@ -11,6 +11,7 @@ import { soundManager } from './sound.js';
 import { graphicsEngine } from './graphicsEngine.js';
 import { physicsConfig } from './physicsConfig.js';
 import { backgroundGalaxies } from './backgroundGalaxies.js';
+import { initializeSaveLoadUI } from './systems/idleGameUI.js';
 
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
@@ -79,6 +80,9 @@ function createInfoPanel() {
 export function setupEventListeners() {
     if (eventListenersSetup) return;
     eventListenersSetup = true;
+    
+    // Initialize save/load UI
+    initializeSaveLoadUI();
     
     // UI要素上でのマウス操作時にOrbitControlsを無効化
     const handleUIMouseEnter = () => {
