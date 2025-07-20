@@ -33,6 +33,7 @@ export const ui: { [key: string]: HTMLElement | null } = {
     lightSpeedPercent: document.getElementById('lightSpeedPercent'),
     cosmicDust: document.getElementById('resource-cosmicDust'),
     dustRate: document.getElementById('dustRate'),
+    overlayDustRate: document.getElementById('overlayDustRate'),
     energy: document.getElementById('resource-energy'),
     organicMatter: document.getElementById('resource-organicMatter'),
     biomass: document.getElementById('resource-biomass'),
@@ -424,6 +425,7 @@ export function updateUI() {
 
     // 右下のオーバーレイパネルの更新
     if (ui.overlayCosmicDust) ui.overlayCosmicDust.textContent = String(currentCosmicDust);
+    if (ui.overlayDustRate) ui.overlayDustRate.textContent = currentDustRateStr;
     if (ui.overlayEnergy) ui.overlayEnergy.textContent = String(currentEnergy);
     if (ui.overlayStarCount) ui.overlayStarCount.textContent = String(state.stars.length);
     if (ui.overlayThoughtPoints) ui.overlayThoughtPoints.textContent = String(currentThoughtPoints);

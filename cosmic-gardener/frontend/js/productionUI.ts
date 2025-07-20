@@ -94,6 +94,9 @@ function updateAdvancedResourcesDisplay(): void {
     const resources = gameState.advancedResources;
     const html: string[] = [];
     
+    // Check if mobile device
+    const isMobile = gameState.deviceInfo?.isMobile || false;
+    
     // Group resources by category
     const categories: Record<string, ResourceType[]> = {
         dust: [],
@@ -102,7 +105,9 @@ function updateAdvancedResourcesDisplay(): void {
         biomass: [],
         dark: [],
         thought: [],
-        processed: []
+        processed: [],
+        tier2: [],
+        waste: []
     };
     
     Object.keys(resources).forEach(key => {
@@ -122,8 +127,13 @@ function updateAdvancedResourcesDisplay(): void {
         if (types.length === 0) return;
         
         const categoryName = getCategoryDisplayName(category);
-        html.push(`<div class="resource-category">`);
+        html.push(`<div class="resource-category ${isMobile ? 'mobile' : ''}">`);
         html.push(`<h3>${categoryName}</h3>`);
+        
+        // モバイル版ではグリッド表示
+        if (isMobile) {
+            html.push(`<div class="mobile-resource-grid">`);
+        }
         
         types.forEach(type => {
             const resource = resources[type];
@@ -134,17 +144,40 @@ function updateAdvancedResourcesDisplay(): void {
             const tier = getResourceTier(type);
             const tierColor = getTierColor(tier);
             
-            html.push(`
-                <div class="advanced-resource-item ${qualityClass}" data-resource-type="${type}" data-quality="${resource.quality}">
-                    <span class="resource-icon">${metadata.icon}</span>
-                    <span class="resource-name" style="color: ${qualityColor}">
-                        ${getResourceDisplayName(type, resource.quality)}
-                        <span class="resource-tier" style="color: ${tierColor}; font-size: 10px; margin-left: 5px;">[T${tier}]</span>
-                    </span>
-                    <span class="resource-amount">${formatNumber(resource.amount)}</span>
-                </div>
-            `);
+            if (isMobile) {
+                // モバイル版：コンパクトな表示
+                html.push(`
+                    <div class="advanced-resource-item mobile ${qualityClass}" data-resource-type="${type}" data-quality="${resource.quality}">
+                        <div class="resource-header">
+                            <span class="resource-icon">${metadata.icon}</span>
+                            <span class="resource-amount">${formatNumber(resource.amount)}</span>
+                        </div>
+                        <div class="resource-footer">
+                            <span class="resource-name-short" style="color: ${qualityColor}">
+                                ${metadata.name}
+                            </span>
+                            <span class="resource-tier" style="color: ${tierColor};">[T${tier}]</span>
+                        </div>
+                    </div>
+                `);
+            } else {
+                // PC版：詳細表示
+                html.push(`
+                    <div class="advanced-resource-item ${qualityClass}" data-resource-type="${type}" data-quality="${resource.quality}">
+                        <span class="resource-icon">${metadata.icon}</span>
+                        <span class="resource-name" style="color: ${qualityColor}">
+                            ${getResourceDisplayName(type, resource.quality)}
+                            <span class="resource-tier" style="color: ${tierColor}; font-size: 10px; margin-left: 5px;">[T${tier}]</span>
+                        </span>
+                        <span class="resource-amount">${formatNumber(resource.amount)}</span>
+                    </div>
+                `);
+            }
         });
+        
+        if (isMobile) {
+            html.push(`</div>`); // Close mobile-resource-grid
+        }
         
         html.push(`</div>`);
     });

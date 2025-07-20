@@ -46,6 +46,8 @@ import { orbitTrailSystem } from './js/orbitTrails.ts';
 import { backgroundGalaxies } from './js/backgroundGalaxies.ts';
 // Black hole gas effect
 import { blackHoleGas } from './js/blackHoleGas.ts';
+// Derived resource generator
+import { DerivedResourceGenerator } from './js/derivedResourceGenerator.ts';
 
 // Expose graphicsEngine globally for synchronous access from saveload.ts and debugging
 (window as any).graphicsEngine = graphicsEngine;
@@ -54,13 +56,16 @@ console.log('🎮 Graphics engine exposed to window:', (window as any).graphicsE
 const moveSpeed = 200;
 
 let uiUpdateTimer = 0;
-const uiUpdateInterval = 0.1;
+const uiUpdateInterval = 0.05; // 0.1秒から0.05秒に短縮してより滑らかに
 
 let galaxyMapUpdateTimer = 0;
 const galaxyMapUpdateInterval = 0.2;
 
 // WebSocketクライアント
 let wsClient: any = null;
+
+// Derived resource generator instance
+const derivedResourceGenerator = new DerivedResourceGenerator();
 
 function createStarfield() {
     const starsGeometry = new THREE.BufferGeometry();
@@ -142,10 +147,14 @@ function animate() {
         }
     }
     
-    // シミュレーション速度を0.2倍に設定
-    const simulationSpeed = 0.2;
-    const deltaTime = rawDeltaTime * timeMultiplier * simulationSpeed;
-    const animationDeltaTime = deltaTime;
+    // 物理演算・アニメーション用（0.2倍でスムーズな動き）
+    const animationDeltaTime = rawDeltaTime * timeMultiplier * 0.4;
+    
+    // リソース生成・ゲーム進行用（通常速度）
+    const resourceDeltaTime = rawDeltaTime * timeMultiplier;
+    
+    // 互換性のため deltaTime は animationDeltaTime と同じ
+    const deltaTime = animationDeltaTime;
     
     if (!isFinite(animationDeltaTime) || animationDeltaTime <= 0) {
         console.warn('[GAME] Invalid animationDeltaTime:', { rawDeltaTime, timeMultiplier, deltaTime, animationDeltaTime, currentTimeMultiplier: gameState.currentTimeMultiplier });
@@ -161,7 +170,7 @@ function animate() {
     batchUpdates.push(state => ({
         ...state,
         lastTick: now,
-        gameYear: state.gameYear + deltaTime / 5
+        gameYear: state.gameYear + resourceDeltaTime / 5
     }));
     updatePhysics(animationDeltaTime);
     
@@ -254,7 +263,7 @@ function animate() {
                             if (gameState.research?.thoughtGenerationMultiplier) {
                                 thoughtPointRate *= gameState.research.thoughtGenerationMultiplier;
                             }
-                            const thoughtPointsToAdd = thoughtPointRate * deltaTime;
+                            const thoughtPointsToAdd = thoughtPointRate * resourceDeltaTime;
                             
                             // Only add to batch if significant amount
                             if (thoughtPointsToAdd > 0.01) {
@@ -269,8 +278,8 @@ function animate() {
                             }
                             break;
                     }
-                    const organicToAdd = organicRate * deltaTime;
-                    const biomassToAdd = biomassRate * deltaTime;
+                    const organicToAdd = organicRate * resourceDeltaTime;
+                    const biomassToAdd = biomassRate * resourceDeltaTime;
                     
                     // Only add to batch if significant amounts
                     if (organicToAdd > 0.01 || biomassToAdd > 0.01) {
@@ -314,18 +323,19 @@ function animate() {
         thoughtSpeedMps: thoughtSpeed,
         resourceAccumulators: {
             ...state.resourceAccumulators,
-            cosmicDust: state.resourceAccumulators.cosmicDust + dustRate * deltaTime,
-            energy: state.resourceAccumulators.energy + energyRate * deltaTime,
-            darkMatter: (state.resourceAccumulators.darkMatter || 0) + darkMatterRate * deltaTime
+            cosmicDust: state.resourceAccumulators.cosmicDust + dustRate * resourceDeltaTime,
+            energy: state.resourceAccumulators.energy + energyRate * resourceDeltaTime,
+            darkMatter: (state.resourceAccumulators.darkMatter || 0) + darkMatterRate * resourceDeltaTime
         }
     }));
 
-    // Handle resource accumulator overflow
+    // Handle resource accumulator overflow - 滑らかな増加のため小数点以下も反映
     batchUpdates.push(state => {
         const newState = { ...state };
         
-        if (newState.resourceAccumulators.cosmicDust >= 1) {
-            const dustToAdd = Math.floor(newState.resourceAccumulators.cosmicDust);
+        // 塵は直接増加（アキュムレーターをリソースに即座に反映）
+        if (newState.resourceAccumulators.cosmicDust > 0) {
+            const dustToAdd = newState.resourceAccumulators.cosmicDust;
             newState.cosmicDust += dustToAdd;
             newState.resources = {
                 ...newState.resources,
@@ -333,7 +343,7 @@ function animate() {
             };
             newState.resourceAccumulators = {
                 ...newState.resourceAccumulators,
-                cosmicDust: newState.resourceAccumulators.cosmicDust - dustToAdd
+                cosmicDust: 0
             };
         }
         
@@ -373,6 +383,9 @@ function animate() {
     
     // Update conversion engine
     conversionEngine.update();
+    
+    // Update derived resource generator
+    derivedResourceGenerator.update(resourceDeltaTime);
     
     // Update resource particle effects
     resourceParticleSystem.update(deltaTime);
