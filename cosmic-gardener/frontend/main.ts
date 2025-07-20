@@ -15,6 +15,8 @@ import { AchievementSystem } from './js/systems/achievements.ts';
 import { AchievementUI } from './js/systems/achievementUI.ts';
 import { MenuSystem } from './js/systems/menuSystem.ts';
 import { UIPositionManager } from './js/systems/uiPositionManager.ts';
+import { PrestigeUI } from './js/systems/prestigeUI.ts';
+import { prestigeSystem } from './js/systems/prestigeSystem.ts';
 import { updateUI, debouncedUpdateGalaxyMap, ui } from './js/ui.ts';
 import { createCelestialBody, checkLifeSpawn, evolveLife } from './js/celestialBody.ts';
 import { spatialGrid, updatePhysics } from './js/physics.ts';
@@ -208,10 +210,12 @@ const performanceOptimizer = new PerformanceOptimizer();
 const errorHandler = new GameErrorHandler();
 const dashboard = new Dashboard();
 let feedbackSystem: FeedbackSystem;
+export { feedbackSystem };
 const achievementSystem = new AchievementSystem();
 let achievementUI: AchievementUI;
 const menuSystem = new MenuSystem();
 const uiPositionManager = new UIPositionManager();
+const prestigeUI = new PrestigeUI();
 let renderOptimizer: RenderOptimizer;
 
 // Expose graphicsEngine globally for synchronous access from saveload.ts and debugging
@@ -720,6 +724,14 @@ function init() {
     
     // Expose achievement system globally for debugging
     (window as any).achievementSystem = achievementSystem;
+    
+    // Initialize prestige system
+    prestigeUI.init();
+    console.log('[INIT] Prestige system initialized');
+    
+    // Expose prestige system globally
+    (window as any).prestigeUI = prestigeUI;
+    (window as any).prestigeSystem = prestigeSystem;
     
     // Initialize menu system
     menuSystem.init();

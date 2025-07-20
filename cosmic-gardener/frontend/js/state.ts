@@ -249,6 +249,17 @@ export interface GameState {
     offlineTime?: number;
     totalPlayTime?: number;
     lastActiveTime?: number;
+    // Prestige system
+    prestigeCount?: number;
+    prestigePoints?: number;
+    totalPrestigePoints?: number;
+    prestigeUpgrades?: Record<string, number>;
+    nextPrestigeTime?: number;
+    lastPrestigeTime?: number;
+    // Game phase system
+    currentGamePhase?: number;
+    unlockedPhases?: Set<number>;
+    phaseProgress?: Record<string, number>;
 }
 
 // --- State Management Types ---
@@ -625,7 +636,18 @@ const initialGameState: GameState = {
         userAgent: '',
         hasTouchSupport: false,
         lastDetectionTime: 0
-    }
+    },
+    // Prestige system
+    prestigeCount: 0,
+    prestigePoints: 0,
+    totalPrestigePoints: 0,
+    prestigeUpgrades: {},
+    nextPrestigeTime: undefined,
+    lastPrestigeTime: undefined,
+    // Game phase system
+    currentGamePhase: 0,
+    unlockedPhases: new Set<number>([0]),
+    phaseProgress: {}
 };
 
 // --- Global State Manager Instance ---

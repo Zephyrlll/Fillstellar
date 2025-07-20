@@ -91,6 +91,12 @@ export class MenuSystem {
         action: () => this.openResearchLab()
       },
       {
+        id: 'prestige',
+        label: 'プレステージ',
+        icon: '<img src="/icon/menu/prestige.svg" class="menu-icon-svg" alt="プレステージ">',
+        action: () => this.openPrestige()
+      },
+      {
         id: 'production',
         label: '生産管理',
         icon: '<img src="/icon/menu/production-plant-svgrepo-com.svg" class="menu-icon-svg" alt="生産管理">',
@@ -313,6 +319,13 @@ export class MenuSystem {
     const researchButton = document.querySelector('.research-button') as HTMLButtonElement;
     if (researchButton) {
       researchButton.click();
+    }
+  }
+  
+  private openPrestige(): void {
+    const prestigeUI = (window as any).prestigeUI;
+    if (prestigeUI) {
+      prestigeUI.show();
     }
   }
   

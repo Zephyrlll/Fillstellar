@@ -10,9 +10,10 @@
 - **資源変換エンジン**: 20種類以上の変換レシピと自動化システム
 - **生命進化**: 微生物→植物→動物→知的生命の進化シミュレーション
 - **パフォーマンス最適化**: オブジェクトプーリング、Fixed Timestep物理演算
-- **マルチプレイヤー対応**: Rust製バックエンド（Axum）によるWebSocketリアルタイム同期
+- **モダン開発環境**: Vite + TypeScript 5.8 + ESLint/Prettier
 - **銀河マップ**: インタラクティブな3D銀河ビュー
 - **モバイル対応**: タッチ操作とレスポンシブUI
+- **グラフィック設定**: 解像度スケール、シャドウ品質、パーティクル密度の調整
 
 ## 🚀 クイックスタート
 
@@ -23,11 +24,11 @@ cd cosmic-gardener/frontend
 npm install              # 依存関係のインストール
 
 # 開発サーバー起動（推奨: Vite使用）
-npm run dev             # ホットリロード対応、http://localhost:8000 が自動で開く
+npm run dev             # ホットリロード対応、http://localhost:5173 が自動で開く
 
-# 従来の方法
+# プロダクションビルド
 npm run build           # TypeScriptのビルド
-npm run serve           # または ./起動.bat (Windows)
+npm run preview         # ビルド結果のプレビュー
 ```
 
 ### フルスタック（マルチプレイヤー）
@@ -61,11 +62,18 @@ Fillstellar/
 │   │   │   ├── conversionEngine.ts  # 変換エンジン
 │   │   │   ├── productionUI.ts      # 生産UI
 │   │   │   ├── ui.ts                # UIシステム
+│   │   │   ├── research.ts          # 研究システム
+│   │   │   ├── graphics.ts          # グラフィック設定
+│   │   │   ├── mobileUI.ts          # モバイルUI
 │   │   │   └── types/               # TypeScript型定義
+│   │   ├── tests/             # テストファイル
 │   │   ├── icon/              # アイコンアセット
 │   │   ├── index.html
+│   │   ├── vite.config.ts     # Vite設定
 │   │   ├── package.json
-│   │   └── tsconfig.json
+│   │   ├── tsconfig.json
+│   │   ├── eslint.config.js   # ESLint設定
+│   │   └── prettier.config.js # Prettier設定
 │   ├── backend/               # Rust製バックエンド (Axum)
 │   │   ├── src/
 │   │   │   ├── main.rs
@@ -79,7 +87,8 @@ Fillstellar/
 │   ├── docs/                  # プロジェクトドキュメント
 │   └── infra/                 # インフラ設定 (Terraform)
 ├── CLAUDE.md                  # AI開発ガイド
-└── README.md                  # このファイル
+├── README.md                  # このファイル
+└── プロジェクト進化ロードマップ.md  # 詳細な開発計画
 ```
 
 ## 🎮 ゲームプレイ
@@ -115,7 +124,7 @@ Fillstellar/
 ## 🛠️ 開発
 
 ### 必要な環境
-- **フロントエンド**: Node.js 18+, TypeScript 4.5+
+- **フロントエンド**: Node.js 18+, TypeScript 5.8+
 - **バックエンド**: Rust 1.70+, PostgreSQL 15+, Redis 6+
 
 ### 開発コマンド
@@ -150,12 +159,13 @@ make deploy-staging    # ステージング環境デプロイ
 ## 📊 技術スタック
 
 ### フロントエンド
-- **TypeScript** - 型安全なJavaScript
-- **Three.js** - 3Dグラフィックス
+- **TypeScript 5.8+** - 型安全なJavaScript（strictモード）
+- **Three.js** - 3Dグラフィックス・WebGLレンダリング
 - **Vite** - 高速ビルドツール・ホットリロード
 - **ES6 Modules** - モジュラーアーキテクチャ
 - **Web Audio API** - 空間オーディオ
-- **Vitest/Playwright** - テスティングフレームワーク
+- **Vitest/Playwright** - ユニット/E2Eテスト
+- **ESLint/Prettier** - コード品質・フォーマット管理
 
 ### バックエンド
 - **Rust** - 高性能・安全なシステム言語
@@ -172,31 +182,39 @@ make deploy-staging    # ステージング環境デプロイ
 
 ## 📈 ロードマップ
 
-### Phase 1: 基本システム ✅
-- 基本的な資源システム
-- 天体創造と物理シミュレーション
-- 生命進化システム
-- セーブ/ロード機能
+### Phase 1: 開発環境現代化 ✅
+- Vite.jsビルドシステム導入
+- TypeScript 5.8への移行
+- ESLint/Prettier設定
+- Vitest/Playwrightテスト環境
+- ホットリロード対応
 
-### Phase 2: 高度な資源システム ✅
-- 資源細分化（30種類以上）
-- 品質システム（5段階）
-- 変換エンジンと生産チェーン
-- 視覚エフェクトとパーティクルシステム
-- パフォーマンス最適化
+### Phase 2: UX革命 🚧 (現在進行中)
+- モバイル対応UI
+- レスポンシブデザイン
+- グラフィック設定システム
+- アクセシビリティ改善
+- インベントリシステム
 
-### Phase 3: マルチプレイヤー 🚧
+### Phase 3: ゲームプレイ拡張 📋
+- セーブ/ロードシステム
+- 実績システム
+- 研究ツリー拡張
+- 新天体タイプ
+- ゲームバランス調整
+
+### Phase 4: マルチプレイヤー 📋
 - Rust/Axumバックエンド実装
 - WebSocketリアルタイム同期
 - ユーザー認証（JWT）
 - プレイヤー間取引
 - 協力・競争要素
 
-### Phase 4: 高度な機能 📋
+### Phase 5: 高度な機能 📋
 - 銀河マップの拡張
 - 地域特性システム
 - 希少資源とイベント
-- 実績システム
+- 自動化システム
 - モバイルアプリ版
 
 ## 🤝 コントリビューション

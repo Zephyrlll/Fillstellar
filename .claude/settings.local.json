@@ -19,7 +19,8 @@
       "Bash(curl:*)",
       "Bash(node:*)",
       "Bash(mv:*)",
-      "Bash(sed:*)"
+      "Bash(sed:*)",
+      "Bash(pkill:*)"
     ],
     "deny": []
   }
