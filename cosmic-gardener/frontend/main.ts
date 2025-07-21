@@ -390,8 +390,11 @@ function animate() {
     
     // ブラックホールのガス効果を更新
     const blackHole = gameState.stars.find(star => star.userData.type === 'black_hole');
-    if (blackHole) {
+    if (blackHole && blackHoleGas.isEffectActive()) {
         blackHoleGas.update(animationDeltaTime, blackHole.position);
+    } else if (!blackHole && blackHoleGas.isEffectActive()) {
+        // Black hole was removed, dispose the gas effect
+        blackHoleGas.dispose();
     }
     
     let totalVelocity = 0;

@@ -6,6 +6,8 @@ export class BlackHoleGas {
     private gasGroup: THREE.Group;
     private particleCount: number = 3000;
     private blackHole: THREE.Mesh | null = null;
+    private isActive: boolean = true;
+    private isDisposed: boolean = false;
     
     constructor() {
         this.gasGroup = new THREE.Group();
@@ -266,6 +268,11 @@ export class BlackHoleGas {
     }
     
     update(deltaTime: number, blackHolePosition?: THREE.Vector3): void {
+        // Check if the effect is active or disposed
+        if (!this.isActive || this.isDisposed || !this.gasGroup) {
+            return;
+        }
+        
         const centerX = blackHolePosition ? blackHolePosition.x : 0;
         const centerY = blackHolePosition ? blackHolePosition.y : 0;
         const centerZ = blackHolePosition ? blackHolePosition.z : 0;
@@ -277,8 +284,13 @@ export class BlackHoleGas {
         this.gasGroup.children.forEach((child) => {
             if (child.userData.isGlowPlane && child instanceof THREE.Mesh) {
                 const material = child.material as THREE.ShaderMaterial;
-                if (material.uniforms && material.uniforms.time) {
-                    material.uniforms.time.value += deltaTime;
+                // Safety check for disposed materials
+                if (material && material.uniforms && material.uniforms.time && typeof material.uniforms.time.value === 'number') {
+                    try {
+                        material.uniforms.time.value += deltaTime;
+                    } catch (error) {
+                        console.error('[BLACKHOLEGAS] Failed to update shader uniform:', error);
+                    }
                 }
             }
         });
@@ -369,6 +381,75 @@ export class BlackHoleGas {
     
     setBlackHole(blackHole: THREE.Mesh): void {
         this.blackHole = blackHole;
+        
+        // If the effect was previously disposed, reinitialize it
+        if (!this.isActive || this.isDisposed) {
+            this.isActive = true;
+            this.isDisposed = false;
+            
+            // Re-add the group to the scene if it was removed
+            if (!this.gasGroup.parent) {
+                scene.add(this.gasGroup);
+            }
+            
+            // Recreate particles if they were disposed
+            if (this.gasParticles.length === 0) {
+                this.createGasParticles();
+                this.createVolumetricLayers();
+                this.createGlowPlane();
+            }
+        }
+    }
+    
+    dispose(): void {
+        // Mark as inactive and disposed to stop updates
+        this.isActive = false;
+        this.isDisposed = true;
+        
+        // Dispose all particle systems
+        this.gasParticles.forEach((particleSystem) => {
+            if (particleSystem.geometry) {
+                particleSystem.geometry.dispose();
+            }
+            if (particleSystem.material) {
+                if (particleSystem.material instanceof THREE.Material) {
+                    particleSystem.material.dispose();
+                }
+            }
+        });
+        this.gasParticles = [];
+        
+        // Dispose glow plane and other children
+        this.gasGroup.children.forEach((child) => {
+            if (child instanceof THREE.Mesh) {
+                if (child.geometry) {
+                    child.geometry.dispose();
+                }
+                if (child.material) {
+                    if (child.material instanceof THREE.ShaderMaterial) {
+                        // Dispose shader material
+                        child.material.dispose();
+                    } else if (child.material instanceof THREE.Material) {
+                        child.material.dispose();
+                    }
+                }
+            }
+        });
+        
+        // Remove group from scene
+        if (this.gasGroup.parent) {
+            this.gasGroup.parent.remove(this.gasGroup);
+        }
+        
+        // Clear all children
+        this.gasGroup.clear();
+        
+        // Clear references
+        this.blackHole = null;
+    }
+    
+    isEffectActive(): boolean {
+        return this.isActive;
     }
 }
 

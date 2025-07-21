@@ -12,6 +12,7 @@ import { graphicsEngine } from './graphicsEngine.js';
 import { physicsConfig } from './physicsConfig.js';
 import { backgroundGalaxies } from './backgroundGalaxies.js';
 import { initializeSaveLoadUI } from './systems/idleGameUI.js';
+import { blackHoleGas } from './blackHoleGas.js';
 
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
@@ -483,6 +484,11 @@ export function setupEventListeners() {
             }));
             scene.add(newBody);
             
+            // If a black hole was created, initialize the gas effect
+            if (type === 'black_hole' && newBody instanceof THREE.Mesh) {
+                blackHoleGas.setBlackHole(newBody);
+            }
+            
             // サウンドエフェクトの再生
             soundManager.createCelestialBodySound(type, finalPosition);
             
@@ -544,7 +550,7 @@ export function setupEventListeners() {
         const position = new THREE.Vector3(radius * Math.cos(angle), (Math.random() - 0.5) * 100, radius * Math.sin(angle));
         const blackHole = gameState.stars.find(s => s.userData.type === 'black_hole');
         const blackHoleMass = blackHole ? (blackHole.userData.mass as number) : 1e7;
-        const speedMultiplier = physicsConfig.getOrbitalMechanics().orbitalSpeedMultiplier;
+        const speedMultiplier = 1.0; // デフォルト値を使用
         const G = physicsConfig.getPhysics().G;
         const gameScaleFactor = 0.95; // 楕円軌道のために少し遅く
         const orbitalSpeed = Math.sqrt((G * blackHoleMass) / radius) * speedMultiplier * gameScaleFactor;

@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { GALAXY_BOUNDARY } from './constants.js';
-import { mathCache } from './utils.js';
+import { mathCache, removeAndDispose } from './utils.js';
+import { blackHoleGas } from './blackHoleGas.js';
 import { gameState, gameStateManager, CelestialBody } from './state.js';
 import { addTimelineLog } from './timeline.js';
 import { CollisionEffects } from './collisionEffects.js';
@@ -220,10 +221,13 @@ export function handleCollision(body1: CelestialBody, body2: CelestialBody) {
         gameState.stars.splice(index, 1);
     }
 
-    // Remove from Three.js scene
-    if (absorbed.parent) {
-        absorbed.parent.remove(absorbed);
+    // If the absorbed body was a black hole, dispose the gas effect
+    if (absorbed.userData.type === 'black_hole') {
+        blackHoleGas.dispose();
     }
+
+    // Remove from Three.js scene and dispose properly
+    removeAndDispose(absorbed);
 
     // Add timeline log entry
     addTimelineLog(`${survivor.userData.name} merged with ${absorbed.userData.name}`, 'collision');

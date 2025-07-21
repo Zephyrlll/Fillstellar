@@ -5,6 +5,7 @@ import { createCelestialBody } from './celestialBody.js';
 import { showMessage } from './ui.js';
 import { addTimelineLog } from './timeline.js';
 import { soundManager } from './sound.js';
+import { blackHoleGas } from './blackHoleGas.js';
 
 export interface CollisionResult {
     type: 'merge' | 'destruction' | 'bounce' | 'fragmentation';
@@ -312,6 +313,15 @@ export class CollisionEffects {
         body1.userData.velocity.copy(v1n_new.add(v1t));
         body2.userData.velocity.copy(v2n_new.add(v2t));
         
+        // Z軸方向の速度を制限（極端な上下運動を防ぐ）
+        const maxZVelocity = 50; // Z方向の最大速度
+        body1.userData.velocity.z = Math.max(-maxZVelocity, Math.min(maxZVelocity, body1.userData.velocity.z));
+        body2.userData.velocity.z = Math.max(-maxZVelocity, Math.min(maxZVelocity, body2.userData.velocity.z));
+        
+        // さらにZ方向の速度を減衰
+        body1.userData.velocity.z *= 0.3; // 70%減衰
+        body2.userData.velocity.z *= 0.3;
+        
         // 位置を少し離す（めり込み防止）
         const separation = (body1.userData.radius + body2.userData.radius) * 1.1;
         const currentDistance = body1.position.distanceTo(body2.position);
@@ -360,17 +370,24 @@ export class CollisionEffects {
             gameState.stars.splice(index, 1);
         }
         
+        // If the removed body was a black hole, dispose the gas effect
+        if (body.userData.type === 'black_hole') {
+            blackHoleGas.dispose();
+        }
+        
         if (body.parent) {
             body.parent.remove(body);
         }
         
-        // ジオメトリとマテリアルの破棄
-        if (body.geometry) body.geometry.dispose();
-        if (body.material) {
-            if (Array.isArray(body.material)) {
-                body.material.forEach(m => m.dispose());
-            } else {
-                body.material.dispose();
+        // ジオメトリとマテリアルの破棄（Meshの場合のみ）
+        if (body instanceof THREE.Mesh) {
+            if (body.geometry) body.geometry.dispose();
+            if (body.material) {
+                if (Array.isArray(body.material)) {
+                    body.material.forEach(m => m.dispose());
+                } else {
+                    body.material.dispose();
+                }
             }
         }
     }

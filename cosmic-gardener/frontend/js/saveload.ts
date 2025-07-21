@@ -5,6 +5,7 @@ import { createCelestialBody } from './celestialBody.js';
 import { scene } from './threeSetup.js';
 import { conversionEngine } from './conversionEngine.js';
 import { updateAllSettingsUI } from './ui.js';
+import { blackHoleGas } from './blackHoleGas.js';
 
 interface SavedStar {
     position: number[];
@@ -325,6 +326,12 @@ export function loadGame(): void {
         }
         
             scene.add(body);
+            
+            // If a black hole was loaded, initialize the gas effect
+            if (body.userData.type === 'black_hole' && body instanceof THREE.Mesh) {
+                blackHoleGas.setBlackHole(body);
+            }
+            
             return body;
         }).filter(body => body !== null) as CelestialBody[];
         
