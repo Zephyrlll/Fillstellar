@@ -3,6 +3,7 @@ import { gameState, gameStateManager, CelestialBody, StarUserData, PlanetUserDat
 import { mathCache, formatNumber } from './utils.js';
 import { updateProductionUI } from './productionUI.js';
 import { uiOptimizer } from './systems/uiOptimizer.js';
+import { updateLODStatistics } from './updateLODStats.js';
 
 let messageTimeout: any;
 
@@ -162,6 +163,16 @@ export const ui: { [key: string]: HTMLElement | null } = {
     uiAnimationsSelect: document.getElementById('uiAnimationsSelect'),
     dynamicQualityCheckbox: document.getElementById('dynamicQualityCheckbox'),
     resetGraphicsButton: document.getElementById('resetGraphicsButton'),
+    
+    // LOD settings elements
+    lodSettingsHeader: document.getElementById('lodSettingsHeader'),
+    lodSettingsContent: document.getElementById('lodSettingsContent'),
+    lodPerformanceModeSelect: document.getElementById('lodPerformanceModeSelect'),
+    lodDistanceScaleRange: document.getElementById('lodDistanceScaleRange'),
+    lodDistanceScaleValue: document.getElementById('lodDistanceScaleValue'),
+    lodVisibleBodies: document.getElementById('lodVisibleBodies'),
+    lodCulledBodies: document.getElementById('lodCulledBodies'),
+    lodChangesPerSec: document.getElementById('lodChangesPerSec'),
     
     // Performance display elements
     fpsDisplay: document.getElementById('fpsDisplay'),
@@ -533,6 +544,9 @@ export function switchTab(activeTab: string) {
         if (ui.starTabMobile) ui.starTabMobile.classList.add('active-mobile-tab');
         updateStarList();
     }
+    
+    // Update LOD statistics
+    updateLODStatistics();
 }
 
 function updateStarList() {

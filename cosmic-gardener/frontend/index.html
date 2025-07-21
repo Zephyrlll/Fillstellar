@@ -1274,6 +1274,95 @@
                           </div>
                       </div>
                       
+                      <!-- LOD設定セクション -->
+                      <div class="collapsible-section">
+                          <div class="collapsible-header" id="lodSettingsHeader">🔍 LOD設定（Level of Detail）</div>
+                          <div class="collapsible-content hidden" id="lodSettingsContent">
+                              <div class="lod-settings-grid">
+                                  
+                                  <div class="option-item">
+                                      <label for="lodPerformanceModeSelect">LODパフォーマンスモード:</label>
+                                      <select id="lodPerformanceModeSelect">
+                                          <option value="ultra">ウルトラ（最高品質・重い）</option>
+                                          <option value="high">高（高品質）</option>
+                                          <option value="balanced" selected>バランス（推奨）</option>
+                                          <option value="performance">パフォーマンス（軽量）</option>
+                                      </select>
+                                  </div>
+                                  
+                                  <div class="option-item">
+                                      <label for="lodDistanceScaleRange">LOD距離スケール:</label>
+                                      <input type="range" id="lodDistanceScaleRange" min="0.5" max="2.0" step="0.1" value="1.0">
+                                      <span id="lodDistanceScaleValue">1.0x</span>
+                                  </div>
+                                  
+                                  <div class="lod-info">
+                                      <h4>🌟 現在のLOD統計</h4>
+                                      <div class="lod-stats">
+                                          <div class="stat-row">
+                                              <span>表示中の天体:</span>
+                                              <span id="lodVisibleBodies">0</span>
+                                          </div>
+                                          <div class="stat-row">
+                                              <span>カリングされた天体:</span>
+                                              <span id="lodCulledBodies">0</span>
+                                          </div>
+                                          <div class="stat-row">
+                                              <span>LOD変更回数/秒:</span>
+                                              <span id="lodChangesPerSec">0</span>
+                                          </div>
+                                      </div>
+                                  </div>
+                                  
+                                  <div class="lod-level-config">
+                                      <h4>📏 距離レベル設定</h4>
+                                      <table class="lod-level-table">
+                                          <thead>
+                                              <tr>
+                                                  <th>レベル</th>
+                                                  <th>距離範囲</th>
+                                                  <th>表示モード</th>
+                                              </tr>
+                                          </thead>
+                                          <tbody>
+                                              <tr>
+                                                  <td>超近距離</td>
+                                                  <td>&lt; 100</td>
+                                                  <td>完全詳細</td>
+                                              </tr>
+                                              <tr>
+                                                  <td>近距離</td>
+                                                  <td>100-500</td>
+                                                  <td>高詳細</td>
+                                              </tr>
+                                              <tr>
+                                                  <td>中距離</td>
+                                                  <td>500-2000</td>
+                                                  <td>簡易モデル</td>
+                                              </tr>
+                                              <tr>
+                                                  <td>遠距離</td>
+                                                  <td>2000-10000</td>
+                                                  <td>ビルボード</td>
+                                              </tr>
+                                              <tr>
+                                                  <td>超遠距離</td>
+                                                  <td>10000-50000</td>
+                                                  <td>点光源</td>
+                                              </tr>
+                                              <tr>
+                                                  <td>極限距離</td>
+                                                  <td>&gt; 50000</td>
+                                                  <td>アイコン</td>
+                                              </tr>
+                                          </tbody>
+                                      </table>
+                                  </div>
+                                  
+                              </div>
+                          </div>
+                      </div>
+                      
                       <!-- 動的品質調整 -->
                       <div class="option-item">
                           <label>

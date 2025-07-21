@@ -2382,11 +2382,15 @@ button:hover {
     display: block !important;
 }
 
-.collapsible-content.hidden,
-.hidden {
+/* 特定の順序で指定して優先度を調整 */
+.collapsible-content.hidden {
     display: none !important;
     max-height: 0 !important;
     padding: 0 !important;
+}
+
+.hidden {
+    display: none !important;
 }
 
 .upgrade-item, .research-item, .creation-item, .option-item {
@@ -5890,6 +5894,82 @@ button:disabled {
 
 .device-info span {
     margin-right: 10px;
+}
+
+/* LOD Settings */
+.lod-settings-grid {
+    display: grid;
+    gap: 20px;
+    padding: 10px;
+}
+
+.lod-info {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 5px;
+    padding: 15px;
+}
+
+.lod-info h4 {
+    margin: 0 0 10px 0;
+    color: #ffd700;
+}
+
+.lod-stats {
+    display: grid;
+    gap: 5px;
+}
+
+.lod-stats .stat-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 5px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.lod-stats .stat-row:last-child {
+    border-bottom: none;
+}
+
+.lod-level-config {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 5px;
+    padding: 15px;
+}
+
+.lod-level-config h4 {
+    margin: 0 0 10px 0;
+    color: #87ceeb;
+}
+
+.lod-level-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+.lod-level-table th,
+.lod-level-table td {
+    padding: 8px;
+    text-align: left;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.lod-level-table th {
+    background: rgba(255, 255, 255, 0.05);
+    color: #ffd700;
+}
+
+.lod-level-table tr:hover {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+#lodDistanceScaleValue {
+    display: inline-block;
+    width: 50px;
+    text-align: center;
+    color: #ffd700;
 }
 
 /* Range slider styling */

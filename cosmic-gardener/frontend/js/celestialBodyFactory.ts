@@ -20,6 +20,8 @@ import { celestialObjectPools, starGeometry } from './utils.js';
 import { showMessage } from './ui.js';
 import { addTimelineLog } from './timeline.js';
 import { soundManager } from './sound.js';
+import { CelestialBillboardSystem } from './systems/celestialBillboard.js';
+import { blackHoleGas } from './blackHoleGas.js';
 
 // ファクトリークラスの実装
 export class CelestialBodyFactory {
@@ -123,6 +125,78 @@ export class CelestialBodyFactory {
     return validTypes.includes(type as CelestialType);
   }
 
+  // LODサポートの準備
+  private prepareLODSupport(body: CelestialBody, type: CelestialType, radius: number): void {
+    const billboardSystem = CelestialBillboardSystem.getInstance();
+    
+    // ビルボード用の設定を作成
+    const billboardConfig = billboardSystem.createBillboardConfig(type, {
+      ...body.userData,
+      radius
+    });
+    
+    // ビルボードスプライトを取得（まだbodyには追加しない）
+    const billboard = billboardSystem.getBillboard(body.userData.name || body.uuid, billboardConfig);
+    billboard.visible = false; // 初期状態では非表示
+    
+    // LOD関連のプロパティをuserDataに追加
+    body.userData.billboardSprite = billboard;
+    body.userData.lod = true; // LOD対応フラグ
+    
+    // 高詳細ジオメトリの保存
+    if (body instanceof THREE.Mesh && body.geometry) {
+      body.userData.highDetailGeometry = body.geometry;
+      
+      // 簡易ジオメトリの作成（頂点数を削減）
+      const simplifiedGeometry = this.createSimplifiedGeometry(body.geometry, type);
+      if (simplifiedGeometry) {
+        body.userData.simplifiedGeometry = simplifiedGeometry;
+      }
+    }
+    
+    // 点光源の追加（遠距離表示用）
+    if (type === 'star' || type === 'black_hole') {
+      const color = type === 'star' ? 
+        (body.userData as StarUserData).temperature ? this.getStarColorFromTemp((body.userData as StarUserData).temperature) : 0xffffff :
+        0x4400ff;
+      
+      const pointLight = new THREE.PointLight(color, 1, 0);
+      pointLight.visible = false; // 初期状態では非表示
+      body.add(pointLight);
+      body.userData.pointLight = pointLight;
+    }
+  }
+
+  // 簡易ジオメトリの作成
+  private createSimplifiedGeometry(originalGeometry: THREE.BufferGeometry, type: CelestialType): THREE.BufferGeometry | null {
+    // 天体タイプに応じて簡易化レベルを調整
+    const simplificationLevel = {
+      'star': 16,        // 恒星は比較的単純な球体
+      'planet': 24,      // 惑星は中程度の詳細度
+      'moon': 12,        // 月は低詳細
+      'asteroid': 8,     // 小惑星は最低詳細
+      'comet': 10,       // 彗星
+      'dwarfPlanet': 16, // 準惑星
+      'black_hole': 8    // ブラックホールは見た目より効果重視
+    };
+    
+    const segments = simplificationLevel[type] || 12;
+    
+    // 新しい簡易球体ジオメトリを作成
+    return new THREE.SphereGeometry(1, segments, segments);
+  }
+
+  // 温度から恒星の色を取得
+  private getStarColorFromTemp(temperature: number): number {
+    if (temperature > 30000) return 0x9bb0ff; // O型（青）
+    if (temperature > 10000) return 0xaabfff; // B型（青白）
+    if (temperature > 7500) return 0xcad7ff;  // A型（白）
+    if (temperature > 6000) return 0xf8f7ff;  // F型（黄白）
+    if (temperature > 5200) return 0xfff4ea;  // G型（黄）
+    if (temperature > 3700) return 0xffd2a1;  // K型（橙）
+    return 0xffcc6f; // M型（赤）
+  }
+
   // 親天体が必要かチェック
   private requiresParent(type: CelestialType): boolean {
     // 衛星と準惑星のみ親天体が必要
@@ -193,6 +267,9 @@ export class CelestialBodyFactory {
     });
 
     body.userData = finalUserData;
+
+    // LODサポートの準備
+    this.prepareLODSupport(body, type, radius);
 
     // 位置設定
     if (config.position) {

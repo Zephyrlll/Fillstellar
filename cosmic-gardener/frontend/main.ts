@@ -86,6 +86,8 @@ import './js/debugPhysics.ts';
 import { orbitTrailSystem } from './js/orbitTrails.ts';
 // Background galaxies
 import { backgroundGalaxies } from './js/backgroundGalaxies.ts';
+// LOD system
+import { LODManager } from './js/systems/lodManager.ts';
 
 // Idle game initialization function
 function initializeIdleGameSystems() {
@@ -237,6 +239,7 @@ const menuSystem = new MenuSystem();
 const uiPositionManager = new UIPositionManager();
 const prestigeUI = new PrestigeUI();
 let renderOptimizer: RenderOptimizer;
+let lodManager: LODManager;
 
 // Expose graphicsEngine globally for synchronous access from saveload.ts and debugging
 (window as any).graphicsEngine = graphicsEngine;
@@ -337,6 +340,12 @@ function animate() {
     
     // Update LOD for celestial bodies
     renderOptimizer.updateLOD(gameState.stars);
+    
+    // Update LOD manager for advanced LOD features
+    lodManager.update(gameState.stars);
+    
+    // Apply LOD performance adjustments based on FPS
+    lodManager.adjustForFPS(currentFPS);
     
     const now = Date.now();
     
@@ -863,6 +872,13 @@ function init() {
     // Initialize render optimizer
     renderOptimizer = RenderOptimizer.getInstance(renderer, scene, camera);
     console.log('[INIT] Render optimizer initialized');
+    
+    // Initialize LOD manager
+    lodManager = LODManager.getInstance(camera);
+    console.log('[INIT] LOD manager initialized');
+    
+    // Expose LOD manager globally for event handlers
+    (window as any).lodManager = lodManager;
     
     // Initialize balance debug UI (F4 to toggle)
     console.log('[INIT] Balance debug UI initialized (Press F4 to toggle)');

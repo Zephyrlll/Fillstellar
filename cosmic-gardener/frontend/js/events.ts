@@ -314,21 +314,62 @@ export function setupEventListeners() {
     }
 
     const collapsibleHeaders = document.querySelectorAll('.collapsible-header');
+    console.log(`[EVENTS] Found ${collapsibleHeaders.length} collapsible headers`);
+    
     collapsibleHeaders.forEach(header => {
         header.addEventListener('click', () => {
             console.log('🔧 Collapsible header clicked:', header.textContent);
             header.classList.toggle('active');
             const content = header.nextElementSibling as HTMLElement;
-            if (content) {
+            
+            // LOD設定のデバッグ（詳細）
+            if (header.id === 'lodSettingsHeader') {
+                console.log('🔍 LOD header clicked - before toggle:', {
+                    header: header,
+                    headerId: header.id,
+                    content: content,
+                    contentId: content?.id,
+                    contentTagName: content?.tagName,
+                    contentClasses: content?.className,
+                    isHidden: content?.classList.contains('hidden'),
+                    computedStyle: content ? window.getComputedStyle(content).display : 'null'
+                });
+            }
+            
+            if (content && content.classList.contains('collapsible-content')) {
                 // hidden と active を切り替え
                 if (content.classList.contains('hidden')) {
+                    // まずhiddenを削除してからactiveを追加（順序重要）
                     content.classList.remove('hidden');
-                    content.classList.add('active');
+                    // 少し遅延させてアニメーションを確実に動作させる
+                    setTimeout(() => {
+                        content.classList.add('active');
+                    }, 10);
                 } else {
+                    // まずactiveを削除してからhiddenを追加
                     content.classList.remove('active');
-                    content.classList.add('hidden');
+                    // トランジション完了後にhiddenを追加
+                    setTimeout(() => {
+                        content.classList.add('hidden');
+                    }, 300); // CSSのtransition時間と同じ
                 }
                 console.log('📋 Content toggled:', content.classList.contains('active') ? 'opened' : 'closed');
+                
+                // LOD設定のデバッグ（詳細後）
+                if (header.id === 'lodSettingsHeader') {
+                    setTimeout(() => {
+                        console.log('🔍 LOD header clicked - after toggle:', {
+                            contentClasses: content.className,
+                            isHidden: content.classList.contains('hidden'),
+                            isActive: content.classList.contains('active'),
+                            computedStyle: window.getComputedStyle(content).display,
+                            offsetHeight: content.offsetHeight,
+                            scrollHeight: content.scrollHeight
+                        });
+                    }, 50);
+                }
+            } else {
+                console.warn('⚠️ No valid collapsible content found for header:', header.textContent);
             }
         });
     });
@@ -1259,6 +1300,41 @@ export function setupEventListeners() {
             if (ui.generalSettingsContent) {
                 ui.generalSettingsContent.classList.toggle('expanded');
             }
+        });
+    }
+    
+    // LOD performance mode select
+    if (ui.lodPerformanceModeSelect) {
+        ui.lodPerformanceModeSelect.addEventListener('change', (event) => {
+            const target = event.target as HTMLSelectElement;
+            const mode = target.value as 'ultra' | 'high' | 'balanced' | 'performance';
+            
+            // Get LOD manager instance from window
+            const lodManager = (window as any).lodManager;
+            if (lodManager) {
+                lodManager.setPerformanceMode(mode);
+                console.log('[EVENTS] LOD performance mode changed to:', mode);
+            }
+            
+            saveGame();
+        });
+    }
+    
+    // LOD distance scale range
+    if (ui.lodDistanceScaleRange) {
+        ui.lodDistanceScaleRange.addEventListener('input', (event) => {
+            const target = event.target as HTMLInputElement;
+            const scale = parseFloat(target.value);
+            
+            // Update display value
+            if (ui.lodDistanceScaleValue) {
+                ui.lodDistanceScaleValue.textContent = `${scale.toFixed(1)}x`;
+            }
+            
+            // TODO: Apply distance scale to LOD manager
+            console.log('[EVENTS] LOD distance scale changed to:', scale);
+            
+            saveGame();
         });
     }
 

@@ -54,7 +54,23 @@ export interface BlackHoleUserData {
 export type CelestialBodyUserData = StarUserData | PlanetUserData | BlackHoleUserData | { [key: string]: any };
 
 export interface CelestialBody extends THREE.Object3D {
-    userData: CelestialBodyUserData;
+    userData: CelestialBodyUserData & {
+        // LOD support properties
+        billboardSprite?: THREE.Sprite;
+        lod?: boolean;
+        pointLight?: THREE.PointLight;
+        highDetailGeometry?: THREE.BufferGeometry;
+        simplifiedGeometry?: THREE.BufferGeometry;
+        lowDetailGeometry?: THREE.BufferGeometry;
+        currentLOD?: number;
+        updateEffects?: (frameCounter: number) => void;
+        isDetail?: boolean;
+        // Effect objects (different from data properties)
+        particleSystem?: THREE.Object3D;
+        atmosphereEffect?: THREE.Object3D;
+        atmosphereMesh?: THREE.Mesh;
+        glowMesh?: THREE.Mesh;
+    };
 }
 
 export interface PhysicsState {
