@@ -161,7 +161,7 @@ export const PARAGON_UPGRADES: ParagonUpgrade[] = [
 // エンドゲーム条件のデフォルト設定
 export const DEFAULT_ENDGAME_CONDITIONS: EndgameConditions = {
   requiredCelestialTypes: ['star', 'planet', 'black_hole'],
-  requiredResearchCount: 20,
+  requiredResearchCount: 5, // テスト用に20から5に変更
   requiredThoughtPoints: 10000,
   requiredLifeStage: 'intelligent'
 };

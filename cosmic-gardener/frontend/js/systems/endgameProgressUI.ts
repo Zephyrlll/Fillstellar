@@ -42,6 +42,7 @@ export class EndgameProgressUI {
     this.container = document.createElement('div');
     this.container.id = 'endgame-progress-ui';
     this.container.className = 'endgame-progress-container';
+    this.container.style.display = 'none'; // 初期状態では非表示
     this.container.innerHTML = `
       <div class="endgame-progress-header">
         <h3>エンドゲーム進捗</h3>
@@ -335,21 +336,21 @@ export class EndgameProgressUI {
         name: '天体作成',
         icon: '🌟',
         current: gameState.stars?.length || 0,
-        required: conditions.minCelestialBodies,
+        required: 100, // デフォルト値をハードコード
         type: 'celestial'
       },
       {
         name: '研究完了',
         icon: '🔬',
         current: gameState.research?.completedResearch?.length || 0,
-        required: conditions.minResearchCompleted,
+        required: conditions.requiredResearchCount || 5,
         type: 'research'
       },
       {
         name: '思考ポイント',
         icon: '🧠',
         current: gameState.resources?.thoughtPoints || 0,
-        required: conditions.minThoughtPoints,
+        required: conditions.requiredThoughtPoints || 10000,
         type: 'thought'
       },
       {
@@ -397,9 +398,9 @@ export class EndgameProgressUI {
     } else {
       // 進捗計算
       const progressData = [
-        (gameState.stars?.length || 0) / conditions.minCelestialBodies,
-        (gameState.research?.completedResearch?.length || 0) / conditions.minResearchCompleted,
-        (gameState.resources?.thoughtPoints || 0) / conditions.minThoughtPoints,
+        (gameState.stars?.length || 0) / 100,
+        (gameState.research?.completedResearch?.length || 0) / (conditions.requiredResearchCount || 5),
+        (gameState.resources?.thoughtPoints || 0) / (conditions.requiredThoughtPoints || 10000),
         this.hasIntelligentLife(gameState) ? 1 : 0
       ];
       
@@ -426,27 +427,27 @@ export class EndgameProgressUI {
   private getNextGoal(gameState: any, conditions: any): string | null {
     const goals = [];
     
-    const celestialProgress = (gameState.stars?.length || 0) / conditions.minCelestialBodies;
+    const celestialProgress = (gameState.stars?.length || 0) / 100;
     if (celestialProgress < 1) {
-      const remaining = conditions.minCelestialBodies - (gameState.stars?.length || 0);
+      const remaining = 100 - (gameState.stars?.length || 0);
       goals.push({ 
         progress: celestialProgress, 
         text: `あと${remaining}個の天体を作成` 
       });
     }
     
-    const researchProgress = (gameState.research?.completedResearch?.length || 0) / conditions.minResearchCompleted;
+    const researchProgress = (gameState.research?.completedResearch?.length || 0) / (conditions.requiredResearchCount || 5);
     if (researchProgress < 1) {
-      const remaining = conditions.minResearchCompleted - (gameState.research?.completedResearch?.length || 0);
+      const remaining = (conditions.requiredResearchCount || 5) - (gameState.research?.completedResearch?.length || 0);
       goals.push({ 
         progress: researchProgress, 
         text: `あと${remaining}個の研究を完了` 
       });
     }
     
-    const thoughtProgress = (gameState.resources?.thoughtPoints || 0) / conditions.minThoughtPoints;
+    const thoughtProgress = (gameState.resources?.thoughtPoints || 0) / (conditions.requiredThoughtPoints || 10000);
     if (thoughtProgress < 1) {
-      const remaining = conditions.minThoughtPoints - (gameState.resources?.thoughtPoints || 0);
+      const remaining = (conditions.requiredThoughtPoints || 10000) - (gameState.resources?.thoughtPoints || 0);
       goals.push({ 
         progress: thoughtProgress, 
         text: `あと${this.formatNumber(remaining)}思考ポイント` 
@@ -467,6 +468,11 @@ export class EndgameProgressUI {
   
   // 数値フォーマット
   private formatNumber(num: number): string {
+    // null/undefined チェック
+    if (num === null || num === undefined || isNaN(num)) {
+      return '0';
+    }
+    
     if (num >= 1000000) {
       return (num / 1000000).toFixed(1) + 'M';
     } else if (num >= 1000) {

@@ -56,7 +56,16 @@ export class PhaseManager {
   getPhaseState(): PhaseState {
     const state = gameStateManager.getState();
     const currentPhase = state.currentGamePhase || 0;
-    const unlockedPhases = new Set(state.unlockedPhases || [0]);
+    
+    // Convert unlockedPhases to Set
+    let unlockedPhases: Set<number>;
+    if (state.unlockedPhases instanceof Set) {
+      unlockedPhases = state.unlockedPhases;
+    } else if (Array.isArray(state.unlockedPhases)) {
+      unlockedPhases = new Set(state.unlockedPhases);
+    } else {
+      unlockedPhases = new Set([0]);
+    }
     
     // Handle phaseProgress - it might be a plain object or array
     let phaseProgress: Map<number, PhaseProgress>;
@@ -87,7 +96,17 @@ export class PhaseManager {
   // Check if a phase is unlocked
   isPhaseUnlocked(phaseId: number): boolean {
     const state = gameStateManager.getState();
-    return state.unlockedPhases?.has(phaseId) || false;
+    
+    // Handle different types of unlockedPhases
+    if (state.unlockedPhases instanceof Set) {
+      return state.unlockedPhases.has(phaseId);
+    } else if (Array.isArray(state.unlockedPhases)) {
+      return state.unlockedPhases.includes(phaseId);
+    } else if (state.unlockedPhases && typeof state.unlockedPhases === 'object') {
+      return state.unlockedPhases[phaseId] === true;
+    }
+    
+    return false;
   }
   
   // Check phase requirements
@@ -244,12 +263,29 @@ export class PhaseManager {
     }
     
     // Update state
-    gameStateManager.updateState(state => ({
-      ...state,
-      currentGamePhase: nextPhase.id,
-      unlockedPhases: new Set([...Array.from(state.unlockedPhases || []), nextPhase.id]),
-      phaseProgress: phaseProgressArray
-    }));
+    gameStateManager.updateState(state => {
+      // Convert existing unlockedPhases to array
+      let unlockedPhasesArray: number[];
+      if (state.unlockedPhases instanceof Set) {
+        unlockedPhasesArray = Array.from(state.unlockedPhases);
+      } else if (Array.isArray(state.unlockedPhases)) {
+        unlockedPhasesArray = state.unlockedPhases;
+      } else {
+        unlockedPhasesArray = [0];
+      }
+      
+      // Add new phase if not already included
+      if (!unlockedPhasesArray.includes(nextPhase.id)) {
+        unlockedPhasesArray.push(nextPhase.id);
+      }
+      
+      return {
+        ...state,
+        currentGamePhase: nextPhase.id,
+        unlockedPhases: unlockedPhasesArray,
+        phaseProgress: phaseProgressArray
+      };
+    });
     
     // Apply rewards
     this.applyPhaseRewards(nextPhase);

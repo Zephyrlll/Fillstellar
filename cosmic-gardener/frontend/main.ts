@@ -843,9 +843,19 @@ function init() {
     menuSystem.hideExistingButtons();
     console.log('[INIT] Menu system initialized');
     
+    // Initialize endgame progress UI (but don't show it)
+    endgameProgressUI.init();
+    endgameProgressUI.hide(); // 初期状態では非表示
+    console.log('[INIT] Endgame progress UI initialized (hidden)');
+    
     // Initialize UI position manager
     uiPositionManager.init();
     console.log('[INIT] UI position manager initialized');
+    
+    // Start checking endgame conditions periodically
+    setInterval(() => {
+        paragonSystem.checkEndgameConditions();
+    }, 5000); // Check every 5 seconds
     
     // Initialize render optimizer
     renderOptimizer = RenderOptimizer.getInstance(renderer, scene, camera);

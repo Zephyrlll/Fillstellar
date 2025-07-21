@@ -18,8 +18,30 @@ export class MenuSystem {
     this.setupSlideMenu();
     this.createMenuToggle();
     
+    // エンドゲーム到達時にメニューを更新するリスナー登録
+    this.registerEndgameListener();
+    
     this.isInitialized = true;
     console.log('[MENU] Menu system initialized');
+  }
+  
+  // エンドゲーム到達時のリスナー
+  private registerEndgameListener(): void {
+    window.addEventListener('paragonEvent', (event: any) => {
+      if (event.detail?.type === 'endgame_reached') {
+        console.log('[MENU] Endgame reached, refreshing menus');
+        this.refreshMenus();
+      }
+    });
+  }
+  
+  // メニューを再構築
+  refreshMenus(): void {
+    if (!this.isInitialized) return;
+    
+    // ラジアルメニューとスライドメニューを再設定
+    this.setupRadialMenu();
+    this.slideMenu.refresh(this.getSlideMenuSections());
   }
   
   private setupRadialMenu(): void {
@@ -46,7 +68,7 @@ export class MenuSystem {
   }
   
   private getRadialMenuItems(): MenuItem[] {
-    return [
+    const items: MenuItem[] = [
       {
         id: 'dashboard',
         label: 'ダッシュボード',
@@ -140,37 +162,6 @@ export class MenuSystem {
         ]
       },
       {
-        id: 'endgame',
-        label: 'エンドゲーム',
-        icon: '<img src="/icon/menu/star-svgrepo-com.svg" class="menu-icon-svg" alt="エンドゲーム">',
-        submenu: [
-          {
-            id: 'paragon',
-            label: 'パラゴンシステム',
-            icon: '🔮',
-            action: () => this.openParagon()
-          },
-          {
-            id: 'infinite-resources',
-            label: '無限資源',
-            icon: '♾️',
-            action: () => this.openInfiniteResources()
-          },
-          {
-            id: 'mythic-rarity',
-            label: '神話級コレクション',
-            icon: '🌟',
-            action: () => this.openMythicRarity()
-          },
-          {
-            id: 'multiverse',
-            label: 'マルチバース',
-            icon: '🌌',
-            action: () => this.openMultiverse()
-          }
-        ]
-      },
-      {
         id: 'statistics',
         label: '統計',
         icon: '<img src="/icon/menu/statistics-graph-stats-analytics-business-data-svgrepo-com.svg" class="menu-icon-svg" alt="統計">',
@@ -192,12 +183,6 @@ export class MenuSystem {
             label: 'グラフ表示',
             icon: '<img src="/icon/menu/graph-up-svgrepo-com.svg" class="menu-icon-svg" alt="グラフ">',
             action: () => this.openGraphDisplay()
-          },
-          {
-            id: 'endgame-progress',
-            label: 'エンドゲーム進捗',
-            icon: '📊',
-            action: () => this.openEndgameProgress()
           }
         ]
       },
@@ -231,12 +216,174 @@ export class MenuSystem {
             action: () => this.openTips()
           }
         ]
+      },
+      {
+        id: 'endgame',
+        label: 'エンドゲーム',
+        icon: '<img src="/icon/menu/star-svgrepo-com.svg" class="menu-icon-svg" alt="エンドゲーム">',
+        submenu: this.getEndgameSubmenu()
       }
     ];
+
+    return items;
+  }
+  
+  private getEndgameSubmenu(): MenuItem[] {
+    const paragonSystem = (window as any).paragonSystem;
+    const isEndgameReached = paragonSystem && paragonSystem.isEndgame();
+    
+    const submenu: MenuItem[] = [
+      {
+        id: 'endgame-progress',
+        label: 'エンドゲーム進捗',
+        icon: '📊',
+        action: () => this.openEndgameProgress()
+      }
+    ];
+    
+    // エンドゲーム到達後のみ他の機能を表示
+    if (isEndgameReached) {
+      submenu.push(
+        {
+          id: 'paragon',
+          label: 'パラゴンシステム',
+          icon: '🔮',
+          action: () => this.openParagon()
+        },
+        {
+          id: 'infinite-resources',
+          label: '無限資源',
+          icon: '♾️',
+          action: () => this.openInfiniteResources()
+        },
+        {
+          id: 'mythic-rarity',
+          label: '神話級コレクション',
+          icon: '🌟',
+          action: () => this.openMythicRarity()
+        },
+        {
+          id: 'multiverse',
+          label: 'マルチバース',
+          icon: '🌌',
+          action: () => this.openMultiverse()
+        }
+      );
+    } else {
+      // エンドゲーム未達成時は「???」として表示
+      submenu.push(
+        {
+          id: 'paragon-locked',
+          label: '???',
+          icon: '🔒',
+          action: () => this.showLockedFeature('パラゴンシステム'),
+          enabled: false
+        },
+        {
+          id: 'infinite-resources-locked',
+          label: '???',
+          icon: '🔒',
+          action: () => this.showLockedFeature('無限資源'),
+          enabled: false
+        },
+        {
+          id: 'mythic-rarity-locked',
+          label: '???',
+          icon: '🔒',
+          action: () => this.showLockedFeature('神話級コレクション'),
+          enabled: false
+        },
+        {
+          id: 'multiverse-locked',
+          label: '???',
+          icon: '🔒',
+          action: () => this.showLockedFeature('マルチバース'),
+          enabled: false
+        }
+      );
+    }
+    
+    return submenu;
+  }
+  
+  private getEndgameSlideItems(): MenuItem[] {
+    const paragonSystem = (window as any).paragonSystem;
+    const isEndgameReached = paragonSystem && paragonSystem.isEndgame();
+    
+    const items: MenuItem[] = [
+      {
+        id: 'endgame-progress-slide',
+        label: 'エンドゲーム進捗',
+        icon: '📊',
+        action: () => this.openEndgameProgress()
+      }
+    ];
+    
+    if (isEndgameReached) {
+      items.push(
+        {
+          id: 'paragon-slide',
+          label: 'パラゴンシステム',
+          icon: '🔮',
+          action: () => this.openParagon()
+        },
+        {
+          id: 'infinite-resources-slide',
+          label: '無限資源',
+          icon: '♾️',
+          action: () => this.openInfiniteResources()
+        },
+        {
+          id: 'mythic-rarity-slide',
+          label: '神話級コレクション',
+          icon: '🌟',
+          action: () => this.openMythicRarity()
+        },
+        {
+          id: 'multiverse-slide',
+          label: 'マルチバース',
+          icon: '🌌',
+          action: () => this.openMultiverse()
+        }
+      );
+    } else {
+      items.push(
+        {
+          id: 'paragon-slide-locked',
+          label: '???',
+          icon: '🔒',
+          action: () => this.showLockedFeature('パラゴンシステム'),
+          enabled: false
+        },
+        {
+          id: 'infinite-resources-slide-locked',
+          label: '???',
+          icon: '🔒',
+          action: () => this.showLockedFeature('無限資源'),
+          enabled: false
+        },
+        {
+          id: 'mythic-rarity-slide-locked',
+          label: '???',
+          icon: '🔒',
+          action: () => this.showLockedFeature('神話級コレクション'),
+          enabled: false
+        },
+        {
+          id: 'multiverse-slide-locked',
+          label: '???',
+          icon: '🔒',
+          action: () => this.showLockedFeature('マルチバース'),
+          enabled: false
+        }
+      );
+    }
+    
+    return items;
   }
   
   private getSlideMenuSections(): MenuSection[] {
-    return [
+    const sections: MenuSection[] = [
       {
         id: 'account',
         title: 'アカウント',
@@ -254,36 +401,6 @@ export class MenuSystem {
             icon: '📋',
             action: () => console.log('[MENU] Profile not implemented'),
             enabled: false
-          }
-        ]
-      },
-      {
-        id: 'endgame-features',
-        title: 'エンドゲーム機能',
-        items: [
-          {
-            id: 'paragon-slide',
-            label: 'パラゴンシステム',
-            icon: '🔮',
-            action: () => this.openParagon()
-          },
-          {
-            id: 'infinite-resources-slide',
-            label: '無限資源',
-            icon: '♾️',
-            action: () => this.openInfiniteResources()
-          },
-          {
-            id: 'mythic-rarity-slide',
-            label: '神話級コレクション',
-            icon: '🌟',
-            action: () => this.openMythicRarity()
-          },
-          {
-            id: 'multiverse-slide',
-            label: 'マルチバース',
-            icon: '🌌',
-            action: () => this.openMultiverse()
           }
         ]
       },
@@ -334,8 +451,15 @@ export class MenuSystem {
             action: () => this.showChangelog()
           }
         ]
+      },
+      {
+        id: 'endgame-features',
+        title: 'エンドゲーム機能',
+        items: this.getEndgameSlideItems()
       }
     ];
+
+    return sections;
   }
   
   private createMenuToggle(): void {
@@ -548,6 +672,16 @@ export class MenuSystem {
   
   private showChangelog(): void {
     console.log('[MENU] Changelog not implemented');
+  }
+  
+  private showLockedFeature(featureName: string): void {
+    if ((window as any).feedbackSystem) {
+      (window as any).feedbackSystem.showToast({
+        message: `${featureName}はエンドゲーム到達後に解放されます`,
+        type: 'warning',
+        duration: 3000
+      });
+    }
   }
   
   // Public methods for external access
@@ -1033,5 +1167,13 @@ class SlideMenu {
         item.setAttribute('disabled', 'true');
       }
     }
+  }
+  
+  // メニューセクションを更新
+  refresh(sections: MenuSection[]): void {
+    if (!this.config || !this.container) return;
+    
+    this.config.sections = sections;
+    this.render();
   }
 }
