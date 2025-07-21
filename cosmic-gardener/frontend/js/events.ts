@@ -404,8 +404,8 @@ export function setupEventListeners() {
             }));
             // Use actual radius from userData instead of visual scale
             const parentRadius = focusedObject.userData.radius || 1;
-            const minSafeDistance = parentRadius * 3; // At least 3x parent radius for safety
-            const maxOrbitalRange = parentRadius * 8; // Up to 8x parent radius
+            const minSafeDistance = parentRadius * 10; // At least 10x parent radius for stable orbit
+            const maxOrbitalRange = parentRadius * 30; // Up to 30x parent radius
             const orbitalRadius = parentRadius + minSafeDistance + Math.random() * maxOrbitalRange;
             const angle = Math.random() * Math.PI * 2;
             const position = new THREE.Vector3(orbitalRadius * Math.cos(angle), (Math.random() - 0.5) * 20, orbitalRadius * Math.sin(angle));
@@ -453,29 +453,19 @@ export function setupEventListeners() {
                 return;
             }
 
-            const gameScaleFactor = 0.15; // 接線速度を1.5倍に増加
-            const orbitalSpeed = Math.sqrt((gameState.physics.G * (focusedObject.userData as StarUserData).mass) / orbitalRadius) * gameScaleFactor;
-
-            if (!isFinite(orbitalSpeed)) {
-                console.error(`[Creation Error] Calculated orbitalSpeed is not finite (${orbitalSpeed}) for ${type}. Skipping creation.`);
-                stopCreation();
-                return;
-            }
-
-            const relativeVelocity = new THREE.Vector3(-position.z, 0, position.x).normalize().multiplyScalar(orbitalSpeed);
-            const finalVelocity = (focusedObject.userData.velocity as THREE.Vector3).clone().add(relativeVelocity);
+            // celestialBodyFactory.tsで円軌道速度を自動計算するため、ここでは速度を指定しない
             // finalPosition already calculated above after collision checking
             
-            if (!isFinite(finalPosition.x) || !isFinite(finalVelocity.x)) {
-                 console.error(`[Creation Error] Final position or velocity is not finite. Skipping creation.`);
+            if (!isFinite(finalPosition.x)) {
+                 console.error(`[Creation Error] Final position is not finite. Skipping creation.`);
                  stopCreation();
                  return;
             }
 
             const newBody = createCelestialBody(type, {
                 position: finalPosition,
-                velocity: finalVelocity,
                 parent: focusedObject
+                // velocityは指定しない - celestialBodyFactoryで自動計算される
             });
             gameStateManager.updateState(state => ({
                 ...state,

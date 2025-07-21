@@ -278,7 +278,7 @@ class CurrencyManager {
         const currentState = gameStateManager.getState();
         
         // Check if player has enough resources
-        const currentAmount = currentState.resources[resourceType] || 0;
+        const currentAmount = (currentState.resources as any)[resourceType] || 0;
         
         if (currentAmount < amount) {
             console.warn(`[CURRENCY] Insufficient ${resourceType}. Required: ${amount}, Available: ${currentAmount}`);
@@ -296,7 +296,7 @@ class CurrencyManager {
             ...state,
             resources: {
                 ...state.resources,
-                [resourceType]: state.resources[resourceType] - amount
+                [resourceType]: (state.resources as any)[resourceType] - amount
             }
         }));
 
@@ -342,6 +342,3 @@ class CurrencyManager {
 
 // Export singleton instance
 export const currencyManager = new CurrencyManager();
-
-// Export types for external use
-export type { Currency, CurrencyTransaction };

@@ -364,13 +364,15 @@ export class CollisionEffects {
             body.parent.remove(body);
         }
         
-        // ジオメトリとマテリアルの破棄
-        if (body.geometry) body.geometry.dispose();
-        if (body.material) {
-            if (Array.isArray(body.material)) {
-                body.material.forEach(m => m.dispose());
-            } else {
-                body.material.dispose();
+        // ジオメトリとマテリアルの破棄（Meshの場合のみ）
+        if (body instanceof THREE.Mesh) {
+            if (body.geometry) body.geometry.dispose();
+            if (body.material) {
+                if (Array.isArray(body.material)) {
+                    body.material.forEach(m => m.dispose());
+                } else {
+                    body.material.dispose();
+                }
             }
         }
     }
