@@ -386,6 +386,12 @@ export class ResearchLabUI {
         // Apply effects
         this.applyResearchEffects(item, newState);
         
+        // パラゴン経験値を追加
+        const paragonSystem = (window as any).paragonSystem;
+        if (paragonSystem) {
+            paragonSystem.addExperience('research_complete', 1);
+        }
+        
         return newState;
       });
     } catch (error) {

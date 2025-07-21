@@ -18,6 +18,8 @@ interface SavedGameState extends Omit<GameState, 'stars' | 'focusedObject' | 'di
     discoveredTechnologies: string[];
     availableFacilities: string[];
     conversionEngineState?: any;
+    infiniteResourceData?: any;
+    mythicRarityData?: any;
     saveVersion: string;
 }
 
@@ -57,7 +59,12 @@ export function saveGame(): void {
             stars: savableStars,
             discoveredTechnologies: [],
             availableFacilities: [],
-            saveVersion: '2.2-device-detection'
+            saveVersion: '2.2-device-detection',
+            paragon: currentState.paragon, // パラゴンデータを保存
+            infiniteResources: currentState.infiniteResources, // 無限資源データを保存
+            infiniteResourceData: (window as any).infiniteResourceSystem?.saveData(), // 無限資源システムデータ
+            mythicBonuses: currentState.mythicBonuses, // 神話級ボーナスを保存
+            mythicRarityData: (window as any).mythicRaritySystem?.saveData() // 神話級システムデータ
         };
 
         if (gameState.focusedObject && gameState.focusedObject.uuid) {
@@ -401,6 +408,27 @@ export function loadGame(): void {
         setTimeout(() => {
             updateAllSettingsUI();
             console.log('[SAVELOAD] UI settings synchronized with loaded game state');
+            
+            // パラゴンシステムの復元
+            const paragonSystem = (window as any).paragonSystem;
+            if (paragonSystem && parsedState.paragon) {
+                paragonSystem.loadFromSave(parsedState.paragon);
+                console.log('[SAVELOAD] Paragon system restored');
+            }
+            
+            // 無限資源システムの復元
+            const infiniteResourceSystem = (window as any).infiniteResourceSystem;
+            if (infiniteResourceSystem && parsedState.infiniteResourceData) {
+                infiniteResourceSystem.loadData(parsedState.infiniteResourceData);
+                console.log('[SAVELOAD] Infinite resource system restored');
+            }
+            
+            // 神話級システムの復元
+            const mythicRaritySystem = (window as any).mythicRaritySystem;
+            if (mythicRaritySystem && parsedState.mythicRarityData) {
+                mythicRaritySystem.loadData(parsedState.mythicRarityData);
+                console.log('[SAVELOAD] Mythic rarity system restored');
+            }
         }, 100);
     } catch (error) {
         console.error('[SAVELOAD] Failed to load game:', error);

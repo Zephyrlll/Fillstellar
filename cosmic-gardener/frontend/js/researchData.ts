@@ -591,6 +591,57 @@ export const researchItems: ResearchItem[] = [
     ],
     requirements: ['production_analysis'],
     unlocks: []
+  },
+  
+  // 無限資源システム研究
+  {
+    id: 'infinite_resource_basics',
+    name: '無限資源理論',
+    description: '資源を高次元のtierに圧縮する技術を開発します',
+    category: 'cosmic',
+    icon: '♾️',
+    cost: {
+      thoughtPoints: 1000,
+      darkMatter: 50
+    },
+    effects: [
+      {
+        type: 'unlock_feature',
+        value: 'infinite_resources',
+        customEffect: () => {
+          console.log('[RESEARCH] Infinite resource system unlocked');
+          // 無限資源UIボタンを追加
+          const infiniteUI = (window as any).infiniteResourceUI;
+          if (infiniteUI) {
+            infiniteUI.addMenuButton();
+          }
+        }
+      }
+    ],
+    requirements: ['quantum_resource_theory'],
+    unlocks: []
+  },
+  {
+    id: 'tier_compression',
+    name: 'Tier圧縮技術',
+    description: '資源変換効率を20%向上させます',
+    category: 'cosmic',
+    icon: '🗜️',
+    cost: {
+      thoughtPoints: 2000,
+      darkMatter: 100
+    },
+    effects: [
+      {
+        type: 'enhance_feature',
+        value: 'tier_compression_efficiency',
+        customEffect: () => {
+          console.log('[RESEARCH] Tier compression efficiency improved');
+        }
+      }
+    ],
+    requirements: ['infinite_resource_basics'],
+    unlocks: []
   }
 ];
 

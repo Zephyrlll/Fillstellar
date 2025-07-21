@@ -28,6 +28,15 @@ import { automationUI } from './js/systems/automationUI.ts';
 import { applyAutomationResearchEffect } from './js/systems/automationResearch.ts';
 import { productionAnalyzer } from './js/systems/productionAnalyzer.ts';
 import { productionAnalysisUI } from './js/systems/productionAnalysisUI.ts';
+import { paragonSystem } from './js/systems/paragonSystem.ts';
+import { paragonUI } from './js/systems/paragonUI.ts';
+import { infiniteResourceSystem } from './js/systems/infiniteResourceSystem.ts';
+import { infiniteResourceUI } from './js/systems/infiniteResourceUI.ts';
+import { mythicRaritySystem } from './js/systems/mythicRaritySystem.ts';
+import { mythicRarityUI } from './js/systems/mythicRarityUI.ts';
+import { multiverseSystem } from './js/systems/multiverseSystem.ts';
+import { multiverseUI } from './js/systems/multiverseUI.ts';
+import { endgameProgressUI } from './js/systems/endgameProgressUI.ts';
 import { updateUI, debouncedUpdateGalaxyMap, ui } from './js/ui.ts';
 import { createCelestialBody, checkLifeSpawn, evolveLife } from './js/celestialBody.ts';
 import { spatialGrid, updatePhysics } from './js/physics.ts';
@@ -417,6 +426,10 @@ function animate() {
     if (gameState.balancedRates?.cosmicDust) {
         dustRate *= gameState.balancedRates.cosmicDust;
     }
+    // パラゴンボーナスの適用
+    if (paragonSystem.isEndgame()) {
+        dustRate *= paragonSystem.getResourceProductionBonus('cosmicDust');
+    }
     let energyRate = 0;
     let intelligentLifeCount = 0;
     let totalPopulation = 0;
@@ -447,6 +460,8 @@ function animate() {
             case 'asteroid':
             case 'comet':
                 dustRate += 0.5;
+                // 天体作成イベント発火（神話級チェック用）
+                window.dispatchEvent(new CustomEvent('celestialCreated', { detail: body }));
                 break;
             case 'planet':
                 checkLifeSpawn(body);
@@ -514,6 +529,10 @@ function animate() {
     // Apply research multipliers
     if (gameState.research?.energyConversionMultiplier) {
         energyRate *= gameState.research.energyConversionMultiplier;
+    }
+    // パラゴンボーナスの適用
+    if (paragonSystem.isEndgame()) {
+        energyRate *= paragonSystem.getResourceProductionBonus('energy');
     }
     
     // Apply research multiplier to dark matter generation
@@ -686,6 +705,12 @@ function animate() {
     if (unlockCheckTimer >= unlockCheckInterval) {
         unlockManager.checkUnlocks();
         unlockCheckTimer = 0;
+        
+        // パラゴンシステムのエンドゲーム条件チェックも同時に実行
+        paragonSystem.checkEndgameConditions();
+        
+        // 無限資源の自動解放チェック
+        infiniteResourceSystem.checkAutoUnlocks();
     }
 }
 
@@ -772,6 +797,28 @@ function init() {
     productionAnalysisUI.init();
     console.log('[INIT] Production analysis system initialized');
     
+    // Initialize paragon system
+    paragonUI.init();
+    console.log('[INIT] Paragon system initialized');
+    
+    // Initialize infinite resource system
+    infiniteResourceUI.init();
+    console.log('[INIT] Infinite resource system initialized');
+    
+    // Initialize mythic rarity system
+    mythicRarityUI.init();
+    // メニューボタンは追加しない（メニューシステムに統合済み）
+    console.log('[INIT] Mythic rarity system initialized');
+    
+    // Initialize multiverse system
+    multiverseSystem.init();
+    multiverseUI.init();
+    console.log('[INIT] Multiverse system initialized');
+    
+    // Initialize endgame progress UI
+    endgameProgressUI.init();
+    console.log('[INIT] Endgame progress UI initialized');
+    
     // Expose systems globally
     (window as any).prestigeUI = prestigeUI;
     (window as any).prestigeSystem = prestigeSystem;
@@ -779,9 +826,17 @@ function init() {
     (window as any).phaseUI = phaseUI;
     (window as any).unlockManager = unlockManager;
     (window as any).tutorialSystem = tutorialSystem;
+    (window as any).paragonSystem = paragonSystem;
+    (window as any).paragonUI = paragonUI;
+    (window as any).infiniteResourceSystem = infiniteResourceSystem;
+    (window as any).infiniteResourceUI = infiniteResourceUI;
+    (window as any).mythicRaritySystem = mythicRaritySystem;
+    (window as any).mythicRarityUI = mythicRarityUI;
     (window as any).tutorialUI = tutorialUI;
     (window as any).productionAnalyzer = productionAnalyzer;
     (window as any).productionAnalysisUI = productionAnalysisUI;
+    (window as any).multiverseUI = multiverseUI;
+    (window as any).endgameProgressUI = endgameProgressUI;
     
     // Initialize menu system
     menuSystem.init();

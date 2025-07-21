@@ -140,6 +140,37 @@ export class MenuSystem {
         ]
       },
       {
+        id: 'endgame',
+        label: 'エンドゲーム',
+        icon: '<img src="/icon/menu/star-svgrepo-com.svg" class="menu-icon-svg" alt="エンドゲーム">',
+        submenu: [
+          {
+            id: 'paragon',
+            label: 'パラゴンシステム',
+            icon: '🔮',
+            action: () => this.openParagon()
+          },
+          {
+            id: 'infinite-resources',
+            label: '無限資源',
+            icon: '♾️',
+            action: () => this.openInfiniteResources()
+          },
+          {
+            id: 'mythic-rarity',
+            label: '神話級コレクション',
+            icon: '🌟',
+            action: () => this.openMythicRarity()
+          },
+          {
+            id: 'multiverse',
+            label: 'マルチバース',
+            icon: '🌌',
+            action: () => this.openMultiverse()
+          }
+        ]
+      },
+      {
         id: 'statistics',
         label: '統計',
         icon: '<img src="/icon/menu/statistics-graph-stats-analytics-business-data-svgrepo-com.svg" class="menu-icon-svg" alt="統計">',
@@ -161,6 +192,12 @@ export class MenuSystem {
             label: 'グラフ表示',
             icon: '<img src="/icon/menu/graph-up-svgrepo-com.svg" class="menu-icon-svg" alt="グラフ">',
             action: () => this.openGraphDisplay()
+          },
+          {
+            id: 'endgame-progress',
+            label: 'エンドゲーム進捗',
+            icon: '📊',
+            action: () => this.openEndgameProgress()
           }
         ]
       },
@@ -217,6 +254,36 @@ export class MenuSystem {
             icon: '📋',
             action: () => console.log('[MENU] Profile not implemented'),
             enabled: false
+          }
+        ]
+      },
+      {
+        id: 'endgame-features',
+        title: 'エンドゲーム機能',
+        items: [
+          {
+            id: 'paragon-slide',
+            label: 'パラゴンシステム',
+            icon: '🔮',
+            action: () => this.openParagon()
+          },
+          {
+            id: 'infinite-resources-slide',
+            label: '無限資源',
+            icon: '♾️',
+            action: () => this.openInfiniteResources()
+          },
+          {
+            id: 'mythic-rarity-slide',
+            label: '神話級コレクション',
+            icon: '🌟',
+            action: () => this.openMythicRarity()
+          },
+          {
+            id: 'multiverse-slide',
+            label: 'マルチバース',
+            icon: '🌌',
+            action: () => this.openMultiverse()
           }
         ]
       },
@@ -383,6 +450,35 @@ export class MenuSystem {
     }
   }
   
+  // エンドゲーム機能
+  private openParagon(): void {
+    const paragonUI = (window as any).paragonUI;
+    if (paragonUI) {
+      paragonUI.open();
+    }
+  }
+  
+  private openInfiniteResources(): void {
+    const infiniteResourceUI = (window as any).infiniteResourceUI;
+    if (infiniteResourceUI) {
+      infiniteResourceUI.open();
+    }
+  }
+  
+  private openMythicRarity(): void {
+    const mythicRarityUI = (window as any).mythicRarityUI;
+    if (mythicRarityUI) {
+      mythicRarityUI.open();
+    }
+  }
+  
+  private openMultiverse(): void {
+    const multiverseUI = (window as any).multiverseUI;
+    if (multiverseUI) {
+      multiverseUI.open();
+    }
+  }
+  
   private openResourceStats(): void {
     // Implementation for resource statistics
     console.log('[MENU] Resource stats not implemented');
@@ -396,6 +492,13 @@ export class MenuSystem {
   private openGraphDisplay(): void {
     // Implementation for graph display
     console.log('[MENU] Graph display not implemented');
+  }
+  
+  private openEndgameProgress(): void {
+    const endgameProgressUI = (window as any).endgameProgressUI;
+    if (endgameProgressUI) {
+      endgameProgressUI.toggle();
+    }
   }
   
   private openSettings(): void {
@@ -456,7 +559,10 @@ export class MenuSystem {
       'conversion-ui-button',
       'production-chain-button',
       'catalyst-button',
-      '.research-button'
+      '.research-button',
+      'paragon-menu-button',
+      'infinite-resource-menu-button',
+      'mythic-rarity-menu-button'
     ];
     
     buttonsToHide.forEach(selector => {

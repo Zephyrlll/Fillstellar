@@ -200,6 +200,10 @@ export interface GameState {
     isMapVisible: boolean;
     saveVersion: string;
     focusedObject: CelestialBody | null;
+    paragon?: any; // パラゴンシステムのデータ
+    infiniteResources?: { [key: string]: number }; // 無限資源システムのデータ
+    mythicBonuses?: { [key: string]: number | boolean }; // 神話級ボーナス
+    multiverse?: any; // マルチバースシステムのデータ
     timelineLog: { id: number; year: number; message: string; type: string; timestamp: number }[];
     maxLogEntries: number;
     statistics: StatisticsState;
@@ -215,6 +219,8 @@ export interface GameState {
         thoughtPoints: number;
     };
     advancedResources?: ResourceStorage;
+    infiniteResources?: { [key: string]: number }; // 無限tier資源
+    mythicBonuses?: { [key: string]: number }; // 神話級ボーナス
     discoveredTechnologies: Set<string>;
     availableFacilities: Set<string>;
     conversionEngineState?: any;

@@ -76,6 +76,12 @@ export function evolveLife(planetObject: CelestialBody) {
         
         // 進化サウンドの再生
         soundManager.playEvolutionSound(nextStage, planetObject.position);
+        
+        // パラゴン経験値を追加
+        const paragonSystem = (window as any).paragonSystem;
+        if (paragonSystem) {
+            paragonSystem.addExperience('life_evolution', 1);
+        }
 
         if (nextStage === 'intelligent') {
             const planetMesh = planetObject.children[0] as THREE.Mesh;
@@ -106,6 +112,14 @@ export function createCelestialBody(type: string, options: any = {}): CelestialB
     // 型の検証と正規化
     const validTypes: CelestialType[] = ['star', 'planet', 'moon', 'asteroid', 'comet', 'dwarfPlanet', 'black_hole'];
     const celestialType = validTypes.includes(type as CelestialType) ? type as CelestialType : 'asteroid';
+    
+    // パラゴン経験値を追加（セーブデータからのロード時は除く）
+    if (!options.isLoading) {
+        const paragonSystem = (window as any).paragonSystem;
+        if (paragonSystem) {
+            paragonSystem.addExperience(`celestial_${celestialType}`, 1);
+        }
+    }
     
     // セーブデータからのロード時の処理
     if (options.isLoading && options.userData) {
