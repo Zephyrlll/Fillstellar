@@ -23,6 +23,11 @@ import { unlockManager } from './js/systems/unlockManager.ts';
 import { tutorialSystem } from './js/systems/tutorialSystem.ts';
 import { tutorialUI } from './js/systems/tutorialUI.ts';
 import { resetTutorial } from './js/resetTutorial.ts';
+import { automationManager } from './js/systems/automationManager.ts';
+import { automationUI } from './js/systems/automationUI.ts';
+import { applyAutomationResearchEffect } from './js/systems/automationResearch.ts';
+import { productionAnalyzer } from './js/systems/productionAnalyzer.ts';
+import { productionAnalysisUI } from './js/systems/productionAnalysisUI.ts';
 import { updateUI, debouncedUpdateGalaxyMap, ui } from './js/ui.ts';
 import { createCelestialBody, checkLifeSpawn, evolveLife } from './js/celestialBody.ts';
 import { spatialGrid, updatePhysics } from './js/physics.ts';
@@ -758,6 +763,15 @@ function init() {
     tutorialUI.init();
     console.log('[INIT] Tutorial system initialized');
     
+    // Initialize automation system
+    automationManager.init();
+    automationUI.init();
+    console.log('[INIT] Automation system initialized');
+    
+    // Initialize production analysis system
+    productionAnalysisUI.init();
+    console.log('[INIT] Production analysis system initialized');
+    
     // Expose systems globally
     (window as any).prestigeUI = prestigeUI;
     (window as any).prestigeSystem = prestigeSystem;
@@ -766,6 +780,8 @@ function init() {
     (window as any).unlockManager = unlockManager;
     (window as any).tutorialSystem = tutorialSystem;
     (window as any).tutorialUI = tutorialUI;
+    (window as any).productionAnalyzer = productionAnalyzer;
+    (window as any).productionAnalysisUI = productionAnalysisUI;
     
     // Initialize menu system
     menuSystem.init();
@@ -821,6 +837,14 @@ function init() {
     (window as any).currencyManager = currencyManager;
     (window as any).marketSystem = marketSystem;
     (window as any).showResourceSellModal = showResourceSellModal;
+    (window as any).dashboard = dashboard;
+    (window as any).feedbackSystem = feedbackSystem;
+    (window as any).achievementSystem = achievementSystem;
+    (window as any).achievementUI = achievementUI;
+    (window as any).menuSystem = menuSystem;
+    (window as any).uiPositionManager = uiPositionManager;
+    (window as any).automationManager = automationManager;
+    (window as any).automationUI = automationUI;
     console.log('[INIT] Currency and market systems initialized and exposed to window');
     
     // Debug: Check UI elements

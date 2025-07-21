@@ -31,6 +31,7 @@ export interface ResearchCost {
 export interface ResearchEffect {
   type: ResearchEffectType;
   value: number | string | boolean;
+  customEffect?: () => void; // For automation and other custom effects
 }
 
 export type ResearchEffectType = 
@@ -61,6 +62,7 @@ export type ResearchEffectType =
   | 'unlock_auto_converter'
   | 'unlock_visualization'
   | 'unlock_feature'
+  | 'enhance_feature'
   // Cosmic effects
   | 'enable_teleportation'
   | 'unlock_multiverse'
@@ -76,8 +78,9 @@ export interface ResearchItem {
   icon?: string;
   cost: ResearchCost;
   effects: ResearchEffect[];
-  requirements: string[];
+  requirements: string[]; // Also known as prerequisites in some contexts
   unlocks: string[];
+  duration?: number; // Duration in seconds for research completion
   // Runtime state
   completed?: boolean;
   available?: boolean;

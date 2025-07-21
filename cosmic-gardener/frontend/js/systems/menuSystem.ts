@@ -120,10 +120,22 @@ export class MenuSystem {
             action: () => this.openProductionChain()
           },
           {
+            id: 'production-analysis',
+            label: '生産効率分析',
+            icon: '<img src="/icon/menu/graph-up-svgrepo-com.svg" class="menu-icon-svg" alt="生産分析">',
+            action: () => this.openProductionAnalysis()
+          },
+          {
             id: 'catalyst-system',
             label: '触媒システム',
             icon: '<img src="/icon/menu/catalyst-svgrepo-com.svg" class="menu-icon-svg" alt="触媒">',
             action: () => this.openCatalystSystem()
+          },
+          {
+            id: 'automation',
+            label: '自動化',
+            icon: '<img src="/icon/menu/bot-svgrepo-com.svg" class="menu-icon-svg" alt="自動化">',
+            action: () => this.openAutomation()
           }
         ]
       },
@@ -350,10 +362,24 @@ export class MenuSystem {
     }
   }
   
+  private openProductionAnalysis(): void {
+    const productionAnalysisUI = (window as any).productionAnalysisUI;
+    if (productionAnalysisUI) {
+      productionAnalysisUI.open();
+    }
+  }
+  
   private openCatalystSystem(): void {
     const catalystButton = document.getElementById('catalyst-button') as HTMLButtonElement;
     if (catalystButton) {
       catalystButton.click();
+    }
+  }
+  
+  private openAutomation(): void {
+    const automationUI = (window as any).automationUI;
+    if (automationUI) {
+      automationUI.open();
     }
   }
   

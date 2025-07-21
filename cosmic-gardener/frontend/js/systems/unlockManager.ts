@@ -154,6 +154,43 @@ export class UnlockManager {
       requiredPhase: 6
     });
     
+    // Automation unlocks
+    this.registerUnlock({
+      id: 'automation_celestial',
+      type: UnlockEventType.FEATURE,
+      name: '天体自動作成',
+      description: '天体を自動的に作成する機能',
+      icon: '🌟',
+      customRequirement: () => {
+        const state = gameStateManager.getState();
+        return state.research?.completedResearch?.includes('auto_basics') || false;
+      }
+    });
+    
+    this.registerUnlock({
+      id: 'automation_resource',
+      type: UnlockEventType.FEATURE,
+      name: '資源自動変換',
+      description: '資源を自動的に変換する機能',
+      icon: '⚖️',
+      customRequirement: () => {
+        const state = gameStateManager.getState();
+        return state.research?.completedResearch?.includes('auto_resource_balancing') || false;
+      }
+    });
+    
+    this.registerUnlock({
+      id: 'automation_research',
+      type: UnlockEventType.FEATURE,
+      name: '研究自動進行',
+      description: '研究を自動的に進行させる機能',
+      icon: '🔬',
+      customRequirement: () => {
+        const state = gameStateManager.getState();
+        return state.research?.completedResearch?.includes('auto_research_queue') || false;
+      }
+    });
+    
     // UI unlocks
     this.registerUnlock({
       id: 'research_lab',

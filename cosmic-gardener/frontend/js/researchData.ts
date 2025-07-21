@@ -1,4 +1,5 @@
 import { ResearchData, ResearchCategory, ResearchItem } from './types/research.js';
+import { automationResearchItems, convertToResearchItem, applyAutomationResearchEffect } from './systems/automationResearch.js';
 
 // This file is generated from research-items.md
 // To add or modify research items, edit research-items.md and regenerate this file
@@ -33,6 +34,12 @@ export const researchCategories: ResearchCategory[] = [
     name: '宇宙研究',
     icon: '🌌',
     description: '高度な宇宙現象と理論の研究'
+  },
+  {
+    id: 'automation',
+    name: '自動化',
+    icon: '🤖',
+    description: '自動化システムと人工知能の研究'
   }
 ];
 
@@ -527,10 +534,76 @@ export const researchItems: ResearchItem[] = [
     ],
     requirements: ['cosmic_consciousness'],
     unlocks: []
+  },
+  
+  // 生産分析研究
+  {
+    id: 'production_analysis',
+    name: '生産効率分析',
+    description: '資源生産の詳細な分析とボトルネック検出を可能にします',
+    category: 'automation',
+    icon: '📊',
+    cost: {
+      thoughtPoints: 150,
+      energy: 1000
+    },
+    effects: [
+      {
+        type: 'unlock_feature',
+        value: 'production_analysis',
+        customEffect: () => {
+          console.log('[RESEARCH] Production analysis unlocked');
+          // 生産分析UIを開く
+          const analysisUI = (window as any).productionAnalysisUI;
+          if (analysisUI) {
+            analysisUI.open();
+          }
+          // 生産分析システムの自動開始
+          const analyzer = (window as any).productionAnalyzer;
+          if (analyzer) {
+            analyzer.start();
+          }
+        }
+      }
+    ],
+    requirements: ['auto_basics'],
+    unlocks: []
+  },
+  {
+    id: 'advanced_production_analysis',
+    name: '高度な生産分析',
+    description: '予測機能とAI最適化提案を追加します',
+    category: 'automation',
+    icon: '🤖',
+    cost: {
+      thoughtPoints: 300,
+      energy: 2000,
+      cosmicDust: 5000
+    },
+    effects: [
+      {
+        type: 'enhance_feature',
+        value: 'production_analysis_advanced',
+        customEffect: () => {
+          console.log('[RESEARCH] Advanced production analysis features unlocked');
+        }
+      }
+    ],
+    requirements: ['production_analysis'],
+    unlocks: []
   }
 ];
 
+// 自動化研究を通常の研究アイテムに変換して追加
+const automationResearchItemsConverted = automationResearchItems.map(convertToResearchItem);
+
+// すべての研究アイテムを結合
+const allResearchItems = [...researchItems, ...automationResearchItemsConverted];
+
 export const researchData: ResearchData = {
   categories: researchCategories,
-  items: researchItems
+  items: allResearchItems
 };
+
+// 後方互換性とエクスポート
+export { allResearchItems };

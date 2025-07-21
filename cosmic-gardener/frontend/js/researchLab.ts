@@ -1,5 +1,5 @@
 import { gameStateManager } from './state.js';
-import { researchItems, researchCategories } from './researchData.js';
+import { allResearchItems, researchCategories } from './researchData.js';
 import { ResearchItem, ResearchState, isResearchAvailable, canAffordResearch, isResearchCompleted } from './types/research.js';
 import { soundManager } from './sound.js';
 import { showMessage } from './ui.js';
@@ -13,11 +13,20 @@ export class ResearchLabUI {
   private isOpen: boolean = false;
 
   constructor() {
-    this.overlay = document.getElementById('research-lab-overlay')!;
-    this.closeButton = document.getElementById('researchLabCloseButton')!;
-    this.toggleButton = document.getElementById('researchLabToggleButton')!;
+    const overlay = document.getElementById('research-lab-overlay');
+    const closeButton = document.getElementById('researchLabCloseButton');
+    const toggleButton = document.getElementById('researchLabToggleButton');
+    const itemsGrid = document.getElementById('research-items-grid');
+    
+    if (!overlay || !closeButton || !toggleButton || !itemsGrid) {
+      throw new Error('[RESEARCH_LAB] Required DOM elements not found');
+    }
+    
+    this.overlay = overlay;
+    this.closeButton = closeButton;
+    this.toggleButton = toggleButton;
     this.categoryTabs = document.querySelectorAll('.research-category-tab');
-    this.itemsGrid = document.getElementById('research-items-grid')!;
+    this.itemsGrid = itemsGrid;
 
     this.initializeEventListeners();
   }
@@ -75,24 +84,40 @@ export class ResearchLabUI {
   public open(): void {
     if (this.isOpen) return;
     
-    console.log('[RESEARCH_LAB] Opening research lab UI');
-    this.isOpen = true;
-    this.overlay.classList.add('active');
-    
-    // Update display
-    this.updateDisplay();
-    
-    // Ensure game continues in background
-    const gameState = gameStateManager.getState();
-    console.log('[RESEARCH_LAB] Game state preserved, simulation continues');
+    try {
+      console.log('[RESEARCH_LAB] Opening research lab UI');
+      this.isOpen = true;
+      if (this.overlay) {
+        this.overlay.classList.add('active');
+      } else {
+        console.error('[RESEARCH_LAB] Overlay element not found');
+        return;
+      }
+      
+      // Update display
+      this.updateDisplay();
+      
+      // Ensure game continues in background
+      const gameState = gameStateManager.getState();
+      console.log('[RESEARCH_LAB] Game state preserved, simulation continues');
+    } catch (error) {
+      console.error('[RESEARCH_LAB] Failed to open research lab:', error);
+      this.isOpen = false;
+    }
   }
 
   public close(): void {
     if (!this.isOpen) return;
     
-    console.log('[RESEARCH_LAB] Closing research lab UI');
-    this.isOpen = false;
-    this.overlay.classList.remove('active');
+    try {
+      console.log('[RESEARCH_LAB] Closing research lab UI');
+      this.isOpen = false;
+      if (this.overlay) {
+        this.overlay.classList.remove('active');
+      }
+    } catch (error) {
+      console.error('[RESEARCH_LAB] Failed to close research lab:', error);
+    }
   }
 
   private switchCategory(category: string): void {
@@ -110,6 +135,11 @@ export class ResearchLabUI {
   }
 
   private displayResearchItems(category: string): void {
+    if (!this.itemsGrid) {
+      console.error('[RESEARCH_LAB] Items grid element not found');
+      return;
+    }
+    
     // Clear current items
     this.itemsGrid.innerHTML = '';
 
@@ -118,7 +148,7 @@ export class ResearchLabUI {
     const researchState = this.getResearchState();
 
     // Filter items by category
-    const categoryItems = researchItems.filter(item => item.category === category);
+    const categoryItems = allResearchItems.filter(item => item.category === category);
 
     if (categoryItems.length === 0) {
       const placeholder = document.createElement('div');
@@ -248,7 +278,7 @@ export class ResearchLabUI {
 
   private formatRequirements(requirements: string[], researchState: ResearchState): string {
     return requirements.map(reqId => {
-      const reqItem = researchItems.find(item => item.id === reqId);
+      const reqItem = allResearchItems.find(item => item.id === reqId);
       const isCompleted = isResearchCompleted(reqId, researchState);
       return `<span class="req-item ${isCompleted ? 'completed' : 'incomplete'}">
         ${reqItem?.name || reqId}
@@ -257,10 +287,15 @@ export class ResearchLabUI {
   }
 
   private startResearch(item: ResearchItem): void {
+    if (!item || !item.id) {
+      console.error('[RESEARCH_LAB] Invalid research item');
+      return;
+    }
+    
     console.log('[RESEARCH_LAB] Starting research:', item.id);
     
     // Add visual feedback
-    const card = this.itemsGrid.querySelector(`[data-research-id="${item.id}"]`) as HTMLElement;
+    const card = this.itemsGrid?.querySelector(`[data-research-id="${item.id}"]`) as HTMLElement;
     if (card) {
       card.classList.add('researching');
       
@@ -292,58 +327,71 @@ export class ResearchLabUI {
     
     const state = gameStateManager.getState();
     
-    // Deduct costs
-    gameStateManager.updateState(state => {
-      const newState = { ...state };
-      const newResources = { ...state.resources };
-      const newAdvancedResources = { ...state.advancedResources };
-      
-      // Deduct basic resources
-      if (item.cost.darkMatter) {
-        newResources.darkMatter -= item.cost.darkMatter;
-        newState.darkMatter -= item.cost.darkMatter;
-      }
-      if (item.cost.thoughtPoints) {
-        newResources.thoughtPoints -= item.cost.thoughtPoints;
-        newState.thoughtPoints -= item.cost.thoughtPoints;
-      }
-      if (item.cost.energy) {
-        newResources.energy -= item.cost.energy;
-        newState.energy -= item.cost.energy;
-      }
-      if (item.cost.cosmicDust) {
-        newResources.cosmicDust -= item.cost.cosmicDust;
-        newState.cosmicDust -= item.cost.cosmicDust;
+    try {
+      // Validate affordability before deducting
+      if (!canAffordResearch(item, state.resources, state.advancedResources)) {
+        console.error('[RESEARCH_LAB] Cannot afford research:', item.id);
+        showMessage('資源が不足しています', 'error');
+        return;
       }
       
-      // Deduct advanced resources
-      const advancedCosts = Object.keys(item.cost).filter(key => 
-        !['darkMatter', 'thoughtPoints', 'energy', 'cosmicDust'].includes(key)
-      );
-      
-      for (const resourceType of advancedCosts) {
-        const required = (item.cost as any)[resourceType];
-        if (newAdvancedResources[resourceType]) {
-          newAdvancedResources[resourceType].amount -= required;
+      // Deduct costs
+      gameStateManager.updateState(state => {
+        const newState = { ...state };
+        const newResources = { ...state.resources };
+        const newAdvancedResources = { ...state.advancedResources || {} };
+        
+        // Deduct basic resources
+        if (item.cost.darkMatter) {
+          newResources.darkMatter = Math.max(0, newResources.darkMatter - item.cost.darkMatter);
+          newState.darkMatter = newResources.darkMatter;
         }
-      }
-      
-      newState.resources = newResources;
-      newState.advancedResources = newAdvancedResources;
-      
-      // Mark research as completed
-      const completedResearch = new Set(state.research.completedResearch || []);
-      completedResearch.add(item.id);
-      newState.research = {
-        ...state.research,
-        completedResearch: Array.from(completedResearch)
-      };
-      
-      // Apply effects
-      this.applyResearchEffects(item, newState);
-      
-      return newState;
-    });
+        if (item.cost.thoughtPoints) {
+          newResources.thoughtPoints = Math.max(0, newResources.thoughtPoints - item.cost.thoughtPoints);
+          newState.thoughtPoints = newResources.thoughtPoints;
+        }
+        if (item.cost.energy) {
+          newResources.energy = Math.max(0, newResources.energy - item.cost.energy);
+          newState.energy = newResources.energy;
+        }
+        if (item.cost.cosmicDust) {
+          newResources.cosmicDust = Math.max(0, newResources.cosmicDust - item.cost.cosmicDust);
+          newState.cosmicDust = newResources.cosmicDust;
+        }
+        
+        // Deduct advanced resources
+        const advancedCosts = Object.keys(item.cost).filter(key => 
+          !['darkMatter', 'thoughtPoints', 'energy', 'cosmicDust'].includes(key)
+        );
+        
+        for (const resourceType of advancedCosts) {
+          const required = (item.cost as any)[resourceType];
+          if (newAdvancedResources[resourceType]) {
+            newAdvancedResources[resourceType].amount = Math.max(0, newAdvancedResources[resourceType].amount - required);
+          }
+        }
+        
+        newState.resources = newResources;
+        newState.advancedResources = newAdvancedResources;
+        
+        // Mark research as completed
+        if (!newState.research) newState.research = {};
+        const completedResearch = new Set(state.research?.completedResearch || []);
+        completedResearch.add(item.id);
+        newState.research = {
+          ...state.research,
+          completedResearch: Array.from(completedResearch)
+        };
+        
+        // Apply effects
+        this.applyResearchEffects(item, newState);
+        
+        return newState;
+      });
+    } catch (error) {
+      console.error('[RESEARCH_LAB] Failed to start research:', error);
+      showMessage('研究の開始に失敗しました', 'error');
+    }
     
     // Play sound and show message
     soundManager.playUISound('success');
@@ -354,11 +402,18 @@ export class ResearchLabUI {
   }
 
   private applyResearchEffects(item: ResearchItem, state: any): void {
-    // Ensure research object exists
-    if (!state.research) state.research = {};
-    
-    item.effects.forEach(effect => {
-      switch (effect.type) {
+    try {
+      // Ensure research object exists
+      if (!state.research) state.research = {};
+      
+      item.effects.forEach(effect => {
+        try {
+          // Execute custom effect if available
+          if (effect.customEffect && typeof effect.customEffect === 'function') {
+            effect.customEffect();
+          }
+          
+          switch (effect.type) {
         case 'unlock_celestial_body':
           if (!state.unlockedCelestialBodies) state.unlockedCelestialBodies = {};
           state.unlockedCelestialBodies[effect.value as string] = true;
@@ -415,28 +470,77 @@ export class ResearchLabUI {
         case 'unlock_feature':
           if (!state.unlockedFeatures) state.unlockedFeatures = {};
           state.unlockedFeatures[effect.value as string] = true;
+          
+          // Handle automation unlocks through unlockManager
+          const featureId = effect.value as string;
+          if (featureId.startsWith('automation_')) {
+            // Trigger unlock check after state update
+            setTimeout(() => {
+              const unlockManager = (window as any).unlockManager;
+              if (unlockManager) {
+                unlockManager.checkUnlocks();
+              }
+            }, 100);
+          }
           break;
+        default:
+          console.warn('[RESEARCH_LAB] Unknown effect type:', effect.type);
       }
-    });
+        } catch (effectError) {
+          console.error('[RESEARCH_LAB] Failed to apply effect:', effect.type, effectError);
+        }
+      });
+    } catch (error) {
+      console.error('[RESEARCH_LAB] Failed to apply research effects:', error);
+    }
   }
 
   private getResearchState(): ResearchState {
     const state = gameStateManager.getState();
     const completedSet = new Set<string>(state.research?.completedResearch || []);
     
-    // Map old research flags to new IDs
-    if (state.researchEnhancedDust) completedSet.add('enhanced_dust_generation');
-    if (state.researchAdvancedEnergy) completedSet.add('advanced_energy_conversion');
-    if (state.unlockedCelestialBodies?.moon) completedSet.add('orbital_mechanics');
-    if (state.unlockedCelestialBodies?.dwarfPlanet) completedSet.add('dwarf_planet_science');
-    if (state.unlockedCelestialBodies?.planet) completedSet.add('planetary_formation');
-    if (state.unlockedCelestialBodies?.star) completedSet.add('stellar_genesis');
+    // Map old research flags to new IDs for backward compatibility
+    if (state.researchEnhancedDust) {
+      completedSet.add('enhanced_dust_generation');
+      console.log('[RESEARCH_LAB] Migrated old research flag: researchEnhancedDust');
+    }
+    if (state.researchAdvancedEnergy) {
+      completedSet.add('advanced_energy_conversion');
+      console.log('[RESEARCH_LAB] Migrated old research flag: researchAdvancedEnergy');
+    }
+    if (state.unlockedCelestialBodies?.moon) {
+      completedSet.add('orbital_mechanics');
+      console.log('[RESEARCH_LAB] Migrated unlocked celestial body: moon');
+    }
+    if (state.unlockedCelestialBodies?.dwarfPlanet) {
+      completedSet.add('dwarf_planet_science');
+      console.log('[RESEARCH_LAB] Migrated unlocked celestial body: dwarfPlanet');
+    }
+    if (state.unlockedCelestialBodies?.planet) {
+      completedSet.add('planetary_formation');
+      console.log('[RESEARCH_LAB] Migrated unlocked celestial body: planet');
+    }
+    if (state.unlockedCelestialBodies?.star) {
+      completedSet.add('stellar_genesis');
+      console.log('[RESEARCH_LAB] Migrated unlocked celestial body: star');
+    }
+    
+    // Calculate research speed multiplier
+    const researchSpeed = state.research?.researchSpeedMultiplier || 1;
+    
+    // Build available research set
+    const availableResearch = new Set<string>();
+    allResearchItems.forEach(item => {
+      if (!completedSet.has(item.id) && isResearchAvailable(item, { completedResearch: completedSet, activeResearch: new Map(), researchSpeed, availableResearch })) {
+        availableResearch.add(item.id);
+      }
+    });
     
     return {
       completedResearch: completedSet,
-      activeResearch: new Map(),
-      researchSpeed: 1,
-      availableResearch: new Set()
+      activeResearch: new Map(state.research?.activeResearch || []),
+      researchSpeed,
+      availableResearch
     };
   }
 
@@ -477,12 +581,20 @@ export class ResearchLabUI {
 let researchLabUI: ResearchLabUI | null = null;
 
 export function initializeResearchLab(): void {
-  if (!researchLabUI) {
-    researchLabUI = new ResearchLabUI();
-    console.log('[RESEARCH_LAB] Research lab UI initialized');
+  try {
+    if (!researchLabUI) {
+      researchLabUI = new ResearchLabUI();
+      console.log('[RESEARCH_LAB] Research lab UI initialized');
+    }
+  } catch (error) {
+    console.error('[RESEARCH_LAB] Failed to initialize research lab:', error);
+    researchLabUI = null;
   }
 }
 
 export function getResearchLabUI(): ResearchLabUI | null {
+  if (!researchLabUI) {
+    console.warn('[RESEARCH_LAB] Research lab UI not initialized');
+  }
   return researchLabUI;
 }
