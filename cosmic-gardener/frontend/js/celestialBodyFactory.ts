@@ -22,6 +22,7 @@ import { addTimelineLog } from './timeline.js';
 import { soundManager } from './sound.js';
 import { CelestialBillboardSystem } from './systems/celestialBillboard.js';
 import { blackHoleGas } from './blackHoleGas.js';
+import { physicsConfig } from './physicsConfig.js';
 
 // ファクトリークラスの実装
 export class CelestialBodyFactory {
@@ -996,12 +997,21 @@ export class CelestialBodyFactory {
     type: CelestialType,
     params: any
   ): CelestialBodyUserData {
+    // 速度の計算（惑星の場合は円軌道速度を計算）
+    let velocity = params.config.velocity ? params.config.velocity.clone() : new THREE.Vector3(0, 0, 0);
+    
+    // 惑星、衛星、小惑星、彗星の場合は親天体との円軌道速度を計算
+    if (!params.config.isLoading && params.config.parent && 
+        (type === 'planet' || type === 'moon' || type === 'asteroid' || type === 'comet' || type === 'dwarfPlanet')) {
+      velocity = this.calculateOrbitalVelocity(params.config.parent, params.config.position);
+    }
+    
     const finalUserData: CelestialBodyUserData = {
       type: type,
       name: params.config.name || `${type}-${Math.random().toString(16).slice(2, 8)}`,
       creationYear: gameState.gameYear,
       mass: params.gameMass,
-      velocity: params.config.velocity ? params.config.velocity.clone() : new THREE.Vector3(0, 0, 0),
+      velocity: velocity,
       acceleration: new THREE.Vector3(0, 0, 0),
       isStatic: type === 'black_hole',
       radius: params.radius
@@ -1044,6 +1054,54 @@ export class CelestialBodyFactory {
     }
 
     return finalUserData;
+  }
+  
+  // 円軌道速度の計算
+  private calculateOrbitalVelocity(parent: CelestialBody, childPosition: THREE.Vector3): THREE.Vector3 {
+    const parentPosition = parent.position;
+    const relativePosition = childPosition.clone().sub(parentPosition);
+    const distance = relativePosition.length();
+    
+    if (distance < 0.1) {
+      console.warn('[CELESTIAL] Child too close to parent, using default velocity');
+      return new THREE.Vector3(0, 0, 0);
+    }
+    
+    // 重力定数とケプラーの第3法則から円軌道速度を計算
+    // v = √(GM/r)
+    const G = physicsConfig.getPhysics().G;
+    const parentMass = parent.userData.mass || 1;
+    const orbitalSpeed = Math.sqrt(G * parentMass / distance);
+    
+    // 軌道方向ベクトルの計算（位置ベクトルに垂直）
+    // デフォルトの軌道面はXZ平面だが、ランダムに傾斜させる
+    const up = new THREE.Vector3(0, 1, 0);
+    
+    // 軌道面の傾斜角をランダムに設定（-30度から+30度）
+    const inclination = (Math.random() - 0.5) * Math.PI / 3;
+    const axis = relativePosition.clone().normalize();
+    up.applyAxisAngle(axis, inclination);
+    
+    // 速度方向 = 位置ベクトル × 上方向ベクトル
+    const velocityDirection = new THREE.Vector3().crossVectors(relativePosition, up).normalize();
+    
+    // 最終的な速度ベクトル
+    const velocity = velocityDirection.multiplyScalar(orbitalSpeed);
+    
+    // 親天体が動いている場合は、その速度を加算
+    if (parent.userData.velocity) {
+      velocity.add(parent.userData.velocity);
+    }
+    
+    console.log('[CELESTIAL] Calculated orbital velocity:', {
+      parentName: parent.userData.name,
+      parentMass: parentMass,
+      distance: distance,
+      orbitalSpeed: orbitalSpeed,
+      G: G
+    });
+    
+    return velocity;
   }
 }
 

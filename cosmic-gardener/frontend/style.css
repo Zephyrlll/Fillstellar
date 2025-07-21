@@ -304,6 +304,34 @@
   color: #4a9eff;
 }
 
+.dashboard-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.update-frequency-select {
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.update-frequency-select:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.update-frequency-select:focus {
+  outline: none;
+  border-color: #4caf50;
+  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+}
+
 .dashboard-close {
   background: none;
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -341,6 +369,10 @@
 }
 
 .dashboard-content .mini-map {
+  grid-column: span 2;
+}
+
+.dashboard-content .life-statistics {
   grid-column: span 2;
 }
 
@@ -484,6 +516,128 @@
   text-align: center;
   font-size: 12px;
   color: #aaa;
+}
+
+/* Life Statistics Styles */
+.life-statistics {
+  margin-top: 16px;
+}
+
+.life-summary {
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.life-overview {
+  font-size: 16px;
+  font-weight: bold;
+  color: #4caf50;
+}
+
+.life-total {
+  margin-right: 8px;
+}
+
+.life-percentage {
+  opacity: 0.8;
+  font-size: 14px;
+}
+
+.life-chart-container {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  justify-content: center;
+}
+
+.life-pie-chart {
+  flex-shrink: 0;
+}
+
+.life-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.life-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.life-legend-color {
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+}
+
+.life-legend-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.life-legend-name {
+  flex: 1;
+  min-width: 60px;
+}
+
+.life-legend-count {
+  font-weight: bold;
+  margin-left: 8px;
+  min-width: 50px;
+  text-align: right;
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.life-legend-population {
+  font-weight: bold;
+  margin-left: 8px;
+  min-width: 70px;
+  text-align: right;
+  color: #4caf50;
+}
+
+.life-legend-percent {
+  opacity: 0.7;
+  font-size: 12px;
+  margin-left: 4px;
+}
+
+.life-population {
+  margin-top: 8px;
+  font-size: 18px;
+}
+
+.population-label {
+  margin-right: 8px;
+  opacity: 0.8;
+}
+
+.population-value {
+  font-weight: bold;
+  color: #00e676;
+}
+
+.no-life {
+  text-align: center;
+  padding: 32px;
+  opacity: 0.6;
+}
+
+.no-life-icon {
+  display: block;
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.no-life-text {
+  font-size: 14px;
+  color: #999;
 }
 
 /* Resource-specific colors */
