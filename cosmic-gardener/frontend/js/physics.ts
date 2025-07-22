@@ -300,6 +300,15 @@ export function updatePhysics(deltaTime: number) {
 
         const userData = body.userData;
         
+        // velocityがVector3でない場合は変換
+        if (userData.velocity && !(userData.velocity instanceof THREE.Vector3)) {
+            userData.velocity = new THREE.Vector3(
+                userData.velocity.x || 0,
+                userData.velocity.y || 0,
+                userData.velocity.z || 0
+            );
+        }
+        
         // Debug: Log black hole and star interactions
         if (body.userData.type === 'star' && gameState.stars.some(s => s.userData.type === 'black_hole')) {
             const blackHole = gameState.stars.find(s => s.userData.type === 'black_hole');

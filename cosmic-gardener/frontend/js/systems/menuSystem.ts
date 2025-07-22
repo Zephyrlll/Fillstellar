@@ -1,5 +1,7 @@
 import { MenuItem, RadialMenuConfig, SlideMenuConfig, MenuSection } from '../types/menu.js';
 import { animationSystem } from './simpleAnimations.js';
+import { optionsScreen } from './optionsScreen.js';
+import { optionsConfig } from '../config/optionsConfig.js';
 
 export class MenuSystem {
   private radialMenu: RadialMenu;
@@ -13,6 +15,9 @@ export class MenuSystem {
   
   init(): void {
     if (this.isInitialized) return;
+    
+    // オプション画面を初期化
+    optionsScreen.init(optionsConfig);
     
     this.setupRadialMenu();
     this.setupSlideMenu();
@@ -626,10 +631,7 @@ export class MenuSystem {
   }
   
   private openSettings(): void {
-    const settingsButton = document.getElementById('settings-button') as HTMLButtonElement;
-    if (settingsButton) {
-      settingsButton.click();
-    }
+    optionsScreen.open();
   }
   
   private openTutorial(): void {

@@ -988,7 +988,7 @@ function init() {
             name: 'Alpha Centauri',
             mass: 2000,  // ゲーム単位での恒星質量
             radius: 10,  // ゲーム内の適切なスケール
-            velocity: new THREE.Vector3(0, 0, orbitalSpeed)
+            velocity: { x: 0, y: 0, z: orbitalSpeed }
             // positionは意図的に指定しない
         });
         
