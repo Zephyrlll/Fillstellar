@@ -220,7 +220,7 @@ export class GraphicsEngine {
         
         // デバッグ用：テストパターンを追加（開発時のみ）
         if ((window as any).DEBUG_RESOLUTION_SCALE) {
-            this.addResolutionTestPattern(scale);
+            // this.addResolutionTestPattern(scale); // TODO: Implement test pattern
         }
         
         // Starfield更新を一時的にコメントアウト（エラー回避）
@@ -363,10 +363,8 @@ export class GraphicsEngine {
                 }
                 
                 // Bloomパスの更新を強制
-                if (bloomPass.uniforms) {
-                    // uniformsを更新
-                    bloomPass.needsUpdate = true;
-                }
+                // UnrealBloomPassは内部でuniformsを管理しているため、
+                // 直接アクセスする必要はない
                 
                 // デバッグ: 実際の設定値を確認
                 console.log(`✨ Bloom settings applied - strength: ${bloomPass.strength}, threshold: ${bloomPass.threshold}, radius: ${bloomPass.radius}, resolution: ${resolution.x}x${resolution.y}`);
@@ -967,6 +965,43 @@ export class GraphicsEngine {
             
             console.log('📱 Mobile optimizations applied:', updatedSettings);
         }
+    }
+    
+    // Set canvas size (for resolution dropdown)
+    setCanvasSize(width: number, height: number): void {
+        console.log(`[GraphicsEngine] Setting canvas size to ${width}x${height}`);
+        const state = gameStateManager.getState();
+        
+        // Update renderer size
+        renderer.setSize(width, height);
+        
+        // Update camera aspect ratio
+        if (camera) {
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+        }
+        
+        // Update composer if present
+        if (composer) {
+            composer.setSize(width, height);
+        }
+    }
+    
+    // Set FPS limit
+    setFPSLimit(fps: number): void {
+        console.log(`[GraphicsEngine] Setting FPS limit to ${fps}`);
+        const state = gameStateManager.getState();
+        state.graphics.frameRateLimit = fps;
+        this.frameRateLimiter.setTargetFPS(fps);
+    }
+    
+    // Set resolution scale
+    setResolutionScale(scale: number): void {
+        console.log(`[GraphicsEngine] Setting resolution scale to ${scale}`);
+        const state = gameStateManager.getState();
+        state.graphics.resolutionScale = scale;
+        this.previousSettings.resolutionScale = scale; // Prevent re-application
+        this.applyResolutionScale(scale);
     }
 }
 

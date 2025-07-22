@@ -491,8 +491,7 @@ export const optionsConfig: OptionsConfig = {
               label: '垂直同期',
               type: 'checkbox',
               value: true,
-              description: '画面のティアリングを防ぎます（ブラウザが自動管理）',
-              disabled: true
+              description: '画面のティアリングを防ぎます（ブラウザが自動管理）'
             },
             {
               id: 'target-fps',
@@ -590,7 +589,54 @@ export const optionsConfig: OptionsConfig = {
                 { value: 'low', label: '低' },
                 { value: 'high', label: '高' }
               ],
-              description: '光のにじみ効果'
+              description: '光のにじみ効果',
+              onChange: async (value: string) => {
+                console.log('[OPTIONS] Bloom setting changed:', value);
+                
+                // bloomPassに直接アクセス
+                const { bloomPass } = await import('../threeSetup.js');
+                if (!bloomPass) {
+                  console.error('[OPTIONS] BloomPass not found');
+                  return;
+                }
+                
+                // オプション画面のプレビューも更新
+                const optionsScreen = (window as any).optionsScreen;
+                if (optionsScreen && optionsScreen.updatePreviewBloom) {
+                  optionsScreen.updatePreviewBloom(value);
+                }
+                
+                switch (value) {
+                  case 'off':
+                    bloomPass.enabled = false;
+                    break;
+                  case 'low':
+                    bloomPass.enabled = true;
+                    bloomPass.strength = 1.0;
+                    bloomPass.threshold = 0.8;
+                    bloomPass.radius = 0.5;
+                    break;
+                  case 'on':
+                    bloomPass.enabled = true;
+                    bloomPass.strength = 1.5;
+                    bloomPass.threshold = 0.6;
+                    bloomPass.radius = 0.7;
+                    break;
+                  case 'high':
+                    bloomPass.enabled = true;
+                    bloomPass.strength = 2.5;
+                    bloomPass.threshold = 0.4;
+                    bloomPass.radius = 1.0;
+                    break;
+                }
+                
+                console.log('[OPTIONS] Bloom settings applied:', {
+                  enabled: bloomPass.enabled,
+                  strength: bloomPass.strength,
+                  threshold: bloomPass.threshold,
+                  radius: bloomPass.radius
+                });
+              }
             },
             {
               id: 'chromatic-aberration',
@@ -653,14 +699,71 @@ export const optionsConfig: OptionsConfig = {
                 { value: 'filmic', label: 'Filmic' },
                 { value: 'aces', label: 'ACES' }
               ],
-              description: '明暗の変換方式'
+              description: '明暗の変換方式',
+              onChange: async (value: string) => {
+                console.log('[OPTIONS] Tone mapping changed:', value);
+                
+                const { renderer } = await import('../threeSetup.js');
+                const THREE = await import('three');
+                
+                switch (value) {
+                  case 'off':
+                    renderer.toneMapping = THREE.NoToneMapping;
+                    break;
+                  case 'reinhard':
+                    renderer.toneMapping = THREE.ReinhardToneMapping;
+                    break;
+                  case 'filmic':
+                    renderer.toneMapping = THREE.CineonToneMapping;
+                    break;
+                  case 'aces':
+                    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+                    break;
+                }
+                
+                // トーンマッピングの露出も調整
+                renderer.toneMappingExposure = value === 'off' ? 1.0 : 1.2;
+                
+                console.log('[OPTIONS] Tone mapping applied:', {
+                  toneMapping: renderer.toneMapping,
+                  exposure: renderer.toneMappingExposure
+                });
+              }
             },
             {
               id: 'fog',
               label: 'フォグ（霧）',
               type: 'checkbox',
               value: true,
-              description: '霧の効果を有効にする'
+              description: '霧の効果を有効にする',
+              onChange: async (value: boolean) => {
+                console.log('[OPTIONS] Fog enabled:', value);
+                
+                const { scene } = await import('../threeSetup.js');
+                const THREE = await import('three');
+                
+                if (value) {
+                  // フォグを有効化（現在の密度設定を取得）
+                  const fogDensitySlider = document.getElementById('fog-density') as HTMLInputElement;
+                  const density = fogDensitySlider ? parseFloat(fogDensitySlider.value) / 100 : 0.3;
+                  
+                  // 宇宙をテーマにしたフォグ設定
+                  const fogColor = new THREE.Color(0x000033); // 深い宇宙の青
+                  const fogNear = 1000 * (1 - density);
+                  const fogFar = 10000 * (2 - density);
+                  
+                  scene.fog = new THREE.Fog(fogColor, fogNear, fogFar);
+                  console.log('[OPTIONS] Fog created:', {
+                    color: fogColor.getHexString(),
+                    near: fogNear,
+                    far: fogFar
+                  });
+                } else {
+                  // フォグを無効化
+                  scene.fog = null;
+                  console.log('[OPTIONS] Fog disabled');
+                }
+              }
             },
             {
               id: 'fog-density',
@@ -670,7 +773,36 @@ export const optionsConfig: OptionsConfig = {
               max: 100,
               step: 5,
               value: 30,
-              description: '霧の濃さ'
+              description: '霧の濃さ',
+              onChange: async (value: number) => {
+                console.log('[OPTIONS] Fog density changed:', value);
+                
+                const { scene } = await import('../threeSetup.js');
+                const THREE = await import('three');
+                
+                // フォグが有効な場合のみ更新
+                if (scene.fog) {
+                  const density = value / 100; // 0-1の範囲に正規化
+                  
+                  // 密度に基づいてフォグの範囲を調整
+                  const fogNear = 1000 * (1 - density);
+                  const fogFar = 10000 * (2 - density);
+                  
+                  // 既存のフォグの色を保持
+                  const fogColor = scene.fog.color;
+                  
+                  // 新しいフォグを作成
+                  scene.fog = new THREE.Fog(fogColor, fogNear, fogFar);
+                  
+                  console.log('[OPTIONS] Fog density updated:', {
+                    density: density,
+                    near: fogNear,
+                    far: fogFar
+                  });
+                } else {
+                  console.log('[OPTIONS] Fog is disabled, density change ignored');
+                }
+              }
             },
             {
               id: 'global-illumination',

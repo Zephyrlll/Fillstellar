@@ -44,8 +44,43 @@ export class OptionsScreen {
   private tempSettings: Map<string, any> = new Map(); // 一時的な変更を保存
   private hasUnsavedChanges: boolean = false;
   
+  // プレビュー用の3D要素
+  private previewScene?: THREE.Scene;
+  private previewCamera?: THREE.PerspectiveCamera;
+  private previewRenderer?: THREE.WebGLRenderer;
+  private previewComposer?: any; // EffectComposer
+  private previewBloomPass?: any; // UnrealBloomPass
+  private previewBlackHole?: THREE.Mesh;
+  private previewAnimationId?: number;
+  private previewDebugLogged: boolean = false;
+  
   constructor() {
     this.loadSettings();
+  }
+  
+  // ブルーム設定が変更されたときに呼ばれる
+  public updatePreviewBloom(bloomSetting: string): void {
+    if (!this.previewBloomPass) return;
+    
+    switch (bloomSetting) {
+      case 'off':
+        this.previewBloomPass.enabled = false;
+        break;
+      case 'low':
+        this.previewBloomPass.enabled = true;
+        this.previewBloomPass.strength = 1.0;
+        break;
+      case 'on':
+        this.previewBloomPass.enabled = true;
+        this.previewBloomPass.strength = 1.5;
+        break;
+      case 'high':
+        this.previewBloomPass.enabled = true;
+        this.previewBloomPass.strength = 2.5;
+        break;
+    }
+    
+    console.log('[OPTIONS] Preview bloom updated to:', bloomSetting);
   }
   
   init(config: OptionsConfig): void {
@@ -132,26 +167,261 @@ export class OptionsScreen {
     const combinedContent = content;
     
     this.container.innerHTML = `
-      <div class="options-header" style="position: sticky; top: 0; background: #1a1a2e; z-index: 10; padding-bottom: 20px;">
-        <h2>${this.config.title}</h2>
-        <button class="options-close" aria-label="閉じる">×</button>
-      </div>
-      <div class="options-container" style="background: #0a0a14; border: 2px solid #d4af37; border-radius: 8px; margin-bottom: 20px;">
-        <nav class="options-tabs" style="position: sticky; top: 60px; background: #0a0a14; z-index: 9; border-bottom: 2px solid #d4af37;">
-          ${this.renderTabs()}
-        </nav>
-        <div class="options-content" style="padding: 30px;">
-          ${combinedContent}
+      <div class="options-main-wrapper" style="display: flex; width: 100%; height: 100%;">
+        <div class="options-left-panel" style="width: 55%; display: flex; flex-direction: column; overflow-y: auto;">
+          <div class="options-header" style="position: sticky; top: 0; background: #1a1a2e; z-index: 10; padding-bottom: 20px;">
+            <h2>${this.config.title}</h2>
+            <button class="options-close" aria-label="閉じる">×</button>
+          </div>
+          <div class="options-container" style="background: #0a0a14; border: 2px solid #d4af37; border-radius: 8px; margin-bottom: 20px;">
+            <nav class="options-tabs" style="position: sticky; top: 60px; background: #0a0a14; z-index: 9; border-bottom: 2px solid #d4af37;">
+              ${this.renderTabs()}
+            </nav>
+            <div class="options-content" style="padding: 20px;">
+              ${combinedContent}
+            </div>
+          </div>
+          <div class="options-footer" style="position: sticky; bottom: 0; background: #1a1a2e; padding: 20px 0; z-index: 10;">
+            <button class="options-save">保存</button>
+            <button class="options-reset">デフォルトに戻す</button>
+            <button class="options-cancel">キャンセル</button>
+          </div>
         </div>
-      </div>
-      <div class="options-footer" style="position: sticky; bottom: 0; background: #1a1a2e; padding: 20px 0; z-index: 10;">
-        <button class="options-save">保存</button>
-        <button class="options-reset">デフォルトに戻す</button>
-        <button class="options-cancel">キャンセル</button>
+        <div class="options-preview-panel" id="options-preview-panel" style="
+          position: absolute;
+          width: 30%; /* 画面幅の30% */
+          aspect-ratio: 4/3; /* 4:3のアスペクト比 */
+          left: 65%; /* 左端から65%の位置（より右側に配置） */
+          top: 25%; /* 上端から25%の位置（中心が50%になるように調整） */
+          background: #0a0a0a;
+          border: 2px solid #d4af37;
+          border-radius: 8px;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
+          display: ${this.activeTabId === 'graphics' ? 'flex' : 'none'};
+          flex-direction: column;
+          z-index: 100;
+        ">
+          <div class="preview-header" style="padding: 10px; border-bottom: 1px solid #d4af37; color: white; background: rgba(26, 26, 46, 0.9); border-radius: 6px 6px 0 0;">
+            <h3 style="margin: 0; font-size: 14px;">🌌 グラフィックプレビュー</h3>
+            <p style="margin: 3px 0 0 0; font-size: 11px; color: #888;">設定の効果をリアルタイムで確認</p>
+          </div>
+          <div class="preview-viewport" id="preview-viewport" style="flex: 1; position: relative; overflow: hidden; border-radius: 0 0 6px 6px;">
+            <canvas id="preview-canvas" style="width: 100%; height: 100%; display: block;"></canvas>
+            <div class="preview-loading" id="preview-loading" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; display: none;">
+              読み込み中...
+            </div>
+          </div>
+        </div>
       </div>
     `;
     
     this.attachEventListeners();
+    
+    // グラフィックタブの場合、プレビューを初期化
+    if (this.activeTabId === 'graphics') {
+      setTimeout(() => this.initPreview(), 100);
+    }
+  }
+  
+  private async initPreview(): Promise<void> {
+    const canvas = document.getElementById('preview-canvas') as HTMLCanvasElement;
+    if (!canvas) return;
+    
+    console.log('[OPTIONS] Initializing preview with game scene');
+    
+    // Three.jsとゲームのシーンをインポート
+    const THREE = await import('three');
+    const { scene, camera } = await import('../threeSetup.js');
+    const { gameStateManager } = await import('../state.js');
+    
+    // カメラを作成（ゲームのシーンを映すための固定カメラ）
+    // 4:3のアスペクト比に合わせて設定
+    const aspectRatio = 4 / 3;
+    this.previewCamera = new THREE.PerspectiveCamera(
+      45,
+      aspectRatio,
+      0.1,
+      50000
+    );
+    
+    // レンダラーを作成
+    this.previewRenderer = new THREE.WebGLRenderer({ 
+      canvas, 
+      antialias: true,
+      alpha: false
+    });
+    this.previewRenderer.setSize(canvas.clientWidth, canvas.clientHeight);
+    this.previewRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    
+    // ゲームシーンの背景設定をコピー
+    this.previewRenderer.setClearColor(0x000011, 1);
+    
+    // ポストプロセッシングを設定
+    this.previewScene = scene; // ゲームの実際のシーンを使用
+    await this.setupPreviewPostProcessing();
+    
+    // ブラックホールを探す
+    this.findAndFocusBlackHole();
+    
+    // アニメーションを開始
+    this.animatePreview();
+    
+    // リサイズ時の処理
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect;
+        if (this.previewRenderer && this.previewCamera) {
+          this.previewRenderer.setSize(width, height);
+          // アスペクト比は固定で4:3を維持
+          this.previewCamera.aspect = 4 / 3;
+          this.previewCamera.updateProjectionMatrix();
+        }
+      }
+    });
+    resizeObserver.observe(canvas);
+  }
+  
+  private async setupPreviewPostProcessing(): Promise<void> {
+    if (!this.previewRenderer || !this.previewScene || !this.previewCamera) return;
+    
+    const THREE = await import('three');
+    const { EffectComposer } = await import('three/examples/jsm/postprocessing/EffectComposer.js');
+    const { RenderPass } = await import('three/examples/jsm/postprocessing/RenderPass.js');
+    const { UnrealBloomPass } = await import('three/examples/jsm/postprocessing/UnrealBloomPass.js');
+    const { gameStateManager } = await import('../state.js');
+    
+    // コンポーザーを作成
+    this.previewComposer = new EffectComposer(this.previewRenderer);
+    
+    // レンダーパス
+    const renderPass = new RenderPass(this.previewScene, this.previewCamera);
+    this.previewComposer.addPass(renderPass);
+    
+    // ゲームの設定を取得
+    const state = gameStateManager.getState();
+    const bloomSetting = state.graphics.bloom || 'off';
+    
+    // ブルームパス（ゲーム設定に基づいて）
+    const bloomPass = new UnrealBloomPass(
+      new THREE.Vector2(400, 400), // 解像度
+      1.5, // 強度
+      0.4, // 半径
+      0.85 // しきい値
+    );
+    
+    // ゲーム設定に基づいてブルームを設定
+    switch (bloomSetting) {
+      case 'off':
+        bloomPass.enabled = false;
+        break;
+      case 'low':
+        bloomPass.enabled = true;
+        bloomPass.strength = 1.0;
+        break;
+      case 'on':
+        bloomPass.enabled = true;
+        bloomPass.strength = 1.5;
+        break;
+      case 'high':
+        bloomPass.enabled = true;
+        bloomPass.strength = 2.5;
+        break;
+    }
+    
+    this.previewBloomPass = bloomPass;
+    this.previewComposer.addPass(bloomPass);
+    
+    console.log('[OPTIONS] Preview post-processing setup complete with bloom:', bloomSetting);
+  }
+  
+  private async findAndFocusBlackHole(): Promise<void> {
+    if (!this.previewScene || !this.previewCamera) return;
+    
+    // ゲームカメラの現在位置を取得
+    const { camera } = await import('../threeSetup.js');
+    const THREE = await import('three');
+    const playerCameraPosition = camera.position.clone();
+    const playerCameraTarget = new THREE.Vector3();
+    camera.getWorldDirection(playerCameraTarget);
+    playerCameraTarget.multiplyScalar(1000).add(playerCameraPosition); // カメラが向いている方向の1000ユニット先
+    
+    // ゲームシーンからブラックホールを探す
+    let blackHole: THREE.Object3D | null = null;
+    
+    this.previewScene.traverse((child) => {
+      if (child.userData && child.userData.type === 'black_hole') {
+        blackHole = child;
+        console.log('[OPTIONS] Found black hole in game scene:', child);
+      }
+    });
+    
+    if (blackHole) {
+      this.previewBlackHole = blackHole as THREE.Mesh;
+      
+      // プレイヤーのカメラ位置をベースに、ブラックホールが見える位置にカメラを配置
+      const blackHolePos = blackHole.position.clone();
+      
+      // プレイヤーのカメラ位置から少しオフセットした位置に固定カメラを配置
+      this.previewCamera.position.copy(playerCameraPosition);
+      
+      // プレイヤーが見ていた方向とは少し違う角度から見る（より近い位置から）
+      const offset = new THREE.Vector3(50, 100, 50);
+      this.previewCamera.position.add(offset);
+      
+      // カメラをブラックホールに向ける
+      this.previewCamera.lookAt(blackHolePos);
+      
+      console.log('[OPTIONS] Camera positioned based on player view:', {
+        playerPos: playerCameraPosition,
+        previewPos: this.previewCamera.position,
+        target: blackHolePos
+      });
+    } else {
+      console.log('[OPTIONS] No black hole found in scene, using player camera position');
+      
+      // ブラックホールがない場合は、プレイヤーの視点から少し離れた位置から同じ方向を見る
+      this.previewCamera.position.copy(playerCameraPosition);
+      const offset = new THREE.Vector3(100, 80, 100);
+      this.previewCamera.position.add(offset);
+      this.previewCamera.lookAt(playerCameraTarget);
+    }
+  }
+  
+  private animatePreview(): void {
+    if (!this.previewRenderer || !this.previewScene || !this.previewCamera) {
+      console.warn('[OPTIONS] Preview animation stopped - missing required objects');
+      return;
+    }
+    
+    this.previewAnimationId = requestAnimationFrame(() => this.animatePreview());
+    
+    // ブラックホールが存在する場合、カメラの向きを維持
+    if (this.previewBlackHole) {
+      // カメラをブラックホールに向け続ける
+      this.previewCamera.lookAt(this.previewBlackHole.position);
+    }
+    
+    // レンダリング（コンポーザーがある場合はそれを使用）
+    if (this.previewComposer) {
+      this.previewComposer.render();
+    } else {
+      this.previewRenderer.render(this.previewScene, this.previewCamera);
+    }
+    
+    // 初回レンダリング時のみデバッグ情報を出力
+    if (!this.previewDebugLogged) {
+      console.log('[OPTIONS] Preview rendering:', {
+        sceneChildren: this.previewScene.children.length,
+        cameraPosition: this.previewCamera.position,
+        rendererSize: {
+          width: this.previewRenderer.domElement.width,
+          height: this.previewRenderer.domElement.height
+        },
+        hasBlackHole: !!this.previewBlackHole,
+        hasComposer: !!this.previewComposer
+      });
+      this.previewDebugLogged = true;
+    }
   }
   
   private renderTabs(): string {
@@ -619,8 +889,9 @@ export class OptionsScreen {
         }
       });
       
-      // グラフィックタブの場合、プロモードボタンのテキストを更新
+      // グラフィックタブの場合
       if (tabId === 'graphics') {
+        // プロモードボタンのテキストを更新
         const proMode = localStorage.getItem('graphics-pro-mode') === 'true';
         setTimeout(() => {
           const button = document.querySelector('[data-action-id="pro-mode-toggle"]') as HTMLButtonElement;
@@ -628,6 +899,22 @@ export class OptionsScreen {
             button.textContent = proMode ? '無効にする' : '有効にする';
           }
         }, 100);
+        
+        // プレビューパネルを表示
+        const previewPanel = document.getElementById('options-preview-panel');
+        if (previewPanel) {
+          previewPanel.style.display = 'flex';
+          // プレビューがまだ初期化されていない場合は初期化
+          if (!this.previewRenderer) {
+            setTimeout(() => this.initPreview(), 100);
+          }
+        }
+      } else {
+        // 他のタブではプレビューパネルを非表示
+        const previewPanel = document.getElementById('options-preview-panel');
+        if (previewPanel) {
+          previewPanel.style.display = 'none';
+        }
       }
       
       // 全体を再レンダリング
@@ -759,6 +1046,25 @@ export class OptionsScreen {
     
     // 変更を元に戻す
     this.revertChanges();
+    
+    // プレビューをクリーンアップ
+    if (this.previewAnimationId) {
+      cancelAnimationFrame(this.previewAnimationId);
+      this.previewAnimationId = undefined;
+    }
+    if (this.previewRenderer) {
+      this.previewRenderer.dispose();
+      this.previewRenderer = undefined;
+    }
+    if (this.previewComposer) {
+      this.previewComposer.dispose();
+      this.previewComposer = undefined;
+    }
+    // シーンの参照をクリア
+    this.previewScene = undefined;
+    this.previewCamera = undefined;
+    this.previewBlackHole = undefined;
+    this.previewBloomPass = undefined;
     
     // 全画面スライドアウトアニメーション
     this.container.style.transition = 'transform 0.3s cubic-bezier(0.7, 0, 0.84, 0)';

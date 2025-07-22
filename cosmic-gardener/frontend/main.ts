@@ -726,7 +726,7 @@ function animate() {
     }
 }
 
-function init() {
+async function init() {
     console.log('[INIT] Starting initialization...');
     
     // Debug: Check canvas and UI elements
@@ -855,6 +855,10 @@ function init() {
     menuSystem.init();
     menuSystem.hideExistingButtons();
     console.log('[INIT] Menu system initialized');
+    
+    // オプション画面をwindowに追加（プレビュー更新のため）
+    const { optionsScreen } = await import('./js/systems/optionsScreen.js');
+    (window as any).optionsScreen = optionsScreen;
     
     // Initialize endgame progress UI (but don't show it)
     endgameProgressUI.init();
