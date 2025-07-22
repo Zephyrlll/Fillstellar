@@ -134,8 +134,18 @@ export function setupEventListeners() {
     window.addEventListener('resize', () => {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        composer.setSize(window.innerWidth, window.innerHeight);
+        
+        // 解像度スケールを適用（graphicsEngineがある場合はそれを使用）
+        if ((window as any).graphicsEngine) {
+            // graphicsEngineのapplyResolutionScaleを呼び出す
+            const currentScale = gameStateManager.getState().graphics.resolutionScale;
+            (window as any).graphicsEngine.applyResolutionScale(currentScale);
+        } else {
+            // フォールバック：デフォルトのリサイズ処理
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
+        }
+        
         debouncedUpdateGalaxyMap();
     });
     

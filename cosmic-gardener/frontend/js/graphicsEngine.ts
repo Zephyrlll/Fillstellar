@@ -178,15 +178,28 @@ export class GraphicsEngine {
         const renderWidth = Math.round(displayWidth * scale);
         const renderHeight = Math.round(displayHeight * scale);
         
+        console.log(`[GraphicsEngine] === Resolution Scale Debug ===`);
+        console.log(`[GraphicsEngine] Scale: ${scale} (${scale * 100}%)`);
+        console.log(`[GraphicsEngine] Window size: ${displayWidth}x${displayHeight}`);
+        console.log(`[GraphicsEngine] Target render size: ${renderWidth}x${renderHeight}`);
+        console.log(`[GraphicsEngine] Pixel ratio: ${pixelRatio}`);
+        console.log(`[GraphicsEngine] Before - Canvas internal size: ${canvas.width}x${canvas.height}`);
+        console.log(`[GraphicsEngine] Before - Canvas CSS size: ${canvas.style.width}x${canvas.style.height}`);
+        
         // === レンダラー設定更新 ===
         // 第3引数false = CSS自動更新を無効化（手動制御）
         renderer.setSize(renderWidth, renderHeight, false);
-        renderer.setPixelRatio(pixelRatio); // デバイスピクセル比は固定
+        
+        // ピクセル比を1に固定して、解像度スケールの効果を明確にする
+        renderer.setPixelRatio(1);
         
         // === CSS表示サイズを強制設定 ===
         // 解像度スケールに関係なく常に画面いっぱいに表示
         canvas.style.width = displayWidth + 'px';
         canvas.style.height = displayHeight + 'px';
+        
+        // 画像のスケーリング品質を設定
+        canvas.style.imageRendering = scale < 1 ? 'auto' : 'crisp-edges';
         
         // === ポストプロセッシング対応 ===
         if (composer) {
@@ -200,7 +213,19 @@ export class GraphicsEngine {
             camera.updateProjectionMatrix();
         }
         
-        console.log(`📏 Resolution scale: ${Math.round(scale * 100)}% (${renderWidth}x${renderHeight} → ${displayWidth}x${displayHeight})`);
+        console.log(`[GraphicsEngine] After - Canvas internal size: ${canvas.width}x${canvas.height}`);
+        console.log(`[GraphicsEngine] After - Canvas CSS size: ${canvas.style.width}x${canvas.style.height}`);
+        console.log(`[GraphicsEngine] Expected visual quality: ${scale < 1 ? 'Blurry/Pixelated' : scale > 1 ? 'Sharp/Crisp' : 'Normal'}`);
+        console.log(`[GraphicsEngine] =============================`);
+        
+        // デバッグ用：テストパターンを追加（開発時のみ）
+        if ((window as any).DEBUG_RESOLUTION_SCALE) {
+            this.addResolutionTestPattern(scale);
+        }
+        
+        // Starfield更新を一時的にコメントアウト（エラー回避）
+        // TODO: updateStarfieldsForResolutionメソッドのthisコンテキスト問題を修正
+        // this.updateStarfieldsForResolution(scale, pixelRatio);
     }
     
     // Anti-aliasing settings
@@ -1047,6 +1072,58 @@ class LODSystem {
         if ((window as any).graphicsEngine) {
             (window as any).graphicsEngine.applyResolutionScale(gameStateManager.getState().graphics.resolutionScale);
         }
+    }
+    
+    // キャンバスサイズを設定（解像度設定用）
+    setCanvasSize(width: number, height: number): void {
+        console.log(`[GraphicsEngine] Setting canvas size: ${width}x${height}`);
+        
+        // レンダラーのサイズを更新
+        renderer.setSize(width, height);
+        
+        // カメラのアスペクト比を更新
+        if (camera instanceof THREE.PerspectiveCamera) {
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+        }
+        
+        // コンポーザーのサイズも更新
+        if (composer) {
+            composer.setSize(width, height);
+        }
+    }
+    
+    // レンダリング解像度スケールを設定
+    setResolutionScale(scale: number): void {
+        console.log(`[GraphicsEngine] Setting resolution scale: ${scale}`);
+        console.log(`[GraphicsEngine] Current window size: ${window.innerWidth}x${window.innerHeight}`);
+        
+        // 現在のグラフィックス設定を更新
+        const state = gameStateManager.getState();
+        state.graphics.resolutionScale = scale;
+        
+        // previousSettingsも更新して、update()での再適用を防ぐ
+        this.previousSettings.resolutionScale = scale;
+        
+        // 解像度スケールを適用
+        this.applyResolutionScale(scale);
+        
+        // 適用後のサイズを確認
+        const canvas = renderer.domElement;
+        console.log(`[GraphicsEngine] Canvas actual size: ${canvas.width}x${canvas.height}`);
+        console.log(`[GraphicsEngine] Canvas CSS size: ${canvas.style.width}x${canvas.style.height}`);
+    }
+    
+    // FPS制限を設定
+    setFPSLimit(fps: number): void {
+        console.log(`[GraphicsEngine] Setting FPS limit: ${fps === 0 ? 'unlimited' : fps}`);
+        
+        // 現在のグラフィックス設定を更新
+        const state = gameStateManager.getState();
+        state.graphics.frameRateLimit = fps;
+        
+        // フレームレートリミッターを更新
+        this.frameRateLimiter.setTargetFPS(fps);
     }
     
     // Reset camera for initialization (used during startup)

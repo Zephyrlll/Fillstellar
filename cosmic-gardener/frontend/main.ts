@@ -847,6 +847,7 @@ function init() {
     (window as any).tutorialUI = tutorialUI;
     (window as any).productionAnalyzer = productionAnalyzer;
     (window as any).productionAnalysisUI = productionAnalysisUI;
+    (window as any).graphicsEngine = graphicsEngine;
     (window as any).multiverseUI = multiverseUI;
     (window as any).endgameProgressUI = endgameProgressUI;
     

@@ -1,5 +1,48 @@
 import { OptionsConfig } from '../systems/optionsScreen.js';
 
+// 解像度スケールインジケーターを表示
+function showResolutionScaleIndicator(scale: number): void {
+  // 既存のインジケーターを削除
+  const existingIndicator = document.getElementById('resolution-scale-indicator');
+  if (existingIndicator) {
+    existingIndicator.remove();
+  }
+  
+  // 新しいインジケーターを作成
+  const indicator = document.createElement('div');
+  indicator.id = 'resolution-scale-indicator';
+  indicator.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 15px 20px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    border: 2px solid ${scale < 100 ? '#ff6b6b' : scale > 100 ? '#4ecdc4' : '#ffd93d'};
+    border-radius: 8px;
+    font-family: monospace;
+    font-size: 16px;
+    z-index: 100000;
+    pointer-events: none;
+    transition: opacity 0.3s;
+  `;
+  
+  indicator.innerHTML = `
+    <div style="margin-bottom: 5px; font-weight: bold;">解像度スケール: ${scale}%</div>
+    <div style="font-size: 14px; color: ${scale < 100 ? '#ff6b6b' : scale > 100 ? '#4ecdc4' : '#ffd93d'};">
+      ${scale < 100 ? '低解像度 (高速)' : scale > 100 ? '高解像度 (低速)' : '標準解像度'}
+    </div>
+  `;
+  
+  document.body.appendChild(indicator);
+  
+  // 3秒後にフェードアウト
+  setTimeout(() => {
+    indicator.style.opacity = '0';
+    setTimeout(() => indicator.remove(), 300);
+  }, 3000);
+}
+
 export const optionsConfig: OptionsConfig = {
   title: 'オプション',
   tabs: [
@@ -277,16 +320,41 @@ export const optionsConfig: OptionsConfig = {
               description: 'ゲームの表示解像度を設定します（フルスクリーン時のみ有効）',
               onChange: async (value: string) => {
                 const { graphicsEngine } = await import('../graphicsEngine.js');
+                const canvas = document.getElementById('game-canvas') as HTMLCanvasElement;
+                if (!canvas) return;
+                
+                // フルスクリーンモードかどうか確認
+                const isFullscreen = document.fullscreenElement === canvas;
+                
                 if (value === 'native') {
                   // ネイティブ解像度に設定
-                  const canvas = document.getElementById('game-canvas') as HTMLCanvasElement;
-                  if (canvas) {
+                  if (isFullscreen) {
+                    // フルスクリーン時は画面の解像度を使用
+                    graphicsEngine.setCanvasSize(screen.width, screen.height);
+                  } else {
+                    // ウィンドウモード時はウィンドウサイズを使用
                     graphicsEngine.setCanvasSize(window.innerWidth, window.innerHeight);
                   }
                 } else {
+                  // 指定された解像度を使用
                   const [width, height] = value.split('x').map(Number);
-                  graphicsEngine.setCanvasSize(width, height);
+                  
+                  if (!isFullscreen) {
+                    // ウィンドウモードでは、指定解像度がウィンドウサイズより大きい場合は調整
+                    const scaledWidth = Math.min(width, window.innerWidth);
+                    const scaledHeight = Math.min(height, window.innerHeight);
+                    graphicsEngine.setCanvasSize(scaledWidth, scaledHeight);
+                    
+                    // キャンバスのスタイルも更新
+                    canvas.style.width = `${scaledWidth}px`;
+                    canvas.style.height = `${scaledHeight}px`;
+                  } else {
+                    // フルスクリーンモードでは指定解像度をそのまま使用
+                    graphicsEngine.setCanvasSize(width, height);
+                  }
                 }
+                
+                console.log(`[OPTIONS] Resolution changed to: ${value}`);
               }
             },
             {
@@ -303,24 +371,46 @@ export const optionsConfig: OptionsConfig = {
                 const canvas = document.getElementById('game-canvas') as HTMLCanvasElement;
                 if (!canvas) return;
                 
-                if (value === 'fullscreen') {
-                  // フルスクリーンAPI使用
-                  if (canvas.requestFullscreen) {
-                    await canvas.requestFullscreen();
-                  } else if ((canvas as any).webkitRequestFullscreen) {
-                    await (canvas as any).webkitRequestFullscreen();
-                  } else if ((canvas as any).mozRequestFullScreen) {
-                    await (canvas as any).mozRequestFullScreen();
+                try {
+                  if (value === 'fullscreen') {
+                    // フルスクリーンモードに入る
+                    if (canvas.requestFullscreen) {
+                      await canvas.requestFullscreen();
+                    } else if ((canvas as any).webkitRequestFullscreen) {
+                      await (canvas as any).webkitRequestFullscreen();
+                    } else if ((canvas as any).mozRequestFullScreen) {
+                      await (canvas as any).mozRequestFullScreen();
+                    } else if ((canvas as any).msRequestFullscreen) {
+                      await (canvas as any).msRequestFullscreen();
+                    }
+                    
+                    // フルスクリーン時に解像度を更新
+                    const { graphicsEngine } = await import('../graphicsEngine.js');
+                    const resolutionSelect = document.querySelector('[data-setting-id="resolution"]') as HTMLSelectElement;
+                    if (resolutionSelect && resolutionSelect.value === 'native') {
+                      // ネイティブ解像度の場合は画面解像度を使用
+                      graphicsEngine.setCanvasSize(screen.width, screen.height);
+                    }
+                  } else {
+                    // フルスクリーン解除
+                    if (document.exitFullscreen) {
+                      await document.exitFullscreen();
+                    } else if ((document as any).webkitExitFullscreen) {
+                      await (document as any).webkitExitFullscreen();
+                    } else if ((document as any).mozCancelFullScreen) {
+                      await (document as any).mozCancelFullScreen();
+                    } else if ((document as any).msExitFullscreen) {
+                      await (document as any).msExitFullscreen();
+                    }
+                    
+                    // ウィンドウモードに戻る時に解像度をリセット
+                    const { graphicsEngine } = await import('../graphicsEngine.js');
+                    graphicsEngine.setCanvasSize(window.innerWidth, window.innerHeight);
                   }
-                } else {
-                  // フルスクリーン解除
-                  if (document.exitFullscreen) {
-                    await document.exitFullscreen();
-                  } else if ((document as any).webkitExitFullscreen) {
-                    await (document as any).webkitExitFullscreen();
-                  } else if ((document as any).mozCancelFullScreen) {
-                    await (document as any).mozCancelFullScreen();
-                  }
+                  
+                  console.log(`[OPTIONS] Screen mode changed to: ${value}`);
+                } catch (error) {
+                  console.error('[OPTIONS] Failed to change screen mode:', error);
                 }
               }
             },
@@ -338,21 +428,62 @@ export const optionsConfig: OptionsConfig = {
               ],
               description: '画面の縦横比を維持する方法を設定します',
               onChange: async (value: string) => {
-                const { camera } = await import('../threeSetup.js');
+                const { camera, renderer } = await import('../threeSetup.js');
                 const canvas = document.getElementById('game-canvas') as HTMLCanvasElement;
-                if (!canvas) return;
+                const container = canvas.parentElement;
+                if (!canvas || !container) return;
                 
                 if (value === 'auto') {
-                  // カメラのアスペクト比を自動調整
+                  // 自動モード：キャンバスを全画面に
+                  canvas.style.position = 'absolute';
+                  canvas.style.width = '100%';
+                  canvas.style.height = '100%';
+                  canvas.style.top = '0';
+                  canvas.style.left = '0';
+                  canvas.style.transform = 'none';
+                  
+                  // カメラのアスペクト比をウィンドウに合わせる
                   camera.aspect = window.innerWidth / window.innerHeight;
                   camera.updateProjectionMatrix();
+                  
+                  // レンダラーのサイズも更新
+                  renderer.setSize(window.innerWidth, window.innerHeight);
                 } else {
-                  // 固定アスペクト比（レターボックス処理が必要）
-                  const [w, h] = value.split(':').map(Number);
-                  camera.aspect = w / h;
+                  // 固定アスペクト比（レターボックス/ピラーボックス）
+                  const [targetW, targetH] = value.split(':').map(Number);
+                  const targetAspect = targetW / targetH;
+                  
+                  const windowW = window.innerWidth;
+                  const windowH = window.innerHeight;
+                  const windowAspect = windowW / windowH;
+                  
+                  let canvasW, canvasH;
+                  
+                  if (windowAspect > targetAspect) {
+                    // ウィンドウが横長すぎる場合（ピラーボックス）
+                    canvasH = windowH;
+                    canvasW = windowH * targetAspect;
+                  } else {
+                    // ウィンドウが縦長すぎる場合（レターボックス）
+                    canvasW = windowW;
+                    canvasH = windowW / targetAspect;
+                  }
+                  
+                  // キャンバスのサイズと位置を設定
+                  canvas.style.position = 'absolute';
+                  canvas.style.width = `${canvasW}px`;
+                  canvas.style.height = `${canvasH}px`;
+                  canvas.style.top = '50%';
+                  canvas.style.left = '50%';
+                  canvas.style.transform = 'translate(-50%, -50%)';
+                  
+                  // カメラとレンダラーを更新
+                  camera.aspect = targetAspect;
                   camera.updateProjectionMatrix();
-                  // TODO: レターボックスの実装
+                  renderer.setSize(canvasW, canvasH);
                 }
+                
+                console.log(`[OPTIONS] Aspect ratio changed to: ${value}`);
               }
             },
             {
@@ -395,8 +526,24 @@ export const optionsConfig: OptionsConfig = {
               value: 100,
               description: '内部レンダリング解像度のスケール（%）。低くするとパフォーマンスが向上します',
               onChange: async (value: number) => {
-                const { graphicsEngine } = await import('../graphicsEngine.js');
-                graphicsEngine.setResolutionScale(value / 100);
+                console.log('[OPTIONS] Resolution scale onChange:', value);
+                
+                // graphicsEngineをwindowから取得するか、直接インポート
+                if ((window as any).graphicsEngine) {
+                  (window as any).graphicsEngine.setResolutionScale(value / 100);
+                  
+                  // デバッグ用：解像度スケールインジケーターを表示
+                  showResolutionScaleIndicator(value);
+                } else {
+                  // windowにない場合は直接インポート
+                  const { graphicsEngine } = await import('../graphicsEngine.js');
+                  if (graphicsEngine && typeof graphicsEngine.setResolutionScale === 'function') {
+                    graphicsEngine.setResolutionScale(value / 100);
+                    showResolutionScaleIndicator(value);
+                  } else {
+                    console.error('[OPTIONS] graphicsEngine.setResolutionScale is not available');
+                  }
+                }
               }
             }
           ],

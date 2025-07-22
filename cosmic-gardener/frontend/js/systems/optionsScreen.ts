@@ -310,15 +310,18 @@ export class OptionsScreen {
     
     switch (setting.type) {
       case 'slider':
+        const sliderValue = savedValue ?? setting.value ?? 50;
         const sliderHTML = `
-          <div class="setting-item setting-slider" data-setting-id="${setting.id}" style="background: orange; padding: 15px; margin: 10px 0; border-radius: 8px;">
-            <div style="color: white; font-size: 16px; margin-bottom: 10px;">
-              ${setting.label}: ${savedValue ?? 50}
-            </div>
+          <div class="setting-item setting-slider" data-setting-id="${setting.id}" style="background: rgba(255,255,255,0.1); padding: 15px; margin: 10px 0; border-radius: 8px;">
+            <label style="color: white; font-size: 16px; display: block; margin-bottom: 5px;">${setting.label}: <span id="${setting.id}-value">${sliderValue}</span></label>
+            ${setting.description ? `<p class="setting-description" style="color: rgba(255,255,255,0.7); font-size: 14px; margin: 0 0 10px 0;">${setting.description}</p>` : ''}
             <input type="range" 
-                   value="${savedValue ?? 50}" 
-                   min="0" 
-                   max="100" 
+                   id="${setting.id}"
+                   class="option-slider"
+                   value="${sliderValue}" 
+                   min="${setting.min ?? 0}" 
+                   max="${setting.max ?? 100}"
+                   step="${setting.step ?? 1}" 
                    style="width: 100%; display: block;">
           </div>
         `;
