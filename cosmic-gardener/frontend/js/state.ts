@@ -141,7 +141,8 @@ export interface DeviceInfo {
 }
 
 export interface GraphicsState {
-    preset: string; // 'ultra' | 'high' | 'medium' | 'low' | 'minimal' | 'custom'
+    preset: string; // 'ultra' | 'high' | 'medium' | 'low' | 'minimal' | 'performance' | 'custom'
+    visualStyle: string; // 'default' | 'cinematic' | 'photorealistic' | 'anime' | 'retro' | 'custom'
     resolutionScale: number;
     textureQuality: string; // 'ultra' | 'high' | 'medium' | 'low'
     shadowQuality: string; // 'ultra' | 'high' | 'medium' | 'low' | 'off'
@@ -157,6 +158,19 @@ export interface GraphicsState {
     objectDetail: string; // 'ultra' | 'high' | 'medium' | 'low'
     backgroundDetail: string; // 'high' | 'standard' | 'simple' | 'off'
     uiAnimations: string; // 'smooth' | 'standard' | 'simple' | 'off'
+    
+    // Visual style effects (independent from performance)
+    bloom?: string; // 'off' | 'low' | 'on' | 'high'
+    depthOfField?: string; // 'off' | 'on' | 'dynamic'
+    filmGrain?: boolean;
+    filmGrainIntensity?: number;
+    toneMapping?: string; // 'off' | 'linear' | 'reinhard' | 'filmic' | 'aces'
+    colorCorrection?: boolean;
+    brightness?: number;
+    contrast?: number;
+    saturation?: number;
+    vignette?: boolean;
+    vignetteIntensity?: number;
     
     // Performance monitoring
     performance: PerformanceMetrics;
@@ -573,6 +587,7 @@ const initialGameState: GameState = {
     graphicsQuality: 'medium', // Legacy field for backward compatibility
     graphics: {
         preset: 'medium',
+        visualStyle: 'default',
         resolutionScale: 1.0,
         textureQuality: 'medium',
         shadowQuality: 'medium',
@@ -701,7 +716,7 @@ export const gameState = new Proxy({} as GameState, {
     }
 });
 
-// --- Graphics Presets ---
+// --- Graphics Presets (Performance) ---
 
 export const GRAPHICS_PRESETS = {
     ultra: {
@@ -825,7 +840,77 @@ export const GRAPHICS_PRESETS = {
     }
 } as const;
 
-// Helper function to apply preset to graphics state
+// --- Visual Style Presets (Aesthetics) ---
+
+export const VISUAL_STYLE_PRESETS = {
+    default: {
+        bloom: 'on',
+        depthOfField: 'off',
+        filmGrain: false,
+        filmGrainIntensity: 0,
+        toneMapping: 'linear',
+        colorCorrection: false,
+        brightness: 100,
+        contrast: 100,
+        saturation: 100,
+        vignette: false,
+        vignetteIntensity: 0
+    },
+    cinematic: {
+        bloom: 'high',
+        depthOfField: 'dynamic',
+        filmGrain: true,
+        filmGrainIntensity: 35,
+        toneMapping: 'filmic',
+        colorCorrection: true,
+        brightness: 95,
+        contrast: 115,
+        saturation: 85,
+        vignette: true,
+        vignetteIntensity: 70
+    },
+    photorealistic: {
+        bloom: 'low',
+        depthOfField: 'on',
+        filmGrain: false,
+        filmGrainIntensity: 0,
+        toneMapping: 'aces',
+        colorCorrection: true,
+        brightness: 100,
+        contrast: 105,
+        saturation: 100,
+        vignette: false,
+        vignetteIntensity: 0
+    },
+    anime: {
+        bloom: 'high',
+        depthOfField: 'off',
+        filmGrain: false,
+        filmGrainIntensity: 0,
+        toneMapping: 'reinhard',
+        colorCorrection: true,
+        brightness: 110,
+        contrast: 125,
+        saturation: 130,
+        vignette: false,
+        vignetteIntensity: 0
+    },
+    retro: {
+        bloom: 'on',
+        depthOfField: 'off',
+        filmGrain: true,
+        filmGrainIntensity: 80,
+        toneMapping: 'linear',
+        colorCorrection: true,
+        brightness: 105,
+        contrast: 110,
+        saturation: 70,
+        vignette: true,
+        vignetteIntensity: 100
+    }
+} as const;
+
+// Helper function to apply graphics preset (performance)
 export function applyGraphicsPreset(graphics: GraphicsState, presetName: keyof typeof GRAPHICS_PRESETS): GraphicsState {
     const preset = GRAPHICS_PRESETS[presetName];
     // Create a new object instead of modifying the existing one
@@ -836,11 +921,27 @@ export function applyGraphicsPreset(graphics: GraphicsState, presetName: keyof t
     };
 }
 
-// Helper function to detect if current settings match a preset
+// Helper function to apply visual style preset (aesthetics)
+export function applyVisualStylePreset(graphics: GraphicsState, styleName: keyof typeof VISUAL_STYLE_PRESETS): GraphicsState {
+    const style = VISUAL_STYLE_PRESETS[styleName];
+    // Create a new object instead of modifying the existing one
+    return {
+        ...graphics,
+        ...style,
+        visualStyle: styleName
+    };
+}
+
+// Helper function to detect if current settings match a graphics preset
 export function detectGraphicsPreset(graphics: GraphicsState): string {
     for (const [presetName, preset] of Object.entries(GRAPHICS_PRESETS)) {
         let matches = true;
         for (const [key, value] of Object.entries(preset)) {
+            // Skip visual style properties when checking graphics presets
+            if (['bloom', 'depthOfField', 'filmGrain', 'filmGrainIntensity', 'toneMapping', 
+                 'colorCorrection', 'brightness', 'contrast', 'saturation', 'vignette', 'vignetteIntensity'].includes(key)) {
+                continue;
+            }
             if (graphics[key as keyof GraphicsState] !== value) {
                 matches = false;
                 break;
@@ -848,6 +949,23 @@ export function detectGraphicsPreset(graphics: GraphicsState): string {
         }
         if (matches) {
             return presetName;
+        }
+    }
+    return 'custom';
+}
+
+// Helper function to detect if current settings match a visual style preset
+export function detectVisualStylePreset(graphics: GraphicsState): string {
+    for (const [styleName, style] of Object.entries(VISUAL_STYLE_PRESETS)) {
+        let matches = true;
+        for (const [key, value] of Object.entries(style)) {
+            if (graphics[key as keyof GraphicsState] !== value) {
+                matches = false;
+                break;
+            }
+        }
+        if (matches) {
+            return styleName;
         }
     }
     return 'custom';

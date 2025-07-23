@@ -239,20 +239,108 @@ export const optionsConfig: OptionsConfig = {
           settings: [
             {
               id: 'graphics-preset',
-              label: 'グラフィックプリセット',
+              label: 'グラフィックプリセット（パフォーマンス）',
               type: 'select',
-              value: 'high',
+              value: 'medium',
               options: [
-                { value: 'low', label: '低' },
-                { value: 'medium', label: '中' },
-                { value: 'high', label: '高' },
                 { value: 'ultra', label: '最高' },
+                { value: 'high', label: '高' },
+                { value: 'medium', label: '中' },
+                { value: 'low', label: '低' },
+                { value: 'minimal', label: '最小' },
+                { value: 'performance', label: 'パフォーマンス重視' },
                 { value: 'custom', label: 'カスタム' }
               ],
-              description: '全体的なグラフィック品質を設定',
-              onChange: (value: string) => {
+              description: 'PC性能に合わせた最適な設定を選択',
+              onChange: async (value: string) => {
                 // プリセット選択時の処理
                 console.log('[GRAPHICS] Preset changed:', value);
+                
+                // graphicsEngineをインポートして全ての設定を適用
+                const { graphicsEngine } = await import('../graphicsEngine.js');
+                const { gameStateManager, applyGraphicsPreset } = await import('../state.js');
+                
+                if (value !== 'custom') {
+                  // プリセットを適用
+                  const currentState = gameStateManager.getState();
+                  const newGraphics = applyGraphicsPreset(currentState.graphics, value as any);
+                  
+                  // 状態を更新
+                  gameStateManager.updateState(state => ({
+                    ...state,
+                    graphics: newGraphics
+                  }));
+                  
+                  // 全ての設定を適用
+                  graphicsEngine.applyAllSettings();
+                  
+                  // オプション画面の各設定値も更新
+                  if ((window as any).optionsScreen) {
+                    const optionsScreen = (window as any).optionsScreen;
+                    // プリセットの各値を一時設定に反映
+                    Object.entries(newGraphics).forEach(([key, value]) => {
+                      if (key !== 'preset' && key !== 'performance' && key !== 'deviceInfo') {
+                        optionsScreen.tempSettings.set(key, value);
+                      }
+                    });
+                    
+                    // UIを再レンダリング
+                    optionsScreen.render();
+                  }
+                }
+              }
+            },
+            {
+              id: 'visual-style',
+              label: 'ビジュアルスタイル（質感）',
+              type: 'select',
+              value: 'default',
+              options: [
+                { value: 'default', label: 'デフォルト' },
+                { value: 'cinematic', label: '🎬 映画的' },
+                { value: 'photorealistic', label: '📷 写実的' },
+                { value: 'anime', label: '🎨 アニメ風' },
+                { value: 'retro', label: '🕹️ レトロ' },
+                { value: 'custom', label: 'カスタム' }
+              ],
+              description: 'お好みの視覚的な雰囲気を選択',
+              onChange: async (value: string) => {
+                // ビジュアルスタイル選択時の処理
+                console.log('[GRAPHICS] Visual style changed:', value);
+                
+                // graphicsEngineをインポートして全ての設定を適用
+                const { graphicsEngine } = await import('../graphicsEngine.js');
+                const { gameStateManager, applyVisualStylePreset } = await import('../state.js');
+                
+                if (value !== 'custom') {
+                  // ビジュアルスタイルを適用
+                  const currentState = gameStateManager.getState();
+                  const newGraphics = applyVisualStylePreset(currentState.graphics, value as any);
+                  
+                  // 状態を更新
+                  gameStateManager.updateState(state => ({
+                    ...state,
+                    graphics: newGraphics
+                  }));
+                  
+                  // graphicsEngineに全ての設定を適用
+                  graphicsEngine.applyAllSettings(newGraphics);
+                  
+                  // オプション画面の各設定値も更新
+                  if ((window as any).optionsScreen) {
+                    const optionsScreen = (window as any).optionsScreen;
+                    // ビジュアルスタイルの各値を一時設定に反映
+                    Object.entries(newGraphics).forEach(([key, value]) => {
+                      if (['bloom', 'depthOfField', 'filmGrain', 'filmGrainIntensity', 'toneMapping',
+                           'colorCorrection', 'brightness', 'contrast', 'saturation', 'vignette', 'vignetteIntensity'].includes(key)) {
+                        optionsScreen.tempSettings.set(key, value);
+                      }
+                    });
+                    
+                    // UIを再レンダリング
+                    optionsScreen.render();
+                  }
+                }
               }
             },
             {
@@ -576,7 +664,17 @@ export const optionsConfig: OptionsConfig = {
                 { value: 'on', label: 'オン' },
                 { value: 'dynamic', label: '動的' }
               ],
-              description: '焦点以外のぼかし効果'
+              description: '焦点以外のぼかし効果',
+              onChange: (value: string) => {
+                import('../graphicsEngine.js').then(({ graphicsEngine }) => {
+                  graphicsEngine.applyBokehEffect({
+                    enabled: value !== 'off',
+                    focus: value === 'dynamic' ? 1000 : 2000,
+                    aperture: value === 'dynamic' ? 0.025 : 0.05,
+                    maxblur: value === 'dynamic' ? 0.01 : 0.02
+                  });
+                });
+              }
             },
             {
               id: 'bloom',
@@ -650,7 +748,18 @@ export const optionsConfig: OptionsConfig = {
               label: 'フィルムグレイン',
               type: 'checkbox',
               value: false,
-              description: 'フィルムのような粒子効果'
+              description: 'フィルムのような粒子効果',
+              onChange: (value: boolean) => {
+                import('../graphicsEngine.js').then(({ graphicsEngine }) => {
+                  const intensitySlider = document.querySelector('[data-setting-id="film-grain-intensity"]') as HTMLInputElement;
+                  const intensity = intensitySlider ? parseFloat(intensitySlider.value) / 100 : 0.5;
+                  graphicsEngine.applyFilmGrainEffect({
+                    enabled: value,
+                    noiseIntensity: intensity * 0.5,
+                    scanlinesIntensity: intensity * 0.05
+                  });
+                });
+              }
             },
             {
               id: 'film-grain-intensity',
@@ -660,7 +769,20 @@ export const optionsConfig: OptionsConfig = {
               max: 100,
               step: 5,
               value: 50,
-              description: 'フィルムグレインの強さ'
+              description: 'フィルムグレインの強さ',
+              onChange: (value: number) => {
+                import('../graphicsEngine.js').then(({ graphicsEngine }) => {
+                  const checkbox = document.querySelector('[data-setting-id="film-grain"]') as HTMLInputElement;
+                  if (checkbox && checkbox.checked) {
+                    const intensity = value / 100;
+                    graphicsEngine.applyFilmGrainEffect({
+                      enabled: true,
+                      noiseIntensity: intensity * 0.5,
+                      scanlinesIntensity: intensity * 0.05
+                    });
+                  }
+                });
+              }
             },
             {
               id: 'lens-flare',
@@ -703,31 +825,152 @@ export const optionsConfig: OptionsConfig = {
               onChange: async (value: string) => {
                 console.log('[OPTIONS] Tone mapping changed:', value);
                 
-                const { renderer } = await import('../threeSetup.js');
-                const THREE = await import('three');
-                
-                switch (value) {
-                  case 'off':
-                    renderer.toneMapping = THREE.NoToneMapping;
-                    break;
-                  case 'reinhard':
-                    renderer.toneMapping = THREE.ReinhardToneMapping;
-                    break;
-                  case 'filmic':
-                    renderer.toneMapping = THREE.CineonToneMapping;
-                    break;
-                  case 'aces':
-                    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-                    break;
+                const { graphicsEngine } = await import('../graphicsEngine.js');
+                graphicsEngine.applyToneMapping(value);
+              }
+            },
+            {
+              id: 'color-correction',
+              label: '色補正',
+              type: 'checkbox',
+              value: false,
+              description: '明度・コントラスト・彩度の調整',
+              onChange: async (value: boolean) => {
+                const { graphicsEngine } = await import('../graphicsEngine.js');
+                if (value) {
+                  // 現在のスライダー値を取得
+                  const brightnessSlider = document.querySelector('[data-setting-id="brightness"]') as HTMLInputElement;
+                  const contrastSlider = document.querySelector('[data-setting-id="contrast"]') as HTMLInputElement;
+                  const saturationSlider = document.querySelector('[data-setting-id="saturation"]') as HTMLInputElement;
+                  
+                  graphicsEngine.applyColorCorrection({
+                    enabled: true,
+                    brightness: brightnessSlider ? parseFloat(brightnessSlider.value) / 100 : 1.0,
+                    contrast: contrastSlider ? parseFloat(contrastSlider.value) / 100 : 1.0,
+                    saturation: saturationSlider ? parseFloat(saturationSlider.value) / 100 : 1.0
+                  });
+                } else {
+                  graphicsEngine.applyColorCorrection({ enabled: false });
                 }
-                
-                // トーンマッピングの露出も調整
-                renderer.toneMappingExposure = value === 'off' ? 1.0 : 1.2;
-                
-                console.log('[OPTIONS] Tone mapping applied:', {
-                  toneMapping: renderer.toneMapping,
-                  exposure: renderer.toneMappingExposure
-                });
+              }
+            },
+            {
+              id: 'brightness',
+              label: '明度',
+              type: 'slider',
+              min: 50,
+              max: 150,
+              step: 5,
+              value: 100,
+              description: '画面の明るさ',
+              onChange: async (value: number) => {
+                const { graphicsEngine } = await import('../graphicsEngine.js');
+                const checkbox = document.querySelector('[data-setting-id="color-correction"]') as HTMLInputElement;
+                if (checkbox && checkbox.checked) {
+                  const contrastSlider = document.querySelector('[data-setting-id="contrast"]') as HTMLInputElement;
+                  const saturationSlider = document.querySelector('[data-setting-id="saturation"]') as HTMLInputElement;
+                  
+                  graphicsEngine.applyColorCorrection({
+                    enabled: true,
+                    brightness: value / 100,
+                    contrast: contrastSlider ? parseFloat(contrastSlider.value) / 100 : 1.0,
+                    saturation: saturationSlider ? parseFloat(saturationSlider.value) / 100 : 1.0
+                  });
+                }
+              }
+            },
+            {
+              id: 'contrast',
+              label: 'コントラスト',
+              type: 'slider',
+              min: 50,
+              max: 150,
+              step: 5,
+              value: 100,
+              description: '明暗の差',
+              onChange: async (value: number) => {
+                const { graphicsEngine } = await import('../graphicsEngine.js');
+                const checkbox = document.querySelector('[data-setting-id="color-correction"]') as HTMLInputElement;
+                if (checkbox && checkbox.checked) {
+                  const brightnessSlider = document.querySelector('[data-setting-id="brightness"]') as HTMLInputElement;
+                  const saturationSlider = document.querySelector('[data-setting-id="saturation"]') as HTMLInputElement;
+                  
+                  graphicsEngine.applyColorCorrection({
+                    enabled: true,
+                    brightness: brightnessSlider ? parseFloat(brightnessSlider.value) / 100 : 1.0,
+                    contrast: value / 100,
+                    saturation: saturationSlider ? parseFloat(saturationSlider.value) / 100 : 1.0
+                  });
+                }
+              }
+            },
+            {
+              id: 'saturation',
+              label: '彩度',
+              type: 'slider',
+              min: 0,
+              max: 200,
+              step: 5,
+              value: 100,
+              description: '色の鮮やかさ',
+              onChange: async (value: number) => {
+                const { graphicsEngine } = await import('../graphicsEngine.js');
+                const checkbox = document.querySelector('[data-setting-id="color-correction"]') as HTMLInputElement;
+                if (checkbox && checkbox.checked) {
+                  const brightnessSlider = document.querySelector('[data-setting-id="brightness"]') as HTMLInputElement;
+                  const contrastSlider = document.querySelector('[data-setting-id="contrast"]') as HTMLInputElement;
+                  
+                  graphicsEngine.applyColorCorrection({
+                    enabled: true,
+                    brightness: brightnessSlider ? parseFloat(brightnessSlider.value) / 100 : 1.0,
+                    contrast: contrastSlider ? parseFloat(contrastSlider.value) / 100 : 1.0,
+                    saturation: value / 100
+                  });
+                }
+              }
+            },
+            {
+              id: 'vignette',
+              label: 'ビネット効果',
+              type: 'checkbox',
+              value: false,
+              description: '画面端を暗くする効果',
+              onChange: async (value: boolean) => {
+                const { graphicsEngine } = await import('../graphicsEngine.js');
+                if (value) {
+                  const intensitySlider = document.querySelector('[data-setting-id="vignette-intensity"]') as HTMLInputElement;
+                  const intensity = intensitySlider ? parseFloat(intensitySlider.value) / 100 : 0.5;
+                  
+                  graphicsEngine.applyVignetteEffect({
+                    enabled: true,
+                    offset: 1.0,
+                    darkness: 1.0 + (intensity * 2.0) // 1.0 to 3.0
+                  });
+                } else {
+                  graphicsEngine.applyVignetteEffect({ enabled: false });
+                }
+              }
+            },
+            {
+              id: 'vignette-intensity',
+              label: 'ビネット強度',
+              type: 'slider',
+              min: 0,
+              max: 100,
+              step: 5,
+              value: 50,
+              description: 'ビネット効果の強さ',
+              onChange: async (value: number) => {
+                const { graphicsEngine } = await import('../graphicsEngine.js');
+                const checkbox = document.querySelector('[data-setting-id="vignette"]') as HTMLInputElement;
+                if (checkbox && checkbox.checked) {
+                  const intensity = value / 100;
+                  graphicsEngine.applyVignetteEffect({
+                    enabled: true,
+                    offset: 1.0,
+                    darkness: 1.0 + (intensity * 2.0) // 1.0 to 3.0
+                  });
+                }
               }
             },
             {
@@ -1135,6 +1378,277 @@ export const optionsConfig: OptionsConfig = {
               type: 'checkbox',
               value: true,
               description: 'GPUを使用した高速パーティクル処理'
+            }
+          ],
+          isProMode: true
+        },
+        {
+          id: 'performance-optimization',
+          label: 'パフォーマンス最適化',
+          icon: '🚀',
+          settings: [
+            {
+              id: 'dynamic-resolution',
+              label: 'ダイナミック解像度',
+              type: 'checkbox',
+              value: false,
+              description: '目標FPSを維持するため解像度を自動調整'
+            },
+            {
+              id: 'target-fps',
+              label: '目標FPS',
+              type: 'number',
+              min: 20,
+              max: 240,
+              step: 10,
+              value: 60,
+              description: 'ダイナミック解像度の目標フレームレート'
+            },
+            {
+              id: 'gpu-usage-limit',
+              label: 'GPU使用率上限',
+              type: 'slider',
+              min: 50,
+              max: 100,
+              step: 5,
+              value: 90,
+              description: 'GPU使用率の上限値（%）'
+            },
+            {
+              id: 'vram-limit',
+              label: 'VRAMメモリ使用量上限',
+              type: 'select',
+              value: 'auto',
+              options: [
+                { value: 'auto', label: '自動' },
+                { value: '512', label: '512MB' },
+                { value: '1024', label: '1GB' },
+                { value: '2048', label: '2GB' },
+                { value: '4096', label: '4GB' },
+                { value: '8192', label: '8GB' },
+                { value: '16384', label: '16GB' },
+                { value: 'unlimited', label: '無制限' }
+              ],
+              description: 'ビデオメモリ使用量の上限'
+            },
+            {
+              id: 'auto-optimize',
+              label: '自動最適化',
+              type: 'button',
+              value: 'GPUを検出して最適化',
+              description: 'お使いのGPUに最適な設定を自動で適用',
+              onClick: () => {
+                console.log('[OPTIONS] Auto-optimize clicked');
+                // TODO: GPU検出と自動最適化の実装
+              }
+            },
+            {
+              id: 'benchmark',
+              label: 'ベンチマーク',
+              type: 'button',
+              value: 'パフォーマンステスト実行',
+              description: 'グラフィックパフォーマンスを測定',
+              onClick: () => {
+                console.log('[OPTIONS] Benchmark clicked');
+                // TODO: ベンチマーク機能の実装
+              }
+            }
+          ],
+          isProMode: true
+        },
+        {
+          id: 'advanced-rendering',
+          label: '高度なレンダリング',
+          icon: '🎨',
+          settings: [
+            {
+              id: 'super-sampling',
+              label: 'スーパーサンプリング',
+              type: 'select',
+              value: 'off',
+              options: [
+                { value: 'off', label: 'オフ' },
+                { value: '2x', label: '2x SSAA' },
+                { value: '4x', label: '4x SSAA' },
+                { value: '8x', label: '8x SSAA' }
+              ],
+              description: '高品質アンチエイリアス（非常に重い）'
+            },
+            {
+              id: 'hdr-rendering',
+              label: 'HDRレンダリング',
+              type: 'checkbox',
+              value: false,
+              description: '高ダイナミックレンジレンダリング'
+            },
+            {
+              id: 'render-precision',
+              label: 'レンダリング精度',
+              type: 'select',
+              value: '32',
+              options: [
+                { value: '16', label: '16ビット（高速）' },
+                { value: '32', label: '32ビット（標準）' },
+                { value: '64', label: '64ビット（高精度）' },
+                { value: '128', label: '128ビット（超高精度）' }
+              ],
+              description: '浮動小数点演算の精度'
+            },
+            {
+              id: 'texture-resolution-cap',
+              label: 'テクスチャ解像度上限',
+              type: 'select',
+              value: '2048',
+              options: [
+                { value: '256', label: '256px' },
+                { value: '512', label: '512px' },
+                { value: '1024', label: '1024px' },
+                { value: '2048', label: '2048px' },
+                { value: '4096', label: '4096px' },
+                { value: '8192', label: '8192px' },
+                { value: 'unlimited', label: '無制限' }
+              ],
+              description: 'テクスチャの最大解像度'
+            },
+            {
+              id: 'multi-gpu',
+              label: 'マルチGPU対応',
+              type: 'select',
+              value: 'disabled',
+              options: [
+                { value: 'disabled', label: '無効' },
+                { value: 'sli', label: 'SLI' },
+                { value: 'crossfire', label: 'CrossFire' },
+                { value: 'auto', label: '自動検出' }
+              ],
+              description: '複数GPUの並列処理'
+            }
+          ],
+          isProMode: true
+        },
+        {
+          id: 'low-spec-options',
+          label: '低スペック最適化',
+          icon: '🔋',
+          settings: [
+            {
+              id: 'minimal-rendering',
+              label: '最小レンダリングモード',
+              type: 'checkbox',
+              value: false,
+              description: 'ワイヤーフレーム表示で超軽量化'
+            },
+            {
+              id: 'fallback-2d',
+              label: '2Dフォールバック',
+              type: 'checkbox',
+              value: false,
+              description: '3D描画が困難な場合2D表示に切り替え'
+            },
+            {
+              id: 'disable-textures',
+              label: 'テクスチャ無効化',
+              type: 'checkbox',
+              value: false,
+              description: '全テクスチャを無効にしてメモリ節約'
+            },
+            {
+              id: 'minimal-memory-mode',
+              label: '最小メモリモード',
+              type: 'checkbox',
+              value: false,
+              description: '128MB VRAM環境でも動作可能に'
+            },
+            {
+              id: 'effects-update-rate',
+              label: 'エフェクト更新頻度',
+              type: 'select',
+              value: '60',
+              options: [
+                { value: '60', label: '毎フレーム' },
+                { value: '30', label: '2フレームに1回' },
+                { value: '15', label: '4フレームに1回' },
+                { value: '10', label: '6フレームに1回' },
+                { value: '5', label: '12フレームに1回' },
+                { value: '1', label: '1秒に1回' }
+              ],
+              description: '視覚効果の更新頻度を下げて負荷軽減'
+            },
+            {
+              id: 'physics-precision',
+              label: '物理演算精度',
+              type: 'select',
+              value: 'medium',
+              options: [
+                { value: 'low', label: '低（高速）' },
+                { value: 'medium', label: '中（標準）' },
+                { value: 'high', label: '高（精密）' }
+              ],
+              description: '物理演算の計算精度'
+            }
+          ],
+          isProMode: true
+        },
+        {
+          id: 'monitoring',
+          label: 'パフォーマンスモニタリング',
+          icon: '📊',
+          settings: [
+            {
+              id: 'show-fps-counter',
+              label: 'FPSカウンター表示',
+              type: 'checkbox',
+              value: false,
+              description: '画面左上にFPSを常時表示',
+              onChange: async (value: boolean) => {
+                const { performanceOverlay } = await import('../systems/performanceOverlay.js');
+                performanceOverlay.setFPSCounterVisibility(value);
+              }
+            },
+            {
+              id: 'show-gpu-stats',
+              label: 'GPU統計表示',
+              type: 'checkbox',
+              value: false,
+              description: 'GPU使用率、温度、VRAMを表示',
+              onChange: async (value: boolean) => {
+                const { performanceOverlay } = await import('../systems/performanceOverlay.js');
+                performanceOverlay.setGPUStatsVisibility(value);
+              }
+            },
+            {
+              id: 'performance-overlay',
+              label: 'パフォーマンスオーバーレイ',
+              type: 'select',
+              value: 'off',
+              options: [
+                { value: 'off', label: 'オフ' },
+                { value: 'simple', label: 'シンプル' },
+                { value: 'detailed', label: '詳細' },
+                { value: 'graphs', label: 'グラフ付き' }
+              ],
+              description: '詳細なパフォーマンス情報を表示',
+              onChange: async (value: string) => {
+                const { performanceOverlay } = await import('../systems/performanceOverlay.js');
+                performanceOverlay.setOverlayMode(value as any);
+              }
+            },
+            {
+              id: 'gpu-temp-throttle',
+              label: 'GPU温度による自動調整',
+              type: 'checkbox',
+              value: false,
+              description: 'GPU温度が高い時に自動で品質を下げる'
+            },
+            {
+              id: 'throttle-temp',
+              label: '調整開始温度',
+              type: 'slider',
+              min: 60,
+              max: 90,
+              step: 5,
+              value: 80,
+              description: 'この温度以上で品質を自動調整（℃）'
             }
           ],
           isProMode: true

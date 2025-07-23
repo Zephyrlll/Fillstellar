@@ -1,0 +1,77 @@
+/* Performance Overlay Styles */
+
+#performance-overlay-container {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+}
+
+/* FPS Counter Animation */
+#performance-overlay-container > div:first-child {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Overlay slide animation */
+#performance-overlay-container > div:not(:first-child) {
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Graph canvas styles */
+#performance-overlay-container canvas {
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  #performance-overlay-container {
+    font-size: 10px !important;
+  }
+  
+  #performance-overlay-container > div {
+    max-width: 90vw;
+  }
+  
+  #performance-overlay-container canvas {
+    max-width: calc(90vw - 30px);
+    height: auto;
+  }
+}
+
+/* High contrast mode for better visibility */
+@media (prefers-contrast: high) {
+  #performance-overlay-container > div {
+    border-width: 2px !important;
+    font-weight: bold;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  #performance-overlay-container > div {
+    animation: none !important;
+  }
+}

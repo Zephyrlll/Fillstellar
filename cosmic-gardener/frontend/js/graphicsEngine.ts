@@ -1,6 +1,9 @@
 import * as THREE from 'three';
 import { gameState, gameStateManager, GraphicsState, GRAPHICS_PRESETS, applyGraphicsPreset } from './state.js';
-import { scene, camera, renderer, composer, ambientLight, bloomPass } from './threeSetup.js';
+import { 
+    scene, camera, renderer, composer, ambientLight, bloomPass,
+    bokehPass, fxaaPass, filmPass, colorCorrectionPass, vignettePass
+} from './threeSetup.js';
 import { performanceMonitor } from './performanceMonitor.js';
 import { starfieldOptimizer } from './starfieldOptimizer.js';
 import { isMobileDevice } from './deviceDetection.js';
@@ -46,6 +49,44 @@ export class GraphicsEngine {
         this.applyObjectDetail(graphics.objectDetail);
         this.applyBackgroundDetail(graphics.backgroundDetail);
         
+        // ビジュアルエフェクトの適用
+        if (graphics.bloom !== undefined) {
+            this.applyPostProcessing(graphics.bloom);
+        }
+        if (graphics.depthOfField !== undefined) {
+            this.applyBokehEffect({
+                enabled: graphics.depthOfField !== 'off',
+                focus: graphics.depthOfField === 'dynamic' ? 1000 : 2000,
+                aperture: graphics.depthOfField === 'dynamic' ? 0.025 : 0.05,
+                maxblur: graphics.depthOfField === 'dynamic' ? 0.01 : 0.02
+            });
+        }
+        if (graphics.filmGrain !== undefined) {
+            this.applyFilmGrainEffect({
+                enabled: graphics.filmGrain,
+                noiseIntensity: (graphics.filmGrainIntensity || 50) / 100 * 0.5,
+                scanlinesIntensity: (graphics.filmGrainIntensity || 50) / 100 * 0.05
+            });
+        }
+        if (graphics.toneMapping !== undefined) {
+            this.applyToneMapping(graphics.toneMapping);
+        }
+        if (graphics.colorCorrection !== undefined) {
+            this.applyColorCorrection({
+                enabled: graphics.colorCorrection,
+                brightness: (graphics.brightness || 100) / 100,
+                contrast: (graphics.contrast || 100) / 100,
+                saturation: (graphics.saturation || 100) / 100
+            });
+        }
+        if (graphics.vignette !== undefined) {
+            this.applyVignetteEffect({
+                enabled: graphics.vignette,
+                offset: 1.0,
+                darkness: 1.0 + ((graphics.vignetteIntensity || 50) / 100 * 2.0)
+            });
+        }
+        
         // Update frame rate limiter
         this.frameRateLimiter.setTargetFPS(graphics.frameRateLimit);
         // console.log(`🎯 Frame rate limit set to: ${graphics.frameRateLimit} FPS`);
@@ -83,6 +124,12 @@ export class GraphicsEngine {
         if (this.previousSettings.preset !== graphics.preset && graphics.preset !== 'custom') {
             this.applyPreset(graphics.preset as keyof typeof GRAPHICS_PRESETS);
             return;
+        }
+        
+        // Check for visual style changes
+        if (this.previousSettings.visualStyle !== graphics.visualStyle && graphics.visualStyle !== 'custom') {
+            console.log(`[GraphicsEngine] Visual style changed: ${this.previousSettings.visualStyle} -> ${graphics.visualStyle}`);
+            this.applyVisualStyleEffects(graphics);
         }
         
         // Check individual setting changes
@@ -236,23 +283,32 @@ export class GraphicsEngine {
         (renderer as any).__requestedAntialiasing = type;
         
         // FXAAの場合はポストプロセッシングで処理
-        if (type === 'fxaa' && composer) {
-            // FXAAパスを追加（将来的な実装用）
-            console.log('🔧 FXAA will be applied via post-processing');
-        } else if (type === 'off') {
-            // アンチエイリアシングを無効化
-            renderer.setPixelRatio(1);
-        } else if (type.includes('msaa')) {
-            // MSAAはレンダラー再作成が必要
-            console.log(`🔧 ${type} requires renderer recreation. Will be applied on next reload.`);
-            // 一時的にピクセル比を調整して滑らかさを補完
-            const pixelRatio = window.devicePixelRatio || 1;
-            if (type === 'msaa8x') {
-                renderer.setPixelRatio(Math.min(pixelRatio * 1.5, 2));
-            } else if (type === 'msaa4x') {
-                renderer.setPixelRatio(Math.min(pixelRatio * 1.25, 2));
-            } else {
-                renderer.setPixelRatio(pixelRatio);
+        if (type === 'fxaa') {
+            // FXAAを有効化
+            this.applyFXAAAntialiasing(true);
+            console.log('🔧 FXAA applied via post-processing');
+            
+            // MSAAを無効化するためにピクセル比を標準に
+            renderer.setPixelRatio(window.devicePixelRatio || 1);
+        } else {
+            // FXAAを無効化
+            this.applyFXAAAntialiasing(false);
+            
+            if (type === 'off') {
+                // アンチエイリアシングを無効化
+                renderer.setPixelRatio(1);
+            } else if (type.includes('msaa')) {
+                // MSAAはレンダラー再作成が必要
+                console.log(`🔧 ${type} requires renderer recreation. Will be applied on next reload.`);
+                // 一時的にピクセル比を調整して滑らかさを補完
+                const pixelRatio = window.devicePixelRatio || 1;
+                if (type === 'msaa8x') {
+                    renderer.setPixelRatio(Math.min(pixelRatio * 1.5, 2));
+                } else if (type === 'msaa4x') {
+                    renderer.setPixelRatio(Math.min(pixelRatio * 1.25, 2));
+                } else {
+                    renderer.setPixelRatio(pixelRatio);
+                }
             }
         }
         
@@ -789,6 +845,200 @@ export class GraphicsEngine {
         }
         
         console.log(`🎭 UI animations set to: ${level}`);
+    }
+    
+    // 被写界深度（Bokeh）効果の適用
+    applyBokehEffect(config: { enabled: boolean; focus?: number; aperture?: number; maxblur?: number }): void {
+        if (!bokehPass) {
+            console.warn('[GRAPHICS] BokehPass not available');
+            return;
+        }
+        
+        bokehPass.enabled = config.enabled;
+        
+        if (config.enabled) {
+            if (config.focus !== undefined) bokehPass.uniforms['focus'].value = config.focus;
+            if (config.aperture !== undefined) bokehPass.uniforms['aperture'].value = config.aperture;
+            if (config.maxblur !== undefined) bokehPass.uniforms['maxblur'].value = config.maxblur;
+            
+            console.log(`📷 Bokeh effect enabled - focus: ${config.focus}, aperture: ${config.aperture}, maxblur: ${config.maxblur}`);
+        } else {
+            console.log('📷 Bokeh effect disabled');
+        }
+    }
+    
+    // フィルムグレイン効果の適用
+    applyFilmGrainEffect(config: { enabled: boolean; noiseIntensity?: number; scanlinesIntensity?: number }): void {
+        if (!filmPass) {
+            console.warn('[GRAPHICS] FilmPass not available');
+            return;
+        }
+        
+        filmPass.enabled = config.enabled;
+        
+        if (config.enabled) {
+            // FilmPassは作成時のパラメータで設定され、後から変更できない
+            // 将来的には新しいFilmPassを作成して置き換える実装が必要
+            console.log(`🎞️ Film grain effect enabled - noise: ${config.noiseIntensity}, scanlines: ${config.scanlinesIntensity}`);
+            console.log('[GRAPHICS] Note: FilmPass intensity changes require pass recreation (not implemented yet)');
+        } else {
+            console.log('🎞️ Film grain effect disabled');
+        }
+    }
+    
+    // 色補正の適用
+    applyColorCorrection(config: { enabled: boolean; brightness?: number; contrast?: number; saturation?: number }): void {
+        if (!colorCorrectionPass) {
+            console.warn('[GRAPHICS] ColorCorrectionPass not available');
+            return;
+        }
+        
+        colorCorrectionPass.enabled = config.enabled;
+        
+        if (config.enabled) {
+            // brightness: RGB power values (2.2 = standard gamma)
+            if (config.brightness !== undefined) {
+                const power = 2.2 / config.brightness;
+                colorCorrectionPass.uniforms['powRGB'].value.set(power, power, power);
+            }
+            
+            // contrast & saturation: RGB multipliers
+            if (config.contrast !== undefined || config.saturation !== undefined) {
+                const contrast = config.contrast !== undefined ? config.contrast : 1.0;
+                const saturation = config.saturation !== undefined ? config.saturation : 1.0;
+                
+                // Apply contrast and saturation
+                const r = contrast * saturation;
+                const g = contrast * saturation;
+                const b = contrast * saturation;
+                colorCorrectionPass.uniforms['mulRGB'].value.set(r, g, b);
+            }
+            
+            console.log(`🎨 Color correction enabled - brightness: ${config.brightness}, contrast: ${config.contrast}, saturation: ${config.saturation}`);
+        } else {
+            console.log('🎨 Color correction disabled');
+        }
+    }
+    
+    // ビネット効果の適用
+    applyVignetteEffect(config: { enabled: boolean; offset?: number; darkness?: number }): void {
+        if (!vignettePass) {
+            console.warn('[GRAPHICS] VignettePass not available');
+            return;
+        }
+        
+        vignettePass.enabled = config.enabled;
+        
+        if (config.enabled) {
+            if (config.offset !== undefined) vignettePass.uniforms['offset'].value = config.offset;
+            if (config.darkness !== undefined) vignettePass.uniforms['darkness'].value = config.darkness;
+            
+            console.log(`🖼️ Vignette effect enabled - offset: ${config.offset}, darkness: ${config.darkness}`);
+        } else {
+            console.log('🖼️ Vignette effect disabled');
+        }
+    }
+    
+    // FXAAアンチエイリアシングの適用
+    applyFXAAAntialiasing(enabled: boolean): void {
+        if (!fxaaPass) {
+            console.warn('[GRAPHICS] FXAAPass not available');
+            return;
+        }
+        
+        fxaaPass.enabled = enabled;
+        
+        // 解像度の更新
+        if (enabled) {
+            fxaaPass.uniforms['resolution'].value.set(1 / window.innerWidth, 1 / window.innerHeight);
+        }
+        
+        console.log(`🔧 FXAA antialiasing ${enabled ? 'enabled' : 'disabled'}`);
+    }
+    
+    // トーンマッピングの適用
+    applyToneMapping(type: string): void {
+        // Handle different naming conventions
+        const mode = type.toLowerCase();
+        
+        switch (mode) {
+            case 'none':
+            case 'off':
+                renderer.toneMapping = THREE.NoToneMapping;
+                break;
+            case 'linear':
+                renderer.toneMapping = THREE.LinearToneMapping;
+                break;
+            case 'reinhard':
+                renderer.toneMapping = THREE.ReinhardToneMapping;
+                break;
+            case 'cineon':
+            case 'filmic':
+                renderer.toneMapping = THREE.CineonToneMapping;
+                break;
+            case 'aces':
+                renderer.toneMapping = THREE.ACESFilmicToneMapping;
+                break;
+            default:
+                renderer.toneMapping = THREE.NoToneMapping;
+        }
+        
+        renderer.toneMappingExposure = mode === 'aces' ? 1.0 : 1.5;
+        
+        console.log(`🎬 Tone mapping set to: ${type}`);
+    }
+    
+    // ビジュアルスタイルエフェクトの適用
+    applyVisualStyleEffects(graphics: GraphicsState): void {
+        // ブルーム効果
+        if (graphics.bloom !== undefined) {
+            this.applyPostProcessing(graphics.bloom);
+        }
+        
+        // 被写界深度
+        if (graphics.depthOfField !== undefined) {
+            this.applyBokehEffect({
+                enabled: graphics.depthOfField !== 'off',
+                focus: graphics.depthOfField === 'dynamic' ? 1000 : 2000,
+                aperture: graphics.depthOfField === 'dynamic' ? 0.025 : 0.05,
+                maxblur: graphics.depthOfField === 'dynamic' ? 0.01 : 0.02
+            });
+        }
+        
+        // フィルムグレイン
+        if (graphics.filmGrain !== undefined) {
+            this.applyFilmGrainEffect({
+                enabled: graphics.filmGrain,
+                noiseIntensity: (graphics.filmGrainIntensity || 50) / 100 * 0.5,
+                scanlinesIntensity: (graphics.filmGrainIntensity || 50) / 100 * 0.05
+            });
+        }
+        
+        // トーンマッピング
+        if (graphics.toneMapping !== undefined) {
+            this.applyToneMapping(graphics.toneMapping);
+        }
+        
+        // 色補正
+        if (graphics.colorCorrection !== undefined) {
+            this.applyColorCorrection({
+                enabled: graphics.colorCorrection,
+                brightness: (graphics.brightness || 100) / 100,
+                contrast: (graphics.contrast || 100) / 100,
+                saturation: (graphics.saturation || 100) / 100
+            });
+        }
+        
+        // ビネット効果
+        if (graphics.vignette !== undefined) {
+            this.applyVignetteEffect({
+                enabled: graphics.vignette,
+                offset: 1.0,
+                darkness: 1.0 + ((graphics.vignetteIntensity || 50) / 100 * 2.0)
+            });
+        }
+        
+        console.log(`🎨 Visual style effects applied for: ${graphics.visualStyle}`);
     }
     
     // LOD (Level of Detail) management

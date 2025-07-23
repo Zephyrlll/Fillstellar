@@ -37,8 +37,8 @@ export interface OptionsConfig {
 export class OptionsScreen {
   private container: HTMLDivElement | null = null;
   private overlay: HTMLDivElement | null = null;
-  private isOpen: boolean = false;
-  private config: OptionsConfig | null = null;
+  public isOpen: boolean = false;
+  public config: OptionsConfig | null = null;
   private activeTabId: string = 'audio'; // デフォルトでオーディオタブを選択
   private settings: Map<string, any> = new Map();
   private tempSettings: Map<string, any> = new Map(); // 一時的な変更を保存
@@ -50,6 +50,12 @@ export class OptionsScreen {
   private previewRenderer?: THREE.WebGLRenderer;
   private previewComposer?: any; // EffectComposer
   private previewBloomPass?: any; // UnrealBloomPass
+  private previewBokehPass?: any; // BokehPass
+  private previewFxaaPass?: any; // FXAAPass
+  private previewFilmPass?: any; // FilmPass
+  private previewColorCorrectionPass?: any; // ColorCorrectionPass
+  private previewVignettePass?: any; // VignettePass
+  private previewGammaCorrectionPass?: any; // GammaCorrectionPass
   private previewBlackHole?: THREE.Mesh;
   private previewAnimationId?: number;
   private previewDebugLogged: boolean = false;
@@ -92,6 +98,49 @@ export class OptionsScreen {
     if (config.tabs.length > 0) {
       const audioTab = config.tabs.find(tab => tab.id === 'audio');
       this.activeTabId = audioTab ? audioTab.id : config.tabs[0].id;
+    }
+    
+    // グラフィックス設定の初期化
+    this.initializeGraphicsSettings();
+  }
+  
+  private async initializeGraphicsSettings(): Promise<void> {
+    try {
+      const { gameStateManager, detectGraphicsPreset, detectVisualStylePreset } = await import('../state.js');
+      const currentState = gameStateManager.getState();
+      const graphics = currentState.graphics;
+      
+      // 現在のグラフィックスプリセットと質感プリセットを検出
+      const currentPreset = detectGraphicsPreset(graphics);
+      const currentVisualStyle = detectVisualStylePreset(graphics);
+      
+      // 設定値を保存
+      this.settings.set('graphics-preset', currentPreset);
+      this.settings.set('visual-style', currentVisualStyle || graphics.visualStyle || 'default');
+      
+      // その他のグラフィックス設定も保存
+      Object.entries(graphics).forEach(([key, value]) => {
+        if (key !== 'performance' && key !== 'deviceInfo') {
+          this.settings.set(key, value);
+        }
+      });
+      
+      // 設定オブジェクトにも反映
+      if (this.config) {
+        const graphicsTab = this.config.tabs.find(tab => tab.id === 'graphics');
+        if (graphicsTab) {
+          graphicsTab.sections.forEach(section => {
+            section.settings.forEach(setting => {
+              const savedValue = this.settings.get(setting.id);
+              if (savedValue !== undefined) {
+                setting.value = savedValue;
+              }
+            });
+          });
+        }
+      }
+    } catch (error) {
+      console.error('[OPTIONS] Failed to initialize graphics settings:', error);
     }
   }
   
@@ -213,6 +262,11 @@ export class OptionsScreen {
           </div>
         </div>
       </div>
+      <div class="keyboard-shortcuts-hint">
+        <div class="keyboard-shortcut"><kbd>1-5</kbd> タブ切替</div>
+        <div class="keyboard-shortcut"><kbd>S</kbd> 保存</div>
+        <div class="keyboard-shortcut"><kbd>ESC</kbd> 閉じる</div>
+      </div>
     `;
     
     this.attachEventListeners();
@@ -290,6 +344,15 @@ export class OptionsScreen {
     const { UnrealBloomPass } = await import('three/examples/jsm/postprocessing/UnrealBloomPass.js');
     const { gameStateManager } = await import('../state.js');
     
+    // 追加のポストプロセッシングパスをインポート
+    const { BokehPass } = await import('three/examples/jsm/postprocessing/BokehPass.js');
+    const { FilmPass } = await import('three/examples/jsm/postprocessing/FilmPass.js');
+    const { ShaderPass } = await import('three/examples/jsm/postprocessing/ShaderPass.js');
+    const { FXAAShader } = await import('three/examples/jsm/shaders/FXAAShader.js');
+    const { ColorCorrectionShader } = await import('three/examples/jsm/shaders/ColorCorrectionShader.js');
+    const { VignetteShader } = await import('three/examples/jsm/shaders/VignetteShader.js');
+    const { GammaCorrectionShader } = await import('three/examples/jsm/shaders/GammaCorrectionShader.js');
+
     // コンポーザーを作成
     this.previewComposer = new EffectComposer(this.previewRenderer);
     
@@ -331,7 +394,69 @@ export class OptionsScreen {
     this.previewBloomPass = bloomPass;
     this.previewComposer.addPass(bloomPass);
     
-    console.log('[OPTIONS] Preview post-processing setup complete with bloom:', bloomSetting);
+    // Bokeh (被写界深度) パス
+    this.previewBokehPass = new BokehPass(this.previewScene, this.previewCamera, {
+      focus: 1000.0,
+      aperture: 0.025,
+      maxblur: 0.01,
+      width: 400,
+      height: 400
+    });
+    this.previewBokehPass.enabled = false; // デフォルトで無効
+    this.previewComposer.addPass(this.previewBokehPass);
+    
+    // FXAA (アンチエイリアシング) パス
+    this.previewFxaaPass = new ShaderPass(FXAAShader);
+    this.previewFxaaPass.uniforms['resolution'].value.set(1 / 400, 1 / 400);
+    this.previewFxaaPass.enabled = false; // デフォルトで無効
+    this.previewComposer.addPass(this.previewFxaaPass);
+    
+    // Film パス (フィルムグレイン効果)
+    this.previewFilmPass = new FilmPass(0.35, 0.025, 648, false);
+    this.previewFilmPass.enabled = false; // デフォルトで無効
+    this.previewComposer.addPass(this.previewFilmPass);
+    
+    // Color correction パス
+    this.previewColorCorrectionPass = new ShaderPass(ColorCorrectionShader);
+    this.previewColorCorrectionPass.uniforms['powRGB'].value = new THREE.Vector3(2.2, 2.2, 2.2);
+    this.previewColorCorrectionPass.uniforms['mulRGB'].value = new THREE.Vector3(1.0, 1.0, 1.0);
+    this.previewColorCorrectionPass.enabled = false; // デフォルトで無効
+    this.previewComposer.addPass(this.previewColorCorrectionPass);
+    
+    // Vignette パス
+    this.previewVignettePass = new ShaderPass(VignetteShader);
+    this.previewVignettePass.uniforms['offset'].value = 1.0;
+    this.previewVignettePass.uniforms['darkness'].value = 1.0;
+    this.previewVignettePass.enabled = false; // デフォルトで無効
+    this.previewComposer.addPass(this.previewVignettePass);
+    
+    // Gamma correction パス (最後に適用)
+    this.previewGammaCorrectionPass = new ShaderPass(GammaCorrectionShader);
+    this.previewGammaCorrectionPass.enabled = true; // 常に有効
+    this.previewComposer.addPass(this.previewGammaCorrectionPass);
+    
+    console.log('[OPTIONS] Preview post-processing setup complete with all passes');
+    
+    // 現在の設定をプレビューに適用
+    this.applyCurrentSettingsToPreview();
+  }
+  
+  private applyCurrentSettingsToPreview(): void {
+    if (!this.previewRenderer || !this.previewComposer) return;
+    
+    console.log('[OPTIONS] Applying current settings to preview');
+    
+    // 一時設定（またはデフォルト設定）を適用
+    this.tempSettings.forEach((value, key) => {
+      this.applySettingToPreview(key, value);
+    });
+    
+    // 一時設定がない場合は、保存された設定を適用
+    if (this.tempSettings.size === 0) {
+      this.settings.forEach((value, key) => {
+        this.applySettingToPreview(key, value);
+      });
+    }
   }
   
   private async findAndFocusBlackHole(): Promise<void> {
@@ -421,6 +546,145 @@ export class OptionsScreen {
         hasComposer: !!this.previewComposer
       });
       this.previewDebugLogged = true;
+    }
+  }
+  
+  // プレビューにグラフィック設定を適用
+  public applySettingToPreview(settingId: string, value: any): void {
+    if (!this.previewRenderer || !this.previewComposer) return;
+    
+    console.log(`[OPTIONS] Applying setting to preview: ${settingId} = ${value}`);
+    
+    switch (settingId) {
+      // Bloom設定
+      case 'bloom':
+        if (this.previewBloomPass) {
+          switch (value) {
+            case 'off':
+              this.previewBloomPass.enabled = false;
+              break;
+            case 'low':
+              this.previewBloomPass.enabled = true;
+              this.previewBloomPass.strength = 1.0;
+              this.previewBloomPass.threshold = 0.7;
+              this.previewBloomPass.radius = 0.3;
+              break;
+            case 'on':
+              this.previewBloomPass.enabled = true;
+              this.previewBloomPass.strength = 1.5;
+              this.previewBloomPass.threshold = 0.6;
+              this.previewBloomPass.radius = 0.5;
+              break;
+            case 'high':
+              this.previewBloomPass.enabled = true;
+              this.previewBloomPass.strength = 2.5;
+              this.previewBloomPass.threshold = 0.5;
+              this.previewBloomPass.radius = 0.8;
+              break;
+          }
+        }
+        break;
+        
+      // 被写界深度
+      case 'depth-of-field':
+        if (this.previewBokehPass) {
+          this.previewBokehPass.enabled = value !== 'off';
+          if (value === 'dynamic') {
+            this.previewBokehPass.uniforms['focus'].value = 800;
+            this.previewBokehPass.uniforms['aperture'].value = 0.025;
+            this.previewBokehPass.uniforms['maxblur'].value = 0.015;
+          } else if (value === 'on') {
+            this.previewBokehPass.uniforms['focus'].value = 1500;
+            this.previewBokehPass.uniforms['aperture'].value = 0.05;
+            this.previewBokehPass.uniforms['maxblur'].value = 0.02;
+          }
+        }
+        break;
+        
+      // フィルムグレイン
+      case 'film-grain':
+        if (this.previewFilmPass) {
+          this.previewFilmPass.enabled = value;
+        }
+        break;
+        
+      case 'film-grain-intensity':
+        if (this.previewFilmPass && this.previewFilmPass.enabled) {
+          const intensity = value / 100;
+          // FilmPassは作成時のパラメータで設定され、後から変更できない
+          console.log(`[OPTIONS] Film grain intensity would be: ${intensity}, but requires FilmPass recreation`);
+        }
+        break;
+        
+      // 色補正
+      case 'color-correction':
+        if (this.previewColorCorrectionPass) {
+          this.previewColorCorrectionPass.enabled = value;
+        }
+        break;
+        
+      case 'brightness':
+        if (this.previewColorCorrectionPass && this.previewColorCorrectionPass.enabled) {
+          const power = 2.2 / (value / 100);
+          this.previewColorCorrectionPass.uniforms['powRGB'].value.set(power, power, power);
+        }
+        break;
+        
+      case 'contrast':
+      case 'saturation':
+        if (this.previewColorCorrectionPass && this.previewColorCorrectionPass.enabled) {
+          const contrast = settingId === 'contrast' ? value / 100 : 1.0;
+          const saturation = settingId === 'saturation' ? value / 100 : 1.0;
+          const multiplier = contrast * saturation;
+          this.previewColorCorrectionPass.uniforms['mulRGB'].value.set(multiplier, multiplier, multiplier);
+        }
+        break;
+        
+      // ビネット効果
+      case 'vignette':
+        if (this.previewVignettePass) {
+          this.previewVignettePass.enabled = value;
+        }
+        break;
+        
+      case 'vignette-intensity':
+        if (this.previewVignettePass && this.previewVignettePass.enabled) {
+          const intensity = value / 100;
+          this.previewVignettePass.uniforms['darkness'].value = 1.0 + (intensity * 2.0);
+        }
+        break;
+        
+      // トーンマッピング
+      case 'tone-mapping':
+        if (this.previewRenderer) {
+          const THREE = (window as any).THREE;
+          switch (value) {
+            case 'off':
+              this.previewRenderer.toneMapping = THREE.NoToneMapping;
+              break;
+            case 'linear':
+              this.previewRenderer.toneMapping = THREE.LinearToneMapping;
+              break;
+            case 'reinhard':
+              this.previewRenderer.toneMapping = THREE.ReinhardToneMapping;
+              break;
+            case 'filmic':
+              this.previewRenderer.toneMapping = THREE.CineonToneMapping;
+              break;
+            case 'aces':
+              this.previewRenderer.toneMapping = THREE.ACESFilmicToneMapping;
+              break;
+          }
+          this.previewRenderer.toneMappingExposure = value === 'aces' ? 1.0 : 1.5;
+        }
+        break;
+        
+      // アンチエイリアシング
+      case 'anti-aliasing':
+        if (this.previewFxaaPass) {
+          this.previewFxaaPass.enabled = value === 'fxaa';
+        }
+        break;
     }
   }
   
@@ -860,9 +1124,14 @@ export class OptionsScreen {
     if (setting?.onChange) {
       setting.onChange(value);
     }
+    
+    // グラフィックタブの場合、プレビューにも適用
+    if (this.activeTabId === 'graphics' && this.previewRenderer) {
+      this.applySettingToPreview(id, value);
+    }
   }
   
-  private switchTab(tabId: string): void {
+  public switchTab(tabId: string): void {
     if (this.activeTabId === tabId) return;
     
     // 未保存の変更がある場合は確認
@@ -1130,7 +1399,7 @@ export class OptionsScreen {
     });
   }
   
-  private save(): void {
+  public save(): void {
     // 一時設定を正式な設定にコピー
     this.tempSettings.forEach((value, key) => {
       this.settings.set(key, value);

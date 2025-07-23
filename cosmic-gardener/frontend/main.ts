@@ -68,6 +68,7 @@ import { updatePerformanceDisplay } from './js/ui.ts';
 import { performanceMonitor as newPerformanceMonitor } from './js/systems/performanceMonitor.ts';
 import { uiOptimizer } from './js/systems/uiOptimizer.ts';
 import { RenderOptimizer } from './js/systems/renderOptimizer.ts';
+import { performanceOverlay } from './js/systems/performanceOverlay.ts';
 // Balance system imports
 import { balanceManager } from './js/systems/balanceConfig.ts';
 import { balanceAdjustments } from './js/systems/balanceAdjustments.ts';
@@ -327,6 +328,7 @@ function animate() {
     // Update performance monitor only for rendered frames
     performanceMonitor.update();
     newPerformanceMonitor.update();
+    performanceOverlay.update();
     
     // Update object count for performance monitoring
     newPerformanceMonitor.updateObjectCount(scene.children.length);

@@ -153,10 +153,53 @@ export function setupEventListeners() {
     // UI上ではOrbitControlsが無効化されているため、追加の処理は不要
 
     window.addEventListener('keydown', (event) => {
+        // 入力フィールドにフォーカスがある場合は処理しない
+        if (event.target instanceof HTMLInputElement || 
+            event.target instanceof HTMLTextAreaElement || 
+            event.target instanceof HTMLSelectElement) {
+            return;
+        }
+        
         if (event.code === 'KeyW') keys.w = true;
         if (event.code === 'KeyA') keys.a = true;
         if (event.code === 'KeyS') keys.s = true;
         if (event.code === 'KeyD') keys.d = true;
+        
+        // O または o でオプション画面を開く
+        if ((event.code === 'KeyO' || event.key === 'o' || event.key === 'O') && !event.repeat) {
+            event.preventDefault();
+            import('./systems/optionsScreen.js').then(({ optionsScreen }) => {
+                if (!optionsScreen.isOpen) {
+                    optionsScreen.open();
+                } else {
+                    optionsScreen.close();
+                }
+            });
+        }
+        
+        // 数字キーでオプション画面のタブ切り替え（オプション画面が開いている時のみ）
+        if (event.key >= '1' && event.key <= '9' && !event.repeat) {
+            import('./systems/optionsScreen.js').then(({ optionsScreen }) => {
+                if (optionsScreen.isOpen && optionsScreen.config) {
+                    const tabIndex = parseInt(event.key) - 1;
+                    const tabs = optionsScreen.config.tabs;
+                    if (tabIndex >= 0 && tabIndex < tabs.length) {
+                        event.preventDefault();
+                        optionsScreen.switchTab(tabs[tabIndex].id);
+                    }
+                }
+            });
+        }
+        
+        // S または s でオプション画面の設定を保存（オプション画面が開いている時のみ）
+        if ((event.code === 'KeyS' || event.key === 's' || event.key === 'S') && !event.repeat) {
+            import('./systems/optionsScreen.js').then(({ optionsScreen }) => {
+                if (optionsScreen.isOpen) {
+                    event.preventDefault();
+                    optionsScreen.save();
+                }
+            });
+        }
     });
     window.addEventListener('keyup', (event) => {
         if (event.code === 'KeyW') keys.w = false;
@@ -170,13 +213,19 @@ export function setupEventListeners() {
             }));
             debouncedUpdateGalaxyMap();
         }
-        // ESCキーでフォーカスを解除
-        if (event.code === 'Escape' && gameState.focusedObject) {
-            gameStateManager.updateState(state => ({
-                ...state,
-                focusedObject: null
-            }));
-            showMessage('天体フォーカスを解除しました');
+        // ESCキーでフォーカスを解除またはオプション画面を閉じる
+        if (event.code === 'Escape') {
+            import('./systems/optionsScreen.js').then(({ optionsScreen }) => {
+                if (optionsScreen.isOpen) {
+                    optionsScreen.close();
+                } else if (gameState.focusedObject) {
+                    gameStateManager.updateState(state => ({
+                        ...state,
+                        focusedObject: null
+                    }));
+                    showMessage('天体フォーカスを解除しました');
+                }
+            });
         }
     });
 

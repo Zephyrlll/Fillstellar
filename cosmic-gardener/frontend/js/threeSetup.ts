@@ -3,6 +3,16 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
+import { BokehPass } from 'three/examples/jsm/postprocessing/BokehPass.js';
+import { FXAAShader } from 'three/examples/jsm/shaders/FXAAShader.js';
+import { SMAAPass } from 'three/examples/jsm/postprocessing/SMAAPass.js';
+import { FilmPass } from 'three/examples/jsm/postprocessing/FilmPass.js';
+import { GlitchPass } from 'three/examples/jsm/postprocessing/GlitchPass.js';
+import { OutlinePass } from 'three/examples/jsm/postprocessing/OutlinePass.js';
+import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
+import { ColorCorrectionShader } from 'three/examples/jsm/shaders/ColorCorrectionShader.js';
+import { VignetteShader } from 'three/examples/jsm/shaders/VignetteShader.js';
+import { GammaCorrectionShader } from 'three/examples/jsm/shaders/GammaCorrectionShader.js';
 
 // --- 基本設定 -----------------------------------------------------------------
 export const scene = new THREE.Scene();
@@ -32,8 +42,55 @@ export const composer = new EffectComposer(renderer);
 const renderPass = new RenderPass(scene, camera);
 composer.addPass(renderPass);
 
+// Bloom pass (既存)
 export const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.8, 0.6, 0.6);
+bloomPass.enabled = true;
 composer.addPass(bloomPass);
+
+// Bokeh (被写界深度) pass
+export const bokehPass = new BokehPass(scene, camera, {
+    focus: 1000.0,
+    aperture: 0.025,
+    maxblur: 0.01,
+    width: window.innerWidth,
+    height: window.innerHeight
+});
+bokehPass.enabled = false; // デフォルトでは無効
+composer.addPass(bokehPass);
+
+// FXAA (アンチエイリアシング) pass
+const fxaaPass = new ShaderPass(FXAAShader);
+fxaaPass.uniforms['resolution'].value.set(1 / window.innerWidth, 1 / window.innerHeight);
+fxaaPass.enabled = false; // デフォルトでは無効
+export { fxaaPass };
+composer.addPass(fxaaPass);
+
+// Film pass (フィルムグレイン効果)
+export const filmPass = new FilmPass(0.35, 0.025, 648, false);
+filmPass.enabled = false; // デフォルトでは無効
+composer.addPass(filmPass);
+
+// Color correction pass
+const colorCorrectionPass = new ShaderPass(ColorCorrectionShader);
+colorCorrectionPass.uniforms['powRGB'].value = new THREE.Vector3(2.2, 2.2, 2.2);
+colorCorrectionPass.uniforms['mulRGB'].value = new THREE.Vector3(1.0, 1.0, 1.0);
+colorCorrectionPass.enabled = false; // デフォルトでは無効
+export { colorCorrectionPass };
+composer.addPass(colorCorrectionPass);
+
+// Vignette pass
+const vignettePass = new ShaderPass(VignetteShader);
+vignettePass.uniforms['offset'].value = 1.0;
+vignettePass.uniforms['darkness'].value = 1.0;
+vignettePass.enabled = false; // デフォルトでは無効
+export { vignettePass };
+composer.addPass(vignettePass);
+
+// Gamma correction pass (最後に適用)
+const gammaCorrectionPass = new ShaderPass(GammaCorrectionShader);
+gammaCorrectionPass.enabled = true; // 常に有効
+export { gammaCorrectionPass };
+composer.addPass(gammaCorrectionPass);
 
 // --- カメラコントロール -------------------------------------------------------
 export const controls = new OrbitControls(camera, renderer.domElement);
