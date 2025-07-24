@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cosmic Gardener - 3D Space Simulation</title>
     <link rel="stylesheet" href="/style.css">
+    <link rel="stylesheet" href="/css/dual-view.css">
     <link rel="icon" href="/favicon.png">
     <meta name="description" content="A 3D space simulation idle game where players create and manage cosmic objects from dust to stars">
 </head>
@@ -25,6 +26,9 @@
     <div id="mobile-nav-center">
       <button id="productionToggleButton-mobile" class="mobile-nav-btn production-btn" title="生産システムを開く">
         🏭
+      </button>
+      <button id="productionChainToggleButton-mobile" class="mobile-nav-btn chain-visualizer-btn" title="生産チェーンビジュアライザー">
+        📊
       </button>
       <button id="floatingResourceSellButton-mobile" class="mobile-nav-btn sell-btn" title="資源を販売">
         💰
@@ -949,8 +953,71 @@
     <div id="thought-speed-display">思考速度: <span id="thoughtSpeedMps">0</span> m/s (<span id="lightSpeedPercent">0.00</span>%)</div>
   </div>
 
-  <div id="game-container">
-    <canvas id="game-canvas"></canvas>
+  <!-- デュアルビューシステム -->
+  <div id="dual-view-container" class="dual-view-inactive">
+    <!-- タブバー -->
+    <div id="dual-view-tabs">
+      <button class="dual-view-tab active" data-tab="space">
+        <span class="tab-icon">🌌</span>
+        <span class="tab-label">宇宙</span>
+      </button>
+      <button class="dual-view-tab" data-tab="production">
+        <span class="tab-icon">🏭</span>
+        <span class="tab-label">生産システム</span>
+      </button>
+      <button class="dual-view-tab" data-tab="research">
+        <span class="tab-icon">🔬</span>
+        <span class="tab-label">研究ツリー</span>
+      </button>
+      <div class="dual-view-controls">
+        <button id="toggle-dual-view" class="dual-view-control-btn" title="デュアルビューを切り替え">
+          <span class="control-icon">⚡</span>
+        </button>
+        <button id="swap-views" class="dual-view-control-btn" title="ビューを入れ替え" style="display: none;">
+          <span class="control-icon">🔄</span>
+        </button>
+        <div class="layout-selector" style="display: none;">
+          <select id="layout-ratio">
+            <option value="70-30">70% / 30%</option>
+            <option value="50-50">50% / 50%</option>
+            <option value="30-70">30% / 70%</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    
+    <!-- ビューエリア -->
+    <div id="dual-view-content">
+      <!-- プライマリビュー -->
+      <div id="primary-view" class="view-panel">
+        <div id="primary-view-space" class="view-content active">
+          <div id="game-container">
+            <canvas id="game-canvas"></canvas>
+        </div>
+      </div>
+      <div id="primary-view-production" class="view-content">
+        <!-- 生産チェーンビジュアライザーのコンテンツがここに移動されます -->
+      </div>
+      <div id="primary-view-research" class="view-content">
+        <!-- 研究ツリービジュアライザーのコンテンツがここに移動されます -->
+      </div>
+    </div>
+      
+    <!-- セカンダリビュー（デュアルビュー時のみ表示） -->
+    <div id="secondary-view" class="view-panel" style="display: none;">
+      <div class="secondary-view-header">
+        <span class="secondary-title">🌌 宇宙ビュー（ミニ）</span>
+      </div>
+      <div id="secondary-view-content" class="view-content">
+        <canvas id="mini-game-canvas"></canvas>
+      </div>
+    </div>
+  </div>
+  </div>
+
+  <!-- 通常のゲームコンテナ（互換性のため残す） -->
+  <div id="game-container-legacy" style="display: none;">
+    <canvas id="game-canvas-legacy"></canvas>
 
     <!-- メッセージオーバーレイ -->
     <div id="message-overlay" class="hidden">
@@ -1315,6 +1382,10 @@
         <button id="productionToggleButton" class="floating-btn production-btn" title="生産システムを開く">
             <div class="btn-icon">🏭</div>
             <div class="btn-label">生産システム</div>
+        </button>
+        <button id="productionChainToggleButton" class="floating-btn chain-visualizer-btn" title="生産チェーンビジュアライザー">
+            <div class="btn-icon">📊</div>
+            <div class="btn-label">チェーン可視化</div>
         </button>
         <button id="floatingResourceSellButton" class="floating-btn sell-btn" title="資源を販売">
             <div class="btn-icon">💰</div>
@@ -1955,6 +2026,287 @@
             <span class="stat-label">最高品質:</span>
             <span class="stat-value" id="highestQuality">-</span>
           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 生産チェーンビジュアライザー (フルスクリーンオーバーレイ) -->
+  <div id="production-chain-overlay" class="production-chain-overlay">
+    <div class="production-chain-container">
+      <!-- ヘッダー -->
+      <div class="production-chain-header">
+        <div class="chain-title">
+          <div class="chain-icon">🏭</div>
+          <h1>生産チェーンビジュアライザー</h1>
+          <div class="chain-subtitle">Production Chain Visualizer</div>
+        </div>
+        <button id="productionChainCloseButton" class="chain-close-btn">
+          <span class="close-icon">✕</span>
+        </button>
+      </div>
+
+      <!-- ツールバー -->
+      <div class="production-chain-toolbar">
+        <!-- モード切替 -->
+        <div class="toolbar-section mode-selector">
+          <label>表示モード:</label>
+          <select id="visualizer-mode-select">
+            <option value="simple">シンプル</option>
+            <option value="detailed">詳細</option>
+            <option value="efficiency">効率</option>
+            <option value="bottleneck">ボトルネック</option>
+            <option value="quality">品質</option>
+          </select>
+        </div>
+
+        <!-- レイアウト選択 -->
+        <div class="toolbar-section layout-selector">
+          <label>レイアウト:</label>
+          <select id="visualizer-layout-select">
+            <option value="hierarchical">階層</option>
+            <option value="force">フォース</option>
+            <option value="circular">円形</option>
+            <option value="grid">グリッド</option>
+          </select>
+        </div>
+
+        <!-- オプション -->
+        <div class="toolbar-section options">
+          <label class="checkbox-label">
+            <input type="checkbox" id="show-rates-checkbox" checked>
+            <span>レート表示</span>
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" id="animate-flow-checkbox" checked>
+            <span>フローアニメーション</span>
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" id="highlight-bottlenecks-checkbox" checked>
+            <span>ボトルネック強調</span>
+          </label>
+        </div>
+
+        <!-- アクション -->
+        <div class="toolbar-section actions">
+          <button id="refresh-chain-btn" class="toolbar-btn">
+            <span>🔄</span> 更新
+          </button>
+          <button id="optimize-chain-btn" class="toolbar-btn">
+            <span>⚡</span> 最適化
+          </button>
+          <button id="export-chain-btn" class="toolbar-btn">
+            <span>💾</span> エクスポート
+          </button>
+        </div>
+      </div>
+
+      <!-- メインコンテンツ -->
+      <div class="production-chain-content">
+        <!-- グラフ表示エリア -->
+        <div id="production-chain-graph" class="chain-graph-container">
+          <!-- SVGグラフがここに描画される -->
+        </div>
+
+        <!-- サイドパネル -->
+        <div class="production-chain-sidebar">
+          <!-- メトリクス -->
+          <div class="chain-metrics-panel">
+            <h3>チェーンメトリクス</h3>
+            <div class="metrics-list">
+              <div class="metric-item">
+                <span class="metric-label">全体効率:</span>
+                <span class="metric-value" id="chain-efficiency">0%</span>
+              </div>
+              <div class="metric-item">
+                <span class="metric-label">ボトルネック:</span>
+                <span class="metric-value" id="bottleneck-count">0</span>
+              </div>
+              <div class="metric-item">
+                <span class="metric-label">アクティブノード:</span>
+                <span class="metric-value" id="active-nodes">0</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 最適化提案 -->
+          <div class="chain-suggestions-panel">
+            <h3>最適化提案</h3>
+            <div id="optimization-suggestions" class="suggestions-list">
+              <!-- 動的に提案が追加される -->
+            </div>
+          </div>
+
+          <!-- 選択ノード詳細 -->
+          <div class="chain-details-panel" id="node-details-panel" style="display: none;">
+            <h3>ノード詳細</h3>
+            <div id="node-details-content">
+              <!-- 選択されたノードの詳細が表示される -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- フッター -->
+      <div class="production-chain-footer">
+        <div class="footer-stats">
+          <span>更新間隔: <span id="update-interval">1.0</span>秒</span>
+          <span>最終更新: <span id="last-update-time">--:--:--</span></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 研究ツリービジュアライザー (フルスクリーンオーバーレイ) -->
+  <div id="research-tree-overlay" class="research-tree-overlay">
+    <div class="research-tree-container">
+      <!-- ヘッダー -->
+      <div class="research-tree-header">
+        <div class="tree-title">
+          <div class="tree-icon">🌳</div>
+          <h1>研究ツリー</h1>
+          <div class="tree-subtitle">Research Technology Tree</div>
+        </div>
+        <button id="researchTreeCloseButton" class="tree-close-btn">
+          <span class="close-icon">✕</span>
+        </button>
+      </div>
+
+      <!-- ツールバー -->
+      <div class="research-tree-toolbar">
+        <!-- レイアウト選択 -->
+        <div class="toolbar-section layout-selector">
+          <label>レイアウト:</label>
+          <select id="tree-layout-select">
+            <option value="hierarchical">階層型</option>
+            <option value="radial">放射状</option>
+            <option value="category">カテゴリー別</option>
+            <option value="force">フォース</option>
+          </select>
+        </div>
+
+        <!-- フィルター -->
+        <div class="toolbar-section filter-options">
+          <label class="checkbox-label">
+            <input type="checkbox" id="show-completed-checkbox" checked>
+            <span>完了済み表示</span>
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" id="show-locked-checkbox" checked>
+            <span>ロック表示</span>
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" id="show-costs-checkbox" checked>
+            <span>コスト表示</span>
+          </label>
+        </div>
+
+        <!-- アクション -->
+        <div class="toolbar-section actions">
+          <button id="center-tree-btn" class="toolbar-btn">
+            <span>🎯</span> 中央に戻す
+          </button>
+          <button id="find-path-btn" class="toolbar-btn">
+            <span>🛤️</span> 最適パス
+          </button>
+          <button id="tree-stats-btn" class="toolbar-btn">
+            <span>📊</span> 統計
+          </button>
+        </div>
+
+        <!-- 検索 -->
+        <div class="toolbar-section search-section">
+          <input type="text" id="tree-search-input" placeholder="研究を検索..." class="tree-search-input">
+        </div>
+      </div>
+
+      <!-- メインコンテンツ -->
+      <div class="research-tree-content">
+        <!-- ツリー表示エリア -->
+        <div id="research-tree-graph" class="tree-graph-container">
+          <!-- SVGツリーがここに描画される -->
+        </div>
+
+        <!-- サイドパネル -->
+        <div class="research-tree-sidebar">
+          <!-- 統計情報 -->
+          <div class="tree-stats-panel">
+            <h3>研究進捗</h3>
+            <div class="stats-list">
+              <div class="stat-item">
+                <span class="stat-label">完了済み:</span>
+                <span class="stat-value" id="tree-completed-count">0</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">利用可能:</span>
+                <span class="stat-value" id="tree-available-count">0</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">ロック中:</span>
+                <span class="stat-value" id="tree-locked-count">0</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">進捗率:</span>
+                <span class="stat-value" id="tree-progress-percent">0%</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 選択ノード詳細 -->
+          <div class="tree-details-panel" id="tree-node-details" style="display: none;">
+            <h3>研究詳細</h3>
+            <div id="tree-node-content">
+              <!-- 選択された研究の詳細が表示される -->
+            </div>
+          </div>
+
+          <!-- パス提案 -->
+          <div class="tree-path-panel" id="tree-path-panel" style="display: none;">
+            <h3>推奨研究パス</h3>
+            <div id="tree-path-content">
+              <!-- 最適パスが表示される -->
+            </div>
+          </div>
+
+          <!-- カテゴリー凡例 -->
+          <div class="tree-legend-panel">
+            <h3>カテゴリー</h3>
+            <div class="legend-list">
+              <div class="legend-item">
+                <span class="legend-color" style="background: #4169e1"></span>
+                <span>基礎研究</span>
+              </div>
+              <div class="legend-item">
+                <span class="legend-color" style="background: #10b981"></span>
+                <span>天体研究</span>
+              </div>
+              <div class="legend-item">
+                <span class="legend-color" style="background: #8b5cf6"></span>
+                <span>生命研究</span>
+              </div>
+              <div class="legend-item">
+                <span class="legend-color" style="background: #f59e0b"></span>
+                <span>技術研究</span>
+              </div>
+              <div class="legend-item">
+                <span class="legend-color" style="background: #ec4899"></span>
+                <span>宇宙研究</span>
+              </div>
+              <div class="legend-item">
+                <span class="legend-color" style="background: #06b6d4"></span>
+                <span>自動化</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- フッター -->
+      <div class="research-tree-footer">
+        <div class="footer-info">
+          <span>ノード数: <span id="tree-node-count">0</span></span>
+          <span>ズーム: <span id="tree-zoom-level">100%</span></span>
+          <span class="footer-hint">マウスホイール: ズーム | ドラッグ: 移動 | クリック: 選択</span>
         </div>
       </div>
     </div>

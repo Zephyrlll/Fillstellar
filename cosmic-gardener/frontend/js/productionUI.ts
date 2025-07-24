@@ -27,6 +27,9 @@ let activeConversionsList: HTMLElement | null;
 let productionFacilitiesList: HTMLElement | null;
 let facilityConstructionList: HTMLElement | null;
 
+// Store batch conversion input values
+const batchConversionValues: Record<string, number> = {};
+
 export function initProductionUI(): void {
     console.log('🚀 Production UI initializing...');
     
@@ -251,9 +254,24 @@ function updateConversionRecipesList(): void {
                     <span>時間: ${recipe.time}秒</span>
                     <span>効率: ${Math.round(recipe.efficiency * 100)}%</span>
                 </div>
-                <button class="${buttonClass}" data-recipe-id="${recipe.id}">
-                    ${canAfford ? '変換開始' : '資源不足'}
-                </button>
+                <div class="recipe-actions">
+                    <button class="${buttonClass}" data-recipe-id="${recipe.id}">
+                        ${canAfford ? '変換開始' : '資源不足'}
+                    </button>
+                    ${canAfford ? `
+                        <div class="batch-conversion">
+                            <input type="number" 
+                                   class="batch-count" 
+                                   data-recipe-id="${recipe.id}"
+                                   min="1" 
+                                   max="${conversionEngine.getMaxConversions(recipe.id)}" 
+                                   value="${batchConversionValues[recipe.id] || 1}" 
+                                   title="一括変換数">
+                            <button class="batch-convert-button" data-recipe-id="${recipe.id}" title="一括変換">
+                                ⚡×
+                            </button>
+                        </div>
+                    ` : ''}
             </div>
         `);
     });
@@ -272,6 +290,66 @@ function updateConversionRecipesList(): void {
                 conversionEngine.startConversion(recipeId, undefined, true);
                 updateProductionUI(true);
             }
+        });
+    });
+    
+    // Add batch conversion handlers
+    conversionRecipesList.querySelectorAll('.batch-convert-button').forEach(button => {
+        button.addEventListener('click', (e) => {
+            const recipeId = (e.target as HTMLElement).getAttribute('data-recipe-id');
+            if (!recipeId) return;
+            
+            // Get the count from the corresponding input
+            const input = conversionRecipesList.querySelector(`.batch-count[data-recipe-id="${recipeId}"]`) as HTMLInputElement;
+            if (!input) return;
+            
+            const count = parseInt(input.value) || 1;
+            const result = conversionEngine.startBatchConversion(recipeId, count);
+            
+            if (result.started > 0) {
+                // Keep the current value instead of resetting
+                // This allows users to quickly repeat the same batch conversion
+            } else if (result.reason) {
+                showMessage(result.reason, 2000);
+            }
+            
+            updateProductionUI(true);
+        });
+    });
+    
+    // Update max value when input changes
+    conversionRecipesList.querySelectorAll('.batch-count').forEach(input => {
+        input.addEventListener('input', (e) => {
+            const target = e.target as HTMLInputElement;
+            const recipeId = target.getAttribute('data-recipe-id');
+            if (!recipeId) return;
+            
+            const max = conversionEngine.getMaxConversions(recipeId);
+            target.max = max.toString();
+            
+            // Clamp value to valid range
+            let value = parseInt(target.value) || 1;
+            if (value > max) {
+                value = max;
+                target.value = max.toString();
+            }
+            if (value < 1) {
+                value = 1;
+                target.value = '1';
+            }
+            
+            // Store the value
+            batchConversionValues[recipeId] = value;
+        });
+        
+        // Also save on change event
+        input.addEventListener('change', (e) => {
+            const target = e.target as HTMLInputElement;
+            const recipeId = target.getAttribute('data-recipe-id');
+            if (!recipeId) return;
+            
+            const value = parseInt(target.value) || 1;
+            batchConversionValues[recipeId] = value;
         });
     });
 }
@@ -381,8 +459,9 @@ function getCategoryDisplayName(category: string): string {
 
 // Update waste status display
 function updateWasteStatusDisplay(): void {
-    // Check if waste status element exists
-    let wasteStatusElement = document.getElementById('waste-status-display');
+    // Check if waste status element exists (both standalone and embedded)
+    let wasteStatusElement = document.getElementById('waste-status-display') || 
+                           document.getElementById('waste-status-display-embed');
     
     if (!wasteStatusElement) {
         // Create waste status element if it doesn't exist
@@ -513,4 +592,149 @@ function getResourceNameFromKey(key: string): string {
         'silicon': 'シリコン'
     };
     return resourceNames[key] || key;
+}
+
+// Initialize production UI in a specific container (for dual view integration)  
+export async function initializeProductionInContainer(container: HTMLElement): Promise<void> {
+    console.log('[PRODUCTION_UI] Initializing in container');
+    
+    // Ensure conversionEngine is initialized
+    if (!conversionEngine) {
+        console.error('[PRODUCTION_UI] Conversion engine not initialized');
+        container.innerHTML = '<div style="padding: 20px; color: #ff4444;">変換エンジンが初期化されていません</div>';
+        return;
+    }
+    
+    // Clear existing content
+    container.innerHTML = '';
+    
+    // Create production panel structure
+    const structure = `
+        <div class="production-panel-embedded">
+            <div class="production-panel-content">
+                <!-- 高度な資源在庫 -->
+                <div class="collapsible-section">
+                    <div class="collapsible-header" id="advancedResourcesHeader-embed">高度な資源</div>
+                    <div class="collapsible-content" id="advancedResourcesContent-embed">
+                        <div id="advanced-resources-display-embed">
+                            <!-- Dynamically populated -->
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- リソース変動リアルタイム表示 -->
+                <div class="collapsible-section">
+                    <div class="collapsible-header" id="resourceFlowHeader-embed">⚡ リソース変動リアルタイム</div>
+                    <div class="collapsible-content" id="resourceFlowContent-embed">
+                        <div id="resource-flow-display-embed">
+                            <div class="flow-info">
+                                <p>💡 変換中のリソースの流れをリアルタイムで表示します</p>
+                            </div>
+                            <div id="active-flows-container-embed">
+                                <!-- 動的に変換中のリソース変動を表示 -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 変換レシピ -->
+                <div class="collapsible-section">
+                    <div class="collapsible-header" id="conversionRecipesHeader-embed">🔄 変換レシピ</div>
+                    <div class="collapsible-content" id="conversionRecipesContent-embed">
+                        <div id="conversion-recipes-list-embed">
+                            <!-- Dynamically populated -->
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- アクティブな変換 -->
+                <div class="collapsible-section">
+                    <div class="collapsible-header" id="activeConversionsHeader-embed">⚙️ アクティブな変換</div>
+                    <div class="collapsible-content" id="activeConversionsContent-embed">
+                        <div id="active-conversions-list-embed">
+                            <!-- Dynamically populated -->
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 生産施設 -->
+                <div class="collapsible-section">
+                    <div class="collapsible-header" id="productionFacilitiesHeader-embed">🏭 生産施設</div>
+                    <div class="collapsible-content" id="productionFacilitiesContent-embed">
+                        <div id="production-facilities-list-embed">
+                            <!-- Dynamically populated -->
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 施設建設 -->
+                <div class="collapsible-section">
+                    <div class="collapsible-header" id="facilityConstructionHeader-embed">🏗️ 施設建設</div>
+                    <div class="collapsible-content" id="facilityConstructionContent-embed">
+                        <div id="facility-construction-list-embed">
+                            <!-- Dynamically populated -->
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 廃棄物管理 -->
+                <div id="waste-status-display-embed" class="waste-status-display">
+                    <!-- Dynamically populated -->
+                </div>
+            </div>
+        </div>
+    `;
+    
+    container.innerHTML = structure;
+    
+    // Re-initialize UI elements with embedded IDs
+    advancedResourcesDisplay = document.getElementById('advanced-resources-display-embed');
+    conversionRecipesList = document.getElementById('conversion-recipes-list-embed');
+    activeConversionsList = document.getElementById('active-conversions-list-embed');
+    productionFacilitiesList = document.getElementById('production-facilities-list-embed');
+    facilityConstructionList = document.getElementById('facility-construction-list-embed');
+    
+    // Add event listeners for collapsible sections
+    const headers = [
+        'advancedResourcesHeader-embed',
+        'resourceFlowHeader-embed',
+        'conversionRecipesHeader-embed', 
+        'activeConversionsHeader-embed',
+        'productionFacilitiesHeader-embed',
+        'facilityConstructionHeader-embed'
+    ];
+    
+    headers.forEach(headerId => {
+        const header = document.getElementById(headerId);
+        if (header) {
+            header.addEventListener('click', () => {
+                header.classList.toggle('active');
+                const content = header.nextElementSibling;
+                if (content) {
+                    content.classList.toggle('active');
+                }
+            });
+        }
+    });
+    
+    // Initialize resource flow display for embedded mode
+    try {
+        const { resourceFlowDisplay } = await import('./resourceFlowDisplay.js');
+        const flowContainer = document.getElementById('active-flows-container-embed');
+        if (flowContainer && resourceFlowDisplay.setContainer) {
+            resourceFlowDisplay.setContainer(flowContainer);
+        }
+    } catch (error) {
+        console.warn('[PRODUCTION_UI] Could not initialize resource flow display:', error);
+    }
+    
+    // Force update UI
+    updateProductionUI(true);
+    
+    // Start periodic updates
+    setInterval(() => {
+        updateProductionUI(true);
+    }, PRODUCTION_UI_UPDATE_INTERVAL);
+    
+    console.log('[PRODUCTION_UI] Container initialization complete');
 }

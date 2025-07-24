@@ -79,6 +79,12 @@ import { starfieldOptimizer } from './js/starfieldOptimizer.ts';
 import { initializeResearchLab } from './js/researchLab.ts';
 // Inventory UI
 import { initializeInventory } from './js/inventory.ts';
+// Production Chain Visualizer UI
+import { productionChainVisualizerUI } from './js/systems/productionChainVisualizerUI.ts';
+// Research Tree Visualizer UI
+import { researchTreeVisualizerUI } from './js/systems/researchTreeVisualizerUI.ts';
+// Dual View System
+import { initializeDualViewSystem } from './js/systems/dualViewSystem.ts';
 // Physics config
 import { physicsConfig } from './js/physicsConfig.ts';
 // Debug physics
@@ -664,16 +670,22 @@ function animate() {
     // Update graphics engine for setting changes
     graphicsEngine.update();
     
-    // NaNエラーのデバッグ用にtry-catchを追加
-    try {
-        // ポストプロセッシングが有効な場合はcomposerを使用、無効な場合は直接レンダリング
-        if (graphicsEngine.isPostProcessingEnabled()) {
-            composer.render();
-        } else {
-            renderer.render(scene, camera);
+    // レンダリングが一時停止されていない場合のみレンダリング処理を実行
+    if (!graphicsEngine.isPaused) {
+        // NaNエラーのデバッグ用にtry-catchを追加
+        try {
+            // ポストプロセッシングが有効な場合はcomposerを使用、無効な場合は直接レンダリング
+            if (graphicsEngine.isPostProcessingEnabled()) {
+                composer.render();
+            } else {
+                renderer.render(scene, camera);
+            }
+            
+            // Render to secondary view if dual view is active
+            graphicsEngine.renderSecondary();
+        } catch (error) {
+            console.error('[RENDER] Error during rendering:', error);
         }
-    } catch (error) {
-        console.error('[RENDER] Error during rendering:', error);
     }
     
     // Debug: Check if scene has objects
@@ -1087,6 +1099,25 @@ async function init() {
         });
         initializeResearchLab();
         initializeInventory();
+        
+        // Initialize Dual View System
+        initializeDualViewSystem();
+        
+        // Initialize Production Chain Visualizer buttons
+        const chainButton = document.getElementById('productionChainToggleButton');
+        const chainButtonMobile = document.getElementById('productionChainToggleButton-mobile');
+        
+        chainButton?.addEventListener('click', () => {
+            productionChainVisualizerUI.open();
+        });
+        
+        chainButtonMobile?.addEventListener('click', () => {
+            productionChainVisualizerUI.open();
+        });
+        
+        // Make visualizers globally accessible
+        (window as any).productionChainVisualizerUI = productionChainVisualizerUI;
+        (window as any).researchTreeVisualizerUI = researchTreeVisualizerUI;
         
         // Test feedback system (remove in production)
         setTimeout(() => {

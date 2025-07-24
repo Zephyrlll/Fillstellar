@@ -43,6 +43,7 @@ export class ResearchLabUI {
       this.open();
     });
 
+
     // Mobile open full lab button
     const mobileOpenFullLab = document.getElementById('mobile-open-full-lab');
     mobileOpenFullLab?.addEventListener('click', () => {
@@ -97,12 +98,56 @@ export class ResearchLabUI {
       // Update display
       this.updateDisplay();
       
+      // Add tree button if not exists
+      this.addTreeButton();
+      
       // Ensure game continues in background
       const gameState = gameStateManager.getState();
       console.log('[RESEARCH_LAB] Game state preserved, simulation continues');
     } catch (error) {
       console.error('[RESEARCH_LAB] Failed to open research lab:', error);
       this.isOpen = false;
+    }
+  }
+
+  private addTreeButton(): void {
+    // Check if button already exists
+    if (document.getElementById('open-research-tree-btn')) return;
+    
+    const treeButton = document.createElement('button');
+    treeButton.id = 'open-research-tree-btn';
+    treeButton.className = 'quick-link-btn';
+    treeButton.innerHTML = `
+      <span class="link-icon">🌳</span>
+      <span class="link-text">研究ツリーを見る</span>
+    `;
+    treeButton.addEventListener('click', () => {
+      console.log('[RESEARCH_LAB] Tree button clicked');
+      const treeUI = (window as any).researchTreeVisualizerUI;
+      if (treeUI) {
+        console.log('[RESEARCH_LAB] Opening tree visualizer');
+        this.close();
+        treeUI.open();
+      } else {
+        console.error('[RESEARCH_LAB] Tree visualizer not found on window');
+        // Try to import it
+        import('./systems/researchTreeVisualizerUI.js').then(module => {
+          if (module.researchTreeVisualizerUI) {
+            (window as any).researchTreeVisualizerUI = module.researchTreeVisualizerUI;
+            this.close();
+            module.researchTreeVisualizerUI.open();
+          }
+        }).catch(err => {
+          console.error('[RESEARCH_LAB] Failed to import tree visualizer:', err);
+        });
+      }
+    });
+    
+    // Find quick links container
+    const quickLinks = document.querySelector('.quick-links');
+    if (quickLinks) {
+      quickLinks.appendChild(treeButton);
+      console.log('[RESEARCH_LAB] Tree button added to quick links');
     }
   }
 

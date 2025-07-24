@@ -1,0 +1,627 @@
+/* Dual View System Styles */
+
+/* Container States */
+#dual-view-container {
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  background: var(--bg-primary);
+  transition: opacity 0.3s ease;
+}
+
+#dual-view-container.dual-view-inactive {
+  /* display: none; を削除して、初期表示を有効にする */
+}
+
+/* Tab Bar */
+#dual-view-tabs {
+  display: flex;
+  align-items: center;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+  height: 48px;
+  padding: 0 10px;
+  gap: 5px;
+}
+
+.dual-view-tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.dual-view-tab:hover {
+  background: rgba(100, 255, 218, 0.1);
+  color: var(--text-primary);
+}
+
+.dual-view-tab.active {
+  background: var(--bg-primary);
+  border-color: var(--border-color);
+  color: var(--accent-primary);
+}
+
+.tab-icon {
+  font-size: 18px;
+}
+
+.tab-label {
+  display: inline-block;
+}
+
+/* Tab Actions */
+.tab-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+}
+
+.tab-action-btn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tab-action-btn:hover {
+  background: rgba(100, 255, 218, 0.1);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+}
+
+.action-icon {
+  font-size: 18px;
+}
+
+/* Content Area */
+#dual-view-content {
+  flex: 1;
+  display: flex;
+  position: relative;
+  overflow: hidden;
+}
+
+/* View Areas */
+.view-area {
+  position: relative;
+  overflow: hidden;
+  background: var(--bg-primary);
+}
+
+#primary-view {
+  flex: 1;
+}
+
+#secondary-view {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+}
+
+/* View Content */
+.view-content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: none;
+  overflow: auto;
+}
+
+.view-content.active {
+  display: block;
+}
+
+/* Resizer */
+.view-resizer-vertical,
+.view-resizer-horizontal {
+  position: relative;
+  background: var(--border-color);
+  transition: background 0.2s ease;
+  cursor: col-resize;
+  user-select: none;
+}
+
+.view-resizer-vertical {
+  width: 4px;
+  height: 100%;
+}
+
+.view-resizer-horizontal {
+  width: 100%;
+  height: 4px;
+  cursor: row-resize;
+}
+
+.view-resizer-vertical:hover,
+.view-resizer-horizontal:hover,
+.view-resizer-vertical.resizing,
+.view-resizer-horizontal.resizing {
+  background: var(--accent-primary);
+}
+
+/* Dual View Modes */
+.dual-view-vertical #dual-view-content {
+  flex-direction: row;
+}
+
+.dual-view-horizontal #dual-view-content {
+  flex-direction: column;
+}
+
+/* Secondary View Specific */
+#secondary-view-content {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+#secondary-canvas {
+  display: block;
+  background: radial-gradient(ellipse at center, #1a1a2e 0%, #0a0a0f 100%);
+}
+
+/* Space View in Tab */
+#primary-view-space {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+#primary-view-space #game-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+#primary-view-space #game-canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}
+
+/* Production View in Tab */
+#primary-view-production {
+  padding: 20px;
+  overflow-y: auto;
+}
+
+#primary-view-production .production-graph-container {
+  width: 100%;
+  height: calc(100% - 60px);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+}
+
+/* Research View in Tab */
+#primary-view-research {
+  padding: 20px;
+  overflow: hidden;
+}
+
+#primary-view-research .research-tree-graph {
+  width: 100%;
+  height: calc(100% - 60px);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+}
+
+/* Automation View Placeholder */
+.automation-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.automation-placeholder h2 {
+  font-size: 24px;
+  margin-bottom: 10px;
+  color: var(--text-primary);
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .tab-label {
+    display: none;
+  }
+  
+  .dual-view-tab {
+    padding: 8px 12px;
+  }
+  
+  #dual-view-container.dual-view-vertical #primary-view {
+    width: 100% !important;
+  }
+  
+  #dual-view-container.dual-view-vertical #secondary-view {
+    display: none;
+  }
+  
+  .view-resizer-vertical {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  #dual-view-container {
+    display: none;
+  }
+}
+
+/* Animations */
+@keyframes tab-switch {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.view-content.active {
+  animation: tab-switch 0.3s ease;
+}
+
+/* Dark Theme Variables */
+:root {
+  --bg-primary: #0f0f23;
+  --bg-secondary: #1a1a2e;
+  --border-color: #2a2a3e;
+  --text-primary: #e0e0e0;
+  --text-secondary: #8892b0;
+  --accent-primary: #64ffda;
+  --accent-secondary: #4a9eff;
+}
+
+/* アニメーション */
+@keyframes tabPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.dual-view-tab.pulse {
+  animation: tabPulse 0.3s ease;
+}
+
+/* 生産チェーンコンテナ */
+.production-chain-container {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  grid-template-rows: 48px 1fr;
+  gap: 1px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.chain-toolbar,
+.tree-toolbar {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  background: rgba(20, 20, 30, 0.9);
+  border-bottom: 1px solid rgba(100, 255, 218, 0.2);
+}
+
+.production-graph-container,
+.research-graph-container {
+  background: #0a0a0a;
+  overflow: hidden;
+  position: relative;
+}
+
+.chain-sidebar,
+.tree-sidebar {
+  background: rgba(10, 10, 20, 0.95);
+  border-left: 1px solid rgba(100, 255, 218, 0.1);
+  padding: 16px;
+  overflow-y: auto;
+}
+
+.view-mode-selector,
+.layout-selector {
+  background: rgba(20, 20, 30, 0.9);
+  border: 1px solid rgba(100, 255, 218, 0.3);
+  color: #64ffda;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 12px;
+}
+
+.toolbar-btn {
+  background: rgba(100, 255, 218, 0.1);
+  border: 1px solid rgba(100, 255, 218, 0.3);
+  color: #64ffda;
+  padding: 6px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 12px;
+  transition: all 0.3s ease;
+}
+
+.toolbar-btn:hover {
+  background: rgba(100, 255, 218, 0.2);
+  border-color: #64ffda;
+  transform: translateY(-1px);
+}
+
+.metrics-panel,
+.tree-stats-panel {
+  margin-bottom: 24px;
+}
+
+.metrics-panel h3,
+.tree-stats-panel h3,
+.selected-node-panel h3,
+.selected-research-panel h3 {
+  color: #64ffda;
+  font-size: 14px;
+  margin-bottom: 12px;
+  font-family: 'Orbitron', sans-serif;
+}
+
+/* 研究ツリーコンテナ */
+.research-tree-container {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  grid-template-rows: 48px 1fr;
+  gap: 1px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* スクロールバースタイル */
+.chain-sidebar::-webkit-scrollbar,
+.tree-sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chain-sidebar::-webkit-scrollbar-track,
+.tree-sidebar::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.chain-sidebar::-webkit-scrollbar-thumb,
+.tree-sidebar::-webkit-scrollbar-thumb {
+  background: rgba(100, 255, 218, 0.3);
+  border-radius: 3px;
+}
+
+.chain-sidebar::-webkit-scrollbar-thumb:hover,
+.tree-sidebar::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 255, 218, 0.5);
+}
+
+/* 生産ビューコンテナ */
+.production-view-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 生産サブタブ */
+.production-subtabs {
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px;
+  background: rgba(20, 20, 30, 0.9);
+  border-bottom: 1px solid rgba(100, 255, 218, 0.2);
+}
+
+.production-subtab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(100, 255, 218, 0.1);
+  border: 1px solid rgba(100, 255, 218, 0.3);
+  border-radius: 6px;
+  color: #64ffda;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 13px;
+}
+
+.production-subtab:hover {
+  background: rgba(100, 255, 218, 0.2);
+  transform: translateY(-1px);
+}
+
+.production-subtab.active {
+  background: rgba(100, 255, 218, 0.3);
+  border-color: #64ffda;
+  box-shadow: 0 0 10px rgba(100, 255, 218, 0.3);
+}
+
+.subtab-icon {
+  font-size: 16px;
+}
+
+.subtab-label {
+  font-weight: 500;
+}
+
+/* サブタブコンテンツ */
+.production-subtab-content {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+.subtab-panel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: none;
+  overflow: auto;
+}
+
+.subtab-panel.active {
+  display: block;
+}
+
+/* 埋め込み生産パネル */
+.production-panel-embedded {
+  width: 100%;
+  height: 100%;
+  padding: 16px;
+  overflow-y: auto;
+  background: rgba(10, 10, 20, 0.95);
+}
+
+.production-panel-embedded .production-panel-content {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.production-panel-embedded .collapsible-section {
+  margin-bottom: 16px;
+  background: rgba(20, 20, 30, 0.9);
+  border: 1px solid rgba(100, 255, 218, 0.1);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.production-panel-embedded .collapsible-header {
+  padding: 12px 16px;
+  cursor: pointer;
+  background: rgba(100, 255, 218, 0.05);
+  color: #64ffda;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  user-select: none;
+  position: relative;
+}
+
+.production-panel-embedded .collapsible-header::after {
+  content: '▼';
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%) rotate(-90deg);
+  transition: transform 0.3s ease;
+  font-size: 12px;
+}
+
+.production-panel-embedded .collapsible-header.active::after {
+  transform: translateY(-50%) rotate(0deg);
+}
+
+.production-panel-embedded .collapsible-header:hover {
+  background: rgba(100, 255, 218, 0.1);
+}
+
+.production-panel-embedded .collapsible-header.active {
+  background: rgba(100, 255, 218, 0.15);
+  border-bottom: 1px solid rgba(100, 255, 218, 0.2);
+}
+
+.production-panel-embedded .collapsible-content {
+  display: none;
+  padding: 16px;
+}
+
+.production-panel-embedded .collapsible-content.active {
+  display: block;
+}
+
+/* 廃棄物表示 */
+.production-panel-embedded .waste-status-display {
+  margin-top: 20px;
+  padding: 16px;
+  background: rgba(20, 20, 30, 0.9);
+  border: 1px solid rgba(255, 100, 100, 0.3);
+  border-radius: 8px;
+}
+
+/* 一括変換UI */
+.recipe-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.batch-conversion {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.batch-count {
+  width: 60px;
+  padding: 4px 8px;
+  background: rgba(100, 255, 218, 0.1);
+  border: 1px solid rgba(100, 255, 218, 0.3);
+  border-radius: 4px;
+  color: #64ffda;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 12px;
+  text-align: center;
+}
+
+.batch-count:focus {
+  outline: none;
+  border-color: #64ffda;
+  box-shadow: 0 0 5px rgba(100, 255, 218, 0.5);
+}
+
+.batch-convert-button {
+  padding: 4px 12px;
+  background: rgba(100, 255, 218, 0.2);
+  border: 1px solid rgba(100, 255, 218, 0.4);
+  border-radius: 4px;
+  color: #64ffda;
+  cursor: pointer;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 12px;
+  transition: all 0.3s ease;
+}
+
+.batch-convert-button:hover {
+  background: rgba(100, 255, 218, 0.3);
+  border-color: #64ffda;
+  transform: translateY(-1px);
+}
+
+.batch-convert-button:active {
+  transform: translateY(0);
+}

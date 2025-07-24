@@ -15,6 +15,9 @@ export class GraphicsEngine {
     private dynamicQualityEnabled: boolean = false;
     private qualityAdjustmentCooldown: number = 0;
     private postProcessingEnabled: boolean = true;
+    private secondaryRenderer: THREE.WebGLRenderer | null = null;
+    private secondaryCamera: THREE.PerspectiveCamera | null = null;
+    public isPaused: boolean = false;
     
     constructor() {
         this.frameRateLimiter = new FrameRateLimiter();
@@ -1253,6 +1256,77 @@ export class GraphicsEngine {
         this.previousSettings.resolutionScale = scale; // Prevent re-application
         this.applyResolutionScale(scale);
     }
+    
+    // Secondary renderer support for dual view
+    setSecondaryRenderer(secondaryRenderer: THREE.WebGLRenderer | null): void {
+        console.log('[GraphicsEngine] Setting secondary renderer');
+        this.secondaryRenderer = secondaryRenderer;
+        
+        if (secondaryRenderer) {
+            // Create secondary camera
+            this.secondaryCamera = new THREE.PerspectiveCamera(
+                60, // FOV
+                secondaryRenderer.domElement.width / secondaryRenderer.domElement.height,
+                0.1,
+                50000
+            );
+            
+            // Position camera for overview
+            this.secondaryCamera.position.set(0, 2000, 3000);
+            this.secondaryCamera.lookAt(0, 0, 0);
+        } else {
+            this.secondaryCamera = null;
+        }
+    }
+    
+    // Render to secondary view
+    renderSecondary(): void {
+        if (!this.secondaryRenderer || !this.secondaryCamera) return;
+        
+        // Update secondary camera to follow main camera's target
+        if (camera.userData.target) {
+            const target = camera.userData.target as THREE.Vector3;
+            this.secondaryCamera.lookAt(target);
+            
+            // Position secondary camera for a good overview
+            const distance = 3000;
+            const angle = Date.now() * 0.0001; // Slow rotation
+            this.secondaryCamera.position.x = Math.sin(angle) * distance;
+            this.secondaryCamera.position.z = Math.cos(angle) * distance;
+            this.secondaryCamera.position.y = 2000;
+        }
+        
+        // Render scene with secondary camera
+        this.secondaryRenderer.render(scene, this.secondaryCamera);
+    }
+    
+    // Handle window resize for both renderers
+    handleResize(): void {
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+        
+        // Update main renderer
+        renderer.setSize(width, height);
+        camera.aspect = width / height;
+        camera.updateProjectionMatrix();
+        
+        if (composer) {
+            composer.setSize(width, height);
+        }
+        
+        // Update secondary renderer if present
+        if (this.secondaryRenderer && this.secondaryCanvas) {
+            const rect = this.secondaryCanvas.getBoundingClientRect();
+            this.secondaryRenderer.setSize(rect.width, rect.height);
+            
+            if (this.secondaryCamera) {
+                this.secondaryCamera.aspect = rect.width / rect.height;
+                this.secondaryCamera.updateProjectionMatrix();
+            }
+        }
+    }
+    
+    private secondaryCanvas: HTMLCanvasElement | null = null;
 }
 
 // Frame rate limiting utility
@@ -1409,6 +1483,48 @@ class LODSystem {
         
         // フレームレートリミッターを更新
         this.frameRateLimiter.setTargetFPS(fps);
+    }
+    
+    // Get camera for dual view system
+    getCamera(): THREE.PerspectiveCamera | null {
+        return camera;
+    }
+    
+    // Get scene for dual view system
+    getScene(): THREE.Scene | null {
+        return scene;
+    }
+    
+    // Handle resize event
+    handleResize(): void {
+        const container = renderer.domElement.parentElement;
+        if (!container) return;
+        
+        const width = container.clientWidth;
+        const height = container.clientHeight;
+        
+        // Apply current resolution scale
+        const scale = gameStateManager.getState().graphics.resolutionScale;
+        const effectiveWidth = width * scale;
+        const effectiveHeight = height * scale;
+        
+        // Update renderer size
+        renderer.setSize(effectiveWidth, effectiveHeight);
+        renderer.domElement.style.width = `${width}px`;
+        renderer.domElement.style.height = `${height}px`;
+        
+        // Update camera aspect ratio
+        if (camera instanceof THREE.PerspectiveCamera) {
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+        }
+        
+        // Update composer size
+        if (composer) {
+            composer.setSize(effectiveWidth, effectiveHeight);
+        }
+        
+        console.log(`[GraphicsEngine] Resized to ${width}x${height} (effective: ${effectiveWidth}x${effectiveHeight})`);
     }
     
     // Reset camera for initialization (used during startup)

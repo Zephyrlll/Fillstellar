@@ -267,6 +267,65 @@ export class ConversionEngine {
         };
     }
     
+    // Batch conversion - convert multiple times at once
+    startBatchConversion(recipeId: string, count: number, facilityId?: string): { 
+        started: number; 
+        failed: number; 
+        reason?: string 
+    } {
+        const recipe = CONVERSION_RECIPES[recipeId];
+        if (!recipe) {
+            return { started: 0, failed: count, reason: '無効なレシピです' };
+        }
+        
+        // Check maximum possible conversions based on resources
+        const maxPossible = this.getMaxConversions(recipeId);
+        const actualCount = Math.min(count, maxPossible);
+        
+        if (actualCount === 0) {
+            return { started: 0, failed: count, reason: '資源が不足しています' };
+        }
+        
+        let started = 0;
+        let failed = 0;
+        
+        // Try to start conversions
+        for (let i = 0; i < actualCount; i++) {
+            // For batch conversions, only use facility for the first conversion
+            const useFacility = i === 0 ? facilityId : undefined;
+            
+            if (this.startConversion(recipeId, useFacility, true)) {
+                started++;
+            } else {
+                failed++;
+            }
+        }
+        
+        if (started > 0) {
+            showMessage(`${recipe.name} x${started} の変換を開始しました`, 2000);
+            addTimelineLog(`一括変換開始: ${recipe.name} x${started}`);
+        }
+        
+        return { started, failed };
+    }
+    
+    // Calculate maximum possible conversions based on available resources
+    getMaxConversions(recipeId: string): number {
+        const recipe = CONVERSION_RECIPES[recipeId];
+        if (!recipe) return 0;
+        
+        let maxCount = Infinity;
+        
+        // Check each input resource
+        for (const input of recipe.inputs.resources) {
+            const available = this.getResourceAmount(input.type, input.quality);
+            const possibleCount = Math.floor(available / input.amount);
+            maxCount = Math.min(maxCount, possibleCount);
+        }
+        
+        return maxCount === Infinity ? 0 : maxCount;
+    }
+    
     // Start a conversion process
     startConversion(recipeId: string, facilityId?: string, manual: boolean = false): boolean {
         const recipe = CONVERSION_RECIPES[recipeId];
