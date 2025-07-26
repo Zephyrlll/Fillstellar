@@ -140,6 +140,7 @@ export const ui: { [key: string]: HTMLElement | null } = {
     overlayCurrencyCosmicDust: document.getElementById('overlayCurrencyCosmicDust'),
     overlayCosmicActivity: document.getElementById('overlayCosmicActivity'),
     overlayPopulation: document.getElementById('overlayPopulation'),
+    celestialBodyCount: document.getElementById('celestialBodyCount'),
     resetGameButton: document.getElementById('resetGameButton'),
     resetCameraButton: document.getElementById('resetCameraButton'),
     graphicsQualitySelect: document.getElementById('graphicsQualitySelect'),
@@ -452,6 +453,10 @@ export function updateUI() {
     
     // 総人口の表示
     if (ui.overlayPopulation) ui.overlayPopulation.textContent = Math.floor(cachedTotalPopulation || 0).toLocaleString();
+    
+    // 天体の数を表示
+    const celestialBodyCount = state.stars.length;
+    if (ui.celestialBodyCount) ui.celestialBodyCount.textContent = `天体の数: ${celestialBodyCount}`;
     
     updateFocusedBodyUI();
 }

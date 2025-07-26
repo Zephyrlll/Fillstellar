@@ -48,6 +48,52 @@ export class StarManagementUI {
         this.closePanel();
       }
     });
+
+    // イベント委譲でテーブル行のクリックを処理
+    this.contentArea.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+      
+      // ヘッダーのクリック処理
+      const header = target.closest('th[data-sort]');
+      if (header) {
+        const sortKey = header.getAttribute('data-sort')!;
+        if (this.sortColumn === sortKey) {
+          this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+          this.sortColumn = sortKey;
+          this.sortDirection = 'asc';
+        }
+        this.updateStarList();
+        return;
+      }
+      
+      // 行のクリック処理
+      const row = target.closest('tr[data-id]');
+      if (row) {
+        const id = row.getAttribute('data-id');
+        console.log('[STAR_MANAGEMENT] Row clicked, ID:', id);
+        const body = gameState.stars.find(s => s.userData.id === id);
+        console.log('[STAR_MANAGEMENT] Found body:', body);
+        
+        if (body) {
+          // フォーカスオブジェクトを設定
+          gameStateManager.updateState(state => ({
+            ...state,
+            focusedObject: body
+          }));
+          
+          console.log('[STAR_MANAGEMENT] Focus set:', {
+            bodyName: body.userData.name,
+            bodyPosition: body.position,
+            focusedObject: gameState.focusedObject
+          });
+          
+          soundManager.playUISound('click');
+          // パネルを閉じる
+          this.closePanel();
+        }
+      }
+    });
   }
 
   /**
@@ -152,7 +198,7 @@ export class StarManagementUI {
       
       
       html += `
-        <tr class="star-row" data-id="${userData.id}">
+        <tr data-id="${userData.id}">
           <td>${userData.name || 'N/A'}</td>
           <td>${typeText}</td>
           <td>${(userData.mass as number).toExponential(2)}</td>
@@ -169,53 +215,10 @@ export class StarManagementUI {
     `;
 
     this.contentArea.innerHTML = html;
-
-    // イベントリスナーを追加
-    this.addTableEventListeners();
+    
+    // イベントリスナーは既にinitializeEventListenersで設定済み（イベント委譲を使用）
   }
 
-  /**
-   * テーブルのイベントリスナーを追加
-   */
-  private addTableEventListeners(): void {
-    // ヘッダークリックでソート
-    const headers = this.contentArea.querySelectorAll('th[data-sort]');
-    headers.forEach(header => {
-      header.addEventListener('click', () => {
-        const sortKey = header.getAttribute('data-sort')!;
-        if (this.sortColumn === sortKey) {
-          this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
-        } else {
-          this.sortColumn = sortKey;
-          this.sortDirection = 'asc';
-        }
-        this.updateStarList();
-      });
-    });
-
-    // 行クリックでフォーカス
-    const rows = this.contentArea.querySelectorAll('.star-row');
-    rows.forEach(row => {
-      row.addEventListener('click', () => {
-        const id = row.getAttribute('data-id');
-        const body = gameState.stars.find(s => s.userData.id === id);
-        if (body) {
-          // フォーカスオブジェクトを設定
-          gameStateManager.updateState(state => ({
-            ...state,
-            focusedObject: body
-          }));
-          
-          // 直接的なカメラ移動を削除（main.tsのanimateループに任せる）
-          // this.focusCamera(body);
-          
-          soundManager.playSound('ui_click');
-          // パネルを閉じる
-          this.closePanel();
-        }
-      });
-    });
-  }
 
   /**
    * カメラを天体にフォーカス

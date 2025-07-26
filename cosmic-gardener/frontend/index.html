@@ -1026,6 +1026,40 @@
         <div id="primary-view-space" class="view-content active">
           <div id="game-container">
             <canvas id="game-canvas"></canvas>
+            <!-- 天体の数表示 -->
+            <div id="celestialBodyCount" style="position: absolute; bottom: 20px; right: 25%; color: white; font-size: 14px; opacity: 0.8; text-shadow: 0 1px 2px rgba(0,0,0,0.5);"></div>
+            
+            <!-- フォーカス中の天体詳細 -->
+            <div id="focused-celestial-body-details">
+                <p id="focused-star-name">フォーカス中の星はありません</p>
+                <div id="star-parameters" class="hidden">
+                    <p>年齢: <span id="focused-star-age">--</span></p>
+                    <p>温度: <span id="focused-star-temp">--</span> K</p>
+                    <p>質量: <span id="focused-star-mass">--</span> 太陽質量</p>
+                    <p>寿命: <span id="focused-star-lifespan">--</span> 億年</p>
+                    <p>速度: <span id="focused-star-speed">--</span> km/s</p>
+                    <p>主星との距離: <span id="focused-star-distance">--</span> AU</p>
+                </div>
+                <div id="planet-parameters" class="hidden">
+                    <p>種類: <span id="focused-planet-type">--</span></p>
+                    <p>質量: <span id="focused-planet-mass">--</span> 地球質量</p>
+                    <p>半径: <span id="focused-planet-radius">--</span> 地球半径</p>
+                    <p>大気: <span id="focused-planet-atmosphere">--</span></p>
+                    <p>水: <span id="focused-planet-water">--</span></p>
+                    <p>居住可能性: <span id="focused-planet-habitability">--</span> %</p>
+                    <p id="focused-planet-geology-row" style="display: none;">地質活動: <span id="focusedPlanetGeology">--</span> %</p>
+                    <p>生命: <span id="focused-planet-hasLife">--</span></p>
+                    <p>生命段階: <span id="focused-planet-lifeStage">--</span></p>
+                    <p>人口: <span id="focused-planet-population">--</span></p>
+                    <p>速度: <span id="focused-planet-speed">--</span> km/s</p>
+                    <p>主星との距離: <span id="focused-planet-distance">--</span> AU</p>
+                </div>
+            </div>
+            
+            <!-- メッセージオーバーレイ -->
+            <div id="message-overlay" class="hidden">
+                <p id="message-text"></p>
+            </div>
         </div>
       </div>
       <div id="primary-view-production" class="view-content">
@@ -1056,6 +1090,9 @@
     <div id="message-overlay" class="hidden">
         <p id="message-text"></p>
     </div>
+
+    <!-- 天体の数表示 -->
+    <div id="celestialBodyCount" style="position: absolute; bottom: 20px; left: 60%; color: white; font-size: 14px; opacity: 0.8;"></div>
 
     <!-- フォーカス中の天体詳細 -->
     <div id="focused-celestial-body-details">

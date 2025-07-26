@@ -359,6 +359,19 @@ export class CelestialCreationUI {
       scene.add(result.value);
       gameState.stars.push(result.value);
       
+      // 恒星作成後、その恒星にフォーカス
+      gameStateManager.updateState(state => ({
+        ...state,
+        focusedObject: result.value
+      }));
+      
+      // デバッグログ
+      console.log('[CELESTIAL_UI] Star created and focused:', {
+        starName,
+        position: result.value.position,
+        focusedObject: gameState.focusedObject
+      });
+      
       addTimelineLog({
         message: `恒星「${starName}」が銀河に誕生しました！`,
         type: 'creation',

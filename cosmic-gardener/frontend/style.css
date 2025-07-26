@@ -2358,7 +2358,7 @@ body {
 
 #focused-celestial-body-details {
   position: absolute;
-  top: 10px;
+  top: 13%;
   right: 10px;
   color: white;
   z-index: 100;

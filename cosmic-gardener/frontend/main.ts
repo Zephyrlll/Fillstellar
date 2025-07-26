@@ -43,7 +43,7 @@ import { spatialGrid, updatePhysics } from './js/physics.ts';
 import { updateStatistics } from './js/statistics.ts';
 import { GALAXY_BOUNDARY } from './js/constants.ts';
 import { mathCache } from './js/utils.ts';
-import { setupEventListeners, keys } from './js/events.ts';
+import { setupEventListeners } from './js/events.ts';
 import { soundManager } from './js/sound.ts';
 import { createWebSocketClient } from './js/websocket.ts';
 import { conversionEngine } from './js/conversionEngine.ts';
@@ -259,8 +259,6 @@ let lodManager: LODManager;
 // Expose graphicsEngine globally for synchronous access from saveload.ts and debugging
 (window as any).graphicsEngine = graphicsEngine;
 console.log('🎮 Graphics engine exposed to window:', (window as any).graphicsEngine);
-
-const moveSpeed = 200;
 
 let uiUpdateTimer = 0;
 const uiUpdateInterval = 0.05; // 0.1秒から0.05秒に短縮してより滑らかに
@@ -649,10 +647,8 @@ function animate() {
     // Update resource particle effects
     resourceParticleSystem.update(deltaTime);
 
-    if (keys.w) camera.position.z -= moveSpeed * animationDeltaTime;
-    if (keys.s) camera.position.z += moveSpeed * animationDeltaTime;
-    if (keys.a) camera.position.x -= moveSpeed * animationDeltaTime;
-    if (keys.d) camera.position.x += moveSpeed * animationDeltaTime;
+    // WASDキーでのカメラ移動機能は削除しました
+    // OrbitControlsによるマウス操作でカメラを制御してください
 
     if (gameState.focusedObject) {
         const targetPosition = gameState.focusedObject.position.clone();
@@ -663,15 +659,13 @@ function animate() {
         // 新しいカメラ位置を計算（天体の位置 + 現在のオフセット）
         const newCameraPosition = targetPosition.clone().add(currentOffset);
         
-        // カメラ位置と注視点を即座に更新
-        camera.position.copy(newCameraPosition);
-        controls.target.copy(targetPosition);
+        // カメラ位置と注視点を滑らかに更新
+        const lerpFactor = 0.1; // 補間係数（0.1 = 10%ずつ近づく）
+        camera.position.lerp(newCameraPosition, lerpFactor);
+        controls.target.lerp(targetPosition, lerpFactor);
         
-        // フォーカス後にnullに戻す（1回だけ実行）
-        gameStateManager.updateState(state => ({
-            ...state,
-            focusedObject: null
-        }));
+        // 注意: focusedObjectはnullに戻さず、ユーザーが他の天体をクリックするか
+        // ESCキーを押すまでフォーカスを維持する
     }
 
     const edgeGlow = scene.getObjectByName('black_hole_edge_glow');

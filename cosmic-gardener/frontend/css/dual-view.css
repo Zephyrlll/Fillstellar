@@ -15,6 +15,19 @@
   /* display: none; を削除して、初期表示を有効にする */
 }
 
+/* 天体数表示 */
+#celestialBodyCount {
+  position: absolute;
+  bottom: 20px;
+  right: 25%;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
+  font-weight: 400;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+  z-index: 10;
+}
+
 /* Tab Bar */
 #dual-view-tabs {
   display: flex;

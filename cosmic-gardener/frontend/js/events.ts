@@ -17,8 +17,6 @@ import { blackHoleGas } from './blackHoleGas.js';
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 
-export const keys = { w: false, a: false, s: false, d: false };
-
 function focusOnStar(star: CelestialBody) {
     gameStateManager.updateState(state => ({
         ...state,
@@ -215,10 +213,7 @@ export function setupEventListeners() {
             return;
         }
         
-        if (event.code === 'KeyW') keys.w = true;
-        if (event.code === 'KeyA') keys.a = true;
-        if (event.code === 'KeyS') keys.s = true;
-        if (event.code === 'KeyD') keys.d = true;
+        // WASDキーでのカメラ移動機能は削除されました
         
         // O または o でオプション画面を開く
         if ((event.code === 'KeyO' || event.key === 'o' || event.key === 'O') && !event.repeat) {
@@ -257,10 +252,7 @@ export function setupEventListeners() {
         }
     });
     window.addEventListener('keyup', (event) => {
-        if (event.code === 'KeyW') keys.w = false;
-        if (event.code === 'KeyA') keys.a = false;
-        if (event.code === 'KeyS') keys.s = false;
-        if (event.code === 'KeyD') keys.d = false;
+        // WASDキーでのカメラ移動機能は削除されました
         if (event.code === 'KeyM') {
             gameStateManager.updateState(state => ({
                 ...state,
@@ -805,8 +797,18 @@ export function setupEventListeners() {
         }));
         scene.add(newStar);
         
+        // 恒星作成後、その恒星にフォーカス
+        gameStateManager.updateState(state => ({
+            ...state,
+            focusedObject: newStar
+        }));
         
-        focusOnStar(newStar);
+        // デバッグログ
+        console.log('[EVENTS] Star created and focused:', {
+            name,
+            position: newStar.position,
+            focusedObject: gameState.focusedObject
+        });
         
         // 恒星作成サウンドの再生
         soundManager.createCelestialBodySound('star', position);
