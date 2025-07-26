@@ -97,6 +97,8 @@ import './js/debugPhysics.ts';
 import { orbitTrailSystem } from './js/orbitTrails.ts';
 // Background galaxies
 import { backgroundGalaxies } from './js/backgroundGalaxies.ts';
+// Celestial Creation UI
+import { celestialCreationUI } from './js/systems/celestialCreationUI.ts';
 // LOD system
 import { LODManager } from './js/systems/lodManager.ts';
 
@@ -713,6 +715,9 @@ function animate() {
         if (productionChainUI) {
             productionChainUI.refresh();
         }
+        
+        // Update celestial creation UI
+        celestialCreationUI.update();
         
         uiUpdateTimer = 0;
     }
@@ -1398,3 +1403,35 @@ async function init() {
 
 console.log('[MAIN] Calling init()...');
 init();
+
+// Test notification functions for debugging
+(window as any).testNotifications = {
+    showToast: (message: string = 'Test notification', type: 'info' | 'success' | 'warning' | 'error' = 'info') => {
+        const feedbackSystem = (window as any).feedbackSystem;
+        if (feedbackSystem) {
+            feedbackSystem.showToast({ message, type });
+            console.log('[TEST] Toast notification triggered:', message, type);
+        } else {
+            console.error('[TEST] FeedbackSystem not initialized');
+        }
+    },
+    showAchievement: (name: string = 'Test Achievement', description: string = 'You unlocked a test achievement!') => {
+        const feedbackSystem = (window as any).feedbackSystem;
+        if (feedbackSystem) {
+            feedbackSystem.showAchievementUnlocked({ name, description, icon: '🏆' });
+            console.log('[TEST] Achievement notification triggered:', name);
+        } else {
+            console.error('[TEST] FeedbackSystem not initialized');
+        }
+    },
+    showEventBanner: (title: string = 'Test Event', message: string = 'This is a test event banner') => {
+        const feedbackSystem = (window as any).feedbackSystem;
+        if (feedbackSystem) {
+            feedbackSystem.showEventBanner(title, message, 'info');
+            console.log('[TEST] Event banner triggered:', title);
+        } else {
+            console.error('[TEST] FeedbackSystem not initialized');
+        }
+    }
+};
+console.log('[TEST] Notification test functions available: testNotifications.showToast(), testNotifications.showAchievement(), testNotifications.showEventBanner()');

@@ -643,35 +643,64 @@ function updateStarList() {
 }
 
 export function showMessage(message: string, typeOrDuration: string | number = 2000) {
-    let duration = 2000;
-    let messageType = 'info';
+    const feedbackSystem = (window as any).feedbackSystem;
     
-    if (typeof typeOrDuration === 'number') {
-        duration = typeOrDuration;
-    } else {
-        messageType = typeOrDuration;
-        // Set duration based on message type
-        switch(messageType) {
-            case 'error': duration = 5000; break;
-            case 'warning': duration = 3000; break;
-            case 'success': duration = 2000; break;
-            default: duration = 2000;
-        }
-    }
-    clearTimeout(messageTimeout);
-    if (ui.messageText) ui.messageText.textContent = message;
-    if (ui.messageOverlay) {
-        ui.messageOverlay.style.display = 'block';
-        ui.messageOverlay.classList.remove('hidden');
-        ui.messageOverlay.style.opacity = '1';
-        messageTimeout = setTimeout(() => {
-            if (ui.messageOverlay) {
-                ui.messageOverlay.style.opacity = '0';
-                ui.messageOverlay.addEventListener('transitionend', () => {
-                    if (ui.messageOverlay) ui.messageOverlay.classList.add('hidden');
-                }, { once: true });
+    if (feedbackSystem) {
+        // Use modern feedback system for notifications
+        let duration = 3000;
+        let type: 'info' | 'success' | 'warning' | 'error' = 'info';
+        
+        if (typeof typeOrDuration === 'number') {
+            duration = typeOrDuration;
+        } else {
+            type = typeOrDuration as any;
+            // Set duration based on message type
+            switch(type) {
+                case 'error': duration = 5000; break;
+                case 'warning': duration = 4000; break;
+                case 'success': duration = 3000; break;
+                default: duration = 3000;
             }
-        }, duration);
+        }
+        
+        feedbackSystem.showToast({
+            message,
+            type,
+            duration,
+            position: 'top-right'
+        });
+    } else {
+        // Fallback to old system
+        let duration = 2000;
+        let messageType = 'info';
+        
+        if (typeof typeOrDuration === 'number') {
+            duration = typeOrDuration;
+        } else {
+            messageType = typeOrDuration;
+            // Set duration based on message type
+            switch(messageType) {
+                case 'error': duration = 5000; break;
+                case 'warning': duration = 3000; break;
+                case 'success': duration = 2000; break;
+                default: duration = 2000;
+            }
+        }
+        clearTimeout(messageTimeout);
+        if (ui.messageText) ui.messageText.textContent = message;
+        if (ui.messageOverlay) {
+            ui.messageOverlay.style.display = 'block';
+            ui.messageOverlay.classList.remove('hidden');
+            ui.messageOverlay.style.opacity = '1';
+            messageTimeout = setTimeout(() => {
+                if (ui.messageOverlay) {
+                    ui.messageOverlay.style.opacity = '0';
+                    ui.messageOverlay.addEventListener('transitionend', () => {
+                        if (ui.messageOverlay) ui.messageOverlay.classList.add('hidden');
+                    }, { once: true });
+                }
+            }, duration);
+        }
     }
 }
 

@@ -449,6 +449,424 @@
   color: #e0e0e0;
 }
 
+/* Modern Celestial Creation Menu */
+.celestial-creation-modern {
+  position: fixed;
+  left: 20px;
+  bottom: 20px;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+/* Modern Toggle Button */
+.creation-toggle-modern {
+  background: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0;
+  padding: 12px 24px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 300;
+  letter-spacing: 2px;
+  transition: background 0.2s ease, border-color 0.2s ease;
+  backdrop-filter: blur(10px);
+  position: relative;
+  overflow: hidden;
+  width: 125px;
+  flex-shrink: 0;
+}
+
+.creation-toggle-modern::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.1);
+  transition: width 0.3s ease;
+}
+
+.creation-toggle-modern:hover::before {
+  width: 100%;
+}
+
+.creation-toggle-modern:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Modern Menu Panel */
+.creation-menu-modern {
+  position: absolute;
+  left: 125px;
+  top: 0;
+  background: rgba(0, 0, 0, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-left: none;
+  overflow: hidden;
+  width: 0;
+  opacity: 0;
+  transition: width 0.3s ease, opacity 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.celestial-creation-modern.active .creation-menu-modern {
+  width: auto;
+  opacity: 1;
+}
+
+/* Content Container */
+.creation-content-modern {
+  padding: 0;
+  display: flex;
+  flex-direction: row;
+  gap: 0;
+  white-space: nowrap;
+}
+
+/* Modern Creation Items */
+.creation-item-modern {
+  display: flex;
+  flex-direction: column;
+  padding: 16px 20px;
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.2s ease;
+  position: relative;
+  flex-shrink: 0;
+  min-width: 100px;
+}
+
+.creation-item-modern:last-child {
+  border-right: none;
+}
+
+.creation-item-modern:hover:not(.locked) {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* Locked state */
+.creation-item-modern.locked {
+  opacity: 0.4;
+  position: relative;
+}
+
+.creation-item-modern.locked::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 10px,
+    rgba(255, 255, 255, 0.03) 10px,
+    rgba(255, 255, 255, 0.03) 20px
+  );
+  pointer-events: none;
+}
+
+/* Item Header */
+.item-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.item-name {
+  font-size: 12px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.item-cost {
+  font-size: 18px;
+  font-weight: 200;
+  color: rgba(255, 255, 255, 0.6);
+  font-family: 'Monaco', monospace;
+}
+
+/* Modern Create Button */
+.create-btn-modern {
+  background: transparent;
+  color: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 8px 16px;
+  font-size: 11px;
+  font-weight: 300;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.create-btn-modern::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 0;
+  background: rgba(255, 255, 255, 0.1);
+  transition: height 0.2s ease;
+}
+
+.create-btn-modern:hover {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.create-btn-modern:hover::before {
+  height: 100%;
+}
+
+.create-btn-modern:active {
+  transform: scale(0.98);
+}
+
+.create-btn-modern:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.create-btn-modern:disabled:hover {
+  color: rgba(255, 255, 255, 0.8);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.create-btn-modern:disabled:hover::before {
+  height: 0;
+}
+
+/* Locked state for items */
+.creation-item-modern.locked .item-name,
+.creation-item-modern.locked .item-cost {
+  opacity: 0.7;
+}
+
+.creation-item-modern.locked .create-btn-modern {
+  border-color: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Remove old styles */
+.celestial-scroll {
+  display: none;
+}
+
+/* Star Management Panel Styles */
+.star-management-modern {
+  position: fixed;
+  left: 20px;
+  bottom: 65px; /* CREATEボタンのすぐ上に配置 */
+  z-index: 1000;
+  display: flex;
+  flex-direction: column-reverse; /* ボタンを下に、パネルを上に */
+  align-items: flex-start;
+  gap: 0;
+}
+
+/* Management Toggle Button */
+.management-toggle-modern {
+  background: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 300;
+  letter-spacing: 2px;
+  line-height: 1.4;
+  transition: background 0.2s ease, border-color 0.2s ease;
+  backdrop-filter: blur(10px);
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+  width: 125px;
+  white-space: nowrap;
+}
+
+.management-toggle-modern::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.1);
+  transition: width 0.3s ease;
+}
+
+.management-toggle-modern:hover::before {
+  width: 100%;
+}
+
+.management-toggle-modern:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Management Panel */
+.management-panel-modern {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  background: rgba(0, 0, 0, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: none;
+  overflow: hidden;
+  height: 0;
+  opacity: 0;
+  transition: height 0.3s ease, opacity 0.3s ease;
+  backdrop-filter: blur(10px);
+  width: 400px;
+}
+
+.star-management-modern.active .management-panel-modern {
+  height: 300px; /* 適切な高さに調整 */
+  opacity: 1;
+}
+
+/* Management Content */
+.management-content-modern {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  height: 100%;
+  overflow-y: auto;
+}
+
+/* Star Table Styles */
+.star-table-modern {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.star-table-modern thead {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.star-table-modern th {
+  padding: 10px 8px;
+  text-align: left;
+  font-weight: 300;
+  letter-spacing: 1px;
+  cursor: pointer;
+  position: relative;
+  user-select: none;
+  transition: color 0.2s ease;
+}
+
+.star-table-modern th:hover {
+  color: #fff;
+}
+
+/* ソートインジケーター */
+.star-table-modern th.sort-asc::after,
+.star-table-modern th.sort-desc::after {
+  content: '';
+  position: absolute;
+  right: 5px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  border-style: solid;
+}
+
+.star-table-modern th.sort-asc::after {
+  border-width: 0 4px 6px 4px;
+  border-color: transparent transparent rgba(255, 255, 255, 0.6) transparent;
+}
+
+.star-table-modern th.sort-desc::after {
+  border-width: 6px 4px 0 4px;
+  border-color: rgba(255, 255, 255, 0.6) transparent transparent transparent;
+}
+
+.star-table-modern tbody tr {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  transition: background 0.2s ease;
+  cursor: pointer;
+}
+
+.star-table-modern tbody tr:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.star-table-modern td {
+  padding: 12px 8px;
+  font-weight: 200;
+}
+
+/* スクロールバー */
+.management-content-modern::-webkit-scrollbar {
+  width: 6px;
+}
+
+.management-content-modern::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.management-content-modern::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+.management-content-modern::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Mobile adjustments */
+@media (max-width: 1400px) {
+  .creation-item {
+    padding: 8px 12px;
+  }
+  
+  .creation-icon {
+    font-size: 24px;
+    width: 36px;
+    height: 36px;
+  }
+  
+  .creation-name {
+    font-size: 13px;
+  }
+  
+  .creation-cost {
+    font-size: 11px;
+  }
+  
+  .creation-btn {
+    padding: 5px 12px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 768px) {
+  .celestial-scroll {
+    left: 10px;
+    bottom: 10px;
+  }
+  
+  .scroll-content {
+    flex-wrap: wrap;
+    max-width: calc(100vw - 60px);
+  }
+  
+  .creation-item {
+    margin-bottom: 8px;
+  }
+}
+
 .prereq-item.completed {
   color: #10b981;
   text-decoration: line-through;

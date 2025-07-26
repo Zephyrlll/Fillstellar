@@ -6,6 +6,8 @@ import { graphicsEngine } from '../graphicsEngine.js';
 import { gameStateManager } from '../state.js';
 import { showMessage, updateUI } from '../ui.js';
 import { soundManager } from '../sound.js';
+import { celestialCreationUI } from './celestialCreationUI.js';
+import { starManagementUI } from './starManagementUI.js';
 
 export interface ViewConfig {
   primaryView: string;
@@ -92,10 +94,24 @@ export class DualViewSystem {
       onActivate: () => {
         console.log('[DUAL_VIEW] Space tab activated');
         this.resumeMainRenderer();
+        // 天体創造UIを表示
+        const celestialScroll = document.getElementById('celestial-creation-scroll');
+        if (celestialScroll) {
+          celestialScroll.style.display = 'flex';
+        }
+        // 恒星管理UIを表示
+        starManagementUI.setVisible(true);
       },
       onDeactivate: () => {
         console.log('[DUAL_VIEW] Space tab deactivated');
         this.pauseMainRenderer();
+        // 天体創造UIを非表示
+        const celestialScroll = document.getElementById('celestial-creation-scroll');
+        if (celestialScroll) {
+          celestialScroll.style.display = 'none';
+        }
+        // 恒星管理UIを非表示
+        starManagementUI.setVisible(false);
       }
     });
     
@@ -889,4 +905,12 @@ export function initializeDualViewSystem(): void {
   // dualViewSystemはコンストラクタで初期化されるため、
   // ここでは追加の初期化処理は不要
   console.log('[DUAL_VIEW] System initialized');
+  
+  // 初期状態でメインレンダラーが動作するようにする
+  // 宇宙タブがデフォルトでアクティブなので、レンダラーを再開
+  const ge = graphicsEngine as any;
+  if (ge && ge.isPaused !== undefined) {
+    ge.isPaused = false;
+    console.log('[DUAL_VIEW] Main renderer resumed on initialization');
+  }
 }

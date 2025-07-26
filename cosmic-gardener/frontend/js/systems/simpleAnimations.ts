@@ -144,6 +144,7 @@ export class SimpleAnimationSystem {
       this.applyTransition(el, duration, config.easing || 'cubic-bezier(0.4, 0, 0.2, 1)');
       
       setTimeout(() => {
+        el.classList.add('visible');
         el.style.transform = 'translateX(0)';
         el.style.opacity = '1';
         

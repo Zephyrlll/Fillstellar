@@ -2196,6 +2196,77 @@
     </div>
   </div>
 
+  <!-- 恒星管理パネル -->
+  <div id="star-management-container" class="star-management-modern">
+    <div id="star-management-panel" class="management-panel-modern">
+      <div class="management-content-modern">
+        <!-- 中身は後で追加 -->
+      </div>
+    </div>
+    <button id="star-management-toggle" class="management-toggle-modern" title="恒星管理">
+      <span class="toggle-text">FIXED STARS<br>Management</span>
+    </button>
+  </div>
+
+  <!-- 宇宙ビュー用天体創造メニュー (モダン) -->
+  <div id="celestial-creation-scroll" class="celestial-creation-modern">
+    <button id="celestial-creation-toggle" class="creation-toggle-modern" title="天体創造">
+      <span class="toggle-text">CREATE</span>
+    </button>
+    
+    <div id="celestial-creation-menu" class="creation-menu-modern">
+      <div class="creation-content-modern">
+        <div class="creation-item-modern">
+          <div class="item-header">
+            <span class="item-name">小惑星</span>
+            <span class="item-cost"><span id="scroll-asteroidCost">100</span></span>
+          </div>
+          <button class="create-btn-modern" data-type="asteroid">生成</button>
+        </div>
+        
+        <div class="creation-item-modern">
+          <div class="item-header">
+            <span class="item-name">彗星</span>
+            <span class="item-cost"><span id="scroll-cometCost">500</span></span>
+          </div>
+          <button class="create-btn-modern" data-type="comet">生成</button>
+        </div>
+        
+        <div class="creation-item-modern" id="scroll-moonCreation">
+          <div class="item-header">
+            <span class="item-name">衛星</span>
+            <span class="item-cost"><span id="scroll-moonCost">1000</span></span>
+          </div>
+          <button class="create-btn-modern" data-type="moon">生成</button>
+        </div>
+        
+        <div class="creation-item-modern" id="scroll-dwarfPlanetCreation">
+          <div class="item-header">
+            <span class="item-name">準惑星</span>
+            <span class="item-cost"><span id="scroll-dwarfPlanetCost">2500</span></span>
+          </div>
+          <button class="create-btn-modern" data-type="dwarfPlanet">生成</button>
+        </div>
+        
+        <div class="creation-item-modern" id="scroll-planetCreation">
+          <div class="item-header">
+            <span class="item-name">惑星</span>
+            <span class="item-cost"><span id="scroll-planetCost">10000</span></span>
+          </div>
+          <button class="create-btn-modern" data-type="planet">生成</button>
+        </div>
+        
+        <div class="creation-item-modern" id="scroll-starCreation">
+          <div class="item-header">
+            <span class="item-name">恒星</span>
+            <span class="item-cost"><span id="scroll-starCost">100000</span></span>
+          </div>
+          <button class="create-btn-modern" data-type="star">生成</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- 研究ツリービジュアライザー (フルスクリーンオーバーレイ) -->
   <div id="research-tree-overlay" class="research-tree-overlay">
     <div class="research-tree-container">
