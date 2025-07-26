@@ -30,6 +30,9 @@
       <button id="productionChainToggleButton-mobile" class="mobile-nav-btn chain-visualizer-btn" title="生産チェーンビジュアライザー">
         📊
       </button>
+      <button id="batchConversionToggleButton-mobile" class="mobile-nav-btn batch-conversion-btn" title="バッチ変換システム">
+        🏭
+      </button>
       <button id="floatingResourceSellButton-mobile" class="mobile-nav-btn sell-btn" title="資源を販売">
         💰
       </button>
@@ -1387,6 +1390,10 @@
             <div class="btn-icon">📊</div>
             <div class="btn-label">チェーン可視化</div>
         </button>
+        <button id="batchConversionToggleButton" class="floating-btn batch-conversion-btn" title="バッチ変換システム">
+            <div class="btn-icon">🏭</div>
+            <div class="btn-label">バッチ変換</div>
+        </button>
         <button id="floatingResourceSellButton" class="floating-btn sell-btn" title="資源を販売">
             <div class="btn-icon">💰</div>
             <div class="btn-label">資源販売</div>
@@ -1488,7 +1495,9 @@
       
       <!-- 変換レシピ -->
       <div class="collapsible-section">
-        <div class="collapsible-header active" id="conversionRecipesHeader">変換レシピ</div>
+        <div class="collapsible-header active" id="conversionRecipesHeader">
+          変換レシピ
+        </div>
         <div class="collapsible-content active" id="conversionRecipesContent">
           <div id="conversion-recipes-list">
             <!-- Dynamically populated -->

@@ -83,6 +83,10 @@ import { initializeInventory } from './js/inventory.ts';
 import { productionChainVisualizerUI } from './js/systems/productionChainVisualizerUI.ts';
 // Research Tree Visualizer UI
 import { researchTreeVisualizerUI } from './js/systems/researchTreeVisualizerUI.ts';
+// Batch Conversion System
+import { batchConversionUI } from './js/systems/batchConversionUI.ts';
+// Conversion Recipe UI
+import { conversionRecipeUI } from './js/systems/conversionRecipeUI.ts';
 // Dual View System
 import { initializeDualViewSystem } from './js/systems/dualViewSystem.ts';
 // Physics config
@@ -318,18 +322,20 @@ function animate() {
         console.log('[ANIMATE] Animation frame:', animationCount);
         animationCount++;
     }
+    
+    // Check frame rate limiter BEFORE requesting next frame
+    const shouldRender = graphicsEngine.getFrameRateLimiter().shouldRender();
+    
+    // Always request next frame to keep the loop going
     requestAnimationFrame(animate);
+    
+    // But skip the actual work if we're limiting FPS
+    if (!shouldRender) {
+        return;
+    }
     
     // Reset update counter at the start of each frame
     gameStateManager.resetUpdateCounter();
-    
-    // Check frame rate limiter - skip rendering if limited
-    const shouldRender = graphicsEngine.getFrameRateLimiter().shouldRender();
-    if (!shouldRender) {
-        // Reset update counter even when skipping frame
-        gameStateManager.resetUpdateCounter();
-        return;
-    }
     
     // Update performance monitor only for rendered frames
     performanceMonitor.update();
@@ -1115,9 +1121,159 @@ async function init() {
             productionChainVisualizerUI.open();
         });
         
+        // Add batch conversion button event listeners
+        const batchButton = document.getElementById('batchConversionToggleButton');
+        const batchButtonMobile = document.getElementById('batchConversionToggleButton-mobile');
+        
+        batchButton?.addEventListener('click', () => {
+            batchConversionUI.show();
+        });
+        
+        batchButtonMobile?.addEventListener('click', () => {
+            batchConversionUI.show();
+        });
+        
         // Make visualizers globally accessible
         (window as any).productionChainVisualizerUI = productionChainVisualizerUI;
         (window as any).researchTreeVisualizerUI = researchTreeVisualizerUI;
+        (window as any).batchConversionUI = batchConversionUI;
+        (window as any).conversionRecipeUI = conversionRecipeUI;
+        
+        // Test function for modern UI
+        (window as any).testModernUI = () => {
+            console.log('[UI] testModernUI called');
+            const recipeListEmbed = document.getElementById('conversion-recipes-list-embed');
+            if (recipeListEmbed) {
+                recipeListEmbed.innerHTML = `
+                    <div style="
+                        background: #ff00ff !important;
+                        color: #ffffff !important;
+                        padding: 40px !important;
+                        font-size: 24px !important;
+                        text-align: center !important;
+                        border: 5px solid #00ff00 !important;
+                        margin: 20px 0 !important;
+                    ">
+                        🎉 モダンUIが読み込まれました！🎉<br>
+                        <span style="font-size: 16px;">onclickから直接呼び出されました。</span>
+                    </div>
+                `;
+                
+                // フラグを設定
+                (window as any).modernRecipeUIActiveEmbed = true;
+                
+                // 少し遅延してからモダンUIを初期化
+                setTimeout(() => {
+                    console.log('[UI] Initializing modern recipe UI from testModernUI');
+                    conversionRecipeUI.init(true);
+                }, 100);
+            } else {
+                console.error('[UI] Recipe list embed not found');
+            }
+        };
+        
+        // Function to toggle modern recipe UI
+        (window as any).toggleModernRecipeUI = () => {
+            console.log('[UI] Toggle modern recipe UI called');
+            const recipeList = document.getElementById('conversion-recipes-list');
+            if (recipeList) {
+                (window as any).modernRecipeUIActive = true;
+                conversionRecipeUI.init();
+                
+                // Hide toggle button after activation
+                const toggleBtn = document.getElementById('toggle-modern-recipe-ui');
+                if (toggleBtn) {
+                    toggleBtn.style.display = 'none';
+                }
+                
+                // Show success message
+                showMessage('✨ モダンUIが有効になりました！', 3000);
+            }
+        };
+        
+        // Modern Recipe UI toggle - delay to ensure DOM is ready
+        setTimeout(() => {
+            // 通常版のボタン
+            const modernRecipeToggle = document.getElementById('toggle-modern-recipe-ui');
+            console.log('[UI] Modern recipe toggle button:', modernRecipeToggle);
+            if (modernRecipeToggle) {
+                modernRecipeToggle.addEventListener('click', (e) => {
+                    e.stopPropagation(); // Prevent header click
+                    console.log('[UI] Modern recipe toggle clicked');
+                    const recipeList = document.getElementById('conversion-recipes-list');
+                    if (recipeList) {
+                        console.log('[UI] Initializing modern recipe UI');
+                        // Set flag to prevent old UI from updating
+                        (window as any).modernRecipeUIActive = true;
+                        // Initialize the modern UI when first clicked
+                        conversionRecipeUI.init(false);
+                    }
+                });
+            }
+            
+            // 埋め込み版のボタン
+            const modernRecipeToggleEmbed = document.getElementById('toggle-modern-recipe-ui-embed');
+            console.log('[UI] Modern recipe toggle button (embed):', modernRecipeToggleEmbed);
+            if (modernRecipeToggleEmbed) {
+                modernRecipeToggleEmbed.addEventListener('click', (e) => {
+                    e.stopPropagation(); // Prevent header click
+                    console.log('[UI] Modern recipe toggle clicked (embed)');
+                    const recipeListEmbed = document.getElementById('conversion-recipes-list-embed');
+                    if (recipeListEmbed) {
+                        console.log('[UI] Initializing modern recipe UI (embed)');
+                        // Set flag to prevent old UI from updating
+                        (window as any).modernRecipeUIActiveEmbed = true;
+                        // Initialize the modern UI when first clicked - embed mode
+                        conversionRecipeUI.init(true);
+                    }
+                });
+            }
+        }, 1000);
+        
+        // 埋め込み版のボタンは後から作成されるので、定期的にチェック
+        let embedCheckInterval = setInterval(() => {
+            const modernRecipeToggleEmbed = document.getElementById('toggle-modern-recipe-ui-embed');
+            if (modernRecipeToggleEmbed && !modernRecipeToggleEmbed.hasAttribute('data-listener-attached')) {
+                console.log('[UI] Found embed button, attaching listener');
+                modernRecipeToggleEmbed.setAttribute('data-listener-attached', 'true');
+                
+                modernRecipeToggleEmbed.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    console.log('[UI] Modern recipe toggle clicked (embed) - from interval check');
+                    
+                    // 直接テスト内容を表示
+                    const recipeListEmbed = document.getElementById('conversion-recipes-list-embed');
+                    if (recipeListEmbed) {
+                        recipeListEmbed.innerHTML = `
+                            <div style="
+                                background: #ff00ff !important;
+                                color: #ffffff !important;
+                                padding: 40px !important;
+                                font-size: 24px !important;
+                                text-align: center !important;
+                                border: 5px solid #00ff00 !important;
+                                margin: 20px 0 !important;
+                            ">
+                                🎉 モダンUIが読み込まれました！🎉<br>
+                                <span style="font-size: 16px;">ボタンクリックが正常に動作しています。</span>
+                            </div>
+                        `;
+                        
+                        // フラグを設定
+                        (window as any).modernRecipeUIActiveEmbed = true;
+                        
+                        // 少し遅延してからモダンUIを初期化
+                        setTimeout(() => {
+                            console.log('[UI] Initializing modern recipe UI (embed)');
+                            conversionRecipeUI.init(true);
+                        }, 100);
+                    }
+                });
+                
+                // インターバルをクリア
+                clearInterval(embedCheckInterval);
+            }
+        }, 500);
         
         // Test feedback system (remove in production)
         setTimeout(() => {

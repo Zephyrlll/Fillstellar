@@ -478,6 +478,141 @@ export const CONVERSION_RECIPES: Record<string, ConversionRecipe> = {
             technology: ['waste_management'],
             facilities: ['recycling_facility']
         }
+    },
+    
+    // 仮レシピ1-7
+    'test_recipe_1': {
+        id: 'test_recipe_1',
+        name: '仮1',
+        description: 'テスト用レシピ1',
+        inputs: {
+            resources: [
+                { type: ResourceType.COSMIC_DUST, amount: 10, quality: QualityTier.STANDARD }
+            ]
+        },
+        outputs: {
+            resources: [
+                { type: ResourceType.ENERGY, amount: 5, quality: QualityTier.STANDARD }
+            ]
+        },
+        time: 5,
+        efficiency: 1.0,
+        discovered: true
+    },
+    
+    'test_recipe_2': {
+        id: 'test_recipe_2',
+        name: '仮2',
+        description: 'テスト用レシピ2',
+        inputs: {
+            resources: [
+                { type: ResourceType.ENERGY, amount: 20, quality: QualityTier.STANDARD }
+            ]
+        },
+        outputs: {
+            resources: [
+                { type: ResourceType.PROCESSED_METAL, amount: 3, quality: QualityTier.HIGH_QUALITY }
+            ]
+        },
+        time: 8,
+        efficiency: 1.0,
+        discovered: true
+    },
+    
+    'test_recipe_3': {
+        id: 'test_recipe_3',
+        name: '仮3',
+        description: 'テスト用レシピ3',
+        inputs: {
+            resources: [
+                { type: ResourceType.ORGANIC_MATTER, amount: 15, quality: QualityTier.STANDARD }
+            ]
+        },
+        outputs: {
+            resources: [
+                { type: ResourceType.BIOMASS, amount: 10, quality: QualityTier.STANDARD }
+            ]
+        },
+        time: 6,
+        efficiency: 1.0,
+        discovered: true
+    },
+    
+    'test_recipe_4': {
+        id: 'test_recipe_4',
+        name: '仮4',
+        description: 'テスト用レシピ4',
+        inputs: {
+            resources: [
+                { type: ResourceType.COSMIC_DUST, amount: 50, quality: QualityTier.STANDARD }
+            ]
+        },
+        outputs: {
+            resources: [
+                { type: ResourceType.ADVANCED_CIRCUIT, amount: 1, quality: QualityTier.STANDARD }
+            ]
+        },
+        time: 12,
+        efficiency: 1.0,
+        discovered: true
+    },
+    
+    'test_recipe_5': {
+        id: 'test_recipe_5',
+        name: '仮5',
+        description: 'テスト用レシピ5',
+        inputs: {
+            resources: [
+                { type: ResourceType.ENERGY, amount: 100, quality: QualityTier.STANDARD }
+            ]
+        },
+        outputs: {
+            resources: [
+                { type: ResourceType.QUANTUM_PROCESSOR, amount: 1, quality: QualityTier.STANDARD }
+            ]
+        },
+        time: 20,
+        efficiency: 1.0,
+        discovered: true
+    },
+    
+    'test_recipe_6': {
+        id: 'test_recipe_6',
+        name: '仮6',
+        description: 'テスト用レシピ6',
+        inputs: {
+            resources: [
+                { type: ResourceType.DARK_MATTER, amount: 5, quality: QualityTier.STANDARD }
+            ]
+        },
+        outputs: {
+            resources: [
+                { type: ResourceType.EXOTIC_MATTER, amount: 2, quality: QualityTier.PERFECT }
+            ]
+        },
+        time: 30,
+        efficiency: 1.0,
+        discovered: true
+    },
+    
+    'test_recipe_7': {
+        id: 'test_recipe_7',
+        name: '仮7',
+        description: 'テスト用レシピ7',
+        inputs: {
+            resources: [
+                { type: ResourceType.COSMIC_DUST, amount: 1000, quality: QualityTier.STANDARD },
+                { type: ResourceType.ENERGY, amount: 500, quality: QualityTier.STANDARD }
+            ]
+        },
+        outputs: {
+            resources: [
+                { type: ResourceType.DARK_MATTER, amount: 10, quality: QualityTier.LEGENDARY }
+            ]
+        },
+        time: 60,
+        efficiency: 1.0,
+        discovered: true
     }
 };
 

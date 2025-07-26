@@ -64,7 +64,11 @@ export enum ResourceType {
     DIMENSIONAL_ESSENCE = 'dimensionalEssence',
     ULTRA_ALLOY = 'ultraAlloy',
     QUANTUM_POLYMER = 'quantumPolymer',
-    EXOTIC_MATTER = 'exoticMatter'
+    EXOTIC_MATTER = 'exoticMatter',
+    
+    // Additional Advanced Resources for test recipes
+    ADVANCED_CIRCUIT = 'advancedCircuit',
+    QUANTUM_PROCESSOR = 'quantumProcessor'
 }
 
 export enum QualityTier {
@@ -502,6 +506,20 @@ export const RESOURCE_METADATA: Record<ResourceType, {
         icon: '🌀',
         category: 'tier2',
         description: '通常の物理法則に従わない物質'
+    },
+    
+    [ResourceType.ADVANCED_CIRCUIT]: {
+        name: '高度回路',
+        icon: '🔌',
+        category: 'tier2',
+        description: '高度な電子回路'
+    },
+    
+    [ResourceType.QUANTUM_PROCESSOR]: {
+        name: '量子プロセッサ',
+        icon: '💻',
+        category: 'tier2',
+        description: '量子コンピューティング素子'
     }
 };
 
