@@ -1,6 +1,6 @@
 import { balanceManager } from './balanceConfig.js';
 import { balanceAdjustments } from './balanceAdjustments.js';
-import { gameState } from '../state.js';
+import { gameState, gameStateManager } from '../state.js';
 
 export class BalanceDebugUI {
   private static instance: BalanceDebugUI;
@@ -70,6 +70,17 @@ export class BalanceDebugUI {
     const config = balanceManager.getConfig();
     
     let html = '<h3 style="margin: 0 0 10px 0; color: #4a9eff;">Balance Debug Panel</h3>';
+    
+    // Current Resources
+    html += '<div style="margin-bottom: 15px;">';
+    html += '<h4 style="margin: 5px 0; color: #4fff4f;">Current Resources</h4>';
+    html += `<div>宇宙の塵: <span style="color: #ffff4f">${Math.floor(gameState.resources.cosmicDust)}</span></div>`;
+    html += `<div>エネルギー: <span style="color: #ffff4f">${Math.floor(gameState.resources.energy)}</span></div>`;
+    html += `<div>有機物: <span style="color: #ffff4f">${Math.floor(gameState.resources.organicMatter)}</span></div>`;
+    html += `<div>バイオマス: <span style="color: #ffff4f">${Math.floor(gameState.resources.biomass)}</span></div>`;
+    html += `<div style="color: #ff69b4;">ダークマター: <span style="color: #ff1493; font-weight: bold;">${Math.floor(gameState.resources.darkMatter)}</span></div>`;
+    html += `<div>思考ポイント: <span style="color: #ffff4f">${Math.floor(gameState.resources.thoughtPoints)}</span></div>`;
+    html += '</div>';
     
     // Resource generation rates
     html += '<div style="margin-bottom: 15px;">';

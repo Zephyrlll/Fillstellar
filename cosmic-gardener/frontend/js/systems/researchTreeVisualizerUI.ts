@@ -558,10 +558,14 @@ export class ResearchTreeVisualizerUI {
   }
 
   private showNodeDetails(node: ResearchTreeNode): void {
-    const detailsPanel = document.getElementById('tree-node-details');
-    const detailsContent = document.getElementById('tree-node-content');
+    // タブビューとオーバーレイビューの両方をサポート
+    let detailsPanel = document.getElementById('tree-node-details-tab') || document.getElementById('tree-node-details');
+    let detailsContent = document.getElementById('tree-node-content-tab') || document.getElementById('tree-node-content');
     
-    if (!detailsPanel || !detailsContent) return;
+    if (!detailsPanel || !detailsContent) {
+      console.warn('[RESEARCH_TREE_UI] Node details panel not found');
+      return;
+    }
 
     detailsPanel.style.display = 'block';
     
@@ -618,7 +622,7 @@ export class ResearchTreeVisualizerUI {
     // Action button
     if (node.state === ResearchNodeState.AFFORDABLE) {
       html += `
-        <button class="research-action-btn" onclick="window.researchTreeUI.researchNode('${node.id}')">
+        <button class="research-action-btn" data-node-id="${node.id}">
           研究を開始
         </button>
       `;
@@ -751,7 +755,31 @@ export class ResearchTreeVisualizerUI {
   private updateStats(): void {
     const analysis = researchTreeAnalyzer.analyzeTree(this.getResearchState());
     
-    // Update stat displays
+    // タブビュー用の統計コンテナを探す
+    const statsContainer = document.getElementById('tree-stats-tab');
+    if (statsContainer) {
+      // タブビュー用のHTMLを生成
+      statsContainer.innerHTML = `
+        <div class="stat-item">
+          <span class="stat-label">完了:</span>
+          <span class="stat-value" style="color: #10b981;">${analysis.completedNodes}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">利用可能:</span>
+          <span class="stat-value" style="color: #64ffda;">${analysis.availableNodes}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">ロック中:</span>
+          <span class="stat-value" style="color: #ef4444;">${analysis.lockedNodes}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">進捗:</span>
+          <span class="stat-value" style="color: #fbbf24;">${Math.round((analysis.completedNodes / analysis.totalNodes) * 100)}%</span>
+        </div>
+      `;
+    }
+    
+    // 通常のオーバーレイ用の更新（互換性のため）
     const completedCount = document.getElementById('tree-completed-count');
     if (completedCount) completedCount.textContent = analysis.completedNodes.toString();
     
@@ -773,18 +801,27 @@ export class ResearchTreeVisualizerUI {
     const node = researchTreeAnalyzer.getNodes().get(nodeId);
     if (!node || node.state !== ResearchNodeState.AFFORDABLE) return;
     
-    // Open research lab and start research
-    const researchLab = getResearchLabUI();
-    if (researchLab) {
-      this.close();
-      researchLab.open();
-      
-      // Trigger research through the lab
-      // This is a simplified approach - in real implementation would need proper integration
-      setTimeout(() => {
-        const researchButton = document.querySelector(`[data-research-id="${nodeId}"] .research-action-btn`) as HTMLElement;
-        researchButton?.click();
-      }, 500);
+    console.log('[RESEARCH_TREE_UI] Starting research for node:', nodeId);
+    
+    // 研究を直接実行（dualViewSystemのresearchItemメソッドを使用）
+    const dualViewSystem = (window as any).dualViewSystem;
+    if (dualViewSystem && typeof dualViewSystem.researchItem === 'function') {
+      dualViewSystem.researchItem(nodeId).then(() => {
+        console.log('[RESEARCH_TREE_UI] Research completed:', nodeId);
+        // 状態を更新
+        const researchState = this.getResearchState();
+        researchTreeAnalyzer.updateNodeStates(researchState);
+        // グラフを更新
+        this.updateGraph();
+        // 選択されたノードの詳細を更新
+        if (this.selectedNode && this.selectedNode.id === nodeId) {
+          this.selectNode(researchTreeAnalyzer.getNodes().get(nodeId)!);
+        }
+      }).catch((error: any) => {
+        console.error('[RESEARCH_TREE_UI] Research failed:', error);
+      });
+    } else {
+      console.error('[RESEARCH_TREE_UI] dualViewSystem not available');
     }
   }
 
@@ -856,6 +893,19 @@ export class ResearchTreeVisualizerUI {
       const layout = (e.target as HTMLSelectElement).value as LayoutAlgorithm;
       this.layout.updateConfig({ layoutAlgorithm: layout });
       this.updateLayout();
+    });
+    
+    // ノード詳細パネルのボタンイベントをダイナミックに設定
+    container.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+      if (target.classList.contains('research-action-btn') && !target.hasAttribute('disabled')) {
+        const nodeId = target.getAttribute('data-node-id');
+        if (nodeId) {
+          e.preventDefault();
+          console.log('[RESEARCH_TREE_UI] Research button clicked for node:', nodeId);
+          this.researchNode(nodeId);
+        }
+      }
     });
 
     // Filter checkboxes

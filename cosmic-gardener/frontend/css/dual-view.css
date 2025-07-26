@@ -214,8 +214,15 @@
 
 /* Research View in Tab */
 #primary-view-research {
-  padding: 20px;
+  width: 100%;
+  height: 100%;
   overflow: hidden;
+  position: relative;
+}
+
+#primary-view-research .research-tree-container {
+  width: 100%;
+  height: 100%;
 }
 
 #primary-view-research .research-tree-graph {
@@ -389,6 +396,89 @@
   font-size: 14px;
   margin-bottom: 12px;
   font-family: 'Orbitron', sans-serif;
+}
+
+/* 研究ツリー統計 */
+.tree-stats .stat-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(100, 255, 218, 0.1);
+}
+
+.tree-stats .stat-label {
+  color: #8892b0;
+  font-size: 13px;
+}
+
+.tree-stats .stat-value {
+  font-weight: bold;
+  font-family: 'Orbitron', sans-serif;
+}
+
+/* ノード詳細パネル */
+.node-details-panel {
+  margin-top: 24px;
+}
+
+.node-detail-title {
+  color: #64ffda;
+  font-size: 16px;
+  font-weight: bold;
+  margin-bottom: 8px;
+  font-family: 'Orbitron', sans-serif;
+}
+
+.node-detail-description {
+  color: #e0e0e0;
+  font-size: 13px;
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+
+.detail-section-title {
+  color: #fbbf24;
+  font-size: 14px;
+  font-weight: bold;
+  margin: 16px 0 8px 0;
+}
+
+.cost-item, .effect-item, .prereq-item {
+  padding: 4px 0;
+  font-size: 13px;
+  color: #e0e0e0;
+}
+
+.prereq-item.completed {
+  color: #10b981;
+  text-decoration: line-through;
+}
+
+.research-action-btn {
+  width: 100%;
+  padding: 12px;
+  margin-top: 16px;
+  background: #10b981;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.research-action-btn:hover:not(:disabled) {
+  background: #059669;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+}
+
+.research-action-btn:disabled {
+  background: #4a5568;
+  color: #8892b0;
+  cursor: not-allowed;
 }
 
 /* 研究ツリーコンテナ */
