@@ -20,7 +20,7 @@ import { conversionRecipeUI } from './systems/conversionRecipeUI.js';
 import { showMessage } from './ui.js';
 
 let lastProductionUIUpdate = 0;
-const PRODUCTION_UI_UPDATE_INTERVAL = 500; // 0.5 seconds for better performance
+const PRODUCTION_UI_UPDATE_INTERVAL = 1000; // 1 second for better stability with sliders
 
 // UI Elements
 let advancedResourcesDisplay: HTMLElement | null;
@@ -31,6 +31,25 @@ let facilityConstructionList: HTMLElement | null;
 
 // Store batch conversion input values
 const batchConversionValues: Record<string, number> = {};
+
+// 検索クエリを保存
+let recipeSearchQuery: string = '';
+
+// 検索のデバウンスタイマー
+let searchDebounceTimer: number | null = null;
+
+// IME（日本語入力）の状態を保存
+let isComposing: boolean = false;
+
+// 実行可能レシピのみ表示
+let showAffordableOnly: boolean = false;
+
+// スライダー操作中のフラグ
+let isSliderDragging: boolean = false;
+(window as any).isSliderDragging = false;
+
+// プルダウンメニューのホバー状態
+(window as any).isSelectHovered = false;
 
 // カテゴリの展開状態を保存
 const expandedCategories: { [key: string]: boolean } = {
@@ -72,6 +91,137 @@ function getRecipeCategory(recipe: any): string {
 (window as any).toggleRecipeCategory = function(category: string) {
     expandedCategories[category] = !expandedCategories[category];
     updateConversionRecipesList();
+};
+
+// 全カテゴリの展開/折りたたみを切り替える関数
+(window as any).toggleAllRecipeCategories = function(expand: boolean) {
+    Object.keys(expandedCategories).forEach(category => {
+        expandedCategories[category] = expand;
+    });
+    updateConversionRecipesList();
+};
+
+// レシピ検索関数（デバウンス付き）
+(window as any).searchRecipes = function(query: string) {
+    recipeSearchQuery = query.toLowerCase();
+    
+    // IME入力中は更新しない
+    if (isComposing) {
+        return;
+    }
+    
+    // 既存のタイマーをクリア
+    if (searchDebounceTimer !== null) {
+        clearTimeout(searchDebounceTimer);
+    }
+    
+    // 300ms後に更新を実行
+    searchDebounceTimer = setTimeout(() => {
+        updateConversionRecipesList();
+        searchDebounceTimer = null;
+    }, 300) as unknown as number;
+};
+
+// IME開始時の処理
+(window as any).onCompositionStart = function() {
+    isComposing = true;
+};
+
+// IME終了時の処理
+(window as any).onCompositionEnd = function(event: CompositionEvent) {
+    isComposing = false;
+    // IME確定後に検索を実行
+    const target = event.target as HTMLInputElement;
+    if (target && target.id === 'recipe-search-input') {
+        (window as any).searchRecipes(target.value);
+    }
+};
+
+// 検索をクリアする関数
+(window as any).clearRecipeSearch = function() {
+    recipeSearchQuery = '';
+    updateConversionRecipesList();
+};
+
+// 実行可能レシピのみ表示の切り替え関数
+(window as any).toggleAffordableOnly = function() {
+    showAffordableOnly = !showAffordableOnly;
+    updateConversionRecipesList();
+};
+
+// スライダー更新のスロットリング用
+const sliderUpdateTimers: { [key: string]: number } = {};
+
+// バッチ変換の値を更新する関数
+(window as any).updateBatchValue = function(recipeId: string, value: string) {
+    const numValue = parseInt(value) || 1;
+    batchConversionValues[recipeId] = numValue;
+    
+    // 表示を即座に更新
+    const valueDisplay = document.getElementById(`batch-value-${recipeId}`);
+    if (valueDisplay && valueDisplay.textContent !== numValue.toString()) {
+        valueDisplay.textContent = numValue.toString();
+    }
+    
+    // 必要素材数を更新
+    const requiredAmountElements = document.querySelectorAll(`.required-amount-${recipeId}`);
+    requiredAmountElements.forEach(element => {
+        const baseAmount = parseInt(element.getAttribute('data-base-amount') || '0');
+        const totalRequired = baseAmount * numValue;
+        element.textContent = formatNumber(totalRequired);
+        
+        // 親要素の色も更新（資源が足りているかチェック）
+        const resourceType = element.closest('[data-resource-type]')?.getAttribute('data-resource-type');
+        if (resourceType && gameState.resources[resourceType] !== undefined) {
+            const currentAmount = gameState.resources[resourceType];
+            const hasEnough = currentAmount >= totalRequired;
+            const colorSpan = element.parentElement;
+            if (colorSpan) {
+                colorSpan.style.color = hasEnough ? '#4ade80' : '#ff4444';
+            }
+        }
+    });
+    
+    // 変換ボタンのテキストも更新
+    const convertButton = document.querySelector(`.batch-convert-button[data-recipe-id="${recipeId}"]`) as HTMLElement;
+    if (convertButton) {
+        convertButton.innerHTML = `⚡ ${numValue}個実行`;
+    }
+    
+    // スライダーの背景更新をスロットリング
+    if (sliderUpdateTimers[recipeId]) {
+        clearTimeout(sliderUpdateTimers[recipeId]);
+    }
+    
+    sliderUpdateTimers[recipeId] = window.setTimeout(() => {
+        const slider = document.querySelector(`.batch-slider[data-recipe-id="${recipeId}"]`) as HTMLInputElement;
+        if (slider) {
+            const max = parseInt(slider.max) || 100;
+            const min = parseInt(slider.min) || 1;
+            const percentage = Math.max(0, Math.min(100, ((numValue - min) / (max - min)) * 100));
+            
+            // CSSカスタムプロパティを使用して更新
+            slider.style.setProperty('--slider-progress', `${percentage}%`);
+        }
+        delete sliderUpdateTimers[recipeId];
+    }, 16); // 約60fps
+};
+
+// プリセット値を設定する関数
+(window as any).setPresetValue = function(recipeId: string, value: string) {
+    if (!value) return; // 空の値は無視
+    
+    const numValue = parseInt(value);
+    
+    // スライダーの値を更新
+    const slider = document.querySelector(`.batch-slider[data-recipe-id="${recipeId}"]`) as HTMLInputElement;
+    if (slider) {
+        slider.value = numValue.toString();
+        // updateBatchValue関数を呼び出して表示を更新
+        (window as any).updateBatchValue(recipeId, numValue.toString());
+    }
+    
+    // プルダウンメニューはリセットしない（選択した値を保持）
 };
 
 export function initProductionUI(): void {
@@ -118,6 +268,11 @@ export function initProductionUI(): void {
 export function updateProductionUI(force: boolean = false): void {
     // Only update if panel is visible or force update
     if (!force && !isProductionPanelVisible()) {
+        return;
+    }
+    
+    // スライダー操作中またはプルダウンメニューホバー中は更新をスキップ
+    if (((window as any).isSliderDragging || (window as any).isSelectHovered) && !force) {
         return;
     }
     
@@ -252,6 +407,27 @@ function updateConversionRecipesList(): void {
     
     if (!conversionRecipesList) return;
     
+    // ヘッダーが既に存在するかチェック
+    const hasHeader = conversionRecipesList.querySelector('#recipe-list-header');
+    
+    // 現在のフォーカス要素と値を保存
+    const activeElement = document.activeElement as HTMLInputElement | HTMLSelectElement;
+    const isSearchFocused = activeElement?.id === 'recipe-search-input';
+    const isSliderFocused = activeElement?.classList.contains('batch-slider');
+    const isSelectFocused = activeElement?.tagName === 'SELECT';
+    const focusedSliderRecipeId = isSliderFocused ? activeElement?.getAttribute('data-recipe-id') : null;
+    const searchValue = (activeElement as HTMLInputElement)?.value;
+    const selectionStart = (activeElement as HTMLInputElement)?.selectionStart;
+    const selectionEnd = (activeElement as HTMLInputElement)?.selectionEnd;
+    
+    // スライダー操作中またはプルダウンメニュー操作中は更新をスキップ
+    if (isSliderFocused || isSelectFocused) {
+        return;
+    }
+    
+    // スクロール位置を保存
+    const scrollTop = conversionRecipesList.scrollTop;
+    
     // 視認性を重視したプロトタイプUI
     const availableRecipes = getAvailableRecipes(
         gameState.discoveredTechnologies,
@@ -306,27 +482,168 @@ function updateConversionRecipesList(): void {
         test7: { name: '仮7', icon: '7️⃣', color: '#6ab04c' }
     };
     
-    // レシピをカテゴリに分類
+    // レシピをカテゴリに分類（検索フィルタリング付き）
+    let filteredRecipeCount = 0;
     availableRecipes.forEach(recipe => {
+        // 実行可能フィルタリング
+        if (showAffordableOnly && !conversionEngine.canAffordRecipe(recipe.id)) {
+            return; // 実行不可能な場合はスキップ
+        }
+        
+        // 検索フィルタリング
+        if (recipeSearchQuery) {
+            const searchLower = recipeSearchQuery.toLowerCase();
+            const matchesName = recipe.name.toLowerCase().includes(searchLower);
+            const matchesDescription = recipe.description?.toLowerCase().includes(searchLower);
+            
+            // 入力・出力資源名での検索
+            const matchesInputs = recipe.inputs.resources.some((r: any) => {
+                const metadata = RESOURCE_METADATA[r.type];
+                return metadata.name.toLowerCase().includes(searchLower);
+            });
+            const matchesOutputs = recipe.outputs.resources.some((r: any) => {
+                const metadata = RESOURCE_METADATA[r.type];
+                return metadata.name.toLowerCase().includes(searchLower);
+            });
+            
+            if (!matchesName && !matchesDescription && !matchesInputs && !matchesOutputs) {
+                return; // 検索にマッチしない場合はスキップ
+            }
+        }
+        
         const category = getRecipeCategory(recipe);
         if (recipesByCategory[category]) {
             recipesByCategory[category].push(recipe);
+            filteredRecipeCount++;
         }
     });
     
     // ヘッダーのメッセージを更新
     html.pop(); // 既存のヘッダーを削除
     html.push(`
-        <div style="
+        <div id="recipe-list-header" style="
             background: rgba(0, 0, 0, 0.3);
             padding: 15px;
             margin-bottom: 20px;
             border-radius: 8px;
             border: 1px solid rgba(255, 255, 255, 0.1);
         ">
-            <h3 style="margin: 0 0 10px 0; color: #fff;">利用可能なレシピ: ${availableRecipes.length}個</h3>
-            <div style="color: #999; font-size: 14px;">
-                カテゴリをクリックして展開/折りたたみ
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <div>
+                    <h3 style="margin: 0 0 10px 0; color: #fff;">
+                        ${(() => {
+                            let message = '';
+                            if (recipeSearchQuery && showAffordableOnly) {
+                                message = `検索結果（実行可能のみ）: ${filteredRecipeCount}個`;
+                            } else if (recipeSearchQuery) {
+                                message = `検索結果: ${filteredRecipeCount}個 / ${availableRecipes.length}個`;
+                            } else if (showAffordableOnly) {
+                                message = `実行可能なレシピ: ${filteredRecipeCount}個 / ${availableRecipes.length}個`;
+                            } else {
+                                message = `利用可能なレシピ: ${availableRecipes.length}個`;
+                            }
+                            return message;
+                        })()}
+                    </h3>
+                    <div style="color: #999; font-size: 14px;">
+                        ${(recipeSearchQuery || showAffordableOnly) && filteredRecipeCount === 0
+                            ? 'フィルター条件に一致するレシピが見つかりませんでした'
+                            : 'カテゴリをクリックして展開/折りたたみ'
+                        }
+                    </div>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="toggleAllRecipeCategories(true)" style="
+                        background: rgba(74, 158, 255, 0.2);
+                        border: 1px solid rgba(74, 158, 255, 0.4);
+                        color: #4a9eff;
+                        padding: 8px 16px;
+                        border-radius: 6px;
+                        cursor: pointer;
+                        font-size: 14px;
+                        transition: all 0.3s ease;
+                    " onmouseover="this.style.background='rgba(74, 158, 255, 0.3)'" onmouseout="this.style.background='rgba(74, 158, 255, 0.2)'">
+                        全て展開
+                    </button>
+                    <button onclick="toggleAllRecipeCategories(false)" style="
+                        background: rgba(74, 158, 255, 0.2);
+                        border: 1px solid rgba(74, 158, 255, 0.4);
+                        color: #4a9eff;
+                        padding: 8px 16px;
+                        border-radius: 6px;
+                        cursor: pointer;
+                        font-size: 14px;
+                        transition: all 0.3s ease;
+                    " onmouseover="this.style.background='rgba(74, 158, 255, 0.3)'" onmouseout="this.style.background='rgba(74, 158, 255, 0.2)'">
+                        全て折りたたむ
+                    </button>
+                </div>
+            </div>
+            <div style="position: relative;">
+                <input type="text" 
+                       id="recipe-search-input"
+                       placeholder="レシピ名や資源名で検索..." 
+                       value=""
+                       style="
+                           width: 100%;
+                           padding: 10px 40px 10px 15px;
+                           background: rgba(255, 255, 255, 0.05);
+                           border: 1px solid rgba(74, 158, 255, 0.3);
+                           border-radius: 6px;
+                           color: #fff;
+                           font-size: 14px;
+                           transition: all 0.3s ease;
+                       "
+                       oninput="window.searchRecipes(this.value)"
+                       onfocus="this.style.borderColor='rgba(74, 158, 255, 0.6)'; this.style.background='rgba(255, 255, 255, 0.08)'"
+                       onblur="this.style.borderColor='rgba(74, 158, 255, 0.3)'; this.style.background='rgba(255, 255, 255, 0.05)'">
+                <span style="
+                    position: absolute;
+                    right: 15px;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    color: rgba(255, 255, 255, 0.5);
+                    font-size: 16px;
+                    pointer-events: none;
+                ">🔍</span>
+                ${recipeSearchQuery ? `
+                    <button onclick="window.clearRecipeSearch()" style="
+                        position: absolute;
+                        right: 40px;
+                        top: 50%;
+                        transform: translateY(-50%);
+                        background: rgba(255, 255, 255, 0.1);
+                        border: 1px solid rgba(255, 255, 255, 0.2);
+                        color: rgba(255, 255, 255, 0.7);
+                        padding: 4px 8px;
+                        border-radius: 4px;
+                        cursor: pointer;
+                        font-size: 12px;
+                        transition: all 0.2s ease;
+                    " onmouseover="this.style.background='rgba(255, 255, 255, 0.2)'" onmouseout="this.style.background='rgba(255, 255, 255, 0.1)'">
+                        クリア
+                    </button>
+                ` : ''}
+            </div>
+            <div style="margin-top: 10px;">
+                <button onclick="toggleAffordableOnly()" style="
+                    background: ${showAffordableOnly ? 'rgba(74, 158, 255, 0.3)' : 'rgba(255, 255, 255, 0.05)'};
+                    border: 1px solid ${showAffordableOnly ? 'rgba(74, 158, 255, 0.6)' : 'rgba(74, 158, 255, 0.3)'};
+                    color: ${showAffordableOnly ? '#fff' : '#999'};
+                    padding: 8px 16px;
+                    border-radius: 6px;
+                    cursor: pointer;
+                    font-size: 14px;
+                    transition: all 0.3s ease;
+                    width: 100%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 8px;
+                " onmouseover="this.style.background='${showAffordableOnly ? 'rgba(74, 158, 255, 0.4)' : 'rgba(255, 255, 255, 0.08)'}'" onmouseout="this.style.background='${showAffordableOnly ? 'rgba(74, 158, 255, 0.3)' : 'rgba(255, 255, 255, 0.05)'}'">
+                    <span style="font-size: 16px;">${showAffordableOnly ? '✅' : '☐'}</span>
+                    実行可能なレシピのみ表示
+                </button>
             </div>
         </div>
     `);
@@ -336,7 +653,8 @@ function updateConversionRecipesList(): void {
         if (recipes.length === 0) return;
         
         const info = categoryInfo[category as keyof typeof categoryInfo];
-        const isExpanded = expandedCategories[category] !== false;
+        // 検索中は検索結果があるカテゴリを自動展開
+        const isExpanded = recipeSearchQuery ? true : expandedCategories[category];
         
         html.push(`
             <div class="recipe-category-group" data-category="${category}" style="margin-bottom: 20px;">
@@ -449,10 +767,11 @@ function updateConversionRecipesList(): void {
                                         justify-content: space-between;
                                         margin: 5px 0;
                                         font-size: 16px;
-                                    ">
+                                    " data-resource-type="${r.type}">
                                         <span>${meta.icon} ${meta.name}</span>
                                         <span style="color: ${textColor}; font-weight: bold;">
-                                            ${formatNumber(currentAmount)} / ${formatNumber(r.amount)}
+                                            <span class="current-amount">${formatNumber(currentAmount)}</span> / 
+                                            <span class="required-amount-${recipe.id}" data-base-amount="${r.amount}">${formatNumber(r.amount)}</span>
                                         </span>
                                     </div>
                                 `;
@@ -551,41 +870,164 @@ function updateConversionRecipesList(): void {
                     ${canAfford ? `
                         <div style="
                             display: flex;
-                            align-items: center;
+                            flex-direction: column;
                             gap: 10px;
-                            padding: 8px 15px;
+                            padding: 15px;
                             background: rgba(255, 255, 255, 0.05);
                             border: 1px solid rgba(255, 255, 255, 0.2);
                             border-radius: 8px;
+                            flex: 1;
                         ">
-                            <span style="color: #999;">一括:</span>
-                            <input type="number" 
-                                   class="batch-count" 
-                                   data-recipe-id="${recipe.id}"
-                                   min="1" 
-                                   max="${conversionEngine.getMaxConversions(recipe.id)}" 
-                                   value="${batchConversionValues[recipe.id] || 1}"
-                                   style="
-                                       width: 60px;
-                                       padding: 5px;
-                                       background: rgba(0, 0, 0, 0.3);
-                                       border: 1px solid rgba(255, 255, 255, 0.2);
-                                       border-radius: 4px;
-                                       color: white;
-                                       text-align: center;
-                                   ">
+                            <div style="
+                                display: flex;
+                                justify-content: space-between;
+                                align-items: center;
+                                margin-bottom: 5px;
+                            ">
+                                <span style="color: #999; font-size: 14px;">一括変換</span>
+                                <span id="batch-value-${recipe.id}" style="
+                                    color: #4a9eff;
+                                    font-weight: bold;
+                                    font-size: 18px;
+                                    background: rgba(74, 158, 255, 0.1);
+                                    padding: 4px 12px;
+                                    border-radius: 4px;
+                                    min-width: 40px;
+                                    text-align: center;
+                                ">${batchConversionValues[recipe.id] || 1}</span>
+                            </div>
+                            <div style="position: relative;">
+                                <input type="range" 
+                                       id="recipe-${recipe.id}-slider"
+                                       class="batch-slider" 
+                                       data-recipe-id="${recipe.id}"
+                                       min="1" 
+                                       max="${conversionEngine.getMaxConversions(recipe.id)}" 
+                                       value="${batchConversionValues[recipe.id] || 1}"
+                                       oninput="updateBatchValue('${recipe.id}', this.value)"
+                                       onmousedown="window.isSliderDragging = true"
+                                       onmouseup="window.isSliderDragging = false"
+                                       onmouseleave="window.isSliderDragging = false"
+                                       ontouchstart="window.isSliderDragging = true"
+                                       ontouchend="window.isSliderDragging = false"
+                                       style="
+                                           --slider-progress: ${((batchConversionValues[recipe.id] || 1) - 1) / (conversionEngine.getMaxConversions(recipe.id) - 1) * 100}%;
+                                           width: 100%;
+                                           height: 8px;
+                                           -webkit-appearance: none;
+                                           appearance: none;
+                                           background: linear-gradient(to right, 
+                                               #4a9eff 0%, 
+                                               #4a9eff var(--slider-progress), 
+                                               rgba(255, 255, 255, 0.2) var(--slider-progress), 
+                                               rgba(255, 255, 255, 0.2) 100%);
+                                           border-radius: 4px;
+                                           outline: none;
+                                           cursor: pointer;
+                                           transition: background 0.1s ease-out;
+                                       ">
+                                <style>
+                                    #recipe-${recipe.id}-slider::-webkit-slider-thumb {
+                                        -webkit-appearance: none;
+                                        appearance: none;
+                                        width: 20px;
+                                        height: 20px;
+                                        background: #4a9eff;
+                                        border: 2px solid #fff;
+                                        border-radius: 50%;
+                                        cursor: pointer;
+                                        box-shadow: 0 0 10px rgba(74, 158, 255, 0.5);
+                                        transition: all 0.2s ease;
+                                    }
+                                    #recipe-${recipe.id}-slider::-webkit-slider-thumb:hover {
+                                        transform: scale(1.2);
+                                        box-shadow: 0 0 20px rgba(74, 158, 255, 0.8);
+                                    }
+                                    #recipe-${recipe.id}-slider::-moz-range-thumb {
+                                        width: 20px;
+                                        height: 20px;
+                                        background: #4a9eff;
+                                        border: 2px solid #fff;
+                                        border-radius: 50%;
+                                        cursor: pointer;
+                                        box-shadow: 0 0 10px rgba(74, 158, 255, 0.5);
+                                        transition: all 0.2s ease;
+                                    }
+                                    #recipe-${recipe.id}-slider::-moz-range-thumb:hover {
+                                        transform: scale(1.2);
+                                        box-shadow: 0 0 20px rgba(74, 158, 255, 0.8);
+                                    }
+                                </style>
+                            </div>
+                            <div style="
+                                display: flex;
+                                justify-content: space-between;
+                                font-size: 12px;
+                                color: #666;
+                                margin-top: -5px;
+                            ">
+                                <span>1</span>
+                                <span>${conversionEngine.getMaxConversions(recipe.id)}</span>
+                            </div>
+                            <div style="
+                                margin: 10px 0;
+                            ">
+                                <select id="preset-select-${recipe.id}" 
+                                        onchange="setPresetValue('${recipe.id}', this.value)"
+                                        onmouseenter="window.isSelectHovered = true"
+                                        onmouseleave="window.isSelectHovered = false"
+                                        style="
+                                    width: 100%;
+                                    padding: 8px 12px;
+                                    background: rgba(0, 0, 0, 0.3);
+                                    border: 1px solid rgba(74, 158, 255, 0.3);
+                                    color: #fff;
+                                    border-radius: 6px;
+                                    cursor: pointer;
+                                    font-size: 14px;
+                                    font-weight: 500;
+                                    transition: all 0.2s ease;
+                                    appearance: none;
+                                    background-image: url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2214%22 height=%228%22 viewBox=%220 0 14 8%22%3e%3cpath fill=%22%234a9eff%22 d=%22M7 8L0 0h14z%22/%3e%3c/svg%3e');
+                                    background-repeat: no-repeat;
+                                    background-position: right 12px center;
+                                    background-size: 14px;
+                                    padding-right: 40px;
+                                " onfocus="this.style.borderColor='rgba(74, 158, 255, 0.6)'; this.style.background='rgba(0, 0, 0, 0.4) url(data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2214%22 height=%228%22 viewBox=%220 0 14 8%22%3e%3cpath fill=%22%234a9eff%22 d=%22M7 8L0 0h14z%22/%3e%3c/svg%3e) no-repeat right 12px center'; this.style.backgroundSize='14px'" 
+                                   onblur="this.style.borderColor='rgba(74, 158, 255, 0.3)'; this.style.background='rgba(0, 0, 0, 0.3) url(data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2214%22 height=%228%22 viewBox=%220 0 14 8%22%3e%3cpath fill=%22%234a9eff%22 d=%22M7 8L0 0h14z%22/%3e%3c/svg%3e) no-repeat right 12px center'; this.style.backgroundSize='14px'">
+                                    <option value="" style="color: #999;">プリセット数量</option>
+                                    ${(() => {
+                                        const max = conversionEngine.getMaxConversions(recipe.id);
+                                        const currentValue = batchConversionValues[recipe.id] || 1;
+                                        const presets = [1, 5, 10, 25, 50, 100];
+                                        return presets
+                                            .filter(value => value <= max)
+                                            .concat(max > 100 ? [max] : [])
+                                            .map(value => `
+                                                <option value="${value}" ${value === currentValue ? 'selected' : ''} style="background: #1a1a1a; color: #fff;">
+                                                    ${value === max ? `MAX (${value})` : value}
+                                                </option>
+                                            `).join('');
+                                    })()}
+                                </select>
+                            </div>
                             <button class="batch-convert-button" 
                                     data-recipe-id="${recipe.id}"
                                     style="
-                                        padding: 5px 15px;
-                                        background: #ffa500;
+                                        padding: 10px 20px;
+                                        background: linear-gradient(135deg, #ffa500, #ff8c00);
                                         color: white;
                                         border: none;
-                                        border-radius: 4px;
+                                        border-radius: 6px;
                                         cursor: pointer;
                                         font-weight: bold;
-                                    ">
-                                ⚡ 実行
+                                        font-size: 16px;
+                                        transition: all 0.3s ease;
+                                        box-shadow: 0 2px 8px rgba(255, 165, 0, 0.3);
+                                    "
+                                    onmouseover="this.style.background='linear-gradient(135deg, #ff8c00, #ff7700)'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(255, 165, 0, 0.5)'"
+                                    onmouseout="this.style.background='linear-gradient(135deg, #ffa500, #ff8c00)'; this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(255, 165, 0, 0.3)'">
+                                ⚡ ${batchConversionValues[recipe.id] || 1}個実行
                             </button>
                         </div>
                     ` : ''}
@@ -601,11 +1043,56 @@ function updateConversionRecipesList(): void {
         `);
     });
     
-    if (availableRecipes.length === 0) {
-        html.push('<p style="text-align: center; color: #999; padding: 40px;">利用可能なレシピがありません</p>');
+    // 検索結果が0件の場合のメッセージ
+    const hasRecipes = Object.values(recipesByCategory).some(recipes => recipes.length > 0);
+    if (!hasRecipes) {
+        if (recipeSearchQuery) {
+            html.push(`<p style="text-align: center; color: #999; padding: 40px;">
+                「${recipeSearchQuery}」に一致するレシピが見つかりませんでした
+            </p>`);
+        } else {
+            html.push('<p style="text-align: center; color: #999; padding: 40px;">利用可能なレシピがありません</p>');
+        }
     }
     
-    conversionRecipesList.innerHTML = html.join('');
+    // ヘッダーが既に存在する場合は、レシピリストのみ更新
+    if (hasHeader) {
+        // レシピリストコンテナを探すか作成
+        let recipeListContainer = conversionRecipesList.querySelector('#recipe-list-container');
+        if (!recipeListContainer) {
+            recipeListContainer = document.createElement('div');
+            recipeListContainer.id = 'recipe-list-container';
+            conversionRecipesList.appendChild(recipeListContainer);
+        }
+        
+        // カテゴリごとのHTMLを結合（ヘッダーを除く）
+        const recipesHtml = html.slice(1).join('');
+        recipeListContainer.innerHTML = recipesHtml;
+    } else {
+        // 初回はヘッダーとレシピリストコンテナを作成
+        const headerHtml = html[0] || '';
+        const recipesHtml = html.slice(1).join('');
+        conversionRecipesList.innerHTML = headerHtml + `<div id="recipe-list-container">${recipesHtml}</div>`;
+    }
+    
+    // 検索入力の値を同期（初回のみ）
+    if (!hasHeader) {
+        const searchInput = document.getElementById('recipe-search-input') as HTMLInputElement;
+        if (searchInput) {
+            searchInput.value = recipeSearchQuery;
+        }
+    }
+    
+    // フォーカスとスクロール位置を復元
+    if (isSearchFocused && searchInput) {
+        searchInput.focus();
+        if (selectionStart !== null && selectionEnd !== null) {
+            searchInput.setSelectionRange(selectionStart, selectionEnd);
+        }
+    }
+    
+    // スクロール位置を復元
+    conversionRecipesList.scrollTop = scrollTop;
     
     // イベントハンドラーを追加
     conversionRecipesList.querySelectorAll('.convert-button:not(.disabled)').forEach(button => {
@@ -624,14 +1111,13 @@ function updateConversionRecipesList(): void {
             const recipeId = (e.target as HTMLElement).getAttribute('data-recipe-id');
             if (!recipeId) return;
             
-            const input = conversionRecipesList.querySelector(`.batch-count[data-recipe-id="${recipeId}"]`) as HTMLInputElement;
-            if (!input) return;
-            
-            const count = parseInt(input.value) || 1;
+            // スライダーの値を使用
+            const count = batchConversionValues[recipeId] || 1;
             const result = conversionEngine.startBatchConversion(recipeId, count);
             
             if (result.started > 0) {
                 // 成功
+                showMessage(`${count}個の変換を開始しました`, 2000);
             } else if (result.reason) {
                 showMessage(result.reason, 2000);
             }
@@ -640,37 +1126,18 @@ function updateConversionRecipesList(): void {
         });
     });
     
-    // 入力値の変更ハンドラー
-    conversionRecipesList.querySelectorAll('.batch-count').forEach(input => {
-        input.addEventListener('input', (e) => {
-            const target = e.target as HTMLInputElement;
-            const recipeId = target.getAttribute('data-recipe-id');
-            if (!recipeId) return;
-            
-            const max = conversionEngine.getMaxConversions(recipeId);
-            target.max = max.toString();
-            
-            let value = parseInt(target.value) || 1;
-            if (value > max) {
-                value = max;
-                target.value = max.toString();
-            }
-            if (value < 1) {
-                value = 1;
-                target.value = '1';
-            }
-            
-            batchConversionValues[recipeId] = value;
-        });
+    // スライダーの値を復元
+    conversionRecipesList.querySelectorAll('.batch-slider').forEach(slider => {
+        const sliderElement = slider as HTMLInputElement;
+        const recipeId = sliderElement.getAttribute('data-recipe-id');
+        if (!recipeId) return;
         
-        input.addEventListener('change', (e) => {
-            const target = e.target as HTMLInputElement;
-            const recipeId = target.getAttribute('data-recipe-id');
-            if (!recipeId) return;
-            
-            const value = parseInt(target.value) || 1;
-            batchConversionValues[recipeId] = value;
-        });
+        const savedValue = batchConversionValues[recipeId];
+        if (savedValue) {
+            sliderElement.value = savedValue.toString();
+            // 背景グラデーションを更新
+            (window as any).updateBatchValue(recipeId, savedValue.toString());
+        }
     });
     
     return; // ここで処理を終了
