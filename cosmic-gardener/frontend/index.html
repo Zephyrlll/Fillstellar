@@ -106,7 +106,7 @@
               </div>
               <button id="mobile-createPlanetButton" class="mobile-create-btn">創造</button>
             </div>
-            <div class="mobile-creation-item" id="mobile-starCreation" style="display: none;">
+            <div class="mobile-creation-item" id="mobile-starCreation">
               <div class="creation-info">
                 <span class="creation-name">恒星</span>
                 <span class="creation-cost">コスト: <span id="mobile-starCost">100000</span> 塵</span>
@@ -1247,6 +1247,24 @@
                       </div>
                       
                   </div>
+              </div>
+
+              <div class="collapsible-section">
+                <div class="collapsible-header" id="gameplaySettingsHeader">🎮 ゲームプレイ設定</div>
+                <div class="collapsible-content hidden" id="gameplaySettingsContent">
+                    
+                    <div class="option-item">
+                        <label for="radarUpdateFrequencySelect">レーダー更新頻度:</label>
+                        <select id="radarUpdateFrequencySelect">
+                            <option value="0.1">超高速 (0.1秒) - 滑らか</option>
+                            <option value="0.2" selected>高速 (0.2秒) - 推奨</option>
+                            <option value="0.5">標準 (0.5秒) - バランス</option>
+                            <option value="1.0">低速 (1秒) - 軽量</option>
+                            <option value="2.0">超低速 (2秒) - 省電力</option>
+                        </select>
+                    </div>
+                    
+                </div>
               </div>
 
               <div class="collapsible-section">

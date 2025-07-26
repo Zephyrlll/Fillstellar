@@ -1206,6 +1206,72 @@ async function init() {
         (window as any).researchTreeVisualizerUI = researchTreeVisualizerUI;
         (window as any).batchConversionUI = batchConversionUI;
         (window as any).conversionRecipeUI = conversionRecipeUI;
+        (window as any).gameState = gameState;
+        (window as any).scene = scene;
+        
+        // デバッグ用：恒星作成テスト関数
+        (window as any).testCreateStar = () => {
+            console.log('[TEST] Testing star creation...');
+            
+            const cost = 100000;
+            // リソースを追加
+            gameStateManager.updateState(state => ({
+                ...state,
+                cosmicDust: state.cosmicDust + cost,
+                resources: {
+                    ...state.resources,
+                    cosmicDust: state.resources.cosmicDust + cost
+                }
+            }));
+            console.log('[TEST] Added resources:', gameState.resources.cosmicDust);
+            
+            const starName = 'テスト恒星';
+            
+            // Import and use CelestialBodyFactory
+            import('./js/celestialBodyFactory.js').then(({ CelestialBodyFactory }) => {
+                import('./js/physicsConfig.js').then(({ physicsConfig }) => {
+                    const blackHole = gameState.stars.find(s => s.userData.type === 'black_hole');
+                    const radius = 7000 + Math.random() * 18000;
+                    const angle = Math.random() * Math.PI * 2;
+                    const position = new THREE.Vector3(
+                        radius * Math.cos(angle), 
+                        (Math.random() - 0.5) * 100, 
+                        radius * Math.sin(angle)
+                    );
+                    
+                    let velocity = new THREE.Vector3(0, 0, 0);
+                    if (blackHole) {
+                        const blackHoleMass = blackHole.userData.mass || 1e7;
+                        const G = physicsConfig.getPhysics().G;
+                        const orbitalSpeed = Math.sqrt((G * blackHoleMass) / radius) * 0.95;
+                        velocity = new THREE.Vector3(-position.z, 0, position.x).normalize().multiplyScalar(orbitalSpeed);
+                    }
+                    
+                    const result = CelestialBodyFactory.create('star', {
+                        name: starName,
+                        position,
+                        velocity
+                    });
+                    
+                    console.log('[TEST] Create result:', result);
+                    
+                    if (result.ok) {
+                        scene.add(result.value);
+                        gameState.stars.push(result.value);
+                        console.log('[TEST] Star created successfully!', result.value);
+                        alert('恒星が作成されました！');
+                    } else {
+                        console.error('[TEST] Failed to create star:', result);
+                        console.error('[TEST] Error details:', {
+                            error: result.error,
+                            message: result.error?.message,
+                            details: result.error?.details
+                        });
+                        alert(`恒星の作成に失敗しました: ${result.error?.message || 'Unknown error'}`);
+                    }
+                });
+            });
+        };
         
         // Test function for modern UI
         (window as any).testModernUI = () => {

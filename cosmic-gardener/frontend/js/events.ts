@@ -85,6 +85,61 @@ export function setupEventListeners() {
     // Initialize save/load UI
     initializeSaveLoadUI();
     
+    // Initialize celestial creation UI
+    import('./systems/celestialCreationUI.js').then(({ initializeCelestialCreationUI }) => {
+        console.log('[EVENTS] Initializing celestial creation UI');
+        initializeCelestialCreationUI();
+    });
+    
+    // デバッグ: 恒星作成ボタンのテスト
+    setTimeout(() => {
+        console.log('[DEBUG] Testing star creation buttons...');
+        
+        // デスクトップ版のボタンを探す
+        const desktopButtons = document.querySelectorAll('[data-type="star"]');
+        console.log('[DEBUG] Desktop star buttons found:', desktopButtons.length);
+        desktopButtons.forEach((btn, index) => {
+            console.log(`[DEBUG] Desktop button ${index}:`, btn);
+        });
+        
+        // モバイル版のボタンを探す
+        const mobileButton = document.getElementById('mobile-createStarButton');
+        console.log('[DEBUG] Mobile star button:', mobileButton);
+        
+        // すべてのcreate-btn-modernクラスのボタンを探す
+        const allCreateButtons = document.querySelectorAll('.create-btn-modern');
+        console.log('[DEBUG] All create-btn-modern buttons:', allCreateButtons.length);
+        allCreateButtons.forEach((btn, index) => {
+            const type = btn.getAttribute('data-type');
+            console.log(`[DEBUG] Button ${index} type:`, type, 'element:', btn);
+        });
+        
+        // 手動でクリックイベントを追加（テスト用）
+        desktopButtons.forEach((btn) => {
+            const rect = btn.getBoundingClientRect();
+            const style = window.getComputedStyle(btn);
+            console.log('[DEBUG] Star button visibility:', {
+                element: btn,
+                visible: style.display !== 'none' && style.visibility !== 'hidden',
+                display: style.display,
+                visibility: style.visibility,
+                opacity: style.opacity,
+                position: rect,
+                inViewport: rect.top >= 0 && rect.left >= 0 && rect.bottom <= window.innerHeight && rect.right <= window.innerWidth
+            });
+            
+            btn.addEventListener('click', () => {
+                console.log('[DEBUG] Desktop star button clicked!');
+            });
+        });
+        
+        if (mobileButton) {
+            mobileButton.addEventListener('click', () => {
+                console.log('[DEBUG] Mobile star button clicked!');
+            });
+        }
+    }, 2000);
+    
     // UI要素上でのマウス操作時にOrbitControlsを無効化
     const handleUIMouseEnter = () => {
         import('./threeSetup.js').then(({ controls }) => {
@@ -1443,9 +1498,21 @@ export function setupEventListeners() {
     if (ui.generalSettingsHeader) {
         ui.generalSettingsHeader.addEventListener('click', () => {
             if (ui.generalSettingsContent) {
-                ui.generalSettingsContent.classList.toggle('expanded');
+                ui.generalSettingsContent.classList.toggle('hidden');
             }
         });
+    }
+    
+    if (ui.gameplaySettingsHeader) {
+        console.log('[OPTIONS] Gameplay settings header found, adding click listener');
+        ui.gameplaySettingsHeader.addEventListener('click', () => {
+            console.log('[OPTIONS] Gameplay settings header clicked');
+            if (ui.gameplaySettingsContent) {
+                ui.gameplaySettingsContent.classList.toggle('hidden');
+            }
+        });
+    } else {
+        console.warn('[OPTIONS] Gameplay settings header not found!');
     }
     
     // LOD performance mode select
@@ -1493,6 +1560,22 @@ export function setupEventListeners() {
             saveGame();
             updateUI();
         });
+    }
+
+    if (ui.radarUpdateFrequencySelect) {
+        console.log('[OPTIONS] Radar update frequency select found');
+        ui.radarUpdateFrequencySelect.addEventListener('change', (event) => {
+            const target = event.target as HTMLSelectElement;
+            const frequency = parseFloat(target.value);
+            gameStateManager.updateState(state => ({
+                ...state,
+                radarUpdateFrequency: frequency
+            }));
+            saveGame();
+            showMessage(`レーダー更新頻度を${frequency}秒に変更しました`);
+        });
+    } else {
+        console.warn('[OPTIONS] Radar update frequency select not found!');
     }
 
     const collisionDetectionCheckbox = document.getElementById('collisionDetectionCheckbox') as HTMLInputElement;
@@ -1952,6 +2035,68 @@ function setupMobileSellEventHandlers() {
                 import('./ui.js').then(({ updateMobileSellUI }) => updateMobileSellUI());
                 saveGame();
             }
+        });
+    }
+    
+    // Mobile create star button
+    const mobileCreateStarButton = document.getElementById('mobile-createStarButton');
+    if (mobileCreateStarButton) {
+        console.log('[EVENTS] Mobile create star button found');
+        mobileCreateStarButton.addEventListener('click', () => {
+            console.log('[EVENTS] Mobile create star button clicked');
+            const cost = 100000;
+            if (gameState.resources.cosmicDust < cost) {
+                showMessage('宇宙の塵が不足しています。');
+                return;
+            }
+            
+            const starName = prompt('恒星の名前を入力してください:', '輝く星');
+            if (!starName) return;
+            
+            // Use CelestialBodyFactory
+            import('./celestialBodyFactory.js').then(({ CelestialBodyFactory }) => {
+                import('./physicsConfig.js').then(({ physicsConfig }) => {
+                    gameStateManager.updateResource('cosmicDust', -cost);
+                    
+                    const blackHole = gameState.stars.find(s => s.userData.type === 'black_hole');
+                    const radius = 7000 + Math.random() * 18000;
+                    const angle = Math.random() * Math.PI * 2;
+                    const position = new THREE.Vector3(
+                        radius * Math.cos(angle), 
+                        (Math.random() - 0.5) * 100, 
+                        radius * Math.sin(angle)
+                    );
+                    
+                    let velocity = new THREE.Vector3(0, 0, 0);
+                    if (blackHole) {
+                        const blackHoleMass = blackHole.userData.mass || 1e7;
+                        const G = physicsConfig.getPhysics().G;
+                        const orbitalSpeed = Math.sqrt((G * blackHoleMass) / radius) * 0.95;
+                        velocity = new THREE.Vector3(-position.z, 0, position.x).normalize().multiplyScalar(orbitalSpeed);
+                    }
+                    
+                    const result = CelestialBodyFactory.create('star', {
+                        name: starName,
+                        position,
+                        velocity
+                    });
+                    
+                    if (result.ok) {
+                        gameState.scene.add(result.value);
+                        gameState.stars.push(result.value);
+                        
+                        addTimelineLog({
+                            message: `恒星「${starName}」が銀河に誕生しました！`,
+                            type: 'creation',
+                            important: true
+                        });
+                        
+                        soundManager.playUISound('success');
+                        saveGame();
+                        updateUI();
+                    }
+                });
+            });
         });
     }
 }

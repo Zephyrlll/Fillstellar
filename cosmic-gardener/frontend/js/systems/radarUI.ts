@@ -228,22 +228,23 @@ export class RadarUI {
   public update(deltaTime: number): void {
     if (!this.isOpen) return;
     
-    // 200ms毎に更新
+    // ゲーム設定から更新頻度を取得
+    const updateFrequency = gameState.radarUpdateFrequency || 0.2;
+    
+    // 指定された頻度で更新
     this.updateTimer += deltaTime;
-    if (this.updateTimer >= 0.2) {
+    if (this.updateTimer >= updateFrequency) {
       this.updateTimer = 0;
       
-      // 状態が変化した場合のみ更新
+      // 動的更新：常に最新の状態を反映
+      this.updateRadar();
+      
+      // 状態を記録
       const blackHole = gameState.stars.find(s => s.userData.type === 'black_hole');
       const currentBlackHolePos = blackHole ? 
         `${blackHole.position.x},${blackHole.position.z}` : null;
-      
-      if (this.previousState.starCount !== gameState.stars.length ||
-          this.previousState.blackHolePosition !== currentBlackHolePos) {
-        this.updateRadar();
-        this.previousState.starCount = gameState.stars.length;
-        this.previousState.blackHolePosition = currentBlackHolePos;
-      }
+      this.previousState.starCount = gameState.stars.length;
+      this.previousState.blackHolePosition = currentBlackHolePos;
     }
   }
 
@@ -286,6 +287,25 @@ export class RadarUI {
       ctx.arc(centerX, centerY, radius * i / 3, 0, Math.PI * 2);
       ctx.stroke();
     }
+    
+    // スキャンライン効果（動的アニメーション）
+    const scanAngle = (Date.now() * 0.001) % (Math.PI * 2);
+    const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius);
+    gradient.addColorStop(0, 'rgba(255, 215, 0, 0)');
+    gradient.addColorStop(0.8, 'rgba(255, 215, 0, 0)');
+    gradient.addColorStop(0.95, 'rgba(255, 215, 0, 0.1)');
+    gradient.addColorStop(1, 'rgba(255, 215, 0, 0.3)');
+    
+    ctx.save();
+    ctx.translate(centerX, centerY);
+    ctx.rotate(scanAngle);
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.arc(0, 0, radius, 0, Math.PI / 6);
+    ctx.closePath();
+    ctx.fillStyle = gradient;
+    ctx.fill();
+    ctx.restore();
     
     // カメラの向き表示
     const cameraDir = new THREE.Vector3();

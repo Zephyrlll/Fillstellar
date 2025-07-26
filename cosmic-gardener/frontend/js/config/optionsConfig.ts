@@ -1,4 +1,6 @@
 import { OptionsConfig } from '../systems/optionsScreen.js';
+import { gameStateManager } from '../state.js';
+import { showMessage } from '../ui.js';
 
 // 解像度スケールインジケーターを表示
 function showResolutionScaleIndicator(scale: number): void {
@@ -125,6 +127,35 @@ export const optionsConfig: OptionsConfig = {
               label: 'リソース満杯通知',
               type: 'checkbox',
               value: false
+            }
+          ]
+        },
+        {
+          id: 'radar-settings',
+          label: 'レーダー設定',
+          icon: '📡',
+          settings: [
+            {
+              id: 'radar-update-frequency',
+              label: 'レーダー更新頻度',
+              type: 'select',
+              value: '0.2',
+              options: [
+                { value: '0.1', label: '超高速 (0.1秒) - 滑らか' },
+                { value: '0.2', label: '高速 (0.2秒) - 推奨' },
+                { value: '0.5', label: '標準 (0.5秒) - バランス' },
+                { value: '1.0', label: '低速 (1秒) - 軽量' },
+                { value: '2.0', label: '超低速 (2秒) - 省電力' }
+              ],
+              description: 'レーダーの更新間隔を設定します',
+              onChange: (value: string) => {
+                const frequency = parseFloat(value);
+                gameStateManager.updateState(state => ({
+                  ...state,
+                  radarUpdateFrequency: frequency
+                }));
+                showMessage(`レーダー更新頻度を${frequency}秒に変更しました`);
+              }
             }
           ]
         }

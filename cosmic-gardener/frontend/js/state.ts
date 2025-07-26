@@ -228,6 +228,7 @@ export interface GameState {
     currentTimeMultiplier: string;
     timeMultiplierCosts: { [key: string]: number };
     isMapVisible: boolean;
+    radarUpdateFrequency: number; // レーダー更新頻度（秒）
     saveVersion: string;
     focusedObject: CelestialBody | null;
     paragon?: any; // パラゴンシステムのデータ
@@ -628,6 +629,7 @@ const initialGameState: GameState = {
     currentTimeMultiplier: '1x',
     timeMultiplierCosts: { '2x': 500, '5x': 2000, '10x': 5000 },
     isMapVisible: true,
+    radarUpdateFrequency: 0.2, // デフォルト0.2秒（高速）
     saveVersion: '2.1-graphics-system',
     focusedObject: null,
     timelineLog: [],

@@ -1473,6 +1473,13 @@ export class OptionsScreen {
         console.error('[OPTIONS] Failed to load settings:', error);
       }
     }
+    
+    // ゲームステートから現在の値を読み込む
+    import('../state.js').then(({ gameState }) => {
+      if (gameState.radarUpdateFrequency !== undefined) {
+        this.settings.set('radar-update-frequency', gameState.radarUpdateFrequency.toString());
+      }
+    });
   }
   
   private saveSettings(): void {

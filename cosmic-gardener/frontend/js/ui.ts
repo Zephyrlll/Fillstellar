@@ -186,8 +186,11 @@ export const ui: { [key: string]: HTMLElement | null } = {
     graphicsContent: document.getElementById('graphicsContent'),
     generalSettingsHeader: document.getElementById('generalSettingsHeader'),
     generalSettingsContent: document.getElementById('generalSettingsContent'),
+    gameplaySettingsHeader: document.getElementById('gameplaySettingsHeader'),
+    gameplaySettingsContent: document.getElementById('gameplaySettingsContent'),
     
     unitSystemSelect: document.getElementById('unitSystemSelect'),
+    radarUpdateFrequencySelect: document.getElementById('radarUpdateFrequencySelect'),
 };
 
 function updateFocusedBodyUI() {

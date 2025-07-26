@@ -454,29 +454,32 @@
   position: fixed;
   left: 20px;
   bottom: 20px;
-  z-index: 1000;
-  display: flex;
+  z-index: 9999;
+  display: flex !important;
   align-items: center;
   gap: 0;
 }
 
 /* Modern Toggle Button */
 .creation-toggle-modern {
-  background: rgba(0, 0, 0, 0.8);
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.9) !important;
+  color: #FFD700 !important;
+  border: 2px solid #FFD700 !important;
   border-radius: 0;
-  padding: 12px 24px;
-  cursor: pointer;
-  font-size: 11px;
-  font-weight: 300;
+  padding: 15px 30px !important;
+  cursor: pointer !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
   letter-spacing: 2px;
-  transition: background 0.2s ease, border-color 0.2s ease;
+  transition: all 0.3s ease;
   backdrop-filter: blur(10px);
   position: relative;
   overflow: hidden;
-  width: 125px;
+  width: auto !important;
   flex-shrink: 0;
+  pointer-events: auto !important;
+  display: block !important;
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.3) !important;
 }
 
 .creation-toggle-modern::before {
@@ -501,8 +504,9 @@
 /* Modern Menu Panel */
 .creation-menu-modern {
   position: absolute;
-  left: 125px;
-  top: 0;
+  left: 150px; /* 140px + 10px = 150px */
+  bottom: 0;
+  transform: translateY(-10px); /* -25px + 15px = -10px */
   background: rgba(0, 0, 0, 0.8);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-left: none;
@@ -531,12 +535,14 @@
 .creation-item-modern {
   display: flex;
   flex-direction: column;
-  padding: 16px 20px;
+  padding: 24px 20px; /* 上下のパディングを増加 */
   border-right: 1px solid rgba(255, 255, 255, 0.05);
   transition: all 0.2s ease;
   position: relative;
   flex-shrink: 0;
   min-width: 100px;
+  min-height: 120px; /* 最小高さを設定 */
+  justify-content: space-between; /* 要素を上下に配置 */
 }
 
 .creation-item-modern:last-child {
@@ -574,18 +580,18 @@
 .item-header {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  margin-bottom: 12px;
+  gap: 8px;
+  margin-bottom: 20px; /* ボタンとの間隔を増やす */
 }
 
 .item-name {
-  font-size: 12px;
+  font-size: 14px; /* 少し大きく */
   font-weight: 400;
   color: rgba(255, 255, 255, 0.9);
 }
 
 .item-cost {
-  font-size: 18px;
+  font-size: 20px; /* 少し大きく */
   font-weight: 200;
   color: rgba(255, 255, 255, 0.6);
   font-family: 'Monaco', monospace;
@@ -593,16 +599,19 @@
 
 /* Modern Create Button */
 .create-btn-modern {
-  background: transparent;
-  color: rgba(255, 255, 255, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  padding: 8px 16px;
-  font-size: 11px;
-  font-weight: 300;
-  cursor: pointer;
+  background: rgba(255, 215, 0, 0.2) !important;
+  color: #FFD700 !important;
+  border: 1px solid #FFD700 !important;
+  padding: 10px 20px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
   transition: all 0.2s ease;
   position: relative;
   overflow: hidden;
+  pointer-events: auto !important;
+  display: block !important;
+  margin-top: 10px !important;
 }
 
 .create-btn-modern::before {

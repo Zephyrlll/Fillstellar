@@ -182,9 +182,7 @@ export const researchItems: ResearchItem[] = [
     category: 'celestial',
     icon: '⭐',
     cost: {
-      thoughtPoints: 500,
-      refinedMetal: 50,
-      hyperCrystal: 20
+      darkMatter: 5
     },
     effects: [
       {
