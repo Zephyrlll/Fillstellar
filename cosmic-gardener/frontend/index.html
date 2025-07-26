@@ -957,7 +957,7 @@
   </div>
 
   <!-- デバッグボタン -->
-  <div id="debug-buttons" style="position: fixed; bottom: 20px; right: 10px; z-index: 10000; display: flex; gap: 5px;">
+  <div id="debug-buttons" style="position: fixed; bottom: 100px; right: 10px; z-index: 10000; display: flex; gap: 5px;">
     <button id="debug-resources-btn" style="
       background: #10b981;
       color: white;
@@ -1439,8 +1439,8 @@
     </div>
 
     <!-- 銀河マップコンテナ -->
-    <button id="galaxy-map-toggle" title="レーダーを開閉">📡</button>
-    <div id="galaxy-map-container"></div>
+    <button id="galaxy-map-toggle" title="レーダーを開閉" style="display: flex;">📡</button>
+    <div id="galaxy-map-container" class="collapsed"></div>
 
     <!-- 統計・ログパネル -->
     <div id="stats-log-container">

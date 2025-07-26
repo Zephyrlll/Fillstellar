@@ -99,6 +99,8 @@ import { orbitTrailSystem } from './js/orbitTrails.ts';
 import { backgroundGalaxies } from './js/backgroundGalaxies.ts';
 // Celestial Creation UI
 import { celestialCreationUI } from './js/systems/celestialCreationUI.ts';
+// Star Management UI
+import { starManagementUI } from './js/systems/starManagementUI.ts';
 // LOD system
 import { LODManager } from './js/systems/lodManager.ts';
 
@@ -407,6 +409,11 @@ function animate() {
     }));
     updatePhysics(animationDeltaTime);
     
+    // レーダーUIを更新
+    if (typeof window.radarUI !== 'undefined' && window.radarUI.update) {
+        window.radarUI.update(animationDeltaTime);
+    }
+    
     // 軌道トレイルを更新
     orbitTrailSystem.update(gameState.stars);
     
@@ -659,6 +666,12 @@ function animate() {
         // カメラ位置と注視点を即座に更新
         camera.position.copy(newCameraPosition);
         controls.target.copy(targetPosition);
+        
+        // フォーカス後にnullに戻す（1回だけ実行）
+        gameStateManager.updateState(state => ({
+            ...state,
+            focusedObject: null
+        }));
     }
 
     const edgeGlow = scene.getObjectByName('black_hole_edge_glow');
@@ -729,6 +742,9 @@ function animate() {
         debouncedUpdateGalaxyMap();
         galaxyMapUpdateTimer = 0;
     }
+    
+    // Update star management UI
+    starManagementUI.update();
     
     // Update balance adjustments periodically
     balanceUpdateTimer += deltaTime;

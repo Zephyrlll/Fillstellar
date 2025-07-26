@@ -8,6 +8,7 @@ import { showMessage, updateUI } from '../ui.js';
 import { soundManager } from '../sound.js';
 import { celestialCreationUI } from './celestialCreationUI.js';
 import { starManagementUI } from './starManagementUI.js';
+import { initializeRadarUI, radarUI } from './radarUI.js';
 
 export interface ViewConfig {
   primaryView: string;
@@ -58,6 +59,11 @@ export class DualViewSystem {
     
     console.log('[DUAL_VIEW] Registering default tabs');
     this.registerDefaultTabs();
+    
+    console.log('[DUAL_VIEW] Initializing Radar UI');
+    const radarInstance = initializeRadarUI();
+    // Expose to window for the main update loop
+    (window as any).radarUI = radarUI;
   }
 
   private initializeEventListeners(): void {

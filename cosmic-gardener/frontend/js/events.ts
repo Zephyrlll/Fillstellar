@@ -318,6 +318,91 @@ export function setupEventListeners() {
     }
 
     // Galaxy map toggle button
+    // 既存のボタンを削除して新規作成
+    const existingToggle = document.getElementById('galaxy-map-toggle');
+    if (existingToggle) {
+        existingToggle.remove();
+    }
+    
+    console.log('🔧 Creating new galaxy map toggle button...');
+    const button = document.createElement('button');
+    button.id = 'galaxy-map-toggle';
+    button.title = 'レーダーを開閉';
+    button.textContent = '📡';
+    button.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        width: 60px;
+        height: 60px;
+        background: rgba(0, 0, 0, 0.8);
+        border: 1px solid rgba(255, 215, 0, 0.3);
+        border-radius: 0;
+        color: #FFD700;
+        font-size: 24px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        z-index: 10001;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 0 10px rgba(255, 215, 0, 0.2);
+    `;
+    
+    // ホバーエフェクト
+    button.addEventListener('mouseenter', () => {
+        button.style.borderColor = 'rgba(255, 215, 0, 0.5)';
+        button.style.boxShadow = '0 0 20px rgba(255, 215, 0, 0.4)';
+        button.style.background = 'rgba(255, 215, 0, 0.1)';
+    });
+    
+    button.addEventListener('mouseleave', () => {
+        button.style.borderColor = 'rgba(255, 215, 0, 0.3)';
+        button.style.boxShadow = '0 0 10px rgba(255, 215, 0, 0.2)';
+        button.style.background = 'rgba(0, 0, 0, 0.8)';
+    });
+    
+    document.body.appendChild(button);
+    console.log('🔧 Button appended to body');
+    
+    // デバッグ: ボタンにテストクリックイベントを追加
+    button.addEventListener('click', () => {
+        console.log('🔧 TEST: Button clicked directly!');
+    });
+    
+    // コンテナも作成
+    const existingContainer = document.getElementById('galaxy-map-container');
+    if (existingContainer) {
+        existingContainer.remove();
+    }
+    
+    const container = document.createElement('div');
+    container.id = 'galaxy-map-container';
+    container.className = 'collapsed';
+    container.style.position = 'fixed';
+    container.style.bottom = '50px';
+    container.style.right = '20px';
+    container.style.width = '250px';
+    container.style.height = '250px';
+    // モダンでミニマルなスタイル（ゴールド調）
+    container.style.background = 'rgba(0, 0, 0, 0.8)';
+    container.style.border = '1px solid rgba(255, 215, 0, 0.3)';
+    container.style.borderRadius = '0';
+    container.style.backdropFilter = 'blur(10px)';
+    container.style.zIndex = '999';
+    container.style.overflow = 'hidden';
+    container.style.opacity = '0';
+    container.style.transform = 'translateY(10px)';
+    container.style.transition = 'all 0.3s ease';
+    container.style.pointerEvents = 'none';
+    container.style.boxShadow = '0 0 20px rgba(255, 215, 0, 0.2)';
+    document.body.appendChild(container);
+    
+    // UIオブジェクトを更新
+    ui.galaxyMapToggle = button;
+    ui.galaxyMapContainer = container;
+    
     if (ui.galaxyMapToggle) {
         console.log('🔧 Galaxy map toggle button found, adding event listener');
         
@@ -335,6 +420,17 @@ export function setupEventListeners() {
                 const isCollapsed = mapContainer.classList.contains('collapsed');
                 
                 console.log('🔧 Map container collapsed state:', isCollapsed);
+                
+                // インラインスタイルで直接制御（シンプルなアニメーション）
+                if (isCollapsed) {
+                    mapContainer.style.opacity = '0';
+                    mapContainer.style.transform = 'translateY(10px)';
+                    mapContainer.style.pointerEvents = 'none';
+                } else {
+                    mapContainer.style.opacity = '1';
+                    mapContainer.style.transform = 'translateY(0)';
+                    mapContainer.style.pointerEvents = 'auto';
+                }
                 
                 // Update gameState.isMapVisible to match the visual state
                 gameStateManager.updateState(state => ({

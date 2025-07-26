@@ -763,17 +763,19 @@ function updateGalaxyMap() {
             marker.style.top = `${mapY}px`;
 
             if (star.userData.type === 'black_hole') {
-                marker.style.width = '5px';
-                marker.style.height = '5px';
-                marker.style.backgroundColor = 'red';
+                marker.style.width = '6px';
+                marker.style.height = '6px';
+                marker.style.backgroundColor = '#FF6B6B';
                 marker.style.borderRadius = '50%';
                 marker.style.transform = 'translate(-50%, -50%)';
+                marker.style.boxShadow = '0 0 8px #FF6B6B';
             } else if (star.userData.type === 'star') {
-                marker.style.width = '2px';
-                marker.style.height = '2px';
-                marker.style.backgroundColor = 'white';
+                marker.style.width = '3px';
+                marker.style.height = '3px';
+                marker.style.backgroundColor = '#FFD700';
                 marker.style.borderRadius = '50%';
                 marker.style.transform = 'translate(-50%, -50%)';
+                marker.style.boxShadow = '0 0 4px #FFD700';
             }
             fragment.appendChild(marker);
         }

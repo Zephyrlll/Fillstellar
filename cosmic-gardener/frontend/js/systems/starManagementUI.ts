@@ -3,6 +3,8 @@
 import { soundManager } from '../sound.js';
 import { gameState, gameStateManager } from '../state.js';
 import type { CelestialBody, StarUserData } from '../state.js';
+import { camera, controls } from '../threeSetup.js';
+import * as THREE from 'three';
 
 export class StarManagementUI {
   private container: HTMLElement;
@@ -148,6 +150,7 @@ export class StarManagementUI {
       const typeText = userData.type === 'black_hole' ? 'ブラックホール' : 
         ((userData as StarUserData).spectralType || '恒星');
       
+      
       html += `
         <tr class="star-row" data-id="${userData.id}">
           <td>${userData.name || 'N/A'}</td>
@@ -197,16 +200,43 @@ export class StarManagementUI {
         const id = row.getAttribute('data-id');
         const body = gameState.stars.find(s => s.userData.id === id);
         if (body) {
+          // フォーカスオブジェクトを設定
           gameStateManager.updateState(state => ({
             ...state,
             focusedObject: body
           }));
+          
+          // 直接的なカメラ移動を削除（main.tsのanimateループに任せる）
+          // this.focusCamera(body);
+          
           soundManager.playSound('ui_click');
           // パネルを閉じる
           this.closePanel();
         }
       });
     });
+  }
+
+  /**
+   * カメラを天体にフォーカス
+   */
+  private focusCamera(body: CelestialBody): void {
+    const targetPosition = body.position.clone();
+    
+    // 天体のサイズに基づいて適切な距離を計算
+    const radius = body.userData.radius || 100;
+    const distance = radius * 10; // 半径の10倍の距離
+    
+    // カメラの新しい位置を計算（天体の斜め上から見る）
+    const offset = new THREE.Vector3(distance, distance * 0.5, distance);
+    const newCameraPosition = targetPosition.clone().add(offset);
+    
+    // カメラを移動
+    camera.position.copy(newCameraPosition);
+    
+    // OrbitControlsのターゲットを更新
+    controls.target.copy(targetPosition);
+    controls.update();
   }
 
   /**
