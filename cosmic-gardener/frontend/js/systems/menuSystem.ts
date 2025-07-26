@@ -118,6 +118,12 @@ export class MenuSystem {
         action: () => this.openResearchLab()
       },
       {
+        id: 'inventory',
+        label: 'インベントリ',
+        icon: '<img src="/icon/menu/warehouse-full-svgrepo-com.svg" class="menu-icon-svg" alt="インベントリ">',
+        action: () => this.openInventory()
+      },
+      {
         id: 'prestige',
         label: 'プレステージ',
         icon: '<img src="/icon/menu/prestige.svg" class="menu-icon-svg" alt="プレステージ">',
@@ -527,6 +533,20 @@ export class MenuSystem {
     const researchButton = document.querySelector('.research-button') as HTMLButtonElement;
     if (researchButton) {
       researchButton.click();
+    }
+  }
+  
+  private openInventory(): void {
+    // インベントリボタンを探してクリック
+    const inventoryButton = document.getElementById('inventoryToggleButton') as HTMLButtonElement;
+    if (inventoryButton) {
+      inventoryButton.click();
+    } else {
+      // インベントリUIを直接開く
+      const inventoryUI = (window as any).inventoryUI;
+      if (inventoryUI) {
+        inventoryUI.open();
+      }
     }
   }
   

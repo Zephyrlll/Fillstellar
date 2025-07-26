@@ -22,7 +22,9 @@ export class ResearchTreeAnalyzer {
   private depthMap: Map<string, number> = new Map();
 
   constructor() {
+    console.log('[RESEARCH_TREE_ANALYZER] Initializing analyzer');
     this.buildTree();
+    console.log('[RESEARCH_TREE_ANALYZER] Tree built with', this.nodes.size, 'nodes and', this.edges.size, 'edges');
   }
 
   // Build the research tree structure

@@ -1076,6 +1076,29 @@ async function init() {
                     newPerformanceMonitor.toggle();
                 }
             });
+            
+            // デバッグボタンのイベントリスナーを追加
+            const debugResourcesBtn = document.getElementById('debug-resources-btn');
+            if (debugResourcesBtn) {
+                debugResourcesBtn.addEventListener('click', () => {
+                    console.log('[DEBUG] Adding 1000 resources');
+                    const resources = ['cosmicDust', 'energy', 'organicMatter', 'biomass', 'darkMatter', 'thoughtPoints'];
+                    resources.forEach(resource => {
+                        balanceAdjustments.debugSetResource(resource, 
+                            (gameState.resources as any)[resource] + 1000
+                        );
+                    });
+                    updateUI(gameState);
+                });
+            }
+            
+            const debugPanelBtn = document.getElementById('debug-panel-btn');
+            if (debugPanelBtn) {
+                debugPanelBtn.addEventListener('click', () => {
+                    console.log('[DEBUG] Toggling debug panel');
+                    balanceDebugUI.toggle();
+                });
+            }
             initializeResearchLab();
             
             // Start auto-save after DOM is ready
@@ -1103,6 +1126,30 @@ async function init() {
                 newPerformanceMonitor.toggle();
             }
         });
+        
+        // デバッグボタンのイベントリスナーを追加
+        const debugResourcesBtn = document.getElementById('debug-resources-btn');
+        if (debugResourcesBtn) {
+            debugResourcesBtn.addEventListener('click', () => {
+                console.log('[DEBUG] Adding 1000 resources');
+                const resources = ['cosmicDust', 'energy', 'organicMatter', 'biomass', 'darkMatter', 'thoughtPoints'];
+                resources.forEach(resource => {
+                    balanceAdjustments.debugSetResource(resource, 
+                        (gameState.resources as any)[resource] + 1000
+                    );
+                });
+                updateUI(gameState);
+            });
+        }
+        
+        const debugPanelBtn = document.getElementById('debug-panel-btn');
+        if (debugPanelBtn) {
+            debugPanelBtn.addEventListener('click', () => {
+                console.log('[DEBUG] Toggling debug panel');
+                balanceDebugUI.toggle();
+            });
+        }
+        
         initializeResearchLab();
         initializeInventory();
         

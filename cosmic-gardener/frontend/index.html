@@ -956,6 +956,36 @@
     <div id="thought-speed-display">思考速度: <span id="thoughtSpeedMps">0</span> m/s (<span id="lightSpeedPercent">0.00</span>%)</div>
   </div>
 
+  <!-- デバッグボタン -->
+  <div id="debug-buttons" style="position: fixed; bottom: 20px; right: 10px; z-index: 10000; display: flex; gap: 5px;">
+    <button id="debug-resources-btn" style="
+      background: #10b981;
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 12px;
+      opacity: 0.8;
+    " title="リソースを1000追加">
+      +1000 資源
+    </button>
+    <button id="debug-panel-btn" style="
+      background: #3b82f6;
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 12px;
+      opacity: 0.8;
+    " title="デバッグパネルを開く (F4)">
+      デバッグ
+    </button>
+  </div>
+
   <!-- デュアルビューシステム -->
   <div id="dual-view-container" class="dual-view-inactive">
     <!-- タブバー -->

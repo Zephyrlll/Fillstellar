@@ -3,6 +3,9 @@
 import * as THREE from 'three';
 import { TabManager } from './tabManager.js';
 import { graphicsEngine } from '../graphicsEngine.js';
+import { gameStateManager } from '../state.js';
+import { showMessage } from '../ui.js';
+import { soundManager } from '../sound.js';
 
 export interface ViewConfig {
   primaryView: string;
@@ -109,8 +112,12 @@ export class DualViewSystem {
       icon: '🔬',
       contentId: 'primary-view-research',
       onActivate: () => {
-        console.log('[DUAL_VIEW] Research tab activated');
-        this.loadResearchView();
+        console.log('[DUAL_VIEW] Research tab activated - starting loadResearchView');
+        this.loadResearchView().then(() => {
+          console.log('[DUAL_VIEW] Research view loaded successfully');
+        }).catch(error => {
+          console.error('[DUAL_VIEW] Failed to load research view:', error);
+        });
       }
     });
     
@@ -454,13 +461,22 @@ export class DualViewSystem {
    * 研究ビューの読み込み
    */
   private async loadResearchView(): Promise<void> {
+    console.log('[DUAL_VIEW] loadResearchView called');
+    
     // 研究ツリービジュアライザーのコンテンツを移動
     const researchContent = document.getElementById('primary-view-research');
-    if (!researchContent) return;
+    console.log('[DUAL_VIEW] Research content element:', researchContent);
+    
+    if (!researchContent) {
+      console.error('[DUAL_VIEW] Research content element not found');
+      return;
+    }
     
     try {
+      console.log('[DUAL_VIEW] Starting dynamic import of researchTreeVisualizerUI');
       // 動的インポート
       const { researchTreeVisualizerUI } = await import('../systems/researchTreeVisualizerUI.js');
+      console.log('[DUAL_VIEW] Import successful, visualizer:', researchTreeVisualizerUI);
       
       // コンテナに初期化
       await this.initializeResearchTreeInContainer(researchTreeVisualizerUI, researchContent);
@@ -476,36 +492,245 @@ export class DualViewSystem {
    * 研究ツリービジュアライザーをコンテナに初期化
    */
   private async initializeResearchTreeInContainer(visualizer: any, container: HTMLElement): Promise<void> {
-    // 研究ツリービジュアライザー用のDOM構造を作成
+    console.log('[DUAL_VIEW] Initializing research tree in container');
+    
+    // まず基本的なHTMLを設定
     container.innerHTML = `
-      <div class="research-tree-container">
-        <div class="tree-toolbar">
-          <select id="tree-layout-tab" class="layout-selector">
-            <option value="hierarchical">階層レイアウト</option>
-            <option value="radial">放射状レイアウト</option>
-            <option value="category">カテゴリ別</option>
-            <option value="force-directed">力学的配置</option>
-          </select>
-          <button id="tree-center-tab" class="toolbar-btn">中央表示</button>
-          <button id="tree-path-tab" class="toolbar-btn">最適パス</button>
-          <button id="tree-export-tab" class="toolbar-btn">エクスポート</button>
-        </div>
-        <div id="research-tree-graph-tab" class="research-graph-container"></div>
-        <div class="tree-sidebar">
-          <div class="tree-stats-panel">
-            <h3>研究統計</h3>
-            <div id="tree-stats-tab"></div>
-          </div>
-          <div class="selected-research-panel" id="selected-research-tab" style="display: none;">
-            <h3>選択研究</h3>
-            <div id="research-details-tab"></div>
-          </div>
+      <div class="research-tree-wrapper" style="width: 100%; height: 100%; padding: 20px; overflow: auto;">
+        <h2 style="color: #64ffda; margin-bottom: 20px;">研究ツリー</h2>
+        <div id="research-tree-content" style="min-height: 400px; background: rgba(0, 0, 0, 0.5); border: 1px solid #64ffda; border-radius: 8px; padding: 20px;">
+          <p style="color: #ccc;">研究ツリーを初期化中...</p>
         </div>
       </div>
     `;
     
-    // TODO: 研究ツリービジュアライザーの初期化メソッドを実装
-    console.log('[DUAL_VIEW] Research tree container structure created');
+    // ビジュアライザーが利用可能な場合は初期化
+    if (visualizer && typeof visualizer.initializeInContainer === 'function') {
+      try {
+        visualizer.initializeInContainer(container);
+        console.log('[DUAL_VIEW] Research tree visualizer initialized successfully');
+      } catch (error) {
+        console.error('[DUAL_VIEW] Error initializing research tree visualizer:', error);
+        this.showSimpleResearchList(container);
+      }
+    } else {
+      console.warn('[DUAL_VIEW] Research tree visualizer not available, showing simple list');
+      this.showSimpleResearchList(container);
+    }
+  }
+  
+  /**
+   * シンプルな研究リストを表示（フォールバック）
+   */
+  private showSimpleResearchList(container: HTMLElement): void {
+    console.log('[DUAL_VIEW] Showing simple research list as fallback');
+    
+    // allResearchItemsを動的インポート
+    import('../researchData.js').then(({ allResearchItems, researchCategories }) => {
+      let html = `
+        <div class="research-tree-wrapper" style="width: 100%; height: 100%; padding: 20px; overflow: auto;">
+          <h2 style="color: #64ffda; margin-bottom: 20px;">研究ツリー（シンプル表示）</h2>
+      `;
+      
+      // カテゴリごとに研究を表示
+      researchCategories.forEach(category => {
+        const categoryItems = allResearchItems.filter(item => item.category === category.id);
+        if (categoryItems.length === 0) return;
+        
+        html += `
+          <div style="margin-bottom: 30px;">
+            <h3 style="color: #fbbf24; margin-bottom: 15px;">${category.icon} ${category.name}</h3>
+            <div style="display: grid; gap: 10px;">
+        `;
+        
+        categoryItems.forEach(item => {
+          const isCompleted = this.isResearchCompleted(item.id);
+          const canAfford = this.canAffordResearch(item.cost);
+          
+          html += `
+            <div style="background: rgba(100, 255, 218, 0.1); border: 1px solid rgba(100, 255, 218, 0.3); padding: 10px; border-radius: 4px; ${isCompleted ? 'opacity: 0.6;' : ''}">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 24px;">${item.icon || '🔬'}</span>
+                <div style="flex: 1;">
+                  <h4 style="color: #64ffda; margin: 0;">${item.name}</h4>
+                  <p style="color: #ccc; margin: 5px 0; font-size: 14px;">${item.description}</p>
+                  <div style="color: #fbbf24; font-size: 12px;">
+                    コスト: ${this.formatResearchCost(item.cost)}
+                  </div>
+                </div>
+                <button 
+                  onclick="window.dualViewSystem.researchItem('${item.id}')"
+                  style="
+                    background: ${isCompleted ? '#4a5568' : (canAfford ? '#10b981' : '#ef4444')};
+                    color: white;
+                    border: none;
+                    padding: 8px 16px;
+                    border-radius: 4px;
+                    cursor: ${isCompleted || !canAfford ? 'not-allowed' : 'pointer'};
+                    font-family: 'Orbitron', sans-serif;
+                    font-size: 12px;
+                  "
+                  ${isCompleted || !canAfford ? 'disabled' : ''}
+                >
+                  ${isCompleted ? '研究完了' : (canAfford ? '研究開始' : '資源不足')}
+                </button>
+              </div>
+            </div>
+          `;
+        });
+        
+        html += `
+            </div>
+          </div>
+        `;
+      });
+      
+      html += '</div>';
+      container.innerHTML = html;
+    }).catch(error => {
+      console.error('[DUAL_VIEW] Failed to load research data:', error);
+      container.innerHTML = '<div style="padding: 20px; color: #ff4444;">研究データの読み込みに失敗しました</div>';
+    });
+  }
+  
+  /**
+   * 研究コストをフォーマット
+   */
+  private formatResearchCost(cost: any): string {
+    const parts: string[] = [];
+    if (cost.darkMatter) parts.push(`${cost.darkMatter} DM`);
+    if (cost.thoughtPoints) parts.push(`${cost.thoughtPoints} TP`);
+    if (cost.energy) parts.push(`${cost.energy} E`);
+    if (cost.cosmicDust) parts.push(`${cost.cosmicDust} 塵`);
+    return parts.join(', ') || '無料';
+  }
+  
+  /**
+   * 研究が完了しているかチェック
+   */
+  private isResearchCompleted(researchId: string): boolean {
+    const state = gameStateManager.getState();
+    const completedResearch = state.research?.completedResearch || [];
+    return completedResearch.includes(researchId);
+  }
+  
+  /**
+   * 研究コストが支払えるかチェック
+   */
+  private canAffordResearch(cost: any): boolean {
+    const state = gameStateManager.getState();
+    const resources = state.resources;
+    
+    if (cost.darkMatter && resources.darkMatter < cost.darkMatter) return false;
+    if (cost.thoughtPoints && resources.thoughtPoints < cost.thoughtPoints) return false;
+    if (cost.energy && resources.energy < cost.energy) return false;
+    if (cost.cosmicDust && resources.cosmicDust < cost.cosmicDust) return false;
+    
+    return true;
+  }
+  
+  /**
+   * 研究を実行
+   */
+  public async researchItem(researchId: string): Promise<void> {
+    console.log('[DUAL_VIEW] Research item clicked:', researchId);
+    
+    try {
+      // 研究データを取得
+      const { allResearchItems } = await import('../researchData.js');
+      const researchItem = allResearchItems.find(item => item.id === researchId);
+      
+      if (!researchItem) {
+        console.error('[DUAL_VIEW] Research item not found:', researchId);
+        return;
+      }
+      
+      // すでに研究済みかチェック
+      if (this.isResearchCompleted(researchId)) {
+        console.log('[DUAL_VIEW] Research already completed:', researchId);
+        return;
+      }
+      
+      // コストが支払えるかチェック
+      if (!this.canAffordResearch(researchItem.cost)) {
+        console.log('[DUAL_VIEW] Cannot afford research:', researchId);
+        showMessage('資源が不足しています', 'error');
+        return;
+      }
+      
+      // 研究ラボUIを使用して研究を実行
+      const { getResearchLabUI } = await import('../researchLab.js');
+      const researchLabUI = getResearchLabUI();
+      
+      if (researchLabUI) {
+        // 研究ラボのプライベートメソッドを直接呼び出すのではなく、
+        // 研究完了処理を直接実装
+        this.completeResearch(researchItem);
+      } else {
+        console.error('[DUAL_VIEW] Research lab UI not available');
+      }
+    } catch (error) {
+      console.error('[DUAL_VIEW] Failed to research item:', error);
+    }
+  }
+  
+  /**
+   * 研究を完了させる
+   */
+  private completeResearch(researchItem: any): void {
+    const state = gameStateManager.getState();
+    
+    // コストを支払う
+    gameStateManager.updateState(state => {
+      const newState = { ...state };
+      const newResources = { ...state.resources };
+      
+      // 基本資源を減らす
+      if (researchItem.cost.darkMatter) {
+        newResources.darkMatter = Math.max(0, newResources.darkMatter - researchItem.cost.darkMatter);
+      }
+      if (researchItem.cost.thoughtPoints) {
+        newResources.thoughtPoints = Math.max(0, newResources.thoughtPoints - researchItem.cost.thoughtPoints);
+      }
+      if (researchItem.cost.energy) {
+        newResources.energy = Math.max(0, newResources.energy - researchItem.cost.energy);
+      }
+      if (researchItem.cost.cosmicDust) {
+        newResources.cosmicDust = Math.max(0, newResources.cosmicDust - researchItem.cost.cosmicDust);
+      }
+      
+      newState.resources = newResources;
+      
+      // 研究を完了リストに追加
+      if (!newState.research) newState.research = {};
+      const completedResearch = new Set(state.research?.completedResearch || []);
+      completedResearch.add(researchItem.id);
+      newState.research = {
+        ...state.research,
+        completedResearch: Array.from(completedResearch)
+      };
+      
+      // 効果を適用
+      researchItem.effects.forEach((effect: any) => {
+        switch (effect.type) {
+          case 'unlock_celestial_body':
+            if (!newState.unlockedCelestialBodies) newState.unlockedCelestialBodies = {};
+            newState.unlockedCelestialBodies[effect.value as string] = true;
+            console.log('[DUAL_VIEW] Unlocked celestial body:', effect.value);
+            break;
+          // 他の効果も必要に応じて追加
+        }
+      });
+      
+      return newState;
+    });
+    
+    // メッセージ表示
+    showMessage(`研究完了: ${researchItem.name}`, 'success');
+    soundManager.playUISound('success');
+    
+    // UIを更新
+    this.showSimpleResearchList(document.getElementById('primary-view-research')!);
   }
 
   /**
@@ -547,6 +772,9 @@ export class DualViewSystem {
 
 // グローバルインスタンス
 export const dualViewSystem = new DualViewSystem();
+
+// windowオブジェクトに公開（onclickハンドラーから呼び出せるように）
+(window as any).dualViewSystem = dualViewSystem;
 
 // 初期化関数
 export function initializeDualViewSystem(): void {

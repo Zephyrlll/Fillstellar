@@ -790,7 +790,8 @@ export class ResearchTreeVisualizerUI {
 
   // Initialize in a container (for dual view integration)
   public initializeInContainer(container: HTMLElement): void {
-    console.log('[RESEARCH_TREE_UI] Initializing in container');
+    console.log('[RESEARCH_TREE_UI] Initializing in container', container);
+    console.log('[RESEARCH_TREE_UI] Container ID:', container.id);
     
     // Clear existing content
     container.innerHTML = '';
