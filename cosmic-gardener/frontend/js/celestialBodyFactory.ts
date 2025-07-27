@@ -335,6 +335,9 @@ export class CelestialBodyFactory {
     
     starData.lifespan = this.calculateStarLifespan(starData as StarUserData);
     
+    // デバッグ: 恒星データの確認
+    console.log('[CELESTIAL] createStarData - starData:', starData);
+    
     const gameMass = (starData.mass as number) * 1000;
     const radius = Math.max(Math.cbrt(gameMass) * 8.0, 15.0);
     
@@ -1020,6 +1023,18 @@ export class CelestialBodyFactory {
     const additionalData = params.config.isLoading ? params.config.userData : params.specificData;
     if (additionalData) {
       Object.assign(finalUserData, additionalData);
+      
+      // デバッグ: 恒星の場合、属性が正しく設定されているか確認
+      if (type === 'star' && !params.config.isLoading) {
+        console.log('[CELESTIAL] Star userData after merge:', {
+          name: finalUserData.name,
+          temperature: (finalUserData as StarUserData).temperature,
+          spectralType: (finalUserData as StarUserData).spectralType,
+          age: (finalUserData as StarUserData).age,
+          lifespan: (finalUserData as StarUserData).lifespan,
+          additionalData: additionalData
+        });
+      }
       
       // 型変換と検証
       if (typeof finalUserData.mass === 'string') {

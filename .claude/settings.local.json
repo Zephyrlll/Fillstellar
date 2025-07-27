@@ -20,7 +20,8 @@
       "Bash(node:*)",
       "Bash(mv:*)",
       "Bash(sed:*)",
-      "Bash(pkill:*)"
+      "Bash(pkill:*)",
+      "mcp__playwright__browser_navigate"
     ],
     "deny": []
   }

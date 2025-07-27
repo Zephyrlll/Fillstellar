@@ -72,28 +72,74 @@ export class StarManagementUI {
       if (row) {
         const id = row.getAttribute('data-id');
         console.log('[STAR_MANAGEMENT] Row clicked, ID:', id);
-        const body = gameState.stars.find(s => s.userData.id === id);
+        const body = gameState.stars.find(s => s.uuid === id);
         console.log('[STAR_MANAGEMENT] Found body:', body);
         
         if (body) {
-          // フォーカスオブジェクトを設定
-          gameStateManager.updateState(state => ({
-            ...state,
-            focusedObject: body
-          }));
+          // デュアルビューシステムで宇宙タブに切り替える
+          const dualViewSystem = (window as any).dualViewSystem;
+          if (dualViewSystem) {
+            console.log('[STAR_MANAGEMENT] Checking dual view system');
+            const activeTab = dualViewSystem.tabManager?.getActiveTab();
+            console.log('[STAR_MANAGEMENT] Active tab:', activeTab);
+            
+            if (activeTab !== 'space') {
+              console.log('[STAR_MANAGEMENT] Switching to space tab');
+              dualViewSystem.tabManager?.activateTab('space');
+              // タブ切り替えのアニメーションを待つ
+              setTimeout(() => {
+                this.performFocus(body);
+              }, 100);
+              return;
+            }
+          }
           
-          console.log('[STAR_MANAGEMENT] Focus set:', {
-            bodyName: body.userData.name,
-            bodyPosition: body.position,
-            focusedObject: gameState.focusedObject
-          });
-          
-          soundManager.playUISound('click');
-          // パネルを閉じる
-          this.closePanel();
+          this.performFocus(body);
         }
       }
     });
+  }
+
+  /**
+   * フォーカスを実行
+   */
+  private performFocus(body: CelestialBody): void {
+    console.log('[STAR_MANAGEMENT] performFocus called for body:', body.userData.name);
+    console.log('[STAR_MANAGEMENT] Body object:', body);
+    console.log('[STAR_MANAGEMENT] Body userData:', body.userData);
+    
+    // フォーカスオブジェクトを設定する前の状態を確認
+    console.log('[STAR_MANAGEMENT] Before update - focusedObject:', gameState.focusedObject);
+    
+    // フォーカスオブジェクトを設定
+    gameStateManager.updateState(state => {
+      console.log('[STAR_MANAGEMENT] Inside updateState - current focusedObject:', state.focusedObject);
+      const newState = {
+        ...state,
+        focusedObject: body
+      };
+      console.log('[STAR_MANAGEMENT] Inside updateState - new focusedObject:', newState.focusedObject);
+      return newState;
+    });
+    
+    // 更新後の状態を確認
+    setTimeout(() => {
+      console.log('[STAR_MANAGEMENT] After update (delayed) - focusedObject:', gameState.focusedObject);
+      console.log('[STAR_MANAGEMENT] After update (delayed) - focusedObject name:', gameState.focusedObject?.userData?.name);
+    }, 100);
+    
+    // 直接カメラを移動
+    this.focusCamera(body);
+    
+    console.log('[STAR_MANAGEMENT] Focus set:', {
+      bodyName: body.userData.name,
+      bodyPosition: body.position,
+      focusedObject: gameState.focusedObject
+    });
+    
+    soundManager.playUISound('click');
+    // パネルを閉じる
+    this.closePanel();
   }
 
   /**
@@ -113,7 +159,7 @@ export class StarManagementUI {
   private openPanel(): void {
     this.isOpen = true;
     this.container.classList.add('active');
-    soundManager.playSound('ui_open');
+    soundManager.playUISound('tab');
     this.updateStarList();
   }
 
@@ -123,7 +169,7 @@ export class StarManagementUI {
   private closePanel(): void {
     this.isOpen = false;
     this.container.classList.remove('active');
-    soundManager.playSound('ui_close');
+    soundManager.playUISound('tab');
   }
 
   /**
@@ -196,9 +242,20 @@ export class StarManagementUI {
       const typeText = userData.type === 'black_hole' ? 'ブラックホール' : 
         ((userData as StarUserData).spectralType || '恒星');
       
+      // デバッグ: 恒星データの確認
+      if (userData.type === 'star') {
+        console.log('[STAR_MANAGEMENT] Star data:', {
+          name: userData.name,
+          temperature: (userData as StarUserData).temperature,
+          spectralType: (userData as StarUserData).spectralType,
+          age: (userData as StarUserData).age,
+          lifespan: (userData as StarUserData).lifespan,
+          fullUserData: userData
+        });
+      }
       
       html += `
-        <tr data-id="${userData.id}">
+        <tr data-id="${body.uuid}">
           <td>${userData.name || 'N/A'}</td>
           <td>${typeText}</td>
           <td>${(userData.mass as number).toExponential(2)}</td>
@@ -221,9 +278,14 @@ export class StarManagementUI {
 
 
   /**
-   * カメラを天体にフォーカス
+   * カメラを天体にフォーカス（直接移動）
    */
   private focusCamera(body: CelestialBody): void {
+    console.log('[STAR_MANAGEMENT] focusCamera called for body:', body.userData.name);
+    console.log('[STAR_MANAGEMENT] Body position:', body.position);
+    console.log('[STAR_MANAGEMENT] Camera before:', camera.position.clone());
+    console.log('[STAR_MANAGEMENT] Controls target before:', controls.target.clone());
+    
     const targetPosition = body.position.clone();
     
     // 天体のサイズに基づいて適切な距離を計算
@@ -234,12 +296,18 @@ export class StarManagementUI {
     const offset = new THREE.Vector3(distance, distance * 0.5, distance);
     const newCameraPosition = targetPosition.clone().add(offset);
     
-    // カメラを移動
+    console.log('[STAR_MANAGEMENT] Target position:', targetPosition);
+    console.log('[STAR_MANAGEMENT] New camera position:', newCameraPosition);
+    
+    // カメラを即座に移動（アニメーションなし）
     camera.position.copy(newCameraPosition);
     
     // OrbitControlsのターゲットを更新
     controls.target.copy(targetPosition);
     controls.update();
+    
+    console.log('[STAR_MANAGEMENT] Camera after:', camera.position.clone());
+    console.log('[STAR_MANAGEMENT] Controls target after:', controls.target.clone());
   }
 
   /**

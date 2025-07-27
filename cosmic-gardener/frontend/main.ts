@@ -103,6 +103,8 @@ import { celestialCreationUI } from './js/systems/celestialCreationUI.ts';
 import { starManagementUI } from './js/systems/starManagementUI.ts';
 // LOD system
 import { LODManager } from './js/systems/lodManager.ts';
+// Stats Panel
+import { statsPanel } from './js/systems/statsPanel.ts';
 
 // Idle game initialization function
 function initializeIdleGameSystems() {
@@ -651,6 +653,14 @@ function animate() {
     // OrbitControlsによるマウス操作でカメラを制御してください
 
     if (gameState.focusedObject) {
+        // デバッグログを追加（初回のみ）
+        if (!gameState._debugFocusLogged) {
+            console.log('[MAIN] FocusedObject detected:', gameState.focusedObject);
+            console.log('[MAIN] FocusedObject name:', gameState.focusedObject.userData?.name);
+            console.log('[MAIN] FocusedObject position:', gameState.focusedObject.position);
+            gameState._debugFocusLogged = true;
+        }
+        
         const targetPosition = gameState.focusedObject.position.clone();
         
         // カメラの現在の天体からの相対位置を計算
@@ -666,6 +676,9 @@ function animate() {
         
         // 注意: focusedObjectはnullに戻さず、ユーザーが他の天体をクリックするか
         // ESCキーを押すまでフォーカスを維持する
+    } else {
+        // focusedObjectがクリアされた場合、デバッグフラグもリセット
+        gameState._debugFocusLogged = false;
     }
 
     const edgeGlow = scene.getObjectByName('black_hole_edge_glow');
@@ -890,6 +903,10 @@ async function init() {
     menuSystem.init();
     menuSystem.hideExistingButtons();
     console.log('[INIT] Menu system initialized');
+    
+    // Initialize stats panel
+    statsPanel.initialize();
+    console.log('[INIT] Stats panel initialized');
     
     // オプション画面をwindowに追加（プレビュー更新のため）
     const { optionsScreen } = await import('./js/systems/optionsScreen.js');

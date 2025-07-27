@@ -3,6 +3,7 @@
 @import url('./css/options-screen.css');
 @import url('./css/performance-overlay.css');
 @import url('./css/dual-view.css');
+@import url('./css/stats-panel.css');
 
 /* Idle Game Notification Styles */
 .notification {
