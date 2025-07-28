@@ -151,11 +151,11 @@ export function setupEventListeners() {
         });
     };
     
-    // UIエリアとタブコンテンツにイベントリスナーを追加
-    if (ui.uiArea) {
-        ui.uiArea.addEventListener('mouseenter', handleUIMouseEnter);
-        ui.uiArea.addEventListener('mouseleave', handleUIMouseLeave);
-    }
+    // DEPRECATED - 旧UIエリアのイベントリスナーはデュアルビューシステムに置き換えられました
+    // if (ui.uiArea) {
+    //     ui.uiArea.addEventListener('mouseenter', handleUIMouseEnter);
+    //     ui.uiArea.addEventListener('mouseleave', handleUIMouseLeave);
+    // }
     
     // すべてのタブコンテンツにも同様のリスナーを追加
     const tabContents = document.querySelectorAll('.tab-content');
@@ -276,14 +276,15 @@ export function setupEventListeners() {
         }
     });
 
-    if (ui.gameTabButton) ui.gameTabButton.addEventListener('click', () => {
-        soundManager.playUISound('tab');
-        switchTab('game');
-    });
-    if (ui.researchTabButton) ui.researchTabButton.addEventListener('click', () => {
-        soundManager.playUISound('tab');
-        switchTab('research');
-    });
+    // DEPRECATED - 旧タブボタンのイベントリスナーはデュアルビューシステムに置き換えられました
+    // if (ui.gameTabButton) ui.gameTabButton.addEventListener('click', () => {
+    //     soundManager.playUISound('tab');
+    //     switchTab('game');
+    // });
+    // if (ui.researchTabButton) ui.researchTabButton.addEventListener('click', () => {
+    //     soundManager.playUISound('tab');
+    //     switchTab('research');
+    // });
     // Production panel toggle button (new slide-out panel)
     const productionToggleButton = document.getElementById('productionToggleButton');
     if (productionToggleButton) {
@@ -302,18 +303,18 @@ export function setupEventListeners() {
             closeProductionPanel();
         });
     }
-    if (ui.optionsTabButton) ui.optionsTabButton.addEventListener('click', () => {
-        soundManager.playUISound('tab');
-        switchTab('options');
-    });
-    if (ui.starManagementTabButton) ui.starManagementTabButton.addEventListener('click', () => {
-        soundManager.playUISound('tab');
-        switchTab('starManagement');
-    });
-    if (ui.closeOptionsButton) ui.closeOptionsButton.addEventListener('click', () => {
-        soundManager.playUISound('click');
-        switchTab('game');
-    });
+    // if (ui.optionsTabButton) ui.optionsTabButton.addEventListener('click', () => {
+    //     soundManager.playUISound('tab');
+    //     switchTab('options');
+    // });
+    // if (ui.starManagementTabButton) ui.starManagementTabButton.addEventListener('click', () => {
+    //     soundManager.playUISound('tab');
+    //     switchTab('starManagement');
+    // });
+    // if (ui.closeOptionsButton) ui.closeOptionsButton.addEventListener('click', () => {
+    //     soundManager.playUISound('click');
+    //     switchTab('game');
+    // });
     
     // Mobile tab buttons
     if (ui.gameTabMobile) ui.gameTabMobile.addEventListener('click', () => {
@@ -577,7 +578,8 @@ export function setupEventListeners() {
     });
 
     window.addEventListener('click', (event) => {
-        if (ui.uiArea && ui.uiArea.contains(event.target as Node)) return;
+        // DEPRECATED - 旧UIエリアのチェックはデュアルビューシステムに置き換えられました
+        // if (ui.uiArea && ui.uiArea.contains(event.target as Node)) return;
         mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
         mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
         raycaster.setFromCamera(mouse, camera);

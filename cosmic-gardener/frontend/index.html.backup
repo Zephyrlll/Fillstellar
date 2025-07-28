@@ -6,14 +6,6 @@
     <title>Cosmic Gardener - 3D Space Simulation</title>
     <link rel="stylesheet" href="/style.css">
     <link rel="stylesheet" href="/css/dual-view.css">
-    <!-- 旧UIスタイル（開発/デバッグ用のみ、2025年2月削除予定） -->
-    <script>
-        // URLパラメータ ?legacy=true で旧UIスタイルを読み込み可能
-        if (new URLSearchParams(window.location.search).get('legacy') === 'true') {
-            document.write('<link rel="stylesheet" href="/legacy-ui.css">');
-            console.warn('⚠️ 旧UIスタイルが読み込まれています。このスタイルは2025年2月に削除されます。');
-        }
-    </script>
     <link rel="icon" href="/favicon.png">
     <meta name="description" content="A 3D space simulation idle game where players create and manage cosmic objects from dust to stars">
 </head>
@@ -1094,7 +1086,377 @@
 
 
 
-    <!-- DEPRECATED: 旧UIシステムは削除されました。デュアルビューシステムを使用してください -->
+    <!-- 左側のUIエリア -->
+    <div id="ui-area">
+      <!-- モバイル用開閉ボタン -->
+      <button id="mobile-toggle-btn">▼</button>
+      
+      <div id="tab-buttons">
+        <button id="gameTabButton" class="active-tab">ゲーム</button>
+        <button id="researchTabButton">研究</button>
+        <button id="optionsTabButton">オプション</button>
+        <button id="starManagementTabButton">恒星管理</button>
+      </div>
+      
+
+      <!-- ゲームタブ -->
+      <div id="game-screen">
+        <div id="ui-panel">
+          <h1>Cosmic Gardener</h1>
+
+
+          <div class="collapsible-section">
+            <div class="collapsible-header active" id="coreActionsHeader">創造</div>
+            <div class="collapsible-content active" id="coreActionsContent">
+              <div class="creation-item">
+                  <p>小惑星 (コスト: <span id="asteroidCostDisplay">100</span> 塵)</p>
+                  <button id="createAsteroidButton">創造</button>
+              </div>
+              <div class="creation-item">
+                  <p>彗星 (コスト: <span id="cometCostDisplay">500</span> 塵)</p>
+                  <button id="createCometButton">創造</button>
+              </div>
+              <div class="creation-item">
+                  <p>衛星 (コスト: <span id="moonCostDisplay">1000</span> 塵)</p>
+                  <button id="createMoonButton" style="display: none;">創造</button>
+              </div>
+              <div class="creation-item">
+                  <p>準惑星 (コスト: <span id="dwarfPlanetCostDisplay">2500</span> 塵)</p>
+                  <button id="createDwarfPlanetButton" style="display: none;">創造</button>
+              </div>
+              <div class="creation-item">
+                  <p>惑星 (コスト: <span id="planetCostDisplay">10000</span> 塵)</p>
+                  <button id="createPlanetButton" style="display: none;">創造</button>
+              </div>
+              <div class="creation-item">
+                  <p>恒星 (コスト: <span id="starCostDisplay">100000</span> 塵)</p>
+                  <button id="createStarButton" style="display: none;">創造</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="collapsible-section">
+            <div class="collapsible-header" id="upgradesHeader">アップグレード</div>
+            <div class="collapsible-content" id="upgradesContent">
+               <div class="upgrade-item">
+                    <p>塵生成 Lv: <span id="dustUpgradeLevel">0</span></p>
+                    <p>コスト: <span id="dustUpgradeCost">100</span> エネルギー</p>
+                    <button id="upgradeDustButton">アップグレード</button>
+                </div>
+                <div class="upgrade-item">
+                    <p>ダークマター変換器 Lv: <span id="darkMatterConverterLevel">0</span></p>
+                    <p>コスト: <span id="darkMatterConverterCost">500</span> エネルギー</p>
+                    <button id="upgradeDarkMatterConverterButton">変換</button>
+                </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- 研究タブ -->
+      <div id="research-screen" class="hidden-screen">
+        <div id="ui-panel-research">
+            <h1>研究</h1>
+             <div class="research-item">
+                <p>強化された塵生成 (コスト: 1 DM)</p>
+                <p>状態: <span id="researchEnhancedDustStatus"></span></p>
+                <button id="researchEnhancedDustButton">研究する</button>
+            </div>
+            <div class="research-item">
+                <p>高度なエネルギー変換 (コスト: 2 DM)</p>
+                <p>状態: <span id="researchAdvancedEnergyStatus"></span></p>
+                <button id="researchAdvancedEnergyButton">研究する</button>
+            </div>
+            <div class="research-item">
+                <p>軌道力学 (衛星アンロック) (コスト: 1 DM)</p>
+                <p>状態: <span id="researchMoonStatus"></span></p>
+                <button id="researchMoonButton">研究する</button>
+            </div>
+            <div class="research-item">
+                <p>準惑星学 (準惑星アンロック) (コスト: 2 DM)</p>
+                <p>状態: <span id="researchDwarfPlanetStatus"></span></p>
+                <button id="researchDwarfPlanetButton">研究する</button>
+            </div>
+            <div class="research-item">
+                <p>惑星形成論 (惑星アンロック) (コスト: 3 DM)</p>
+                <p>状態: <span id="researchPlanetStatus"></span></p>
+                <button id="researchPlanetButton">研究する</button>
+            </div>
+            <div class="research-item">
+                <p>恒星発生論 (恒星アンロック) (コスト: <span id="researchStarCost">5</span> DM)</p>
+                <p>状態: <span id="researchStarStatus"></span></p>
+                <button id="researchStarButton">研究する</button>
+            </div>
+        </div>
+      </div>
+
+
+      <!-- オプションタブ -->
+      <div id="options-screen" class="hidden-screen">
+          <h1>オプション</h1>
+          <div id="options-content-wrapper">
+              
+              <!-- その他の設定 -->
+              <div class="collapsible-section">
+                  <div class="collapsible-header" id="generalSettingsHeader">⚙️ 一般設定</div>
+                  <div class="collapsible-content hidden" id="generalSettingsContent">
+                      
+                      <div class="option-item">
+                          <label for="unitSystemSelect">単位系:</label>
+                          <select id="unitSystemSelect">
+                              <option value="astronomical">天文学単位</option>
+                              <option value="si">SI単位</option>
+                          </select>
+                      </div>
+                      
+                      <div class="option-item">
+                          <label for="uiAnimationsSelect">UIアニメーション:</label>
+                          <select id="uiAnimationsSelect">
+                              <option value="smooth">スムーズ - 高品質なアニメーション（重い）</option>
+                              <option value="standard" selected>標準 - バランスの取れた品質（推奨）</option>
+                              <option value="simple">シンプル - 基本的なアニメーションのみ（軽い）</option>
+                              <option value="off">オフ - アニメーションなし（最軽量）</option>
+                          </select>
+                      </div>
+                      
+                      <div class="option-item">
+                          <button id="resetCameraButton" class="reset-button">カメラ位置をリセット</button>
+                      </div>
+                      
+                      <!-- セーブ/ロード機能 -->
+                      <div class="option-item">
+                          <h4>💾 セーブ/ロード</h4>
+                      </div>
+                      
+                      <div class="option-item">
+                          <button id="saveGameButton" class="save-button">💾 ゲームをセーブ</button>
+                      </div>
+                      
+                      <div class="option-item">
+                          <button id="loadGameButton" class="load-button">📂 ゲームをロード</button>
+                      </div>
+                      
+                      <div class="option-item">
+                          <label>
+                              <input type="checkbox" id="autoSaveCheckbox" checked>
+                              自動セーブを有効にする（30秒ごと）
+                          </label>
+                      </div>
+                      
+                      <div class="option-item">
+                          <p class="save-info">最終セーブ: <span id="lastSaveTime">未セーブ</span></p>
+                      </div>
+                      
+                  </div>
+              </div>
+
+              <div class="collapsible-section">
+                <div class="collapsible-header" id="gameplaySettingsHeader">🎮 ゲームプレイ設定</div>
+                <div class="collapsible-content hidden" id="gameplaySettingsContent">
+                    
+                    <div class="option-item">
+                        <label for="radarUpdateFrequencySelect">レーダー更新頻度:</label>
+                        <select id="radarUpdateFrequencySelect">
+                            <option value="0.1">超高速 (0.1秒) - 滑らか</option>
+                            <option value="0.2" selected>高速 (0.2秒) - 推奨</option>
+                            <option value="0.5">標準 (0.5秒) - バランス</option>
+                            <option value="1.0">低速 (1秒) - 軽量</option>
+                            <option value="2.0">超低速 (2秒) - 省電力</option>
+                        </select>
+                    </div>
+                    
+                </div>
+              </div>
+
+              <div class="collapsible-section">
+                <div class="collapsible-header" id="timeAccelerationHeader">⏰ 時間加速</div>
+                <div class="collapsible-content hidden" id="timeAccelerationContent">
+                    <div class="option-item">
+                        <label for="timeMultiplierSelect">現在の倍率:</label>
+                        <select id="timeMultiplierSelect">
+                            <option value="1">1x</option>
+                            <option value="2" disabled>2x</option>
+                            <option value="5" disabled>5x</option>
+                            <option value="10" disabled>10x</option>
+                        </select>
+                    </div>
+                    <div class="research-item">
+                        <p>2x 加速アンロック (コスト: <span id="timeMultiplier2xCost">--</span> TP)</p>
+                        <p>状態: <span id="timeMultiplier2xStatus">--</span></p>
+                        <button id="timeMultiplier2xButton">アンロック</button>
+                    </div>
+                    <div class="research-item">
+                        <p>5x 加速アンロック (コスト: <span id="timeMultiplier5xCost">--</span> TP)</p>
+                        <p>状態: <span id="timeMultiplier5xStatus">--</span></p>
+                        <button id="timeMultiplier5xButton">アンロック</button>
+                    </div>
+                    <div class="research-item">
+                        <p>10x 加速アンロック (コスト: <span id="timeMultiplier10xCost">--</span> TP)</p>
+                        <p>状態: <span id="timeMultiplier10xStatus">--</span></p>
+                        <button id="timeMultiplier10xButton">アンロック</button>
+                    </div>
+                </div>
+              </div>
+
+              <div class="collapsible-section">
+                <div class="collapsible-header" id="viewOptionsHeader">👁️ 表示オプション</div>
+                <div class="collapsible-content hidden" id="viewOptionsContent">
+                    <div class="option-item">
+                        <label for="orbitTrailToggle">軌道トレイル表示:</label>
+                        <button id="orbitTrailToggle" class="toggle-button">オフ</button>
+                        <p class="option-description">天体の軌道を可視化します</p>
+                    </div>
+                    <div class="option-item">
+                        <label for="orbitTrailLengthSlider">軌道トレイルの長さ: <span id="orbitTrailLengthValue">300</span></label>
+                        <div class="slider-container">
+                            <input type="range" id="orbitTrailLengthSlider" min="50" max="1000" value="300" step="50">
+                        </div>
+                    </div>
+                    <div class="option-item">
+                        <label>表示する天体の種類:</label>
+                        <div class="celestial-type-filters">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="trailTypeBlackHole" checked>
+                                <span>ブラックホール</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="trailTypeStar" checked>
+                                <span>恒星</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="trailTypePlanet" checked>
+                                <span>惑星</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="trailTypeMoon" checked>
+                                <span>衛星</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="trailTypeAsteroid" checked>
+                                <span>小惑星</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="trailTypeComet" checked>
+                                <span>彗星</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+              </div>
+
+
+              <div class="collapsible-section" style="display: none;">
+                <div class="collapsible-header" id="soundHeader">🔊 サウンド設定</div>
+                <div class="collapsible-content hidden" id="soundContent">
+                    <div class="option-item">
+                        <label for="masterVolumeSlider">マスター音量: <span id="masterVolumeValue">70</span>%</label>
+                        <div class="slider-container">
+                            <input type="range" id="masterVolumeSlider" min="0" max="100" value="70" step="1">
+                        </div>
+                    </div>
+                    <div class="option-item">
+                        <label for="ambientVolumeSlider">環境音: <span id="ambientVolumeValue">60</span>%</label>
+                        <div class="slider-container">
+                            <input type="range" id="ambientVolumeSlider" min="0" max="100" value="60" step="1">
+                        </div>
+                    </div>
+                    <div class="option-item">
+                        <label for="effectsVolumeSlider">効果音: <span id="effectsVolumeValue">80</span>%</label>
+                        <div class="slider-container">
+                            <input type="range" id="effectsVolumeSlider" min="0" max="100" value="80" step="1">
+                        </div>
+                    </div>
+                    <div class="option-item">
+                        <label for="uiVolumeSlider">UI音: <span id="uiVolumeValue">50</span>%</label>
+                        <div class="slider-container">
+                            <input type="range" id="uiVolumeSlider" min="0" max="100" value="50" step="1">
+                        </div>
+                    </div>
+                    <div class="option-item">
+                        <label for="spatialAudioCheckbox">
+                            <input type="checkbox" id="spatialAudioCheckbox" checked>
+                            3D空間音響を有効にする
+                        </label>
+                    </div>
+                    <div class="option-item">
+                        <button id="muteToggleButton">ミュート</button>
+                    </div>
+                    <div class="option-item">
+                        <button id="testSoundButton">サウンドテスト</button>
+                    </div>
+                </div>
+              </div>
+
+              <div class="collapsible-section">
+                  <div class="collapsible-header" id="debugHeader">🐛 デバッグ</div>
+                  <div class="collapsible-content hidden" id="debugContent">
+                      <button id="addAllResourcesButton">全リソースを一括付与</button>
+                      <button id="testCollisionButton">衝突テスト</button>
+                      <button id="forceCollisionButton">強制衝突実行</button>
+                      <!-- 
+                      <button id="addCosmicDustButton">塵を10万追加</button>
+                      <button id="addEnergyButton">エネルギーを10万追加</button>
+                      <button id="addDarkMatterButton">DMを10追加</button>
+                      -->
+                      <button id="resetGameButton">ゲームをリセット</button>
+                      <button id="toggleResolutionDebug">Resolution Debug: <span id="resolutionDebugStatus">オフ</span></button>
+                  </div>
+              </div>
+          </div>
+          <button id="closeOptionsButton">閉じる</button>
+      </div>
+
+      <!-- 恒星管理タブ -->
+      <div id="star-management-screen" class="hidden-screen">
+          <h1>恒星管理</h1>
+          <div id="star-list-container"></div>
+      </div>
+    </div>
+
+    <!-- 右下の統計情報 -->
+    <div id="game-stats-overlay">
+        <p>塵: <span id="overlayCosmicDust">0</span> <span class="resource-rate">(+<span id="overlayDustRate">0</span>/s)</span></p>
+        <p>エネルギー: <span id="overlayEnergy">0</span></p>
+        <p>天体: <span id="overlayStarCount">0</span></p>
+        <p>TP: <span id="overlayThoughtPoints">0</span></p>
+        <p>活発度: <span id="overlayCosmicActivity">0</span></p>
+        <p>人口: <span id="overlayPopulation">0</span></p>
+        <hr>
+        <div class="overlay-currency-section">
+            <p>💫 <span id="overlayCurrencyCosmicDust">0</span></p>
+            <p>💎 <span id="overlayCurrencyGalactic">0</span></p>
+            <p>🏺 <span id="overlayCurrencyAncient">0</span></p>
+        </div>
+    </div>
+
+    <!-- モダンなフローティングコントロール -->
+    <div id="floating-controls">
+        <button id="productionToggleButton" class="floating-btn production-btn" title="生産システムを開く">
+            <div class="btn-icon">🏭</div>
+            <div class="btn-label">生産システム</div>
+        </button>
+        <button id="productionChainToggleButton" class="floating-btn chain-visualizer-btn" title="生産チェーンビジュアライザー">
+            <div class="btn-icon">📊</div>
+            <div class="btn-label">チェーン可視化</div>
+        </button>
+        <button id="batchConversionToggleButton" class="floating-btn batch-conversion-btn" title="バッチ変換システム">
+            <div class="btn-icon">🏭</div>
+            <div class="btn-label">バッチ変換</div>
+        </button>
+        <button id="floatingResourceSellButton" class="floating-btn sell-btn" title="資源を販売">
+            <div class="btn-icon">💰</div>
+            <div class="btn-label">資源販売</div>
+        </button>
+        <button id="researchLabToggleButton" class="floating-btn research-lab-btn" title="研究室を開く">
+            <div class="btn-icon">🔬</div>
+            <div class="btn-label">研究室</div>
+        </button>
+        <button id="inventoryToggleButton" class="floating-btn inventory-btn" title="インベントリを開く">
+            <div class="btn-icon">📦</div>
+            <div class="btn-label">インベントリ</div>
+        </button>
+    </div>
 
     <!-- 銀河マップコンテナ -->
     <button id="galaxy-map-toggle" title="レーダーを開閉" style="display: flex;">📡</button>

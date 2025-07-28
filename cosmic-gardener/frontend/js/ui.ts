@@ -89,17 +89,18 @@ export const ui: { [key: string]: HTMLElement | null } = {
     createDwarfPlanetButton: document.getElementById('createDwarfPlanetButton'),
     createPlanetButton: document.getElementById('createPlanetButton'),
     createStarButton: document.getElementById('createStarButton'),
-    uiArea: document.getElementById('ui-area'),
-    gameScreen: document.getElementById('game-screen'),
-    researchScreen: document.getElementById('research-screen'),
-    optionsScreen: document.getElementById('options-screen'),
-    starManagementScreen: document.getElementById('star-management-screen'),
+    // DEPRECATED - 旧UIシステムの要素は削除されました
+    // uiArea: null,
+    // gameScreen: null,
+    // researchScreen: null,
+    // optionsScreen: null,
+    // starManagementScreen: null,
     productionScreen: document.getElementById('production-screen'),
-    gameTabButton: document.getElementById('gameTabButton'),
-    researchTabButton: document.getElementById('researchTabButton'),
+    // gameTabButton: null,
+    // researchTabButton: null,
     productionTabButton: document.getElementById('productionTabButton'),
-    optionsTabButton: document.getElementById('optionsTabButton'),
-    starManagementTabButton: document.getElementById('starManagementTabButton'),
+    // optionsTabButton: null,
+    // starManagementTabButton: null,
     closeOptionsButton: document.getElementById('closeOptionsButton'),
     starListContainer: document.getElementById('star-list-container'),
     messageOverlay: document.getElementById('message-overlay'),
@@ -501,60 +502,11 @@ function updateTimeAccelerationUI() {
     if (timeMultiplier10xButton) timeMultiplier10xButton.disabled = gameState.unlockedTimeMultipliers['10x'] || gameState.thoughtPoints < gameState.timeMultiplierCosts['10x'];
 }
 
+// DEPRECATED - デュアルビューシステムに置き換えられました
 export function switchTab(activeTab: string) {
-    console.log('📑 Switching to tab:', activeTab);
-    
-    // Hide/show galaxy map toggle based on active tab
-    if (ui.galaxyMapToggle) {
-        if (activeTab === 'options' || activeTab === 'research' || activeTab === 'starManagement') {
-            ui.galaxyMapToggle.style.display = 'none';
-        } else {
-            ui.galaxyMapToggle.style.display = 'flex';
-        }
-    }
-    
-    if (ui.gameScreen) ui.gameScreen.classList.add('hidden-screen');
-    if (ui.researchScreen) ui.researchScreen.classList.add('hidden-screen');
-    if (ui.productionScreen) ui.productionScreen.classList.add('hidden-screen');
-    if (ui.optionsScreen) ui.optionsScreen.classList.add('hidden-screen');
-    if (ui.starManagementScreen) ui.starManagementScreen.classList.add('hidden-screen');
-    if (ui.gameTabButton) ui.gameTabButton.classList.remove('active-tab');
-    if (ui.researchTabButton) ui.researchTabButton.classList.remove('active-tab');
-    if (ui.productionTabButton) ui.productionTabButton.classList.remove('active-tab');
-    if (ui.optionsTabButton) ui.optionsTabButton.classList.remove('active-tab');
-    if (ui.starManagementTabButton) ui.starManagementTabButton.classList.remove('active-tab');
-    
-    // Remove active class from mobile tabs
-    if (ui.gameTabMobile) ui.gameTabMobile.classList.remove('active-mobile-tab');
-    if (ui.researchTabMobile) ui.researchTabMobile.classList.remove('active-mobile-tab');
-    if (ui.optionsTabMobile) ui.optionsTabMobile.classList.remove('active-mobile-tab');
-    if (ui.starTabMobile) ui.starTabMobile.classList.remove('active-mobile-tab');
-
-    if (activeTab === 'game') {
-        if (ui.gameScreen) ui.gameScreen.classList.remove('hidden-screen');
-        if (ui.gameTabButton) ui.gameTabButton.classList.add('active-tab');
-        if (ui.gameTabMobile) ui.gameTabMobile.classList.add('active-mobile-tab');
-    } else if (activeTab === 'research') {
-        if (ui.researchScreen) ui.researchScreen.classList.remove('hidden-screen');
-        if (ui.researchTabButton) ui.researchTabButton.classList.add('active-tab');
-        if (ui.researchTabMobile) ui.researchTabMobile.classList.add('active-mobile-tab');
-    } else if (activeTab === 'production') {
-        if (ui.productionScreen) ui.productionScreen.classList.remove('hidden-screen');
-        if (ui.productionTabButton) ui.productionTabButton.classList.add('active-tab');
-        updateProductionUI(true);
-    } else if (activeTab === 'options') {
-        if (ui.optionsScreen) ui.optionsScreen.classList.remove('hidden-screen');
-        if (ui.optionsTabButton) ui.optionsTabButton.classList.add('active-tab');
-        if (ui.optionsTabMobile) ui.optionsTabMobile.classList.add('active-mobile-tab');
-    } else if (activeTab === 'starManagement') {
-        if (ui.starManagementScreen) ui.starManagementScreen.classList.remove('hidden-screen');
-        if (ui.starManagementTabButton) ui.starManagementTabButton.classList.add('active-tab');
-        if (ui.starTabMobile) ui.starTabMobile.classList.add('active-mobile-tab');
-        updateStarList();
-    }
-    
-    // Update LOD statistics
-    updateLODStatistics();
+    console.log('📑 [DEPRECATED] switchTab called with:', activeTab);
+    // この関数はデュアルビューシステムに置き換えられました
+    // 互換性のために空の関数として残しています
 }
 
 function updateStarList() {
