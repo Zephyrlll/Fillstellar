@@ -421,14 +421,17 @@ function animate() {
     // 背景銀河を更新（カメラ位置を渡す）
     backgroundGalaxies.update(animationDeltaTime, camera.position);
     
-    // ブラックホールのガス効果を更新
+    // ブラックホールのガス効果を更新（一時的に無効化してデバッグ）
     const blackHole = gameState.stars.find(star => star.userData.type === 'black_hole');
+    // エラーデバッグのため一時的にコメントアウト
+    /*
     if (blackHole && blackHoleGas.isEffectActive()) {
         blackHoleGas.update(animationDeltaTime, blackHole.position);
     } else if (!blackHole && blackHoleGas.isEffectActive()) {
         // Black hole was removed, dispose the gas effect
         blackHoleGas.dispose();
     }
+    */
     
     let totalVelocity = 0;
     let movingBodies = 0;
@@ -454,6 +457,20 @@ function animate() {
     // Get base dust rate from balance config
     const baseDustRate = balanceManager.getResourceRate('cosmicDust', gameState.dustUpgradeLevel);
     let dustRate = baseDustRate + (gameState.researchEnhancedDust ? 2 : 0);
+    
+    // Debug log for dust rate calculation
+    if (animationCount % 60 === 0) { // Log every 1 second
+        console.log('[DUST_RATE] Debug info:', {
+            baseDustRate,
+            upgradeLevel: gameState.dustUpgradeLevel,
+            researchEnhanced: gameState.researchEnhancedDust,
+            calculatedDustRate: dustRate,
+            currentDustInState: gameState.cosmicDust,
+            currentDustInResources: gameState.resources?.cosmicDust,
+            accumulator: gameState.resourceAccumulators?.cosmicDust
+        });
+    }
+    
     // Apply research multipliers
     if (gameState.research?.dustGenerationMultiplier) {
         dustRate *= gameState.research.dustGenerationMultiplier;
@@ -487,11 +504,11 @@ function animate() {
 
         switch (body.userData.type) {
             case 'star':
-                energyRate += (body.userData.mass as number) / 1000;
+                energyRate += (body.userData.mass as number) / 10; // Increased from /1000 to /10 for better energy generation
                 break;
             case 'black_hole':
                 // Black holes generate dark matter based on nearby matter
-                darkMatterRate += Math.log10((body.userData.mass as number) + 1) * 0.001;
+                darkMatterRate += Math.log10((body.userData.mass as number) + 1) * 0.01; // Increased from 0.001 to 0.01
                 break;
             case 'asteroid':
             case 'comet':
@@ -714,6 +731,17 @@ function animate() {
             graphicsEngine.renderSecondary();
         } catch (error) {
             console.error('[RENDER] Error during rendering:', error);
+            // エラーが続く場合はポストプロセッシングを無効化
+            if (error instanceof TypeError && error.message.includes('uniform')) {
+                console.warn('[RENDER] Disabling post-processing due to uniform errors');
+                graphicsEngine.setPostProcessingEnabled(false);
+                // 次のフレームから直接レンダリングを試みる
+                try {
+                    renderer.render(scene, camera);
+                } catch (e) {
+                    console.error('[RENDER] Direct rendering also failed:', e);
+                }
+            }
         }
     }
     
@@ -722,6 +750,31 @@ function animate() {
         console.log('[RENDER] Scene children count:', scene.children.length);
         console.log('[RENDER] Camera position:', camera.position);
         console.log('[RENDER] Stars count:', gameState.stars.length);
+    }
+    
+    // マテリアルの問題をデバッグ
+    if (animationCount % 300 === 0) { // 5秒ごとにチェック
+        scene.traverse((child) => {
+            if (child instanceof THREE.Mesh || child instanceof THREE.Points || child instanceof THREE.Line) {
+                const material = child.material as any;
+                if (material) {
+                    // マテリアルの種類を確認
+                    if (!material.type) {
+                        console.warn('[DEBUG] Material without type found:', child.name || child.uuid);
+                    }
+                    // uniformsがある場合はチェック
+                    if (material.uniforms) {
+                        for (const key in material.uniforms) {
+                            if (material.uniforms[key] === undefined || material.uniforms[key] === null) {
+                                console.error('[DEBUG] Undefined uniform found:', key, 'in object:', child.name || child.uuid);
+                            } else if (material.uniforms[key].value === undefined) {
+                                console.error('[DEBUG] Uniform without value:', key, 'in object:', child.name || child.uuid);
+                            }
+                        }
+                    }
+                }
+            }
+        });
     }
 
     uiUpdateTimer += deltaTime;
@@ -941,6 +994,20 @@ async function init() {
     // Initialize balance debug UI (F4 to toggle)
     console.log('[INIT] Balance debug UI initialized (Press F4 to toggle)');
     
+    // Force balance config to use new values if old values are detected
+    const currentConfig = balanceManager.getConfig();
+    if (currentConfig.resourceRates.cosmicDust.base === 1) {
+        console.log('[BALANCE] Old dust rate detected, resetting to new defaults...');
+        balanceManager.resetToDefaults();
+    }
+    
+    // Test balance manager directly
+    console.log('[BALANCE] Testing getResourceRate:', {
+        level0: balanceManager.getResourceRate('cosmicDust', 0),
+        level1: balanceManager.getResourceRate('cosmicDust', 1),
+        config: balanceManager.getConfig().resourceRates.cosmicDust
+    });
+    
     // Initialize catalyst system with some starter catalysts for testing
     // @ts-ignore
     if (!gameState.catalystSystemInitialized) {
@@ -1001,7 +1068,7 @@ async function init() {
         console.log('[INIT] Creating black hole...');
         blackHole = createCelestialBody('black_hole', {
             name: 'Galactic Center',
-            mass: 1e7,  // より適度な質量
+            mass: 1e8,  // 10倍に増加した質量
             radius: 50,  // 適切なサイズに修正
             position: new THREE.Vector3(0, 0, 0),
             velocity: new THREE.Vector3(0, 0, 0)
@@ -1025,14 +1092,14 @@ async function init() {
         
         // Calculate proper orbital velocity using Kepler's laws
         const orbitalRadius = 10000;  // 安定した軌道距離（10000 game units = 100 AU）
-        const blackHoleMass = blackHole.userData.mass || 1e7;
+        const blackHoleMass = blackHole.userData.mass || 1e8;
         const G = physicsConfig.getPhysics().G;
         
         // v = sqrt(G * M / r) for circular orbit
         const baseOrbitalSpeed = Math.sqrt(G * blackHoleMass / orbitalRadius);
         const speedMultiplier = physicsConfig.getOrbitalMechanics().orbitalSpeedMultiplier;
-        const gameScaleFactor = 0.95; // 少し遅くして楕円軌道を作る
-        const orbitalSpeed = baseOrbitalSpeed * speedMultiplier * gameScaleFactor;
+        // 速度調整係数を削除し、speedMultiplier のみ使用
+        const orbitalSpeed = baseOrbitalSpeed * speedMultiplier;
         console.log('[INIT] Orbital speed calculation:', {
             radius: orbitalRadius,
             baseSpeed: baseOrbitalSpeed,
@@ -1046,12 +1113,27 @@ async function init() {
             name: 'Alpha Centauri',
             mass: 2000,  // ゲーム単位での恒星質量
             radius: 10,  // ゲーム内の適切なスケール
-            velocity: { x: 0, y: 0, z: orbitalSpeed }
+            velocity: new THREE.Vector3(0, 0, orbitalSpeed),
             // positionは意図的に指定しない
+            // 恒星の必須プロパティを明示的に設定
+            userData: {
+                type: 'star',
+                name: 'Alpha Centauri',
+                mass: 2000,
+                temperature: 5778,  // 太陽と同じ温度
+                spectralType: 'yellow',
+                age: '45',  // 45億年
+                lifespan: 100  // 100億年の寿命
+            }
         });
         
         // 恒星作成直後に位置を設定
         initialStar.position.set(orbitalRadius, 0, 0);
+        
+        // 速度ベクトルも正しく設定（位置に対して垂直方向）
+        if (initialStar.userData.velocity) {
+            initialStar.userData.velocity = new THREE.Vector3(0, 0, orbitalSpeed);
+        }
         // 恒星をstars配列に追加する前に、既存の恒星をチェック
         const existingStars = gameState.stars.filter(s => s.userData.type === 'star');
         console.log('[INIT] Existing stars:', existingStars.length);
@@ -1253,15 +1335,15 @@ async function init() {
                     const angle = Math.random() * Math.PI * 2;
                     const position = new THREE.Vector3(
                         radius * Math.cos(angle), 
-                        (Math.random() - 0.5) * 100, 
+                        0,  // 高さを0に固定
                         radius * Math.sin(angle)
                     );
                     
                     let velocity = new THREE.Vector3(0, 0, 0);
                     if (blackHole) {
-                        const blackHoleMass = blackHole.userData.mass || 1e7;
+                        const blackHoleMass = blackHole.userData.mass || 1e8;
                         const G = physicsConfig.getPhysics().G;
-                        const orbitalSpeed = Math.sqrt((G * blackHoleMass) / radius) * 0.95;
+                        const orbitalSpeed = Math.sqrt((G * blackHoleMass) / radius) * 1.0;
                         velocity = new THREE.Vector3(-position.z, 0, position.x).normalize().multiplyScalar(orbitalSpeed);
                     }
                     

@@ -214,12 +214,17 @@ export class CelestialCreationUI {
    * 基本的な天体作成
    */
   private createCelestialBody(type: 'asteroid' | 'comet', cost: number): boolean {
-    const position = this.getRandomPosition(200, 1000);
-    const velocity = this.getRandomVelocity();
+    // フォーカスされた天体または最も近い恒星を基準にする
+    const referenceBody = gameState.focusedObject || 
+      gameState.stars.find(s => s.userData.type === 'star') ||
+      gameState.stars.find(s => s.userData.type === 'black_hole');
+    
+    const basePosition = referenceBody ? referenceBody.position : new THREE.Vector3(0, 0, 0);
+    const position = this.getRandomPositionAroundPoint(basePosition, 200, 1000);
     
     const result = CelestialBodyFactory.create(type, {
       position,
-      velocity
+      parent: referenceBody  // 親天体を指定して軌道速度を計算させる
     });
 
     if (result.ok) {
@@ -227,7 +232,7 @@ export class CelestialCreationUI {
       gameState.stars.push(result.value);
       
       addTimelineLog({
-        message: `${type === 'asteroid' ? '小惑星' : '彗星'}が作成されました`,
+        message: `${type === 'asteroid' ? '小惑星' : '彗星'}が${referenceBody ? referenceBody.userData.name + 'の近くに' : ''}作成されました`,
         type: 'creation'
       });
       
@@ -340,19 +345,11 @@ export class CelestialCreationUI {
       radius * Math.sin(angle)
     );
     
-    // ブラックホール周回軌道速度を計算
-    let velocity = new THREE.Vector3(0, 0, 0);
-    if (blackHole) {
-      const blackHoleMass = blackHole.userData.mass || 1e7;
-      const G = physicsConfig.getPhysics().G;  // 重力定数
-      const orbitalSpeed = Math.sqrt((G * blackHoleMass) / radius) * 0.95; // 楕円軌道のために少し遅く
-      velocity = new THREE.Vector3(-position.z, 0, position.x).normalize().multiplyScalar(orbitalSpeed);
-    }
-    
+    // CelestialBodyFactoryに軌道速度計算を任せる
     const result = CelestialBodyFactory.create('star', {
       name: starName,
       position,
-      velocity
+      parent: blackHole  // ブラックホールを親天体として指定
     });
 
     if (result.ok) {
@@ -400,14 +397,47 @@ export class CelestialCreationUI {
   }
 
   /**
-   * ランダム速度の生成
+   * 指定点の周りにランダム位置を生成
+   */
+  private getRandomPositionAroundPoint(center: THREE.Vector3, minRadius: number, maxRadius: number): THREE.Vector3 {
+    const radius = minRadius + Math.random() * (maxRadius - minRadius);
+    const theta = Math.random() * Math.PI * 2;
+    
+    // Y座標を0に固定（高さなし）
+    const offset = new THREE.Vector3(
+      radius * Math.cos(theta),
+      0,  // 高さを0に固定
+      radius * Math.sin(theta)
+    );
+    
+    return center.clone().add(offset);
+  }
+
+  /**
+   * ランダム速度の生成（恒星系の動きを考慮）
+   * 注意：通常はCelestialBodyFactoryの軌道速度計算を使用するため、
+   * このメソッドは親天体がない場合のフォールバックとして使用
    */
   private getRandomVelocity(): THREE.Vector3 {
-    return new THREE.Vector3(
-      (Math.random() - 0.5) * 2,
-      (Math.random() - 0.5) * 2,
-      (Math.random() - 0.5) * 2
+    // 恒星またはブラックホールの速度を基準にする
+    const primaryStar = gameState.stars.find(s => s.userData.type === 'star');
+    const blackHole = gameState.stars.find(s => s.userData.type === 'black_hole');
+    const centralBody = primaryStar || blackHole;
+    
+    // 基準速度（恒星系の共通速度）
+    let baseVelocity = new THREE.Vector3(0, 0, 0);
+    if (centralBody && centralBody.userData.velocity) {
+      baseVelocity = centralBody.userData.velocity.clone();
+    }
+    
+    // 小さなランダム成分を追加（相対速度）
+    const randomComponent = new THREE.Vector3(
+      (Math.random() - 0.5) * 0.5,
+      (Math.random() - 0.5) * 0.5,
+      (Math.random() - 0.5) * 0.5
     );
+    
+    return baseVelocity.add(randomComponent);
   }
 
   /**

@@ -3,7 +3,8 @@ import { gameState } from '../state';
 import { formatNumber } from '../utils';
 
 export interface StatsPanelConfig {
-    position: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+    position: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'custom';
+    customPosition?: { x: number; y: number };
     opacity: number;
     scale: number;
     items: {
@@ -16,7 +17,7 @@ export interface StatsPanelConfig {
 }
 
 const defaultConfig: StatsPanelConfig = {
-    position: 'bottom-right',
+    position: 'top-left',
     opacity: 0.8,
     scale: 1.0,
     items: {
@@ -43,6 +44,8 @@ class StatsPanel {
     private config: StatsPanelConfig;
     private container: HTMLElement | null = null;
     private updateInterval: number | null = null;
+    private isDragging: boolean = false;
+    private dragOffset: { x: number; y: number } = { x: 0, y: 0 };
 
     constructor() {
         this.config = this.loadConfig();
@@ -68,6 +71,30 @@ class StatsPanel {
         this.createPanel();
         this.applyConfig();
         this.startUpdating();
+        this.setupWindowResize();
+    }
+
+    private setupWindowResize() {
+        // ウィンドウリサイズ時に位置を調整
+        window.addEventListener('resize', () => {
+            if (this.config.position === 'custom' && this.config.customPosition && this.container) {
+                // 現在の位置が画面外になった場合、画面内に収める
+                const maxX = window.innerWidth - this.container.offsetWidth;
+                const maxY = window.innerHeight - this.container.offsetHeight;
+                
+                let adjustedX = this.config.customPosition.x;
+                let adjustedY = this.config.customPosition.y;
+                
+                if (adjustedX > maxX) adjustedX = maxX;
+                if (adjustedY > maxY) adjustedY = maxY;
+                if (adjustedX < 0) adjustedX = 0;
+                if (adjustedY < 0) adjustedY = 0;
+                
+                this.config.customPosition = { x: adjustedX, y: adjustedY };
+                this.container.style.left = `${adjustedX}px`;
+                this.container.style.top = `${adjustedY}px`;
+            }
+        });
     }
 
     private createPanel() {
@@ -107,13 +134,114 @@ class StatsPanel {
         if (settingsBtn) {
             settingsBtn.addEventListener('click', () => this.showSettings());
         }
+
+        // ドラッグ機能の設定
+        this.setupDragging(header);
+    }
+
+    private setupDragging(header: HTMLElement) {
+        // ポインターイベントを使用（タッチデバイス対応）
+        header.addEventListener('pointerdown', (e) => {
+            // 設定ボタンのクリックは除外
+            if ((e.target as HTMLElement).classList.contains('stats-settings-btn')) {
+                return;
+            }
+
+            this.isDragging = true;
+            header.style.cursor = 'grabbing';
+            
+            // 現在の位置を取得
+            const rect = this.container!.getBoundingClientRect();
+            this.dragOffset.x = e.clientX - rect.left;
+            this.dragOffset.y = e.clientY - rect.top;
+
+            // ドラッグ中のクラスを追加
+            this.container!.classList.add('dragging');
+            
+            e.preventDefault();
+        });
+
+        // ドキュメント全体でイベントを監視
+        document.addEventListener('pointermove', (e) => {
+            if (!this.isDragging || !this.container) return;
+
+            const x = e.clientX - this.dragOffset.x;
+            const y = e.clientY - this.dragOffset.y;
+
+            // 画面内に制限
+            const maxX = window.innerWidth - this.container.offsetWidth;
+            const maxY = window.innerHeight - this.container.offsetHeight;
+            
+            let finalX = Math.max(0, Math.min(x, maxX));
+            let finalY = Math.max(0, Math.min(y, maxY));
+
+            // スナップ機能（画面端から20px以内でスナップ）
+            const snapDistance = 20;
+            
+            // 左端へのスナップ
+            if (finalX < snapDistance) {
+                finalX = 0;
+            }
+            // 右端へのスナップ
+            else if (finalX > maxX - snapDistance) {
+                finalX = maxX;
+            }
+            
+            // 上端へのスナップ
+            if (finalY < snapDistance) {
+                finalY = 0;
+            }
+            // 下端へのスナップ
+            else if (finalY > maxY - snapDistance) {
+                finalY = maxY;
+            }
+
+            // 位置を更新
+            this.container.style.left = `${finalX}px`;
+            this.container.style.top = `${finalY}px`;
+            
+            // カスタム位置として保存
+            this.config.position = 'custom';
+            this.config.customPosition = { x: finalX, y: finalY };
+        });
+
+        document.addEventListener('pointerup', () => {
+            if (!this.isDragging) return;
+            
+            this.isDragging = false;
+            if (header) {
+                header.style.cursor = 'grab';
+            }
+            
+            // ドラッグ中のクラスを削除
+            this.container?.classList.remove('dragging');
+            
+            // 位置を保存
+            this.saveConfig();
+        });
+
+        // マウスオーバー時のカーソル
+        header.style.cursor = 'grab';
     }
 
     private applyConfig() {
         if (!this.container) return;
 
-        // 位置の適用
-        this.container.className = `stats-panel modern-panel ${this.config.position}`;
+        // カスタム位置の場合
+        if (this.config.position === 'custom' && this.config.customPosition) {
+            this.container.className = 'stats-panel modern-panel custom-position';
+            this.container.style.left = `${this.config.customPosition.x}px`;
+            this.container.style.top = `${this.config.customPosition.y}px`;
+            this.container.style.right = 'auto';
+            this.container.style.bottom = 'auto';
+        } else {
+            // プリセット位置の場合
+            this.container.className = `stats-panel modern-panel ${this.config.position}`;
+            this.container.style.left = '';
+            this.container.style.top = '';
+            this.container.style.right = '';
+            this.container.style.bottom = '';
+        }
         
         // 透明度とスケールの適用
         this.container.style.opacity = this.config.opacity.toString();
@@ -132,6 +260,9 @@ class StatsPanel {
                 break;
             case 'bottom-right':
                 this.container.style.transformOrigin = 'bottom right';
+                break;
+            case 'custom':
+                this.container.style.transformOrigin = 'top left';
                 break;
         }
     }
@@ -187,9 +318,9 @@ class StatsPanel {
     private getStatValue(key: string): string | null {
         switch (key) {
             case 'cosmicDust':
-                // 塵の生成レートを計算（天体数に基づく簡易計算）
-                const dustRate = (gameState.celestialBodies?.length || 0) * 0.1;
-                return `${formatNumber(gameState.resources?.cosmicDust || 0)} <span class="resource-rate">(+${formatNumber(dustRate)}/s)</span>`;
+                // 実際の塵の生成レートを使用
+                const dustRate = gameState.currentDustRate || 0;
+                return `${formatNumber(gameState.resources?.cosmicDust || 0)} <span class="resource-rate">(+${dustRate.toFixed(1)}/s)</span>`;
             case 'energy':
                 return formatNumber(gameState.resources?.energy || 0);
             case 'celestialBodies':
@@ -235,7 +366,9 @@ class StatsPanel {
                         <option value="top-right">右上</option>
                         <option value="bottom-left">左下</option>
                         <option value="bottom-right">右下</option>
+                        <option value="custom">カスタム（ドラッグで移動）</option>
                     </select>
+                    ${this.config.position === 'custom' ? '<p class="position-hint">パネルのヘッダーをドラッグして移動できます</p>' : ''}
                 </div>
                 
                 <div class="settings-section">

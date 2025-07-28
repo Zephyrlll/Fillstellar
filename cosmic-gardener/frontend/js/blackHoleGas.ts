@@ -23,40 +23,26 @@ export class BlackHoleGas {
         // 上から見た時の発光プレーンを追加
         const geometry = new THREE.RingGeometry(700, 2500, 64, 8);
         
-        // カスタムシェーダーマテリアルで中心が明るい効果
-        const material = new THREE.ShaderMaterial({
-            uniforms: {
-                time: { value: 0 }
-            },
-            vertexShader: `
-                varying vec2 vUv;
-                void main() {
-                    vUv = uv;
-                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-                }
-            `,
-            fragmentShader: `
-                varying vec2 vUv;
-                uniform float time;
-                
-                void main() {
-                    // 中心からの距離
-                    float dist = length(vUv - vec2(0.5, 0.5)) * 2.0;
-                    
-                    // 内側ほど明るい
-                    float intensity = 1.0 - dist;
-                    intensity = pow(intensity, 2.0);
-                    
-                    // 時間で脈動
-                    intensity *= 0.8 + 0.2 * sin(time * 2.0);
-                    
-                    // 青白い光
-                    vec3 color = vec3(0.7, 0.8, 1.0) * intensity;
-                    
-                    gl_FragColor = vec4(color, intensity * 0.3);
-                }
-            `,
+        // グラデーションテクスチャを作成
+        const canvas = document.createElement('canvas');
+        canvas.width = 256;
+        canvas.height = 256;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+            const gradient = ctx.createRadialGradient(128, 128, 0, 128, 128, 128);
+            gradient.addColorStop(0, 'rgba(178, 204, 255, 0.8)');
+            gradient.addColorStop(0.5, 'rgba(102, 153, 255, 0.4)');
+            gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 256, 256);
+        }
+        const texture = new THREE.CanvasTexture(canvas);
+        
+        // 標準マテリアルを使用（シェーダーエラーを回避）
+        const material = new THREE.MeshBasicMaterial({
+            map: texture,
             transparent: true,
+            opacity: 0.3,
             blending: THREE.AdditiveBlending,
             depthWrite: false,
             side: THREE.DoubleSide
@@ -281,16 +267,14 @@ export class BlackHoleGas {
         this.gasGroup.position.set(centerX, centerY, centerZ);
         
         // グロープレーンのアニメーション
+        // グロープレーンのアニメーション（脈動効果）
         this.gasGroup.children.forEach((child) => {
             if (child.userData.isGlowPlane && child instanceof THREE.Mesh) {
-                const material = child.material as THREE.ShaderMaterial;
-                // Safety check for disposed materials
-                if (material && material.uniforms && material.uniforms.time && typeof material.uniforms.time.value === 'number') {
-                    try {
-                        material.uniforms.time.value += deltaTime;
-                    } catch (error) {
-                        console.error('[BLACKHOLEGAS] Failed to update shader uniform:', error);
-                    }
+                const material = child.material as THREE.MeshBasicMaterial;
+                if (material && material.opacity !== undefined) {
+                    // 時間に基づいて透明度を変化させて脈動効果を表現
+                    const time = performance.now() * 0.001;
+                    material.opacity = 0.25 + 0.05 * Math.sin(time * 2.0);
                 }
             }
         });

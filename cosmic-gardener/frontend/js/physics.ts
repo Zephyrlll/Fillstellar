@@ -249,6 +249,10 @@ export function handleCollision(body1: CelestialBody, body2: CelestialBody) {
 }
 
 export function updatePhysics(deltaTime: number) {
+    // デルタタイムの検証
+    if (Math.random() < 0.01) {
+        console.log('[PHYSICS] Update deltaTime:', deltaTime);
+    }
     if (!gameState || !gameState.stars || gameState.stars.length === 0) {
         return;
     }
@@ -294,6 +298,10 @@ export function updatePhysics(deltaTime: number) {
         }
     }
 
+    // まず恒星系の主星を見つける
+    const primaryStar = gameState.stars.find(s => s.userData.type === 'star');
+    const blackHole = gameState.stars.find(s => s.userData.type === 'black_hole');
+    
     // Update physics for remaining bodies
     gameState.stars.forEach(body => {
         if (!body.userData || body.userData.isStatic) return;
@@ -318,7 +326,7 @@ export function updatePhysics(deltaTime: number) {
                 const escapeVelocity = Math.sqrt(2 * G * blackHole.userData.mass / dist);
                 const circularVelocity = Math.sqrt(G * blackHole.userData.mass / dist);
                 
-                if (Math.random() < 0.01) { // Log occasionally
+                if (Math.random() < 0.1) { // Log more frequently
                     console.log('[PHYSICS] Orbital analysis:', {
                         distance: dist,
                         currentSpeed: speed,
@@ -357,7 +365,7 @@ export function updatePhysics(deltaTime: number) {
             
             // デバッグ: ブラックホールとの相互作用をログ
             if (body.userData.type === 'star' && other.userData.type === 'black_hole') {
-                if (Math.random() < 0.05) {
+                if (Math.random() < 0.2) {
                     console.log('[PHYSICS] Gravity calculation:', {
                         distance: distance,
                         force: force,
@@ -369,11 +377,41 @@ export function updatePhysics(deltaTime: number) {
             }
         });
 
-        userData.velocity.multiplyScalar(1 - dragFactor * deltaTime);
+        // ドラッグ適用（dragFactor = 0なら影響なし）
+        const dragMultiplier = 1 - dragFactor * deltaTime;
+        if (dragFactor > 0 && Math.random() < 0.01) {
+            console.log('[PHYSICS] Drag applied:', { dragFactor, deltaTime, dragMultiplier });
+        }
+        userData.velocity.multiplyScalar(dragMultiplier);
 
         userData.velocity.add(userData.acceleration.clone().multiplyScalar(deltaTime));
 
         body.position.add(userData.velocity.clone().multiplyScalar(deltaTime));
+        
+        // デバッグ: 速度の方向を確認
+        if (body.userData.type === 'star' && Math.random() < 0.02) {
+            const blackHole = gameState.stars.find(s => s.userData.type === 'black_hole');
+            let radialComponent = 0;
+            let tangentialComponent = 0;
+            
+            if (blackHole) {
+                const toBH = blackHole.position.clone().sub(body.position).normalize();
+                radialComponent = userData.velocity.dot(toBH);
+                const tangential = userData.velocity.clone().sub(toBH.clone().multiplyScalar(radialComponent));
+                tangentialComponent = tangential.length();
+            }
+            
+            console.log('[PHYSICS] Star velocity analysis:', {
+                name: body.userData.name,
+                position: body.position,
+                velocity: userData.velocity,
+                speed: userData.velocity.length(),
+                radialSpeed: radialComponent,
+                tangentialSpeed: tangentialComponent,
+                accelerationMagnitude: userData.acceleration.length(),
+                dragFactor: dragFactor
+            });
+        }
 
         const boundary = boundarySettings.galaxyBoundary;
         const distance = body.position.length();

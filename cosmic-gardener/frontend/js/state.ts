@@ -233,7 +233,7 @@ export interface GameState {
     focusedObject: CelestialBody | null;
     paragon?: any; // パラゴンシステムのデータ
     infiniteResources?: { [key: string]: number }; // 無限資源システムのデータ
-    mythicBonuses?: { [key: string]: number | boolean }; // 神話級ボーナス
+    mythicBonuses?: { [key: string]: number }; // 神話級ボーナス（統一）
     multiverse?: any; // マルチバースシステムのデータ
     timelineLog: { id: number; year: number; message: string; type: string; timestamp: number }[];
     maxLogEntries: number;
@@ -251,7 +251,6 @@ export interface GameState {
     };
     advancedResources?: ResourceStorage;
     infiniteResources?: { [key: string]: number }; // 無限tier資源
-    mythicBonuses?: { [key: string]: number }; // 神話級ボーナス
     discoveredTechnologies: Set<string>;
     availableFacilities: Set<string>;
     conversionEngineState?: any;
@@ -408,6 +407,19 @@ export class GameStateManager {
         }
     }
 
+    /**
+     * リソースを更新するヘルパーメソッド
+     */
+    updateResource(resourceType: string, amount: number): void {
+        this.updateState(state => ({
+            ...state,
+            resources: {
+                ...state.resources,
+                [resourceType]: Math.max(0, (state.resources[resourceType] || 0) + amount)
+            }
+        }));
+    }
+
     private validateState(state: GameState): boolean {
         try {
             // Basic validation
@@ -489,7 +501,8 @@ export class GameStateManager {
             if (obj.hasOwnProperty(key)) {
                 const value = obj[key];
                 // Skip freezing problematic properties but keep them
-                if (key === 'stars' || key === 'focusedObject' || this.isFrameworkObject(value)) {
+                // mythicBonusesは動的に更新されるため凍結しない
+                if (key === 'stars' || key === 'focusedObject' || key === 'mythicBonuses' || this.isFrameworkObject(value)) {
                     frozen[key] = value;
                 } else {
                     frozen[key] = this.deepFreeze(value, visited);
@@ -557,7 +570,7 @@ const initialGameState: GameState = {
     dustUpgradeBaseCost: 100,
     darkMatter: 0,
     darkMatterConverterLevel: 0,
-    darkMatterConverterBaseCost: 500,
+    darkMatterConverterBaseCost: 250,  // Reduced from 500 to 250 for better early game progression
     organicMatter: 0,
     biomass: 0,
     thoughtPoints: 0,

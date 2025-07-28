@@ -15,10 +15,12 @@ export class ResearchLabUI {
   constructor() {
     const overlay = document.getElementById('research-lab-overlay');
     const closeButton = document.getElementById('researchLabCloseButton');
-    const toggleButton = document.getElementById('researchLabToggleButton');
+    // デスクトップとモバイル両方のボタンを探す
+    const toggleButton = document.getElementById('researchLabToggleButton') || 
+                        document.getElementById('researchLabToggleButton-mobile');
     const itemsGrid = document.getElementById('research-items-grid');
     
-    if (!overlay || !closeButton || !toggleButton || !itemsGrid) {
+    if (!overlay || !closeButton || !itemsGrid) {
       throw new Error('[RESEARCH_LAB] Required DOM elements not found');
     }
     

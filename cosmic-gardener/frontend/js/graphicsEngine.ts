@@ -453,7 +453,7 @@ export class GraphicsEngine {
     }
     
     // View distance (camera far plane)
-    private applyViewDistance(distance: string): void {
+    applyViewDistance(distance: string): void {
         let farPlane: number;
         
         switch (distance) {
@@ -860,9 +860,24 @@ export class GraphicsEngine {
         bokehPass.enabled = config.enabled;
         
         if (config.enabled) {
-            if (config.focus !== undefined) bokehPass.uniforms['focus'].value = config.focus;
-            if (config.aperture !== undefined) bokehPass.uniforms['aperture'].value = config.aperture;
-            if (config.maxblur !== undefined) bokehPass.uniforms['maxblur'].value = config.maxblur;
+            // BokehPassのuniformsを安全に更新
+            try {
+                if (bokehPass.uniforms) {
+                    if (config.focus !== undefined && bokehPass.uniforms['focus']) {
+                        bokehPass.uniforms['focus'].value = config.focus;
+                    }
+                    if (config.aperture !== undefined && bokehPass.uniforms['aperture']) {
+                        bokehPass.uniforms['aperture'].value = config.aperture;
+                    }
+                    if (config.maxblur !== undefined && bokehPass.uniforms['maxblur']) {
+                        bokehPass.uniforms['maxblur'].value = config.maxblur;
+                    }
+                } else {
+                    console.warn('[GRAPHICS] BokehPass uniforms not available');
+                }
+            } catch (error) {
+                console.error('[GRAPHICS] Error updating BokehPass uniforms:', error);
+            }
             
             console.log(`📷 Bokeh effect enabled - focus: ${config.focus}, aperture: ${config.aperture}, maxblur: ${config.maxblur}`);
         } else {
@@ -899,22 +914,34 @@ export class GraphicsEngine {
         colorCorrectionPass.enabled = config.enabled;
         
         if (config.enabled) {
-            // brightness: RGB power values (2.2 = standard gamma)
-            if (config.brightness !== undefined) {
-                const power = 2.2 / config.brightness;
-                colorCorrectionPass.uniforms['powRGB'].value.set(power, power, power);
-            }
-            
-            // contrast & saturation: RGB multipliers
-            if (config.contrast !== undefined || config.saturation !== undefined) {
-                const contrast = config.contrast !== undefined ? config.contrast : 1.0;
-                const saturation = config.saturation !== undefined ? config.saturation : 1.0;
-                
-                // Apply contrast and saturation
-                const r = contrast * saturation;
-                const g = contrast * saturation;
-                const b = contrast * saturation;
-                colorCorrectionPass.uniforms['mulRGB'].value.set(r, g, b);
+            try {
+                if (colorCorrectionPass.uniforms) {
+                    // brightness: RGB power values (2.2 = standard gamma)
+                    if (config.brightness !== undefined && colorCorrectionPass.uniforms['powRGB']) {
+                        const power = 2.2 / config.brightness;
+                        if (colorCorrectionPass.uniforms['powRGB'].value) {
+                            colorCorrectionPass.uniforms['powRGB'].value.set(power, power, power);
+                        }
+                    }
+                    
+                    // contrast & saturation: RGB multipliers
+                    if ((config.contrast !== undefined || config.saturation !== undefined) && colorCorrectionPass.uniforms['mulRGB']) {
+                        const contrast = config.contrast !== undefined ? config.contrast : 1.0;
+                        const saturation = config.saturation !== undefined ? config.saturation : 1.0;
+                        
+                        // Apply contrast and saturation
+                        const r = contrast * saturation;
+                        const g = contrast * saturation;
+                        const b = contrast * saturation;
+                        if (colorCorrectionPass.uniforms['mulRGB'].value) {
+                            colorCorrectionPass.uniforms['mulRGB'].value.set(r, g, b);
+                        }
+                    }
+                } else {
+                    console.warn('[GRAPHICS] ColorCorrectionPass uniforms not available');
+                }
+            } catch (error) {
+                console.error('[GRAPHICS] Error updating ColorCorrectionPass uniforms:', error);
             }
             
             console.log(`🎨 Color correction enabled - brightness: ${config.brightness}, contrast: ${config.contrast}, saturation: ${config.saturation}`);
@@ -933,8 +960,20 @@ export class GraphicsEngine {
         vignettePass.enabled = config.enabled;
         
         if (config.enabled) {
-            if (config.offset !== undefined) vignettePass.uniforms['offset'].value = config.offset;
-            if (config.darkness !== undefined) vignettePass.uniforms['darkness'].value = config.darkness;
+            try {
+                if (vignettePass.uniforms) {
+                    if (config.offset !== undefined && vignettePass.uniforms['offset']) {
+                        vignettePass.uniforms['offset'].value = config.offset;
+                    }
+                    if (config.darkness !== undefined && vignettePass.uniforms['darkness']) {
+                        vignettePass.uniforms['darkness'].value = config.darkness;
+                    }
+                } else {
+                    console.warn('[GRAPHICS] VignettePass uniforms not available');
+                }
+            } catch (error) {
+                console.error('[GRAPHICS] Error updating VignettePass uniforms:', error);
+            }
             
             console.log(`🖼️ Vignette effect enabled - offset: ${config.offset}, darkness: ${config.darkness}`);
         } else {
@@ -953,7 +992,15 @@ export class GraphicsEngine {
         
         // 解像度の更新
         if (enabled) {
-            fxaaPass.uniforms['resolution'].value.set(1 / window.innerWidth, 1 / window.innerHeight);
+            try {
+                if (fxaaPass.uniforms && fxaaPass.uniforms['resolution'] && fxaaPass.uniforms['resolution'].value) {
+                    fxaaPass.uniforms['resolution'].value.set(1 / window.innerWidth, 1 / window.innerHeight);
+                } else {
+                    console.warn('[GRAPHICS] FXAAPass resolution uniform not available');
+                }
+            } catch (error) {
+                console.error('[GRAPHICS] Error updating FXAAPass uniforms:', error);
+            }
         }
         
         console.log(`🔧 FXAA antialiasing ${enabled ? 'enabled' : 'disabled'}`);

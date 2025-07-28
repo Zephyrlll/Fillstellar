@@ -343,18 +343,18 @@ export class MythicRaritySystem {
   // 神話級ボーナスを適用
   private applyMythicBonuses(mythicObject: MythicObject): void {
     gameStateManager.updateState(state => {
-      const newState = { ...state };
-      
-      if (!newState.mythicBonuses) {
-        newState.mythicBonuses = {};
-      }
+      // 新しいオブジェクトを作成して、凍結の問題を回避
+      const newMythicBonuses = { ...(state.mythicBonuses || {}) };
       
       mythicObject.bonuses.forEach(bonus => {
         const key = bonus.target ? `${bonus.type}_${bonus.target}` : bonus.type;
-        newState.mythicBonuses[key] = (newState.mythicBonuses[key] || 0) + bonus.value;
+        newMythicBonuses[key] = (newMythicBonuses[key] || 0) + bonus.value;
       });
       
-      return newState;
+      return {
+        ...state,
+        mythicBonuses: newMythicBonuses
+      };
     });
   }
   

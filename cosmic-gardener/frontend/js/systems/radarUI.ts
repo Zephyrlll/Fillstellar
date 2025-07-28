@@ -5,10 +5,12 @@ import { gameState } from '../state.js';
 import type { CelestialBody } from '../state.js';
 import { camera } from '../threeSetup.js';
 import * as THREE from 'three';
+import { orbitTrailSystem } from '../orbitTrails.js';
 
 export class RadarUI {
   private container: HTMLElement;
   private toggleButton: HTMLElement;
+  private orbitButton: HTMLElement | null = null;
   private mapContainer: HTMLElement;
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
@@ -53,6 +55,7 @@ export class RadarUI {
         align-items: flex-end !important;
         gap: 10px !important;
       `;
+      
       
       // レーダーボタンを作成
       const toggleButton = document.createElement('button');
@@ -102,6 +105,9 @@ export class RadarUI {
       radarContainer.appendChild(mapContainer);
       document.body.appendChild(radarContainer);
       
+      // 軌道描画ボタンを別途作成して追加
+      this.createOrbitButton();
+      
       console.log('[RADAR] Radar UI created and appended');
     } catch (error) {
       console.error('[RADAR] Error in constructor:', error);
@@ -126,8 +132,66 @@ export class RadarUI {
       
       console.log('[RADAR] RadarUI constructor completed');
     } else {
-      console.error('[RADAR] Failed to get required elements');
+      console.error('[RADAR] Failed to get required elements', {
+        container: !!this.container,
+        toggleButton: !!this.toggleButton
+      });
     }
+  }
+
+  /**
+   * 軌道描画ボタンを作成
+   */
+  private createOrbitButton(): void {
+    // 既存のボタンがあれば削除
+    const existingButton = document.getElementById('orbit-toggle');
+    if (existingButton) {
+      existingButton.remove();
+    }
+    
+    // 軌道描画ボタンを作成
+    const orbitButton = document.createElement('button');
+    orbitButton.id = 'orbit-toggle';
+    orbitButton.className = 'orbit-toggle-modern';
+    orbitButton.title = '天体軌道の表示/非表示';
+    orbitButton.innerHTML = '◯';
+    orbitButton.style.cssText = `
+      position: fixed !important;
+      right: 90px !important;
+      bottom: 20px !important;
+      width: 60px !important;
+      height: 60px !important;
+      background: rgba(0, 0, 0, 0.8) !important;
+      border: 1px solid rgba(255, 215, 0, 0.3) !important;
+      border-radius: 0 !important;
+      color: #FFD700 !important;
+      font-size: 24px !important;
+      font-weight: normal !important;
+      cursor: pointer !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      transition: all 0.2s ease !important;
+      backdrop-filter: blur(10px) !important;
+      box-shadow: 0 0 10px rgba(255, 215, 0, 0.2) !important;
+      z-index: 10001 !important;
+    `;
+    
+    // ボタンを追加
+    document.body.appendChild(orbitButton);
+    this.orbitButton = orbitButton;
+    
+    // クリックイベントを設定
+    orbitButton.addEventListener('click', () => {
+      const isEnabled = orbitTrailSystem.toggle();
+      orbitButton.style.background = isEnabled ? 
+        'rgba(255, 215, 0, 0.2) !important' : 
+        'rgba(0, 0, 0, 0.8) !important';
+      orbitButton.innerHTML = isEnabled ? '◉' : '◯';
+      soundManager.playSound(isEnabled ? 'ui_open' : 'ui_close');
+    });
+    
+    console.log('[RADAR] Orbit button created');
   }
 
   /**

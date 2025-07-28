@@ -380,15 +380,34 @@ export class CollisionEffects {
         }
         
         // ジオメトリとマテリアルの破棄（Meshの場合のみ）
-        if (body instanceof THREE.Mesh) {
-            if (body.geometry) body.geometry.dispose();
-            if (body.material) {
-                if (Array.isArray(body.material)) {
-                    body.material.forEach(m => m.dispose());
-                } else {
-                    body.material.dispose();
+        if (body instanceof THREE.Mesh || body instanceof THREE.Group) {
+            // グループの場合は、すべての子要素を処理
+            body.traverse((child) => {
+                if (child instanceof THREE.Mesh) {
+                    if (child.geometry) {
+                        try {
+                            child.geometry.dispose();
+                        } catch (e) {
+                            console.warn('[COLLISION] Failed to dispose geometry:', e);
+                        }
+                    }
+                    if (child.material) {
+                        try {
+                            if (Array.isArray(child.material)) {
+                                child.material.forEach(m => {
+                                    if (m && typeof m.dispose === 'function') {
+                                        m.dispose();
+                                    }
+                                });
+                            } else if (typeof child.material.dispose === 'function') {
+                                child.material.dispose();
+                            }
+                        } catch (e) {
+                            console.warn('[COLLISION] Failed to dispose material:', e);
+                        }
+                    }
                 }
-            }
+            });
         }
     }
 }

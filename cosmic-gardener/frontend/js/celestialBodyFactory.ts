@@ -1003,9 +1003,8 @@ export class CelestialBodyFactory {
     // 速度の計算（惑星の場合は円軌道速度を計算）
     let velocity = params.config.velocity ? params.config.velocity.clone() : new THREE.Vector3(0, 0, 0);
     
-    // 惑星、衛星、小惑星、彗星の場合は親天体との円軌道速度を計算
-    if (!params.config.isLoading && params.config.parent && 
-        (type === 'planet' || type === 'moon' || type === 'asteroid' || type === 'comet' || type === 'dwarfPlanet')) {
+    // 親天体がある場合は円軌道速度を計算（恒星も含む）
+    if (!params.config.isLoading && params.config.parent) {
       velocity = this.calculateOrbitalVelocity(params.config.parent, params.config.position);
     }
     
@@ -1088,20 +1087,38 @@ export class CelestialBodyFactory {
     const parentMass = parent.userData.mass || 1;
     const orbitalSpeed = Math.sqrt(G * parentMass / distance);
     
-    // 軌道方向ベクトルの計算（位置ベクトルに垂直）
-    // デフォルトの軌道面はXZ平面だが、ランダムに傾斜させる
-    const up = new THREE.Vector3(0, 1, 0);
+    // 軌道方向ベクトルの計算（単純な方法）
+    // XZ平面での円軌道を基本とする
+    const normalizedPos = relativePosition.clone().normalize();
     
-    // 軌道面の傾斜角をランダムに設定（-30度から+30度）
-    const inclination = (Math.random() - 0.5) * Math.PI / 3;
-    const axis = relativePosition.clone().normalize();
-    up.applyAxisAngle(axis, inclination);
+    // 位置ベクトルに垂直な速度方向を計算（反時計回り）
+    let velocityDirection: THREE.Vector3;
+    if (Math.abs(normalizedPos.y) < 0.99) {
+        // 通常のケース：位置がほぼXZ平面にある
+        velocityDirection = new THREE.Vector3(-normalizedPos.z, 0, normalizedPos.x).normalize();
+    } else {
+        // 特殊なケース：位置がY軸に近い
+        velocityDirection = new THREE.Vector3(1, 0, 0);
+    }
     
-    // 速度方向 = 位置ベクトル × 上方向ベクトル
-    const velocityDirection = new THREE.Vector3().crossVectors(relativePosition, up).normalize();
+    // 軌道速度を調整（1.0 = 完全な円軌道）
+    const orbitalSpeedFactor = 1.0;
     
     // 最終的な速度ベクトル
-    const velocity = velocityDirection.multiplyScalar(orbitalSpeed);
+    const velocity = velocityDirection.multiplyScalar(orbitalSpeed * orbitalSpeedFactor);
+    
+    // デバッグ: 速度方向の確認
+    const dotProduct = normalizedPos.dot(velocityDirection);
+    console.log('[CELESTIAL] Orbital velocity calculation:', {
+        relativePosition: relativePosition,
+        normalizedPos: normalizedPos,
+        velocityDirection: velocityDirection,
+        orbitalSpeed: orbitalSpeed,
+        finalVelocity: velocity,
+        speedFactor: orbitalSpeedFactor,
+        dotProduct: dotProduct,  // Should be close to 0 for perpendicular
+        G: G
+    });
     
     // 親天体が動いている場合は、その速度を加算
     if (parent.userData.velocity) {
@@ -1113,6 +1130,8 @@ export class CelestialBodyFactory {
       parentMass: parentMass,
       distance: distance,
       orbitalSpeed: orbitalSpeed,
+      actualSpeed: velocity.length(),
+      velocityVector: velocity,
       G: G
     });
     

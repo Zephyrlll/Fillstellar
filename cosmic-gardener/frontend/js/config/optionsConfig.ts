@@ -1005,6 +1005,38 @@ export const optionsConfig: OptionsConfig = {
               }
             },
             {
+              id: 'view-distance',
+              label: '描画距離',
+              type: 'select',
+              value: 'medium',
+              options: [
+                { value: 'minimal', label: '最小 (10,000)' },
+                { value: 'near', label: '近 (15,000)' },
+                { value: 'medium', label: '中 (20,000)' },
+                { value: 'far', label: '遠 (30,000)' },
+                { value: 'unlimited', label: '無制限 (50,000)' }
+              ],
+              description: '天体が描画される最大距離',
+              onChange: async (value: string) => {
+                const { graphicsEngine } = await import('../graphicsEngine.js');
+                const { gameStateManager } = await import('../state.js');
+                
+                // 状態を更新
+                gameStateManager.updateState(state => ({
+                  ...state,
+                  graphics: {
+                    ...state.graphics,
+                    viewDistance: value
+                  }
+                }));
+                
+                // 設定を適用
+                graphicsEngine.applyViewDistance(value);
+                
+                console.log(`[OPTIONS] View distance changed to: ${value}`);
+              }
+            },
+            {
               id: 'fog',
               label: 'フォグ（霧）',
               type: 'checkbox',

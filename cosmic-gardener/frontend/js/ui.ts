@@ -1078,10 +1078,11 @@ export function updateMobileProductionUI(): void {
     const organicProduction = document.getElementById('mobile-organic-production');
     const biomassProduction = document.getElementById('mobile-biomass-production');
     
-    if (dustProduction) dustProduction.textContent = `+${mathCache.getDustGenerationRate().toFixed(1)}/s`;
-    if (energyProduction) energyProduction.textContent = `+${mathCache.getEnergyGenerationRate().toFixed(1)}/s`;
-    if (organicProduction) organicProduction.textContent = `+${mathCache.getOrganicMatterGenerationRate().toFixed(1)}/s`;
-    if (biomassProduction) biomassProduction.textContent = `+${mathCache.getBiomassGenerationRate().toFixed(1)}/s`;
+    if (dustProduction) dustProduction.textContent = `+${(gameState.currentDustRate || 0).toFixed(1)}/s`;
+    // TODO: エネルギー、有機物、バイオマスの生成レートも同様に実装する必要がある
+    if (energyProduction) energyProduction.textContent = `+0.0/s`; // mathCache.getEnergyGenerationRate() not implemented
+    if (organicProduction) organicProduction.textContent = `+0.0/s`; // mathCache.getOrganicMatterGenerationRate() not implemented  
+    if (biomassProduction) biomassProduction.textContent = `+0.0/s`; // mathCache.getBiomassGenerationRate() not implemented
     
     // TODO: Update production chains display
 }

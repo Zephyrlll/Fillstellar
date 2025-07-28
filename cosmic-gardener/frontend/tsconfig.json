@@ -48,7 +48,9 @@
     "dist",
     "js/**/*.js",
     ".vite",
-    "coverage"
+    "coverage",
+    "js/backup/**/*",
+    "js/config/**/*"
   ],
   "ts-node": {
     "compilerOptions": {

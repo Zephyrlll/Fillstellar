@@ -89,7 +89,7 @@ export interface BalanceConfig {
 // Default balanced configuration
 export const defaultBalanceConfig: BalanceConfig = {
   resourceRates: {
-    cosmicDust: { base: 1, perLevel: 0.5 },
+    cosmicDust: { base: 3, perLevel: 0.5 }, // Increased from 1 to 3 for better early game progression
     energy: { base: 0, perLevel: 0.001 }, // Per solar mass
     organicMatter: { base: 0, perLevel: 0.1 }, // Per life stage
     biomass: { base: 0, perLevel: 0.05 },
@@ -145,7 +145,7 @@ export const defaultBalanceConfig: BalanceConfig = {
       effectPerLevel: 0.5 // +50% per level
     },
     darkMatterConverter: {
-      baseCost: 1000,
+      baseCost: 500,  // Reduced from 1000 to 500 for better progression
       costMultiplier: 2,
       effectPerLevel: 0.001 // +0.1% conversion rate
     }

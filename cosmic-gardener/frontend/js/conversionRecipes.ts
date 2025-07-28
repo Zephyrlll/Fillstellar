@@ -86,7 +86,7 @@ export const CONVERSION_RECIPES: Record<string, ConversionRecipe> = {
                 { type: ResourceType.THERMAL_ENERGY, amount: 120, quality: QualityTier.STANDARD }
             ]
         },
-        time: 5,
+        time: 2,  // Reduced from 5 seconds for faster conversion
         efficiency: 1.2,
         discovered: true
     },
@@ -105,8 +105,28 @@ export const CONVERSION_RECIPES: Record<string, ConversionRecipe> = {
                 { type: ResourceType.ELECTRIC_ENERGY, amount: 80, quality: QualityTier.STANDARD }
             ]
         },
-        time: 8,
+        time: 3,  // Reduced from 8 seconds for faster conversion
         efficiency: 0.8,
+        discovered: true
+    },
+    
+    // Basic Dark Matter Extraction
+    'dark_matter_extraction': {
+        id: 'dark_matter_extraction',
+        name: 'ダークマター抽出',
+        description: '高エネルギーを使用してダークマターを抽出します',
+        inputs: {
+            resources: [
+                { type: ResourceType.ENERGY, amount: 1000, quality: QualityTier.STANDARD }
+            ]
+        },
+        outputs: {
+            resources: [
+                { type: ResourceType.DARK_MATTER, amount: 1, quality: QualityTier.STANDARD }
+            ]
+        },
+        time: 30,
+        efficiency: 1.0,
         discovered: true
     },
     

@@ -9,8 +9,9 @@
   },
   "orbitalMechanics": {
     "enableKeplerianOrbits": true,
-    "orbitalDecayRate": 0.0001,
-    "tidalLockingEnabled": false
+    "orbitalDecayRate": 0,
+    "tidalLockingEnabled": false,
+    "orbitalSpeedMultiplier": 1.0
   },
   "boundaries": {
     "galaxyBoundary": 50000,

@@ -13,6 +13,7 @@ export interface PhysicsConfig {
         enableKeplerianOrbits: boolean;
         orbitalDecayRate: number;
         tidalLockingEnabled: boolean;
+        orbitalSpeedMultiplier: number;
     };
     boundaries: {
         galaxyBoundary: number;
