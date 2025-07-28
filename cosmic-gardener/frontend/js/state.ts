@@ -6,6 +6,7 @@ import { physicsConfig } from './physicsConfig.js';
 
 export interface StarUserData {
     type: 'star';
+    id: string;
     name: string;
     creationYear: number;
     mass: number;
@@ -17,10 +18,12 @@ export interface StarUserData {
     temperature: number;
     spectralType: string;
     lifespan: number;
+    isOwned?: boolean;
 }
 
 export interface PlanetUserData {
     type: 'planet';
+    id: string;
     name: string;
     creationYear: number;
     mass: number;
@@ -38,10 +41,12 @@ export interface PlanetUserData {
     hasLife?: boolean;
     lifeStage?: string;
     population?: number;
+    isOwned?: boolean;
 }
 
 export interface BlackHoleUserData {
     type: 'black_hole';
+    id: string;
     name: string;
     creationYear: number;
     mass: number;
@@ -51,7 +56,19 @@ export interface BlackHoleUserData {
     isStatic: boolean;
 }
 
-export type CelestialBodyUserData = StarUserData | PlanetUserData | BlackHoleUserData | { [key: string]: any };
+export type CelestialBodyUserData = (StarUserData | PlanetUserData | BlackHoleUserData | { 
+    type: string;
+    id: string;
+    name: string;
+    creationYear: number;
+    mass: number;
+    radius: number;
+    velocity: THREE.Vector3;
+    acceleration: THREE.Vector3;
+    isStatic: boolean;
+    isOwned?: boolean;
+    [key: string]: any;
+});
 
 export interface CelestialBody extends THREE.Object3D {
     userData: CelestialBodyUserData & {
@@ -299,6 +316,31 @@ export interface GameState {
     phaseAdvanceNotified?: boolean;
     // Achievement multipliers
     achievementMultipliers?: Record<string, number>;
+    
+    // Planet exploration system
+    planetExploration?: {
+        isActive: boolean;
+        currentPlanet: string; // planet ID
+        player: {
+            position: [number, number, number];
+            rotation: [number, number, number];
+            inventory: Record<string, number>;
+        };
+        discoveries: {
+            locations: string[];
+            resources: string[];
+        };
+        structures: any[];
+    };
+    
+    // Current game mode
+    currentMode?: 'space' | 'planet';
+    
+    // Celestial bodies info
+    celestialBodies: CelestialBody[];
+    
+    // Planet ownership system
+    ownedPlanets?: any[];
 }
 
 // --- State Management Types ---
@@ -702,7 +744,26 @@ const initialGameState: GameState = {
     // Game phase system
     currentGamePhase: 0,
     unlockedPhases: new Set<number>([0]),
-    phaseProgress: {}
+    phaseProgress: {},
+    // Planet exploration
+    planetExploration: {
+        isActive: false,
+        currentPlanet: '',
+        player: {
+            position: [0, 0, 0],
+            rotation: [0, 0, 0],
+            inventory: {}
+        },
+        discoveries: {
+            locations: [],
+            resources: []
+        },
+        structures: []
+    },
+    currentMode: 'space',
+    celestialBodies: [],
+    // Planet ownership
+    ownedPlanets: []
 };
 
 // --- Global State Manager Instance ---

@@ -321,6 +321,44 @@
     }
 }
 
+/* 惑星ボタンセクション */
+.planet-buttons-section {
+    display: flex;
+    gap: 8px;
+    padding: 8px 0;
+    justify-content: center;
+}
+
+.planet-button {
+    flex: 1;
+    padding: 8px 12px;
+    background: linear-gradient(135deg, rgba(76, 175, 80, 0.2), rgba(76, 175, 80, 0.1));
+    border: 1px solid rgba(76, 175, 80, 0.5);
+    border-radius: 6px;
+    color: #4CAF50;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-family: 'Noto Sans JP', sans-serif;
+}
+
+.planet-button:hover {
+    background: linear-gradient(135deg, rgba(76, 175, 80, 0.3), rgba(76, 175, 80, 0.2));
+    border-color: #4CAF50;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+}
+
+.planet-button:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 4px rgba(76, 175, 80, 0.2);
+}
+
 /* モバイル対応 */
 @media (max-width: 768px) {
     .stats-panel {
@@ -348,5 +386,15 @@
     
     .stats-items-list {
         grid-template-columns: 1fr;
+    }
+    
+    .planet-buttons-section {
+        flex-direction: column;
+        gap: 6px;
+    }
+    
+    .planet-button {
+        font-size: 12px;
+        padding: 6px 10px;
     }
 }

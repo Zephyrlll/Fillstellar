@@ -271,6 +271,16 @@ export function setupEventListeners() {
                         focusedObject: null
                     }));
                     showMessage('天体フォーカスを解除しました');
+                    // 惑星探索ボタンを削除
+                    const explorationButton = document.getElementById('planet-exploration-button');
+                    if (explorationButton) {
+                        explorationButton.remove();
+                    }
+                    // 購入ボタンも削除
+                    const ownButton = document.getElementById('planet-own-button');
+                    if (ownButton) {
+                        ownButton.remove();
+                    }
                 }
             });
         }

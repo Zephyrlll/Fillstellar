@@ -484,8 +484,17 @@ function animate() {
         dustRate *= paragonSystem.getResourceProductionBonus('cosmicDust');
     }
     let energyRate = 0;
+    let organicMatterRate = 0;
     let intelligentLifeCount = 0;
     let totalPopulation = 0;
+    
+    // Add production from owned planets
+    const ownedPlanets = (gameState as any).ownedPlanets || [];
+    ownedPlanets.forEach((planet: any) => {
+        dustRate += planet.baseProduction.cosmicDust * planet.productionMultiplier;
+        energyRate += planet.baseProduction.energy * planet.productionMultiplier;
+        organicMatterRate += planet.baseProduction.organicMatter * planet.productionMultiplier;
+    });
 
     spatialGrid.clear();
     
@@ -602,6 +611,7 @@ function animate() {
             ...state.resourceAccumulators,
             cosmicDust: state.resourceAccumulators.cosmicDust + dustRate * resourceDeltaTime,
             energy: state.resourceAccumulators.energy + energyRate * resourceDeltaTime,
+            organicMatter: state.resourceAccumulators.organicMatter + organicMatterRate * resourceDeltaTime,
             darkMatter: (state.resourceAccumulators.darkMatter || 0) + darkMatterRate * resourceDeltaTime
         }
     }));
@@ -637,6 +647,19 @@ function animate() {
             };
         }
         
+        if (newState.resourceAccumulators.organicMatter >= 1) {
+            const organicToAdd = Math.floor(newState.resourceAccumulators.organicMatter);
+            newState.organicMatter += organicToAdd;
+            newState.resources = {
+                ...newState.resources,
+                organicMatter: newState.resources.organicMatter + organicToAdd
+            };
+            newState.resourceAccumulators = {
+                ...newState.resourceAccumulators,
+                organicMatter: newState.resourceAccumulators.organicMatter - organicToAdd
+            };
+        }
+        
         if (newState.resourceAccumulators.darkMatter && newState.resourceAccumulators.darkMatter >= 0.001) {
             const darkMatterToAdd = newState.resourceAccumulators.darkMatter;
             newState.darkMatter = (newState.darkMatter || 0) + darkMatterToAdd;
@@ -666,6 +689,11 @@ function animate() {
     
     // Update resource particle effects
     resourceParticleSystem.update(deltaTime);
+    
+    // Update planet shop
+    import('./js/systems/planetOwnership/planetShop.js').then(({ PlanetShop }) => {
+        PlanetShop.getInstance().update(deltaTime);
+    });
 
     // WASDキーでのカメラ移動機能は削除しました
     // OrbitControlsによるマウス操作でカメラを制御してください

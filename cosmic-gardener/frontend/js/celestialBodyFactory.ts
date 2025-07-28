@@ -1010,6 +1010,7 @@ export class CelestialBodyFactory {
     
     const finalUserData: CelestialBodyUserData = {
       type: type,
+      id: (params.config.isLoading && params.config.userData?.id) ? params.config.userData.id : `${type}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       name: params.config.name || `${type}-${Math.random().toString(16).slice(2, 8)}`,
       creationYear: gameState.gameYear,
       mass: params.gameMass,

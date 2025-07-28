@@ -312,7 +312,39 @@ class StatsPanel {
             }
         }
 
+        // 惑星ショップボタンを追加
+        items.push(`
+            <hr class="stats-divider">
+            <div class="planet-buttons-section">
+                <button id="open-planet-shop" class="planet-button" title="惑星ショップを開く">
+                    🌍 惑星ショップ
+                </button>
+                <button id="open-my-planets" class="planet-button" title="所有惑星を見る">
+                    🏠 マイ惑星
+                </button>
+            </div>
+        `);
+        
         content.innerHTML = items.join('');
+        
+        // ボタンのイベントリスナーを設定
+        const shopButton = document.getElementById('open-planet-shop');
+        if (shopButton) {
+            shopButton.addEventListener('click', () => {
+                import('./planetOwnership/planetShopUI.js').then(({ PlanetShopUI }) => {
+                    PlanetShopUI.getInstance().open();
+                });
+            });
+        }
+        
+        const myPlanetsButton = document.getElementById('open-my-planets');
+        if (myPlanetsButton) {
+            myPlanetsButton.addEventListener('click', () => {
+                import('./planetOwnership/myPlanetsUI.js').then(({ MyPlanetsUI }) => {
+                    MyPlanetsUI.getInstance().open();
+                });
+            });
+        }
     }
 
     private getStatValue(key: string): string | null {
