@@ -21,7 +21,10 @@
       "Bash(mv:*)",
       "Bash(sed:*)",
       "Bash(pkill:*)",
-      "mcp__playwright__browser_navigate"
+      "mcp__playwright__browser_navigate",
+      "Bash(npm:*)",
+      "Bash(rustc:*)",
+      "Bash(cargo --version)"
     ],
     "deny": []
   }
