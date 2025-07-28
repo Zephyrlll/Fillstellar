@@ -1530,11 +1530,11 @@
 
 /* Floating Controls - Modern Design */
 #floating-controls {
+  display: none !important; /* DEPRECATED - 旧フローティングボタン、デュアルビューに統合済み */
   position: fixed;
   bottom: 280px; /* Position well above stats panel */
   right: 20px;
   z-index: 1000;
-  display: flex;
   flex-direction: column;
   gap: 12px;
 }
@@ -2406,6 +2406,7 @@ body {
 }
 
 #ui-area {
+    display: none !important; /* DEPRECATED - 旧UIシステム、デュアルビューに置き換え済み */
     position: absolute;
     top: 0;
     left: 0;
@@ -2413,7 +2414,6 @@ body {
     height: calc(100% - 230px); /* マップのためのスペースを確保 */
     background: rgba(0, 0, 0, 0.01);
     box-sizing: border-box;
-    display: flex;
     flex-direction: column;
     z-index: 10;
     pointer-events: auto;
