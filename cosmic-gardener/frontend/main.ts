@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import { scene, camera, renderer, composer, controls } from './js/threeSetup.ts';
 import { gameState, gameStateManager, PlanetUserData } from './js/state.ts';
+import { markDeprecatedElements } from './js/deprecation-warnings.ts';
 import { saveGame, loadGame } from './js/saveload.ts';
 import { SaveSystem } from './js/systems/saveSystem.ts';
 import { OfflineCalculator } from './js/systems/offlineProgress.ts';
@@ -1100,6 +1101,12 @@ async function init() {
         document.addEventListener('DOMContentLoaded', () => {
             // console.log('[INIT] DOM loaded, setting up event listeners...');
             setupEventListeners();
+            
+            // 開発環境で廃止予定要素をマーク
+            if (import.meta.env.DEV) {
+                markDeprecatedElements();
+                console.log('💡 ヒント: __checkDeprecated() で廃止予定要素の使用状況を確認できます');
+            }
             
             // Add performance monitor toggle (F3 key)
             document.addEventListener('keydown', (e) => {

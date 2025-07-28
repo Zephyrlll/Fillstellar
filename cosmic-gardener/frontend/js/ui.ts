@@ -504,7 +504,12 @@ function updateTimeAccelerationUI() {
 
 // DEPRECATED - デュアルビューシステムに置き換えられました
 export function switchTab(activeTab: string) {
-    console.log('📑 [DEPRECATED] switchTab called with:', activeTab);
+    console.warn(
+        '⚠️ 廃止予定の関数が呼ばれました: switchTab()\n' +
+        '👉 代替案: tabManager.activateTab() を使用してください\n' +
+        '📚 詳細: DEPRECATED-UI-GUIDE.md を参照してください'
+    );
+    console.trace(); // 呼び出し元を表示
     // この関数はデュアルビューシステムに置き換えられました
     // 互換性のために空の関数として残しています
 }
