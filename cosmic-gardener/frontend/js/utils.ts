@@ -204,6 +204,10 @@ export const mathCache = {
     thoughtSpeed: { points: -1, speed: 0 },
     softeningFactorSq: 0,
     halfWorldSize: (GALAXY_BOUNDARY * 2) / 2,
+    // 生産レートキャッシュ
+    energyGenerationRate: { count: -1, rate: 0 },
+    organicMatterGenerationRate: { count: -1, rate: 0 },
+    biomassGenerationRate: { count: -1, rate: 0 },
     
     init() {
         this.softeningFactorSq = gameState.physics.softeningFactor * gameState.physics.softeningFactor;
@@ -236,6 +240,103 @@ export const mathCache = {
             this.thoughtSpeed.points = gameState.thoughtPoints;
         }
         return this.thoughtSpeed.speed;
+    },
+    
+    // エネルギー生成レート計算
+    getEnergyGenerationRate() {
+        const starCount = gameState.stars.length;
+        if (this.energyGenerationRate.count !== starCount) {
+            let totalRate = 0;
+            
+            // 恒星からのエネルギー生成
+            for (const star of gameState.stars) {
+                const userData = star.userData as any;
+                if (userData.type === 'star') {
+                    // 恒星の温度に基づくエネルギー生成
+                    const baseRate = 0.1;
+                    const temperatureFactor = (userData.temperature || 5000) / 5000; // 太陽温度を基準
+                    totalRate += baseRate * temperatureFactor;
+                }
+            }
+            
+            // アップグレードによる倍率
+            const upgradeMultiplier = 1 + (gameState.dustUpgradeLevel * 0.2);
+            
+            this.energyGenerationRate.rate = totalRate * upgradeMultiplier;
+            this.energyGenerationRate.count = starCount;
+        }
+        return this.energyGenerationRate.rate;
+    },
+    
+    // 有機物生成レート計算
+    getOrganicMatterGenerationRate() {
+        // 惑星をフィルタリング
+        const planets = gameState.stars.filter(body => {
+            const userData = body.userData as any;
+            return userData.type === 'planet';
+        });
+        
+        const planetCount = planets.length;
+        if (this.organicMatterGenerationRate.count !== planetCount) {
+            let totalRate = 0;
+            
+            // 惑星からの有機物生成
+            for (const planet of planets) {
+                const userData = planet.userData as any;
+                if (userData.hasLife) {
+                    // 生命段階に基づく有機物生成
+                    const lifeStageRates: { [key: string]: number } = {
+                        'microbial': 0.01,
+                        'plant': 0.05,
+                        'animal': 0.1,
+                        'intelligent': 0.2
+                    };
+                    totalRate += lifeStageRates[userData.lifeStage || 'microbial'] || 0;
+                }
+            }
+            
+            // 研究による倍率
+            const researchMultiplier = gameState.research?.organicMatterBonus || 1;
+            
+            this.organicMatterGenerationRate.rate = totalRate * researchMultiplier;
+            this.organicMatterGenerationRate.count = planetCount;
+        }
+        return this.organicMatterGenerationRate.rate;
+    },
+    
+    // バイオマス生成レート計算
+    getBiomassGenerationRate() {
+        // 惑星をフィルタリング
+        const planets = gameState.stars.filter(body => {
+            const userData = body.userData as any;
+            return userData.type === 'planet';
+        });
+        
+        const planetCount = planets.length;
+        if (this.biomassGenerationRate.count !== planetCount) {
+            let totalRate = 0;
+            
+            // 惑星からのバイオマス生成
+            for (const planet of planets) {
+                const userData = planet.userData as any;
+                if (userData.hasLife) {
+                    // 生命段階と人口に基づくバイオマス生成
+                    if (userData.lifeStage === 'plant' || userData.lifeStage === 'animal' || userData.lifeStage === 'intelligent') {
+                        const populationFactor = Math.log10((userData.population || 10) + 1) / 10;
+                        const baseRate = userData.lifeStage === 'plant' ? 0.02 : 
+                                       userData.lifeStage === 'animal' ? 0.05 : 0.1;
+                        totalRate += baseRate * populationFactor;
+                    }
+                }
+            }
+            
+            // 研究による倍率
+            const researchMultiplier = gameState.research?.biomassBonus || 1;
+            
+            this.biomassGenerationRate.rate = totalRate * researchMultiplier;
+            this.biomassGenerationRate.count = planetCount;
+        }
+        return this.biomassGenerationRate.rate;
     }
 };
 

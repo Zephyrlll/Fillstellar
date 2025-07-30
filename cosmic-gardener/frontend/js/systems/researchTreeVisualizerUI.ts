@@ -734,8 +734,52 @@ export class ResearchTreeVisualizerUI {
   }
 
   private showPathFinder(): void {
-    // TODO: Implement path finder dialog
-    showMessage('パス検索機能は開発中です', 'info');
+    // パス検索UIを表示
+    const pathFinderUI = (window as any).researchPathFinderUI;
+    if (pathFinderUI) {
+      pathFinderUI.open();
+    } else {
+      showMessage('パス検索UIが利用できません', 'error');
+    }
+  }
+  
+  // パスをハイライト表示
+  public highlightPath(nodeIds: string[]): void {
+    this.highlightedPath = nodeIds;
+    
+    // ノードの強調表示を更新
+    this.nodeElements.forEach((element, id) => {
+      if (nodeIds.includes(id)) {
+        element.classList.add('path-highlighted');
+      } else {
+        element.classList.remove('path-highlighted');
+      }
+    });
+    
+    // エッジの強調表示を更新
+    const edges = researchTreeAnalyzer.getEdges();
+    this.edgeElements.forEach((element, id) => {
+      const edge = edges.get(id);
+      if (edge) {
+        const sourceInPath = nodeIds.includes(edge.source);
+        const targetInPath = nodeIds.includes(edge.target);
+        
+        // パス上のノード間のエッジのみハイライト
+        if (sourceInPath && targetInPath) {
+          // パス内でのノードの順序を確認
+          const sourceIndex = nodeIds.indexOf(edge.source);
+          const targetIndex = nodeIds.indexOf(edge.target);
+          
+          if (targetIndex > sourceIndex) {
+            element.classList.add('path-highlighted');
+          } else {
+            element.classList.remove('path-highlighted');
+          }
+        } else {
+          element.classList.remove('path-highlighted');
+        }
+      }
+    });
   }
 
   private showTreeStats(): void {
@@ -854,6 +898,17 @@ export class ResearchTreeVisualizerUI {
             </label>
           </div>
           <input type="text" id="tree-search-tab" placeholder="研究を検索...">
+          <div class="toolbar-section actions">
+            <button id="center-tree-btn-tab" class="toolbar-btn">
+              <span>🎯</span> 中央に戻す
+            </button>
+            <button id="find-path-btn-tab" class="toolbar-btn">
+              <span>🛤️</span> パス検索
+            </button>
+            <button id="tree-stats-btn-tab" class="toolbar-btn">
+              <span>📊</span> 統計
+            </button>
+          </div>
         </div>
         <div id="research-tree-graph-tab" class="research-tree-graph"></div>
         <div class="tree-sidebar">
@@ -893,6 +948,19 @@ export class ResearchTreeVisualizerUI {
       const layout = (e.target as HTMLSelectElement).value as LayoutAlgorithm;
       this.layout.updateConfig({ layoutAlgorithm: layout });
       this.updateLayout();
+    });
+    
+    // Action buttons
+    container.querySelector('#center-tree-btn-tab')?.addEventListener('click', () => {
+      this.centerView();
+    });
+    
+    container.querySelector('#find-path-btn-tab')?.addEventListener('click', () => {
+      this.showPathFinder();
+    });
+    
+    container.querySelector('#tree-stats-btn-tab')?.addEventListener('click', () => {
+      this.showTreeStats();
     });
     
     // ノード詳細パネルのボタンイベントをダイナミックに設定

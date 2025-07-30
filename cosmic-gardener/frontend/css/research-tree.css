@@ -1,0 +1,96 @@
+/* Research Tree Styles */
+
+.research-tree-graph {
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(ellipse at center, #0a0a0f 0%, #000000 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.research-tree-graph svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Node states */
+.research-node {
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.research-node:hover {
+  transform: scale(1.05);
+}
+
+.research-node.completed rect {
+  opacity: 0.7;
+}
+
+.research-node.locked rect {
+  opacity: 0.4;
+}
+
+.research-node.in-progress rect {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* Edge styles */
+.research-edge {
+  fill: none;
+  stroke: rgba(100, 255, 218, 0.3);
+  stroke-width: 2;
+  transition: all 0.3s ease;
+}
+
+.research-edge.prerequisite {
+  stroke: rgba(100, 255, 218, 0.5);
+  stroke-dasharray: 5, 5;
+}
+
+.research-edge.unlocks {
+  stroke: rgba(100, 255, 218, 0.4);
+}
+
+.research-edge.synergy {
+  stroke: rgba(139, 92, 246, 0.4);
+}
+
+/* Path highlighting */
+.research-node.path-highlighted rect {
+  stroke: #fbbf24 !important;
+  stroke-width: 3 !important;
+  filter: url(#glow) drop-shadow(0 0 10px rgba(251, 191, 36, 0.5));
+}
+
+.research-edge.path-highlighted {
+  stroke: #fbbf24 !important;
+  stroke-width: 3 !important;
+  filter: drop-shadow(0 0 5px rgba(251, 191, 36, 0.5));
+  animation: flowAnimation 2s linear infinite;
+}
+
+@keyframes flowAnimation {
+  0% {
+    stroke-dasharray: 0 20;
+  }
+  100% {
+    stroke-dasharray: 20 0;
+  }
+}
+
+/* Highlighted connected nodes */
+.research-edge.highlighted {
+  stroke: rgba(100, 255, 218, 0.8);
+  stroke-width: 3;
+}
+
+/* Search highlighting */
+.research-node[style*="opacity: 0.3"] {
+  pointer-events: none;
+}

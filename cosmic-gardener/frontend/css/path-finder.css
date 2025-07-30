@@ -1,0 +1,458 @@
+/* Research Path Finder UI Styles */
+
+.path-finder-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(5px);
+  z-index: 100000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.path-finder-overlay.active {
+  display: flex;
+  opacity: 1;
+}
+
+.path-finder-modal {
+  background: rgba(20, 20, 30, 0.95);
+  border: 1px solid rgba(100, 255, 218, 0.3);
+  border-radius: 12px;
+  width: 90%;
+  max-width: 900px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 0 30px rgba(100, 255, 218, 0.2);
+  animation: modalSlideIn 0.3s ease;
+}
+
+@keyframes modalSlideIn {
+  from {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Header */
+.path-finder-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid rgba(100, 255, 218, 0.2);
+}
+
+.path-finder-header h2 {
+  margin: 0;
+  color: #64ffda;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 20px;
+}
+
+.close-btn {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 24px;
+  cursor: pointer;
+  padding: 0;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.close-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+/* Content */
+.path-finder-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+/* Options */
+.path-finder-options {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 20px;
+  padding: 16px;
+  background: rgba(10, 10, 20, 0.8);
+  border-radius: 8px;
+  border: 1px solid rgba(100, 255, 218, 0.1);
+}
+
+.option-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.option-group label {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
+}
+
+.option-group select {
+  background: rgba(20, 20, 30, 0.9);
+  border: 1px solid rgba(100, 255, 218, 0.3);
+  color: #64ffda;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 12px;
+}
+
+.option-group input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+/* Main Content */
+.path-finder-main {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+/* Target Selection */
+.target-selection {
+  background: rgba(10, 10, 20, 0.8);
+  border: 1px solid rgba(100, 255, 218, 0.1);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.target-selection h3,
+.path-result h3,
+.suggestions-section h3 {
+  margin: 0 0 12px 0;
+  color: #64ffda;
+  font-size: 16px;
+  font-family: 'Orbitron', sans-serif;
+}
+
+#targetSearchInput {
+  width: 100%;
+  padding: 8px 12px;
+  background: rgba(20, 20, 30, 0.9);
+  border: 1px solid rgba(100, 255, 218, 0.3);
+  border-radius: 4px;
+  color: #fff;
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+#targetSearchInput:focus {
+  outline: none;
+  border-color: #64ffda;
+  box-shadow: 0 0 5px rgba(100, 255, 218, 0.5);
+}
+
+.target-list {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.target-category {
+  margin-bottom: 12px;
+}
+
+.target-category h4 {
+  margin: 0 0 8px 0;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.target-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  margin-bottom: 4px;
+  background: rgba(20, 20, 30, 0.6);
+  border: 1px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.target-item:hover {
+  background: rgba(100, 255, 218, 0.1);
+  border-color: rgba(100, 255, 218, 0.3);
+}
+
+.target-item.selected {
+  background: rgba(100, 255, 218, 0.2);
+  border-color: #64ffda;
+}
+
+.target-icon {
+  font-size: 18px;
+}
+
+.target-name {
+  flex: 1;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 14px;
+}
+
+.target-state {
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.target-item.completed .target-state { color: #10b981; }
+.target-item.affordable .target-state { color: #64ffda; }
+.target-item.available .target-state { color: #3b82f6; }
+.target-item.unaffordable .target-state { color: #fbbf24; }
+.target-item.locked .target-state { color: #6b7280; }
+
+/* Path Result */
+.path-result {
+  background: rgba(10, 10, 20, 0.8);
+  border: 1px solid rgba(100, 255, 218, 0.1);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.path-summary {
+  background: rgba(20, 20, 30, 0.9);
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.no-path {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.5);
+  font-style: italic;
+  margin: 0;
+}
+
+.path-stat {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  font-size: 14px;
+}
+
+.stat-label {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.stat-value {
+  color: #64ffda;
+  font-weight: 600;
+  font-family: 'Orbitron', sans-serif;
+}
+
+.path-steps {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.path-step {
+  display: flex;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(100, 255, 218, 0.1);
+}
+
+.path-step:last-child {
+  border-bottom: none;
+}
+
+.step-number {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(100, 255, 218, 0.2);
+  border: 1px solid #64ffda;
+  border-radius: 50%;
+  font-size: 12px;
+  color: #64ffda;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.step-content {
+  flex: 1;
+}
+
+.step-name {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+
+.step-cost {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 12px;
+}
+
+/* Suggestions */
+.suggestions-section {
+  background: rgba(10, 10, 20, 0.8);
+  border: 1px solid rgba(100, 255, 218, 0.1);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.suggestions-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.suggestion-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background: rgba(20, 20, 30, 0.9);
+  border: 1px solid rgba(100, 255, 218, 0.2);
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.suggestion-item:hover {
+  background: rgba(100, 255, 218, 0.1);
+  border-color: rgba(100, 255, 218, 0.4);
+}
+
+.suggestion-icon {
+  font-size: 24px;
+}
+
+.suggestion-info {
+  flex: 1;
+}
+
+.suggestion-name {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 13px;
+  margin-bottom: 2px;
+}
+
+.suggestion-cost {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 11px;
+}
+
+.suggestion-select {
+  padding: 4px 12px;
+  background: rgba(100, 255, 218, 0.2);
+  border: 1px solid #64ffda;
+  border-radius: 4px;
+  color: #64ffda;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.suggestion-select:hover {
+  background: rgba(100, 255, 218, 0.3);
+  transform: translateY(-1px);
+}
+
+.no-suggestions {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.5);
+  font-style: italic;
+  grid-column: 1 / -1;
+}
+
+/* Footer */
+.path-finder-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 20px;
+  border-top: 1px solid rgba(100, 255, 218, 0.2);
+}
+
+.action-btn {
+  padding: 10px 24px;
+  border: 1px solid rgba(100, 255, 218, 0.4);
+  border-radius: 6px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.cancel-btn {
+  background: transparent;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.cancel-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.apply-btn {
+  background: rgba(100, 255, 218, 0.2);
+  color: #64ffda;
+}
+
+.apply-btn:hover:not(:disabled) {
+  background: rgba(100, 255, 218, 0.3);
+  border-color: #64ffda;
+  transform: translateY(-1px);
+}
+
+.apply-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Scrollbar styles */
+.target-list::-webkit-scrollbar,
+.path-steps::-webkit-scrollbar {
+  width: 6px;
+}
+
+.target-list::-webkit-scrollbar-track,
+.path-steps::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.target-list::-webkit-scrollbar-thumb,
+.path-steps::-webkit-scrollbar-thumb {
+  background: rgba(100, 255, 218, 0.3);
+  border-radius: 3px;
+}
+
+.target-list::-webkit-scrollbar-thumb:hover,
+.path-steps::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 255, 218, 0.5);
+}

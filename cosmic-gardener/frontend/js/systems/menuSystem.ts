@@ -629,18 +629,24 @@ export class MenuSystem {
   }
   
   private openResourceStats(): void {
-    // Implementation for resource statistics
-    console.log('[MENU] Resource stats not implemented');
+    const resourceStatsUI = (window as any).resourceStatsUI;
+    if (resourceStatsUI) {
+      resourceStatsUI.open();
+    }
   }
   
   private openCelestialStats(): void {
-    // Implementation for celestial statistics
-    console.log('[MENU] Celestial stats not implemented');
+    const celestialStatsUI = (window as any).celestialStatsUI;
+    if (celestialStatsUI) {
+      celestialStatsUI.open();
+    }
   }
   
   private openGraphDisplay(): void {
-    // Implementation for graph display
-    console.log('[MENU] Graph display not implemented');
+    const graphDisplayUI = (window as any).graphDisplayUI;
+    if (graphDisplayUI) {
+      graphDisplayUI.open();
+    }
   }
   
   private openEndgameProgress(): void {
@@ -662,11 +668,17 @@ export class MenuSystem {
   }
   
   private openControls(): void {
-    console.log('[MENU] Controls help not implemented');
+    const helpControlsUI = (window as any).helpControlsUI;
+    if (helpControlsUI) {
+      helpControlsUI.open('controls');
+    }
   }
   
   private openTips(): void {
-    console.log('[MENU] Tips not implemented');
+    const helpControlsUI = (window as any).helpControlsUI;
+    if (helpControlsUI) {
+      helpControlsUI.open('tips');
+    }
   }
   
   private openFeedback(): void {

@@ -1079,12 +1079,26 @@ export function updateMobileProductionUI(): void {
     const biomassProduction = document.getElementById('mobile-biomass-production');
     
     if (dustProduction) dustProduction.textContent = `+${(gameState.currentDustRate || 0).toFixed(1)}/s`;
-    // TODO: エネルギー、有機物、バイオマスの生成レートも同様に実装する必要がある
-    if (energyProduction) energyProduction.textContent = `+0.0/s`; // mathCache.getEnergyGenerationRate() not implemented
-    if (organicProduction) organicProduction.textContent = `+0.0/s`; // mathCache.getOrganicMatterGenerationRate() not implemented  
-    if (biomassProduction) biomassProduction.textContent = `+0.0/s`; // mathCache.getBiomassGenerationRate() not implemented
+    // 実際の生成レートを計算して表示
+    const energyRate = mathCache.getEnergyGenerationRate();
+    const organicRate = mathCache.getOrganicMatterGenerationRate();
+    const biomassRate = mathCache.getBiomassGenerationRate();
     
-    // TODO: Update production chains display
+    if (energyProduction) energyProduction.textContent = `+${energyRate.toFixed(1)}/s`;
+    if (organicProduction) organicProduction.textContent = `+${organicRate.toFixed(1)}/s`;
+    if (biomassProduction) biomassProduction.textContent = `+${biomassRate.toFixed(1)}/s`;
+    
+    // Update production chains display
+    const productionChains = document.getElementById('mobile-production-chains');
+    if (productionChains && mathCache) {
+        const hasProduction = energyRate > 0 || organicRate > 0 || biomassRate > 0;
+        if (hasProduction) {
+            const emptyState = productionChains.querySelector('.mobile-empty-state');
+            if (emptyState) {
+                emptyState.style.display = 'none';
+            }
+        }
+    }
 }
 
 // Update mobile sell UI

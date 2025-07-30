@@ -556,8 +556,74 @@ export class ProductionChainVisualizerUI {
     message += '\n自動最適化を実行しますか？';
     
     if (confirm(message)) {
-      // TODO: Implement auto-optimization
-      showMessage('自動最適化機能は開発中です', 'info');
+      this.performAutoOptimization();
+    }
+  }
+
+  private performAutoOptimization(): void {
+    const optimizer = (window as any).productionOptimizer;
+    if (!optimizer) {
+      showMessage('最適化システムが利用できません', 'error');
+      return;
+    }
+    
+    const chain = productionChainVisualizer.getChain();
+    const result = optimizer.optimizeChain(chain);
+    
+    if (result.success) {
+      // 変更を適用
+      result.changes.forEach((change: any) => {
+        switch (change.type) {
+          case 'add_node':
+            if (change.value && change.value.recipe) {
+              productionChainVisualizer.addNode({
+                type: 'converter',
+                recipe: change.value.recipe,
+                multiplier: change.value.multiplier || 1,
+                position: { x: Math.random() * 600 + 100, y: Math.random() * 400 + 100 }
+              });
+            }
+            break;
+            
+          case 'remove_node':
+            productionChainVisualizer.removeNode(change.target);
+            break;
+            
+          case 'add_link':
+            if (change.value) {
+              productionChainVisualizer.addLink(change.value);
+            }
+            break;
+            
+          case 'remove_link':
+            productionChainVisualizer.removeLink(change.target);
+            break;
+            
+          case 'update_multiplier':
+            const node = chain.nodes.get(change.target);
+            if (node) {
+              node.multiplier = change.value;
+              productionChainVisualizer.updateNode(node);
+            }
+            break;
+        }
+      });
+      
+      // UIを更新
+      this.update();
+      
+      // 結果メッセージ
+      const improvement = ((result.newEfficiency - result.oldEfficiency) / result.oldEfficiency * 100).toFixed(1);
+      showMessage(
+        `最適化完了！効率が ${result.oldEfficiency.toFixed(1)}% から ${result.newEfficiency.toFixed(1)}% に向上しました（+${improvement}%）`,
+        'success'
+      );
+      
+      // 変更ログを表示
+      const changeLog = result.changes.map(c => `・${c.description}`).join('\n');
+      console.log('[OPTIMIZER] 実行された変更:\n' + changeLog);
+    } else {
+      showMessage('最適化の余地が見つかりませんでした', 'info');
     }
   }
 

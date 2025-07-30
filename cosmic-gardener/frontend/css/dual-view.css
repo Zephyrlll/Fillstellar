@@ -11,6 +11,20 @@
   transition: opacity 0.3s ease;
 }
 
+/* Swapping animation */
+#dual-view-container.swapping .view {
+  transition: opacity 0.3s ease;
+}
+
+#dual-view-container.swapping #swap-views {
+  animation: rotate360 0.6s ease;
+}
+
+@keyframes rotate360 {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 #dual-view-container.dual-view-inactive {
   /* display: none; を削除して、初期表示を有効にする */
 }
@@ -350,6 +364,7 @@
   padding: 8px 16px;
   background: rgba(20, 20, 30, 0.9);
   border-bottom: 1px solid rgba(100, 255, 218, 0.2);
+  flex-wrap: wrap;
 }
 
 .production-graph-container,

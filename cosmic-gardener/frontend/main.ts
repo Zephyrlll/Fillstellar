@@ -38,6 +38,8 @@ import { mythicRarityUI } from './js/systems/mythicRarityUI.ts';
 import { multiverseSystem } from './js/systems/multiverseSystem.ts';
 import { multiverseUI } from './js/systems/multiverseUI.ts';
 import { endgameProgressUI } from './js/systems/endgameProgressUI.ts';
+import { researchPathFinder } from './js/systems/researchPathFinder.ts';
+import { researchPathFinderUI } from './js/systems/researchPathFinderUI.ts';
 import { updateUI, debouncedUpdateGalaxyMap, ui } from './js/ui.ts';
 import { createCelestialBody, checkLifeSpawn, evolveLife } from './js/celestialBody.ts';
 import { spatialGrid, updatePhysics } from './js/physics.ts';
@@ -106,6 +108,16 @@ import { starManagementUI } from './js/systems/starManagementUI.ts';
 import { LODManager } from './js/systems/lodManager.ts';
 // Stats Panel
 import { statsPanel } from './js/systems/statsPanel.ts';
+// Resource Stats UI
+import './js/systems/resourceStatsUI.ts';
+// Celestial Stats UI
+import './js/systems/celestialStatsUI.ts';
+// Graph Display UI
+import './js/systems/graphDisplayUI.ts';
+// Help & Controls UI
+import './js/systems/helpControlsUI.ts';
+// Production Optimizer
+import './js/systems/productionOptimizer.ts';
 
 // Idle game initialization function
 function initializeIdleGameSystems() {
@@ -483,8 +495,10 @@ function animate() {
     if (paragonSystem.isEndgame()) {
         dustRate *= paragonSystem.getResourceProductionBonus('cosmicDust');
     }
-    let energyRate = 0;
-    let organicMatterRate = 0;
+    // Use mathCache for resource generation rates
+    let energyRate = mathCache.getEnergyGenerationRate();
+    let organicMatterRate = mathCache.getOrganicMatterGenerationRate();
+    let biomassRate = mathCache.getBiomassGenerationRate();
     let intelligentLifeCount = 0;
     let totalPopulation = 0;
     
@@ -513,7 +527,7 @@ function animate() {
 
         switch (body.userData.type) {
             case 'star':
-                energyRate += (body.userData.mass as number) / 10; // Increased from /1000 to /10 for better energy generation
+                // Energy generation is now handled by mathCache.getEnergyGenerationRate()
                 break;
             case 'black_hole':
                 // Black holes generate dark matter based on nearby matter
@@ -529,16 +543,16 @@ function animate() {
                 checkLifeSpawn(body);
                 evolveLife(body);
                 if ((body.userData as PlanetUserData).hasLife) {
-                    let organicRate = 0, biomassRate = 0, populationGrowthRate = 0;
+                    let populationGrowthRate = 0;
                     switch ((body.userData as PlanetUserData).lifeStage) {
                         case 'microbial':
-                            organicRate = 0.1; populationGrowthRate = 0.01; break;
+                            populationGrowthRate = 0.01; break;
                         case 'plant':
-                            organicRate = 0.5; biomassRate = 0.1; populationGrowthRate = 0.05; break;
+                            populationGrowthRate = 0.05; break;
                         case 'animal':
-                            organicRate = 0.8; biomassRate = 0.3; populationGrowthRate = 0.1; break;
+                            populationGrowthRate = 0.1; break;
                         case 'intelligent':
-                            organicRate = 1.0; biomassRate = 0.5; populationGrowthRate = 0.5;
+                            populationGrowthRate = 0.5;
                             intelligentLifeCount++;
                             let thoughtPointRate = (((body.userData as PlanetUserData).population || 0) / 1000000) * (1 + gameState.cosmicActivity / 10000);
                             // Apply research multiplier
@@ -560,22 +574,7 @@ function animate() {
                             }
                             break;
                     }
-                    const organicToAdd = organicRate * resourceDeltaTime;
-                    const biomassToAdd = biomassRate * resourceDeltaTime;
-                    
-                    // Only add to batch if significant amounts
-                    if (organicToAdd > 0.01 || biomassToAdd > 0.01) {
-                        batchUpdates.push(state => ({
-                            ...state,
-                            organicMatter: state.organicMatter + organicToAdd,
-                            biomass: state.biomass + biomassToAdd,
-                            resources: {
-                                ...state.resources,
-                                organicMatter: state.resources.organicMatter + organicToAdd,
-                                biomass: state.resources.biomass + biomassToAdd
-                            }
-                        }));
-                    }
+                    // Organic matter and biomass generation is now handled by mathCache
                     (body.userData as PlanetUserData).population = ((body.userData as PlanetUserData).population || 0) + ((body.userData as PlanetUserData).population || 0) * populationGrowthRate * deltaTime;
                 }
                 break;
@@ -587,14 +586,12 @@ function animate() {
         batchUpdates.push(state => ({ ...state, cachedTotalPopulation: totalPopulation }));
     }
 
-    if (gameState.researchAdvancedEnergy) energyRate *= 2;
-    // Apply research multipliers
-    if (gameState.research?.energyConversionMultiplier) {
-        energyRate *= gameState.research.energyConversionMultiplier;
-    }
-    // パラゴンボーナスの適用
+    // Research and paragon bonuses are already applied in mathCache calculations
+    // Apply additional paragon bonus if needed
     if (paragonSystem.isEndgame()) {
         energyRate *= paragonSystem.getResourceProductionBonus('energy');
+        organicMatterRate *= paragonSystem.getResourceProductionBonus('organicMatter');
+        biomassRate *= paragonSystem.getResourceProductionBonus('biomass');
     }
     
     // Apply research multiplier to dark matter generation
@@ -612,6 +609,7 @@ function animate() {
             cosmicDust: state.resourceAccumulators.cosmicDust + dustRate * resourceDeltaTime,
             energy: state.resourceAccumulators.energy + energyRate * resourceDeltaTime,
             organicMatter: state.resourceAccumulators.organicMatter + organicMatterRate * resourceDeltaTime,
+            biomass: (state.resourceAccumulators.biomass || 0) + biomassRate * resourceDeltaTime,
             darkMatter: (state.resourceAccumulators.darkMatter || 0) + darkMatterRate * resourceDeltaTime
         }
     }));
@@ -657,6 +655,19 @@ function animate() {
             newState.resourceAccumulators = {
                 ...newState.resourceAccumulators,
                 organicMatter: newState.resourceAccumulators.organicMatter - organicToAdd
+            };
+        }
+        
+        if (newState.resourceAccumulators.biomass && newState.resourceAccumulators.biomass >= 1) {
+            const biomassToAdd = Math.floor(newState.resourceAccumulators.biomass);
+            newState.biomass += biomassToAdd;
+            newState.resources = {
+                ...newState.resources,
+                biomass: newState.resources.biomass + biomassToAdd
+            };
+            newState.resourceAccumulators = {
+                ...newState.resourceAccumulators,
+                biomass: newState.resourceAccumulators.biomass - biomassToAdd
             };
         }
         
@@ -956,6 +967,10 @@ async function init() {
     multiverseSystem.init();
     multiverseUI.init();
     console.log('[INIT] Multiverse system initialized');
+    
+    // Initialize research path finder UI
+    (window as any).researchPathFinderUI = researchPathFinderUI;
+    console.log('[INIT] Research path finder UI initialized');
     
     // Initialize endgame progress UI
     endgameProgressUI.init();

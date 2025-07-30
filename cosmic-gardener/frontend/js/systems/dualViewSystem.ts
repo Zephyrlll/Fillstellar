@@ -221,11 +221,115 @@ export class DualViewSystem {
    * ビューの入れ替え
    */
   private swapViews(): void {
-    // 現在のアクティブタブを取得
-    const currentTab = this.tabManager.getActiveTab();
+    // アニメーション用のクラスを追加
+    this.container.classList.add('swapping');
     
-    // TODO: プライマリとセカンダリのコンテンツを入れ替える実装
-    console.log('[DUAL_VIEW] Swapping views (not implemented yet)');
+    // 現在のビューコンテンツを取得
+    const primaryContent = this.primaryView.innerHTML;
+    const secondaryContent = this.secondaryView.innerHTML;
+    
+    // フェードアウト
+    this.primaryView.style.opacity = '0';
+    this.secondaryView.style.opacity = '0';
+    
+    // アニメーション後にコンテンツを入れ替え
+    setTimeout(() => {
+      // コンテンツを入れ替え
+      this.primaryView.innerHTML = secondaryContent;
+      this.secondaryView.innerHTML = primaryContent;
+      
+      // タブのアクティブ状態も入れ替え
+      const primaryActiveTab = this.primaryView.querySelector('.tab-active');
+      const secondaryActiveTab = this.secondaryView.querySelector('.tab-active');
+      
+      if (primaryActiveTab && secondaryActiveTab) {
+        const primaryTabId = primaryActiveTab.id;
+        const secondaryTabId = secondaryActiveTab.id;
+        
+        // タブマネージャーの状態を更新
+        this.updateTabStates(primaryTabId, secondaryTabId);
+      }
+      
+      // キャンバスの再初期化
+      this.reinitializeCanvases();
+      
+      // フェードイン
+      this.primaryView.style.opacity = '1';
+      this.secondaryView.style.opacity = '1';
+      
+      // アニメーション完了後にクラスを削除
+      setTimeout(() => {
+        this.container.classList.remove('swapping');
+      }, 300);
+      
+      console.log('[DUAL_VIEW] Views swapped successfully');
+    }, 300);
+  }
+  
+  /**
+   * タブ状態の更新
+   */
+  private updateTabStates(primaryTabId: string, secondaryTabId: string): void {
+    // プライマリビューのタブを更新
+    const primaryTabs = this.primaryView.querySelectorAll('.tab');
+    primaryTabs.forEach(tab => {
+      if (tab.id === secondaryTabId.replace('secondary-', '')) {
+        tab.classList.add('tab-active');
+      } else {
+        tab.classList.remove('tab-active');
+      }
+    });
+    
+    // セカンダリビューのタブを更新
+    const secondaryTabs = this.secondaryView.querySelectorAll('.tab');
+    secondaryTabs.forEach(tab => {
+      if (tab.id === 'secondary-' + primaryTabId) {
+        tab.classList.add('tab-active');
+      } else {
+        tab.classList.remove('tab-active');
+      }
+    });
+  }
+  
+  /**
+   * キャンバスの再初期化
+   */
+  private reinitializeCanvases(): void {
+    // メインゲームキャンバスの確認
+    const mainCanvas = document.getElementById('gameCanvas') as HTMLCanvasElement;
+    const miniCanvas = document.getElementById('mini-game-canvas') as HTMLCanvasElement;
+    
+    if (mainCanvas && miniCanvas) {
+      // メインキャンバスがセカンダリビューに移動した場合
+      if (this.secondaryView.contains(mainCanvas)) {
+        // ミニビューを破棄
+        this.disposeMiniView();
+        // メインレンダラーのサイズを調整
+        if ((window as any).renderer) {
+          const rect = mainCanvas.getBoundingClientRect();
+          (window as any).renderer.setSize(rect.width, rect.height);
+        }
+      } else {
+        // メインキャンバスがプライマリビューにある場合
+        // ミニビューを再初期化
+        this.initializeMiniView();
+      }
+    }
+    
+    // イベントの再バインド
+    this.rebindEvents();
+  }
+  
+  /**
+   * イベントの再バインド
+   */
+  private rebindEvents(): void {
+    // タブクリックイベントの再設定
+    setupEventListeners();
+    
+    // その他のUIイベントも再設定
+    const event = new CustomEvent('dualViewSwapped');
+    window.dispatchEvent(event);
   }
 
   /**
