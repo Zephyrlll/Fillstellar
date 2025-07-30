@@ -120,6 +120,12 @@ import './js/systems/graphDisplayUI.ts';
 import './js/systems/helpControlsUI.ts';
 // Production Optimizer
 import './js/systems/productionOptimizer.ts';
+// New game systems
+import { dynamicEventSystem } from './js/systems/dynamicEvents.ts';
+import { resourceMinigame } from './js/systems/resourceMinigame.ts';
+import { dailyChallenges } from './js/systems/dailyChallenges.ts';
+import { gameInfoUI } from './js/systems/gameInfoUI.ts';
+import { createGameInfoToggle } from './js/systems/gameInfoUIToggle.ts';
 
 // Idle game initialization function
 function initializeIdleGameSystems() {
@@ -754,6 +760,15 @@ function animate() {
     // Process multiverse resource flow
     multiverseBonusSystem.processResourceFlow(resourceDeltaTime);
     
+    // Update new game systems
+    dynamicEventSystem.update(deltaTime);
+    dailyChallenges.update();
+    
+    // Check for resource minigames on significant resource gains
+    if (gameState.resourceAccumulators.cosmicDust > 100) {
+        resourceMinigame.checkForMinigame('cosmicDust', gameState.resourceAccumulators.cosmicDust);
+    }
+    
     // Update planet shop
     import('./js/systems/planetOwnership/planetShop.js').then(({ PlanetShop }) => {
         PlanetShop.getInstance().update(deltaTime);
@@ -885,6 +900,9 @@ function animate() {
         // Update celestial creation UI
         celestialCreationUI.update();
         
+        // Update game info UI (events and challenges)
+        gameInfoUI.update(deltaTime);
+        
         uiUpdateTimer = 0;
     }
     
@@ -933,6 +951,10 @@ async function init() {
     // Initialize device detection FIRST - this must run before other UI initialization
     setupDeviceDetection();
     console.log('[INIT] Device detection initialized');
+    
+    // Initialize game info UI toggle
+    createGameInfoToggle();
+    console.log('[INIT] Game info UI toggle initialized');
     
     createStarfield();
     console.log('[INIT] Starfield created');
