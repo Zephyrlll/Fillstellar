@@ -18,7 +18,14 @@ export const tutorials: Tutorial[] = [
       {
         id: 'welcome-1',
         title: 'Fillstellarへようこそ！',
-        content: 'このゲームのUIや基本操作方法を学びましょう。',
+        content: 'あなたは宇宙の創造者です。宇宙の塵から始まり、恒星、惑星、そして生命を創造し、最終的には知的生命体を育てることが目的です。',
+        position: 'center',
+        skipable: false
+      },
+      {
+        id: 'welcome-1b',
+        title: 'ゲームの流れ',
+        content: '宇宙の塵を集めて天体を創造し、エネルギーや資源を生産します。研究を進めることで新しい天体や技術が解放されます。まずは小惑星を作ってみましょう！',
         position: 'center',
         skipable: false
       },

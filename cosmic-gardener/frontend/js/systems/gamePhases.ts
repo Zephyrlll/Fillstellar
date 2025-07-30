@@ -44,8 +44,8 @@ export const gamePhases: GamePhase[] = [
       {
         type: PhaseRequirementType.RESOURCE_TOTAL,
         target: 'energy',
-        value: 10000,
-        description: 'エネルギーを10,000以上蓄積'
+        value: 1000,
+        description: 'エネルギーを1,000以上蓄積'
       }
     ],
     rewards: [

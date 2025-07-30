@@ -40,6 +40,7 @@ import { multiverseUI } from './js/systems/multiverseUI.ts';
 import { endgameProgressUI } from './js/systems/endgameProgressUI.ts';
 import { researchPathFinder } from './js/systems/researchPathFinder.ts';
 import { researchPathFinderUI } from './js/systems/researchPathFinderUI.ts';
+import { shortTermGoals } from './js/systems/shortTermGoals.ts';
 import { updateUI, debouncedUpdateGalaxyMap, ui } from './js/ui.ts';
 import { createCelestialBody, checkLifeSpawn, evolveLife } from './js/celestialBody.ts';
 import { spatialGrid, updatePhysics } from './js/physics.ts';
@@ -1015,6 +1016,10 @@ async function init() {
     tutorialSystem.init();
     tutorialUI.init();
     console.log('[INIT] Tutorial system initialized');
+    
+    // Initialize short term goals system
+    shortTermGoals.init();
+    console.log('[INIT] Short term goals system initialized');
     
     // Initialize automation system
     automationManager.init();
