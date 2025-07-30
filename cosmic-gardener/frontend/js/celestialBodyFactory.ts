@@ -283,6 +283,24 @@ export class CelestialBodyFactory {
       body.add(pointLight);
     }
 
+    // ビジュアルエフェクトの適用
+    if (!config.isLoading) {
+      const celestialEffects = (window as any).celestialEffects;
+      if (celestialEffects) {
+        celestialEffects.applyEffects(body);
+      }
+      
+      // 効果音の再生
+      const audioSystem = (window as any).audioSystem;
+      if (audioSystem) {
+        const sfxId = `create_${type === 'black_hole' ? 'blackhole' : type}`;
+        audioSystem.playSFX(sfxId, {
+          volume: type === 'star' ? 0.8 : 0.6,
+          pitch: type === 'asteroid' ? 1.2 : 1.0
+        });
+      }
+    }
+
     return body;
   }
 

@@ -13,6 +13,9 @@ export interface InfiniteResourceTier {
   conversionRatio: number; // 前のtierからの変換比率
   unlockCondition?: ResourceUnlockCondition;
   isGenerated: boolean; // 手続き的に生成されたかどうか
+  visualGrade?: 'common' | 'epic' | 'legendary' | 'mythic'; // ビジュアルグレード
+  specialEffects?: string[]; // 特殊効果
+  mythicChance?: number; // 神話レアリティの確率
 }
 
 export interface ResourceUnlockCondition {

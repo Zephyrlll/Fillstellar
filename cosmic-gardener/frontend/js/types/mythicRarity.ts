@@ -77,18 +77,19 @@ export const MYTHIC_RARITY_CONFIGS: Record<MythicRarity, MythicRarityConfig> = {
     color: '#ff00ff',
     glowColor: '#ff00ff',
     particleColor: '#ff88ff',
-    efficiency: 3.0,
-    value: 5.0,
-    glowIntensity: 1.0,
-    particleCount: 50,
+    efficiency: 10.0, // 10倍に強化（改善計画に沿って）
+    value: 10.0,
+    glowIntensity: 1.5, // より強い発光
+    particleCount: 100, // より多いパーティクル
     specialEffects: [
-      { type: 'aura', intensity: 1.0, color: '#ff00ff', radius: 2 },
-      { type: 'pulse', intensity: 0.5, frequency: 1 }
+      { type: 'aura', intensity: 2.0, color: '#ff00ff', radius: 3 },
+      { type: 'pulse', intensity: 1.0, frequency: 2 },
+      { type: 'trail', intensity: 0.8, color: '#ff88ff' }
     ],
     unlockCondition: {
       type: 'achievement',
       value: 50,
-      probability: 0.001
+      probability: 0.0001 // 0.01%に設定（改善計画に沿って）
     }
   },
   [MythicRarity.COSMIC]: {

@@ -14,6 +14,7 @@ import {
   DEFAULT_ENDGAME_CONDITIONS,
   PARAGON_UPGRADES
 } from '../types/paragon.js';
+import { EXTENDED_PARAGON_UPGRADES } from './paragonTree.js';
 
 export class ParagonSystem {
   private static instance: ParagonSystem;
@@ -35,13 +36,16 @@ export class ParagonSystem {
   }
   
   private initializeParagonData(): ParagonData {
+    // コアアップグレードと拡張アップグレードを統合
+    const allUpgrades = [...PARAGON_UPGRADES, ...EXTENDED_PARAGON_UPGRADES];
+    
     return {
       level: 0,
       experience: 0,
       experienceToNext: 1000,
       points: 0,
       unspentPoints: 0,
-      upgrades: [...PARAGON_UPGRADES], // コピーを作成
+      upgrades: allUpgrades, // 100個以上のアップグレード
       totalBonuses: this.calculateEmptyBonuses()
     };
   }

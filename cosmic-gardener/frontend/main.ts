@@ -260,6 +260,10 @@ import { DerivedResourceGenerator } from './js/derivedResourceGenerator.ts';
 import { resourcePopupManager } from './js/effects/resourcePopup.ts';
 import { achievementEffectManager } from './js/effects/achievementEffect.ts';
 import { researchCompleteEffectManager } from './js/effects/researchCompleteEffect.ts';
+// Visual and audio imports
+import { CelestialEffects } from './js/effects/celestialEffects.ts';
+import { audioSystem } from './js/systems/audioSystem.ts';
+import { audioSettingsUI } from './js/ui/audioSettingsUI.ts';
 
 // Initialize idle game systems
 const saveSystem = new SaveSystem();
@@ -292,6 +296,9 @@ let wsClient: any = null;
 
 // Derived resource generator instance
 const derivedResourceGenerator = new DerivedResourceGenerator();
+
+// Visual and audio systems
+let celestialEffects: CelestialEffects;
 
 function createStarfield() {
     const starsGeometry = new THREE.BufferGeometry();
@@ -340,10 +347,25 @@ const balanceUpdateInterval = 5; // Update balance every 5 seconds
 let unlockCheckTimer = 0;
 const unlockCheckInterval = 2; // Check unlocks every 2 seconds
 
+// Physics and animation time step
+const fixedTimeStep = 1 / 60; // 60 FPS
+let visualEffectsDeltaTime = 0;
+let lastTime = performance.now();
+
 function animate() {
     if (animationCount < 5) {
         console.log('[ANIMATE] Animation frame:', animationCount);
         animationCount++;
+    }
+    
+    // Calculate delta time for visual effects
+    const currentTime = performance.now();
+    visualEffectsDeltaTime = Math.min((currentTime - lastTime) / 1000, 0.1); // Cap at 100ms to prevent large jumps
+    lastTime = currentTime;
+    
+    // Update visual effects
+    if (celestialEffects) {
+        celestialEffects.update(visualEffectsDeltaTime);
     }
     
     // Check frame rate limiter BEFORE requesting next frame
@@ -997,6 +1019,45 @@ async function init() {
     // Initialize multiverse system
     multiverseSystem.init();
     multiverseUI.init();
+    console.log('[INIT] Multiverse system initialized');
+    
+    // Initialize visual effects system
+    celestialEffects = new CelestialEffects(scene);
+    (window as any).celestialEffects = celestialEffects;
+    console.log('[INIT] Celestial effects system initialized');
+    
+    // Initialize audio system (after user interaction)
+    const initAudio = async () => {
+        await audioSystem.init();
+        console.log('[INIT] Audio system initialized');
+        // Remove the event listener after initialization
+        document.removeEventListener('click', initAudio);
+        document.removeEventListener('keydown', initAudio);
+    };
+    
+    // Wait for user interaction to initialize audio
+    document.addEventListener('click', initAudio, { once: true });
+    document.addEventListener('keydown', initAudio, { once: true });
+    
+    // Expose audio system globally
+    (window as any).audioSystem = audioSystem;
+    
+    // Initialize audio settings UI
+    audioSettingsUI.init();
+    console.log('[INIT] Audio settings UI initialized');
+    
+    // Apply effects to existing celestial bodies
+    if (gameState.stars && Array.isArray(gameState.stars)) {
+        gameState.stars.forEach(star => {
+            if (star && star.userData) {
+                try {
+                    celestialEffects.applyEffects(star);
+                } catch (error) {
+                    console.warn('[INIT] Failed to apply effects to star:', error);
+                }
+            }
+        });
+    }
     console.log('[INIT] Multiverse system initialized');
     
     // Initialize research path finder UI
