@@ -345,7 +345,11 @@ export function updateUI() {
         previousUIValues.gameYear = currentGameYear;
     }
     if (previousUIValues.cosmicDust !== currentCosmicDust) {
-        if (ui.cosmicDust) ui.cosmicDust.textContent = String(currentCosmicDust);
+        if (ui.cosmicDust) {
+        ui.cosmicDust.textContent = String(currentCosmicDust);
+        // 次に作れる天体のヒントを表示
+        updateNextCreationHint(currentCosmicDust);
+    }
         if (ui.dustValueNav) ui.dustValueNav.textContent = String(currentCosmicDust);
         previousUIValues.cosmicDust = currentCosmicDust;
     }
@@ -1202,4 +1206,63 @@ export function updateMobileInventoryUI(): void {
 // Update all settings UI after loading
 export function updateAllSettingsUI(): void {
     updateGraphicsUI();
+}
+
+// 次に作れる天体のヒントを表示
+function updateNextCreationHint(currentDust: number): void {
+    const costs = [
+        { type: '小惑星', cost: 100, icon: '☄️' },
+        { type: '彗星', cost: 500, icon: '☄️' },
+        { type: '月', cost: 1000, icon: '🌙' },
+        { type: '恒星', cost: 1000, icon: '⭐', important: true },
+        { type: '惑星', cost: 10000, icon: '🌍' }
+    ];
+    
+    const nextCreatable = costs.find(item => currentDust >= item.cost * 0.5 && currentDust < item.cost);
+    const canCreate = costs.filter(item => currentDust >= item.cost);
+    
+    let hintElement = document.getElementById('creation-hint');
+    if (!hintElement) {
+        hintElement = document.createElement('div');
+        hintElement.id = 'creation-hint';
+        hintElement.style.cssText = `
+            position: fixed;
+            top: 120px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid #4CAF50;
+            border-radius: 10px;
+            padding: 10px 15px;
+            color: white;
+            font-size: 14px;
+            z-index: 100;
+            max-width: 250px;
+        `;
+        document.body.appendChild(hintElement);
+    }
+    
+    let content = '';
+    
+    if (canCreate.length > 0) {
+        const latest = canCreate[canCreate.length - 1];
+        content = `<div style="color: #4CAF50; font-weight: bold;">
+            ${latest.icon} ${latest.type}が作成可能！
+            ${latest.important ? '<br><small style="color: #FFD700;">エネルギー生産開始！</small>' : ''}
+        </div>`;
+    } else if (nextCreatable) {
+        const progress = Math.floor((currentDust / nextCreatable.cost) * 100);
+        content = `<div>
+            次: ${nextCreatable.icon} ${nextCreatable.type}<br>
+            <small>あと ${nextCreatable.cost - currentDust} 塵 (${progress}%)</small>
+            ${nextCreatable.important ? '<br><small style="color: #FFD700;">重要: エネルギー生産に必要</small>' : ''}
+        </div>`;
+    } else if (currentDust < 100) {
+        content = `<div>
+            塵を集めて天体を作ろう！<br>
+            <small>最初の小惑星まで: ${100 - currentDust} 塵</small>
+        </div>`;
+    }
+    
+    hintElement.innerHTML = content;
+    hintElement.style.display = content ? 'block' : 'none';
 }

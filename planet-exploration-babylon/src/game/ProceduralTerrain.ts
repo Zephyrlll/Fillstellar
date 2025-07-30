@@ -162,4 +162,21 @@ export class ProceduralTerrain {
     isSpherical(): boolean {
         return this.useSphericalTerrain;
     }
+    
+    getPlanetMesh(): BABYLON.Mesh | null {
+        if (this.useSphericalTerrain) {
+            return this.sphericalTerrain.getPlanetMesh();
+        }
+        return this.terrain;
+    }
+    
+    dispose(): void {
+        if (this.sphericalTerrain) {
+            this.sphericalTerrain.dispose();
+        }
+        if (this.terrain) {
+            this.terrain.dispose();
+        }
+        this.modifications.clear();
+    }
 }

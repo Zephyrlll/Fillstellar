@@ -51,7 +51,13 @@ const init = async () => {
         
         console.log('[MAIN] Starting game with planet:', demoPlanet);
         // 初期惑星で開始
-        game.start(demoPlanet);
+        try {
+            await game.start(demoPlanet);
+            console.log('[MAIN] Game started successfully');
+        } catch (startError) {
+            console.error('[MAIN] Failed to start game:', startError);
+            // エラーが発生してもUIは作成する
+        }
         
         console.log('[MAIN] Creating UI controls...');
         // UIコントロールを作成
@@ -86,6 +92,8 @@ function createUIControls(game: PlanetExploration) {
         <p style="margin: 5px 0;">現在の惑星: <span id="planetName">${demoPlanet.name}</span></p>
         <p style="margin: 5px 0;">タイプ: <span id="planetType">${demoPlanet.type}</span></p>
         <p style="margin: 5px 0;">視点: <span id="viewMode">Third Person</span></p>
+        <p style="margin: 5px 0; color: #4CAF50;">システム: <span id="systemMode">旧システム</span></p>
+        <p style="margin: 5px 0; font-size: 11px;">位置: <span id="playerPosition">緯度: 0°, 経度: 0°</span></p>
         <button id="changePlanet" style="
             margin-top: 10px;
             padding: 8px 15px;
@@ -107,13 +115,15 @@ function createUIControls(game: PlanetExploration) {
             <p style="margin: 2px 0; font-size: 12px;">V: 視点切り替え (FPS/TPS)</p>
             <p style="margin: 2px 0; font-size: 12px;">ホイール: ズーム (TPSのみ)</p>
             <p style="margin: 2px 0; font-size: 12px;">ESC: マウスロック解除</p>
+            <p style="margin: 2px 0; font-size: 12px;">N: 新/旧システム切替（テスト）</p>
+            <p style="margin: 2px 0; font-size: 12px;">P: グリッド表示（新システム）</p>
         </div>
     `;
     
     document.body.appendChild(controls);
     
     // 惑星変更ボタンのハンドラー
-    document.getElementById('changePlanet')?.addEventListener('click', () => {
+    document.getElementById('changePlanet')?.addEventListener('click', async () => {
         currentPlanetIndex = (currentPlanetIndex + 1) % planetTypes.length;
         const newPlanetType = planetTypes[currentPlanetIndex];
         
@@ -148,7 +158,7 @@ function createUIControls(game: PlanetExploration) {
                 break;
         }
         
-        game.start(newPlanet);
+        await game.start(newPlanet);
         
         // UI更新
         const nameElement = document.getElementById('planetName');

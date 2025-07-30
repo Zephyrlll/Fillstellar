@@ -57,12 +57,12 @@ export class OfflineCalculator {
     // Get achievement multipliers
     const multipliers = this.getAchievementMultipliers(gameState);
     
-    // Base cosmic dust generation
-    rates.cosmicDust = 1 * (1 + gameState.dustUpgradeLevel * 0.5) * multipliers.dustGeneration;
+    // Base cosmic dust generation - 増加率を上げて待機時間を短縮
+    rates.cosmicDust = 3 * (1 + gameState.dustUpgradeLevel * 0.5) * multipliers.dustGeneration;
     
-    // Energy from stars
+    // Energy from stars - 生産率を上げる
     const stars = gameState.stars.filter(body => body.userData.type === 'star');
-    rates.energy = stars.length * 0.5 * multipliers.energyGeneration;
+    rates.energy = stars.length * 1.0 * multipliers.energyGeneration;
     
     // Dark matter conversion
     if (gameState.darkMatterConverterLevel > 0) {

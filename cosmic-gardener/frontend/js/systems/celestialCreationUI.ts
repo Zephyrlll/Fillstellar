@@ -7,6 +7,7 @@ import { soundManager } from '../sound.js';
 import { addTimelineLog } from '../timeline.js';
 import { physicsConfig } from '../physicsConfig.js';
 import { scene } from '../threeSetup.js';
+import { celestialLimiter } from './celestialLimiter.js';
 import * as THREE from 'three';
 
 export class CelestialCreationUI {
@@ -167,6 +168,12 @@ export class CelestialCreationUI {
     const cost = this.costs[type as keyof typeof this.costs];
     if (!cost) {
       console.error('[CELESTIAL_UI] Invalid type or cost not found:', type);
+      return;
+    }
+
+    // 天体数の制限チェック
+    if (!celestialLimiter.canCreateCelestialBody(type as any)) {
+      soundManager.playUISound('error');
       return;
     }
 

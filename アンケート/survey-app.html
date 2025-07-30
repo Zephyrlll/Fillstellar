@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fillstellar プレイテストアンケート</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0a1f 0%, #1a1a3f 100%);
+            color: #ffffff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            color: #FFD700;
+            font-size: 2.5em;
+            text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+        }
+        
+        .subtitle {
+            text-align: center;
+            margin-bottom: 40px;
+            color: #aaa;
+            font-size: 1.1em;
+        }
+        
+        .section {
+            margin-bottom: 40px;
+            padding: 25px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .section h2 {
+            margin-bottom: 20px;
+            color: #4CAF50;
+            font-size: 1.5em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .section h2::before {
+            content: '🎮';
+            font-size: 1.2em;
+        }
+        
+        .question {
+            margin-bottom: 25px;
+        }
+        
+        .question label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 500;
+            color: #e0e0e0;
+            font-size: 1.1em;
+        }
+        
+        .required {
+            color: #ff6b6b;
+            margin-left: 5px;
+        }
+        
+        input[type="text"],
+        input[type="number"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: #ffffff;
+            font-size: 1em;
+            transition: all 0.3s ease;
+        }
+        
+        input[type="text"]:focus,
+        input[type="number"]:focus,
+        textarea:focus,
+        select:focus {
+            outline: none;
+            border-color: #4CAF50;
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 0 10px rgba(76, 175, 80, 0.3);
+        }
+        
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+        
+        .radio-group,
+        .checkbox-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .radio-item,
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .radio-item:hover,
+        .checkbox-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .radio-item input,
+        .checkbox-item input {
+            margin-right: 10px;
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+        
+        .rating {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .rating-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 60px;
+        }
+        
+        .rating-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+        }
+        
+        .rating-item input {
+            margin-bottom: 5px;
+        }
+        
+        .rating-item.selected {
+            background: rgba(76, 175, 80, 0.3);
+            border: 1px solid #4CAF50;
+        }
+        
+        .likert-scale {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+        
+        .likert-option {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            padding: 10px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .likert-option:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .likert-option input {
+            margin-bottom: 8px;
+        }
+        
+        .likert-label {
+            font-size: 0.9em;
+            text-align: center;
+            max-width: 80px;
+        }
+        
+        .timer {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px 25px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            font-size: 1.1em;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
+        }
+        
+        .timer::before {
+            content: '⏱️';
+            margin-right: 10px;
+        }
+        
+        .submit-section {
+            text-align: center;
+            margin-top: 40px;
+        }
+        
+        .submit-btn {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            padding: 15px 50px;
+            font-size: 1.2em;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 20px rgba(76, 175, 80, 0.4);
+        }
+        
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 7px 30px rgba(76, 175, 80, 0.6);
+        }
+        
+        .submit-btn:active {
+            transform: translateY(0);
+        }
+        
+        .progress-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            z-index: 1000;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #FFD700);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: rgba(0, 0, 0, 0.9);
+            padding: 15px 30px;
+            border-radius: 10px;
+            border: 1px solid #4CAF50;
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+        
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+            
+            .timer {
+                position: static;
+                margin-bottom: 20px;
+                text-align: center;
+            }
+            
+            .likert-scale {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .rating {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="progress-bar">
+        <div class="progress-fill" id="progressFill"></div>
+    </div>
+    
+    <div class="timer" id="timer">00:00</div>
+    
+    <div class="container">
+        <h1>🌌 Fillstellar プレイテストアンケート</h1>
+        <p class="subtitle">貴重なご意見をお聞かせください</p>
+        
+        <form id="surveyForm">
+            <!-- セクション1: 基本情報 -->
+            <div class="section">
+                <h2>基本情報</h2>
+                
+                <div class="question">
+                    <label>お名前（ニックネーム可）<span class="required">*</span></label>
+                    <input type="text" name="playerName" required>
+                </div>
+                
+                <div class="question">
+                    <label>プレイ時間<span class="required">*</span></label>
+                    <select name="playDuration" required>
+                        <option value="">選択してください</option>
+                        <option value="0-5">0〜5分</option>
+                        <option value="5-10">5〜10分</option>
+                        <option value="10-20">10〜20分</option>
+                        <option value="20-30">20〜30分</option>
+                        <option value="30-60">30分〜1時間</option>
+                        <option value="60+">1時間以上</option>
+                    </select>
+                </div>
+                
+                <div class="question">
+                    <label>到達したフェーズ<span class="required">*</span></label>
+                    <div class="radio-group">
+                        <div class="radio-item">
+                            <input type="radio" name="phase" value="0" id="phase0" required>
+                            <label for="phase0">フェーズ0（宇宙の始まり）</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="phase" value="1" id="phase1">
+                            <label for="phase1">フェーズ1（天体の形成）</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="phase" value="2" id="phase2">
+                            <label for="phase2">フェーズ2（惑星系の発展）</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="phase" value="3+" id="phase3">
+                            <label for="phase3">フェーズ3以降</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- セクション2: 初心者体験 -->
+            <div class="section">
+                <h2>初心者体験</h2>
+                
+                <div class="question">
+                    <label>ゲームの目的は理解できましたか？<span class="required">*</span></label>
+                    <div class="likert-scale">
+                        <div class="likert-option">
+                            <input type="radio" name="purposeClarity" value="1" id="purpose1" required>
+                            <label for="purpose1" class="likert-label">全く<br>理解できない</label>
+                        </div>
+                        <div class="likert-option">
+                            <input type="radio" name="purposeClarity" value="2" id="purpose2">
+                            <label for="purpose2" class="likert-label">あまり<br>理解できない</label>
+                        </div>
+                        <div class="likert-option">
+                            <input type="radio" name="purposeClarity" value="3" id="purpose3">
+                            <label for="purpose3" class="likert-label">どちらとも<br>いえない</label>
+                        </div>
+                        <div class="likert-option">
+                            <input type="radio" name="purposeClarity" value="4" id="purpose4">
+                            <label for="purpose4" class="likert-label">まあまあ<br>理解できた</label>
+                        </div>
+                        <div class="likert-option">
+                            <input type="radio" name="purposeClarity" value="5" id="purpose5">
+                            <label for="purpose5" class="likert-label">とても<br>理解できた</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="question">
+                    <label>チュートリアルは役に立ちましたか？<span class="required">*</span></label>
+                    <div class="rating">
+                        <div class="rating-item">
+                            <input type="radio" name="tutorialRating" value="1" id="tutorial1" required>
+                            <label for="tutorial1">1</label>
+                        </div>
+                        <div class="rating-item">
+                            <input type="radio" name="tutorialRating" value="2" id="tutorial2">
+                            <label for="tutorial2">2</label>
+                        </div>
+                        <div class="rating-item">
+                            <input type="radio" name="tutorialRating" value="3" id="tutorial3">
+                            <label for="tutorial3">3</label>
+                        </div>
+                        <div class="rating-item">
+                            <input type="radio" name="tutorialRating" value="4" id="tutorial4">
+                            <label for="tutorial4">4</label>
+                        </div>
+                        <div class="rating-item">
+                            <input type="radio" name="tutorialRating" value="5" id="tutorial5">
+                            <label for="tutorial5">5</label>
+                        </div>
+                    </div>
+                    <small style="color: #888;">1: 全く役に立たない 〜 5: とても役に立った</small>
+                </div>
+                
+                <div class="question">
+                    <label>最初の5分間で困ったことはありましたか？</label>
+                    <textarea name="firstMinutesIssues" placeholder="例：何をすればいいか分からなかった、ボタンの場所が分からなかった等"></textarea>
+                </div>
+            </div>
+            
+            <!-- セクション3: ゲームプレイ体験 -->
+            <div class="section">
+                <h2>ゲームプレイ体験</h2>
+                
+                <div class="question">
+                    <label>ゲームの進行速度はどうでしたか？<span class="required">*</span></label>
+                    <div class="radio-group">
+                        <div class="radio-item">
+                            <input type="radio" name="pacing" value="too-slow" id="pace1" required>
+                            <label for="pace1">遅すぎる</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="pacing" value="slow" id="pace2">
+                            <label for="pace2">やや遅い</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="pacing" value="just-right" id="pace3">
+                            <label for="pace3">ちょうど良い</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="pacing" value="fast" id="pace4">
+                            <label for="pace4">やや速い</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="pacing" value="too-fast" id="pace5">
+                            <label for="pace5">速すぎる</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="question">
+                    <label>短期目標システムは役に立ちましたか？<span class="required">*</span></label>
+                    <div class="rating">
+                        <div class="rating-item">
+                            <input type="radio" name="goalsRating" value="1" id="goals1" required>
+                            <label for="goals1">1</label>
+                        </div>
+                        <div class="rating-item">
+                            <input type="radio" name="goalsRating" value="2" id="goals2">
+                            <label for="goals2">2</label>
+                        </div>
+                        <div class="rating-item">
+                            <input type="radio" name="goalsRating" value="3" id="goals3">
+                            <label for="goals3">3</label>
+                        </div>
+                        <div class="rating-item">
+                            <input type="radio" name="goalsRating" value="4" id="goals4">
+                            <label for="goals4">4</label>
+                        </div>
+                        <div class="rating-item">
+                            <input type="radio" name="goalsRating" value="5" id="goals5">
+                            <label for="goals5">5</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="question">
+                    <label>最も楽しかった要素は何ですか？（複数選択可）</label>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="enjoyedElements" value="creation" id="enjoy1">
+                            <label for="enjoy1">天体を作成すること</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="enjoyedElements" value="physics" id="enjoy2">
+                            <label for="enjoy2">物理シミュレーションを見ること</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="enjoyedElements" value="progression" id="enjoy3">
+                            <label for="enjoy3">資源を集めて進行すること</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="enjoyedElements" value="research" id="enjoy4">
+                            <label for="enjoy4">新技術を研究すること</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="enjoyedElements" value="goals" id="enjoy5">
+                            <label for="enjoy5">目標を達成すること</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- セクション4: UI/UX -->
+            <div class="section">
+                <h2>UI/UX（ユーザーインターフェース）</h2>
+                
+                <div class="question">
+                    <label>画面の情報量はどうでしたか？<span class="required">*</span></label>
+                    <div class="radio-group">
+                        <div class="radio-item">
+                            <input type="radio" name="infoAmount" value="too-little" id="info1" required>
+                            <label for="info1">少なすぎる</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="infoAmount" value="little" id="info2">
+                            <label for="info2">やや少ない</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="infoAmount" value="just-right" id="info3">
+                            <label for="info3">ちょうど良い</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="infoAmount" value="much" id="info4">
+                            <label for="info4">やや多い</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="infoAmount" value="too-much" id="info5">
+                            <label for="info5">多すぎる</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="question">
+                    <label>段階的解放システムはどうでしたか？</label>
+                    <textarea name="progressiveUnlockFeedback" placeholder="新機能が段階的に解放されることについての感想"></textarea>
+                </div>
+                
+                <div class="question">
+                    <label>見つけにくかった機能や情報はありますか？</label>
+                    <textarea name="hardToFind" placeholder="例：〇〇ボタンの場所が分からなかった"></textarea>
+                </div>
+            </div>
+            
+            <!-- セクション5: 総合評価 -->
+            <div class="section">
+                <h2>総合評価</h2>
+                
+                <div class="question">
+                    <label>ゲーム全体の楽しさを評価してください<span class="required">*</span></label>
+                    <div class="rating">
+                        <div class="rating-item">
+                            <input type="radio" name="overallRating" value="1" id="overall1" required>
+                            <label for="overall1">⭐</label>
+                        </div>
+                        <div class="rating-item">
+                            <input type="radio" name="overallRating" value="2" id="overall2">
+                            <label for="overall2">⭐⭐</label>
+                        </div>
+                        <div class="rating-item">
+                            <input type="radio" name="overallRating" value="3" id="overall3">
+                            <label for="overall3">⭐⭐⭐</label>
+                        </div>
+                        <div class="rating-item">
+                            <input type="radio" name="overallRating" value="4" id="overall4">
+                            <label for="overall4">⭐⭐⭐⭐</label>
+                        </div>
+                        <div class="rating-item">
+                            <input type="radio" name="overallRating" value="5" id="overall5">
+                            <label for="overall5">⭐⭐⭐⭐⭐</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="question">
+                    <label>もう一度プレイしたいと思いますか？<span class="required">*</span></label>
+                    <div class="radio-group">
+                        <div class="radio-item">
+                            <input type="radio" name="playAgain" value="yes" id="again1" required>
+                            <label for="again1">はい</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="playAgain" value="maybe" id="again2">
+                            <label for="again2">たぶん</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="playAgain" value="no" id="again3">
+                            <label for="again3">いいえ</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="question">
+                    <label>友人にこのゲームを勧めますか？（0-10）<span class="required">*</span></label>
+                    <input type="number" name="nps" min="0" max="10" required placeholder="0: 全く勧めない 〜 10: 強く勧める">
+                </div>
+                
+                <div class="question">
+                    <label>最も改善してほしい点を1つ挙げてください</label>
+                    <textarea name="topImprovement" placeholder="例：進行速度、UI、チュートリアル等"></textarea>
+                </div>
+                
+                <div class="question">
+                    <label>その他、ご意見・ご感想があればお聞かせください</label>
+                    <textarea name="additionalComments" placeholder="自由にご記入ください"></textarea>
+                </div>
+            </div>
+            
+            <div class="submit-section">
+                <button type="submit" class="submit-btn">アンケートを送信する</button>
+            </div>
+        </form>
+    </div>
+    
+    <div class="toast" id="toast"></div>
+    
+    <script>
+        // タイマー機能
+        let startTime = Date.now();
+        const timerElement = document.getElementById('timer');
+        
+        function updateTimer() {
+            const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            const minutes = Math.floor(elapsed / 60);
+            const seconds = elapsed % 60;
+            timerElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+        
+        setInterval(updateTimer, 1000);
+        
+        // プログレスバー更新
+        const form = document.getElementById('surveyForm');
+        const progressFill = document.getElementById('progressFill');
+        
+        function updateProgress() {
+            const totalQuestions = form.querySelectorAll('[required]').length;
+            const answeredQuestions = Array.from(form.querySelectorAll('[required]')).filter(input => {
+                if (input.type === 'radio') {
+                    return form.querySelector(`[name="${input.name}"]:checked`) !== null;
+                }
+                return input.value.trim() !== '';
+            }).length;
+            
+            const uniqueAnswered = new Set();
+            form.querySelectorAll('[required]').forEach(input => {
+                if (input.type === 'radio') {
+                    if (form.querySelector(`[name="${input.name}"]:checked`)) {
+                        uniqueAnswered.add(input.name);
+                    }
+                } else if (input.value.trim() !== '') {
+                    uniqueAnswered.add(input.name);
+                }
+            });
+            
+            const progress = (uniqueAnswered.size / totalQuestions) * 100;
+            progressFill.style.width = `${progress}%`;
+        }
+        
+        // 入力変更時にプログレスを更新
+        form.addEventListener('input', updateProgress);
+        form.addEventListener('change', updateProgress);
+        
+        // 選択したラジオボタンのハイライト
+        document.querySelectorAll('.rating-item input').forEach(input => {
+            input.addEventListener('change', (e) => {
+                const parent = e.target.closest('.rating');
+                parent.querySelectorAll('.rating-item').forEach(item => {
+                    item.classList.remove('selected');
+                });
+                e.target.closest('.rating-item').classList.add('selected');
+            });
+        });
+        
+        // トースト表示
+        function showToast(message, duration = 3000) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, duration);
+        }
+        
+        // フォーム送信処理
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(form);
+            const data = {
+                timestamp: new Date().toISOString(),
+                playDuration: updateTimer.toString(),
+                responses: {}
+            };
+            
+            // フォームデータを収集
+            for (let [key, value] of formData.entries()) {
+                if (data.responses[key]) {
+                    // チェックボックスの場合は配列にする
+                    if (!Array.isArray(data.responses[key])) {
+                        data.responses[key] = [data.responses[key]];
+                    }
+                    data.responses[key].push(value);
+                } else {
+                    data.responses[key] = value;
+                }
+            }
+            
+            // 実際の送信処理の代わりに、データをコンソールに出力し、ローカルストレージに保存
+            console.log('Survey Data:', data);
+            
+            // ローカルストレージに保存
+            const surveys = JSON.parse(localStorage.getItem('fillstellar_surveys') || '[]');
+            surveys.push(data);
+            localStorage.setItem('fillstellar_surveys', JSON.stringify(surveys));
+            
+            // CSVとしてダウンロード可能な形式で保存
+            const csvData = convertToCSV(data);
+            const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            
+            // 日付と名前でファイル名を作成
+            const date = new Date().toISOString().split('T')[0].replace(/-/g, '');
+            const playerName = data.responses.playerName || '匿名';
+            const safeName = playerName.replace(/[^a-zA-Z0-9ぁ-んァ-ヶー一-龠]/g, '');
+            a.download = `Fillstellar_アンケート_${date}_${safeName}.csv`;
+            a.click();
+            
+            showToast('アンケートを送信しました！ご協力ありがとうございます。', 5000);
+            
+            // フォームをリセット
+            setTimeout(() => {
+                if (confirm('アンケートを送信しました。フォームをリセットしますか？')) {
+                    form.reset();
+                    updateProgress();
+                    startTime = Date.now();
+                }
+            }, 1000);
+        });
+        
+        // CSVに変換（日本語ヘッダー付きの読みやすい形式）
+        function convertToCSV(data) {
+            const fieldMapping = {
+                'playerName': 'プレイヤー名',
+                'playDuration': 'プレイ時間',
+                'phase': '到達フェーズ',
+                'purposeClarity': 'ゲーム目的の理解度(1-5)',
+                'tutorialRating': 'チュートリアル評価(1-5)',
+                'firstMinutesIssues': '最初の5分間の問題',
+                'pacing': '進行速度',
+                'goalsRating': '短期目標の有用性(1-5)',
+                'enjoyedElements': '楽しかった要素',
+                'infoAmount': '画面の情報量',
+                'progressiveUnlockFeedback': '段階的解放の感想',
+                'hardToFind': '見つけにくかった機能',
+                'overallRating': '総合評価(1-5)',
+                'playAgain': 'もう一度プレイしたいか',
+                'nps': 'NPS(0-10)',
+                'topImprovement': '最も改善してほしい点',
+                'additionalComments': 'その他コメント'
+            };
+            
+            // BOM付きUTF-8で文字化けを防ぐ
+            const BOM = '\uFEFF';
+            
+            // ヘッダー行
+            const headers = ['記録日時', '回答時間'];
+            const values = [
+                new Date(data.timestamp).toLocaleString('ja-JP'),
+                data.playDuration || timerElement.textContent
+            ];
+            
+            // 各フィールドを順番に処理
+            Object.keys(fieldMapping).forEach(key => {
+                const value = data.responses[key];
+                headers.push(fieldMapping[key]);
+                
+                if (Array.isArray(value)) {
+                    values.push(value.join('、'));
+                } else if (value === undefined || value === null || value === '') {
+                    values.push('未回答');
+                } else {
+                    // 改行をスペースに置換してCSVを壊さないようにする
+                    values.push(String(value).replace(/\n/g, ' '));
+                }
+            });
+            
+            // CSVフォーマット（ダブルクォートで囲む）
+            const csvContent = headers.map(h => `"${h}"`).join(',') + '\n' + 
+                              values.map(v => `"${v}"`).join(',');
+            
+            return BOM + csvContent;
+        }
+        
+        // 初期プログレス更新
+        updateProgress();
+    </script>
+</body>
+</html>

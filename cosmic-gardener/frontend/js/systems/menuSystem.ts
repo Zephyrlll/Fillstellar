@@ -7,6 +7,7 @@ export class MenuSystem {
   private radialMenu: RadialMenu;
   private slideMenu: SlideMenu;
   private isInitialized: boolean = false;
+  private hiddenItems: Set<string> = new Set();
   
   constructor() {
     this.radialMenu = new RadialMenu();
@@ -746,6 +747,21 @@ export class MenuSystem {
     });
   }
   
+  // Set visibility of menu items
+  setItemVisibility(itemId: string, visible: boolean): void {
+    if (visible) {
+      this.hiddenItems.delete(itemId);
+    } else {
+      this.hiddenItems.add(itemId);
+    }
+    
+    // Update both menus
+    if (this.isInitialized) {
+      this.radialMenu.setItemVisibility(itemId, visible);
+      this.slideMenu.setItemEnabled(itemId, visible);
+    }
+  }
+  
   updateBadge(menuItemId: string, badge: string | number | null): void {
     this.radialMenu.updateBadge(menuItemId, badge);
   }
@@ -1046,6 +1062,13 @@ class RadialMenu {
       }
     }
   }
+  
+  setItemVisibility(itemId: string, visible: boolean): void {
+    const item = this.container?.querySelector(`[data-item-id="${itemId}"]`);
+    if (item) {
+      (item as HTMLElement).style.display = visible ? '' : 'none';
+    }
+  }
 }
 
 // Slide Menu Implementation
@@ -1211,3 +1234,6 @@ class SlideMenu {
     this.render();
   }
 }
+
+// Export singleton instance
+export const menuSystem = new MenuSystem();

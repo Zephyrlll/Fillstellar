@@ -22,4 +22,10 @@ export class ResourceScanner {
     getScannedResources(): any {
         return Array.from(this.scannedResources.entries());
     }
+    
+    dispose(): void {
+        this.scannedResources.clear();
+        this.isEnabled = false;
+        console.log('[RESOURCE_SCANNER] Disposed');
+    }
 }

@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fillstellar アンケート結果ビューア</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a2e;
+            color: #ffffff;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #FFD700;
+            font-size: 2.5em;
+        }
+        
+        .controls {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s ease;
+        }
+        
+        button:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+        }
+        
+        input[type="file"] {
+            display: none;
+        }
+        
+        .file-label {
+            background: #2196F3;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .file-label:hover {
+            background: #1976D2;
+        }
+        
+        .summary {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        
+        .summary h2 {
+            color: #4CAF50;
+            margin-bottom: 15px;
+        }
+        
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        
+        .summary-item {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .summary-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #FFD700;
+            margin-bottom: 5px;
+        }
+        
+        .summary-label {
+            font-size: 0.9em;
+            color: #aaa;
+        }
+        
+        .responses {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        
+        .responses h2 {
+            color: #4CAF50;
+            margin-bottom: 20px;
+        }
+        
+        .response-item {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 4px solid #4CAF50;
+        }
+        
+        .response-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .response-name {
+            font-weight: bold;
+            color: #FFD700;
+        }
+        
+        .response-time {
+            font-size: 0.9em;
+            color: #888;
+        }
+        
+        .response-details {
+            margin-top: 15px;
+        }
+        
+        .response-field {
+            margin-bottom: 10px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 5px;
+        }
+        
+        .field-label {
+            font-weight: bold;
+            color: #4CAF50;
+            margin-right: 10px;
+        }
+        
+        .field-value {
+            color: #ddd;
+        }
+        
+        .chart-container {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        
+        .chart-container h3 {
+            color: #4CAF50;
+            margin-bottom: 20px;
+        }
+        
+        .chart {
+            width: 100%;
+            height: 300px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-around;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+        }
+        
+        .bar {
+            width: 60px;
+            background: linear-gradient(to top, #4CAF50, #8BC34A);
+            border-radius: 5px 5px 0 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        
+        .bar:hover {
+            transform: translateY(-5px);
+        }
+        
+        .bar-value {
+            position: absolute;
+            top: -25px;
+            font-weight: bold;
+            color: #FFD700;
+        }
+        
+        .bar-label {
+            margin-top: 10px;
+            font-size: 0.9em;
+            text-align: center;
+        }
+        
+        .no-data {
+            text-align: center;
+            padding: 50px;
+            color: #888;
+            font-size: 1.2em;
+        }
+        
+        .export-section {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        
+        .export-section h3 {
+            color: #4CAF50;
+            margin-bottom: 15px;
+        }
+        
+        .export-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        @media (max-width: 768px) {
+            .controls {
+                flex-direction: column;
+            }
+            
+            .summary-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 Fillstellar アンケート結果ビューア</h1>
+        
+        <div class="controls">
+            <button onclick="loadFromLocalStorage()">ローカルストレージから読み込み</button>
+            <label for="csvFile" class="file-label">
+                CSVファイルを読み込み
+                <input type="file" id="csvFile" accept=".csv" onchange="loadCSV(event)">
+            </label>
+            <button onclick="clearData()">データをクリア</button>
+            <span id="dataCount" style="margin-left: auto; color: #888;">データ: 0件</span>
+        </div>
+        
+        <div id="summarySection" class="summary" style="display: none;">
+            <h2>📈 サマリー</h2>
+            <div class="summary-grid">
+                <div class="summary-item">
+                    <div class="summary-value" id="totalResponses">0</div>
+                    <div class="summary-label">総回答数</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-value" id="avgRating">0.0</div>
+                    <div class="summary-label">平均評価</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-value" id="avgPlayTime">0分</div>
+                    <div class="summary-label">平均プレイ時間</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-value" id="npsScore">0</div>
+                    <div class="summary-label">NPS スコア</div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="chartsSection" style="display: none;">
+            <div class="chart-container">
+                <h3>フェーズ到達分布</h3>
+                <div id="phaseChart" class="chart"></div>
+            </div>
+            
+            <div class="chart-container">
+                <h3>総合評価分布</h3>
+                <div id="ratingChart" class="chart"></div>
+            </div>
+            
+            <div class="chart-container">
+                <h3>進行速度の評価</h3>
+                <div id="pacingChart" class="chart"></div>
+            </div>
+        </div>
+        
+        <div class="export-section" id="exportSection" style="display: none;">
+            <h3>📤 エクスポート</h3>
+            <div class="export-buttons">
+                <button onclick="exportAsCSV()">CSV形式でダウンロード</button>
+                <button onclick="exportAsJSON()">JSON形式でダウンロード</button>
+                <button onclick="exportSummary()">サマリーレポート生成</button>
+            </div>
+        </div>
+        
+        <div id="responsesSection" class="responses" style="display: none;">
+            <h2>📝 個別回答</h2>
+            <div id="responsesList"></div>
+        </div>
+        
+        <div id="noData" class="no-data">
+            データがありません。<br>
+            ローカルストレージから読み込むか、CSVファイルをアップロードしてください。
+        </div>
+    </div>
+    
+    <script>
+        let surveyData = [];
+        
+        // ローカルストレージから読み込み
+        function loadFromLocalStorage() {
+            const data = localStorage.getItem('fillstellar_surveys');
+            if (data) {
+                surveyData = JSON.parse(data);
+                displayData();
+            } else {
+                alert('ローカルストレージにデータがありません。');
+            }
+        }
+        
+        // CSVファイルを読み込み
+        function loadCSV(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const text = e.target.result;
+                const lines = text.split('\n');
+                const headers = lines[0].split(',').map(h => h.replace(/"/g, ''));
+                
+                const data = {
+                    timestamp: headers[0] === 'Timestamp' ? lines[1].split(',')[0].replace(/"/g, '') : new Date().toISOString(),
+                    playDuration: headers[1] === 'Play Duration' ? lines[1].split(',')[1].replace(/"/g, '') : '00:00',
+                    responses: {}
+                };
+                
+                const values = lines[1].split(',').map(v => v.replace(/"/g, ''));
+                headers.slice(2).forEach((header, index) => {
+                    data.responses[header] = values[index + 2];
+                });
+                
+                surveyData.push(data);
+                displayData();
+            };
+            reader.readAsText(file);
+        }
+        
+        // データ表示
+        function displayData() {
+            if (surveyData.length === 0) {
+                document.getElementById('noData').style.display = 'block';
+                document.getElementById('summarySection').style.display = 'none';
+                document.getElementById('chartsSection').style.display = 'none';
+                document.getElementById('responsesSection').style.display = 'none';
+                document.getElementById('exportSection').style.display = 'none';
+                return;
+            }
+            
+            document.getElementById('noData').style.display = 'none';
+            document.getElementById('summarySection').style.display = 'block';
+            document.getElementById('chartsSection').style.display = 'block';
+            document.getElementById('responsesSection').style.display = 'block';
+            document.getElementById('exportSection').style.display = 'block';
+            document.getElementById('dataCount').textContent = `データ: ${surveyData.length}件`;
+            
+            // サマリー計算
+            calculateSummary();
+            
+            // チャート描画
+            drawCharts();
+            
+            // 個別回答表示
+            displayResponses();
+        }
+        
+        // サマリー計算
+        function calculateSummary() {
+            document.getElementById('totalResponses').textContent = surveyData.length;
+            
+            // 平均評価
+            const ratings = surveyData.map(d => parseInt(d.responses.overallRating || 0)).filter(r => r > 0);
+            const avgRating = ratings.length > 0 ? (ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(1) : '0.0';
+            document.getElementById('avgRating').textContent = avgRating;
+            
+            // 平均プレイ時間
+            const playTimes = surveyData.map(d => {
+                const duration = d.responses.playDuration;
+                if (!duration) return 0;
+                if (duration === '0-5') return 2.5;
+                if (duration === '5-10') return 7.5;
+                if (duration === '10-20') return 15;
+                if (duration === '20-30') return 25;
+                if (duration === '30-60') return 45;
+                if (duration === '60+') return 75;
+                return 0;
+            });
+            const avgTime = playTimes.length > 0 ? Math.round(playTimes.reduce((a, b) => a + b, 0) / playTimes.length) : 0;
+            document.getElementById('avgPlayTime').textContent = `${avgTime}分`;
+            
+            // NPS計算
+            const npsScores = surveyData.map(d => parseInt(d.responses.nps || 0)).filter(n => n >= 0);
+            if (npsScores.length > 0) {
+                const promoters = npsScores.filter(n => n >= 9).length;
+                const detractors = npsScores.filter(n => n <= 6).length;
+                const nps = Math.round(((promoters - detractors) / npsScores.length) * 100);
+                document.getElementById('npsScore').textContent = nps;
+            } else {
+                document.getElementById('npsScore').textContent = '0';
+            }
+        }
+        
+        // チャート描画
+        function drawCharts() {
+            // フェーズ分布
+            const phaseCounts = { '0': 0, '1': 0, '2': 0, '3+': 0 };
+            surveyData.forEach(d => {
+                const phase = d.responses.phase || '0';
+                phaseCounts[phase] = (phaseCounts[phase] || 0) + 1;
+            });
+            
+            drawBarChart('phaseChart', phaseCounts, ['フェーズ0', 'フェーズ1', 'フェーズ2', 'フェーズ3+']);
+            
+            // 評価分布
+            const ratingCounts = { '1': 0, '2': 0, '3': 0, '4': 0, '5': 0 };
+            surveyData.forEach(d => {
+                const rating = d.responses.overallRating || '3';
+                ratingCounts[rating] = (ratingCounts[rating] || 0) + 1;
+            });
+            
+            drawBarChart('ratingChart', ratingCounts, ['⭐', '⭐⭐', '⭐⭐⭐', '⭐⭐⭐⭐', '⭐⭐⭐⭐⭐']);
+            
+            // ペース分布
+            const pacingCounts = {
+                'too-slow': 0,
+                'slow': 0,
+                'just-right': 0,
+                'fast': 0,
+                'too-fast': 0
+            };
+            surveyData.forEach(d => {
+                const pacing = d.responses.pacing || 'just-right';
+                pacingCounts[pacing] = (pacingCounts[pacing] || 0) + 1;
+            });
+            
+            drawBarChart('pacingChart', pacingCounts, ['遅すぎる', 'やや遅い', 'ちょうど良い', 'やや速い', '速すぎる']);
+        }
+        
+        // 棒グラフ描画
+        function drawBarChart(containerId, data, labels) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            
+            const values = Object.values(data);
+            const maxValue = Math.max(...values, 1);
+            
+            Object.keys(data).forEach((key, index) => {
+                const bar = document.createElement('div');
+                bar.className = 'bar';
+                bar.style.height = `${(data[key] / maxValue) * 250}px`;
+                
+                const value = document.createElement('div');
+                value.className = 'bar-value';
+                value.textContent = data[key];
+                
+                const label = document.createElement('div');
+                label.className = 'bar-label';
+                label.textContent = labels[index];
+                
+                bar.appendChild(value);
+                bar.appendChild(label);
+                container.appendChild(bar);
+            });
+        }
+        
+        // 個別回答表示
+        function displayResponses() {
+            const container = document.getElementById('responsesList');
+            container.innerHTML = '';
+            
+            surveyData.forEach((data, index) => {
+                const item = document.createElement('div');
+                item.className = 'response-item';
+                
+                const header = document.createElement('div');
+                header.className = 'response-header';
+                header.innerHTML = `
+                    <span class="response-name">${data.responses.playerName || '匿名'}</span>
+                    <span class="response-time">${new Date(data.timestamp).toLocaleString('ja-JP')}</span>
+                `;
+                
+                const details = document.createElement('div');
+                details.className = 'response-details';
+                
+                // 主要な回答を表示
+                const fields = [
+                    { label: 'プレイ時間', key: 'playDuration' },
+                    { label: '到達フェーズ', key: 'phase' },
+                    { label: '総合評価', key: 'overallRating' },
+                    { label: 'NPS', key: 'nps' },
+                    { label: '最初の5分間の問題', key: 'firstMinutesIssues' },
+                    { label: '改善してほしい点', key: 'topImprovement' },
+                    { label: 'その他コメント', key: 'additionalComments' }
+                ];
+                
+                fields.forEach(field => {
+                    if (data.responses[field.key]) {
+                        const fieldDiv = document.createElement('div');
+                        fieldDiv.className = 'response-field';
+                        fieldDiv.innerHTML = `
+                            <span class="field-label">${field.label}:</span>
+                            <span class="field-value">${data.responses[field.key]}</span>
+                        `;
+                        details.appendChild(fieldDiv);
+                    }
+                });
+                
+                item.appendChild(header);
+                item.appendChild(details);
+                container.appendChild(item);
+            });
+        }
+        
+        // データクリア
+        function clearData() {
+            if (confirm('すべてのデータをクリアしますか？')) {
+                surveyData = [];
+                displayData();
+            }
+        }
+        
+        // CSV エクスポート
+        function exportAsCSV() {
+            if (surveyData.length === 0) {
+                alert('エクスポートするデータがありません。');
+                return;
+            }
+            
+            // ヘッダー作成
+            const headers = ['Timestamp', 'Play Duration'];
+            const firstResponse = surveyData[0].responses;
+            Object.keys(firstResponse).forEach(key => headers.push(key));
+            
+            // データ行作成
+            const rows = surveyData.map(data => {
+                const row = [data.timestamp, data.playDuration];
+                headers.slice(2).forEach(header => {
+                    row.push(data.responses[header] || '');
+                });
+                return row.map(v => `"${v}"`).join(',');
+            });
+            
+            const csv = headers.join(',') + '\n' + rows.join('\n');
+            downloadFile(csv, 'fillstellar_survey_data.csv', 'text/csv');
+        }
+        
+        // JSON エクスポート
+        function exportAsJSON() {
+            if (surveyData.length === 0) {
+                alert('エクスポートするデータがありません。');
+                return;
+            }
+            
+            const json = JSON.stringify(surveyData, null, 2);
+            downloadFile(json, 'fillstellar_survey_data.json', 'application/json');
+        }
+        
+        // サマリーレポート生成
+        function exportSummary() {
+            if (surveyData.length === 0) {
+                alert('レポートを生成するデータがありません。');
+                return;
+            }
+            
+            let report = `Fillstellar プレイテスト サマリーレポート\n`;
+            report += `生成日時: ${new Date().toLocaleString('ja-JP')}\n\n`;
+            report += `=== 基本統計 ===\n`;
+            report += `総回答数: ${surveyData.length}\n`;
+            report += `平均評価: ${document.getElementById('avgRating').textContent}/5.0\n`;
+            report += `平均プレイ時間: ${document.getElementById('avgPlayTime').textContent}\n`;
+            report += `NPS スコア: ${document.getElementById('npsScore').textContent}\n\n`;
+            
+            report += `=== 主な課題 ===\n`;
+            const issues = surveyData
+                .map(d => d.responses.topImprovement)
+                .filter(i => i && i.trim() !== '')
+                .slice(0, 10);
+            issues.forEach((issue, i) => {
+                report += `${i + 1}. ${issue}\n`;
+            });
+            
+            report += `\n=== 良かった点 ===\n`;
+            const positives = surveyData
+                .filter(d => parseInt(d.responses.overallRating) >= 4)
+                .map(d => d.responses.additionalComments)
+                .filter(c => c && c.trim() !== '')
+                .slice(0, 5);
+            positives.forEach((comment, i) => {
+                report += `${i + 1}. ${comment}\n`;
+            });
+            
+            downloadFile(report, 'fillstellar_summary_report.txt', 'text/plain');
+        }
+        
+        // ファイルダウンロード
+        function downloadFile(content, filename, mimeType) {
+            const blob = new Blob([content], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+        
+        // 初期表示
+        displayData();
+    </script>
+</body>
+</html>

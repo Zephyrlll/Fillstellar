@@ -1,11 +1,13 @@
 import { dynamicEventSystem } from './dynamicEvents';
 import { dailyChallenges } from './dailyChallenges';
+import { shortTermGoals } from './shortTermGoals';
 
 class GameInfoUI {
     private container: HTMLElement | null = null;
     private updateInterval = 1000; // Update every second
     private lastUpdate = 0;
     private challengesCollapsed = false; // Start expanded for testing
+    private goalsCollapsed = true; // Start collapsed
     
     constructor() {
         this.createUI();
@@ -108,13 +110,59 @@ class GameInfoUI {
         challengesWrapper.appendChild(challengesHeader);
         challengesWrapper.appendChild(challengesPanel);
         
+        // Create goals panel with collapse functionality
+        const goalsWrapper = document.createElement('div');
+        goalsWrapper.style.cssText = `
+            background: rgba(20, 20, 35, 0.95);
+            border: 1px solid #4CAF50;
+            border-radius: 10px;
+            overflow: hidden;
+            pointer-events: auto;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            margin-bottom: 10px;
+        `;
+        
+        // Create goals header that's always visible
+        const goalsHeader = document.createElement('div');
+        goalsHeader.id = 'goals-header';
+        goalsHeader.style.cssText = `
+            padding: 15px;
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(76, 175, 80, 0.1);
+            border-bottom: 1px solid #4CAF50;
+        `;
+        goalsHeader.onclick = () => this.toggleGoals();
+        
+        // Create goals content panel
+        const goalsPanel = document.createElement('div');
+        goalsPanel.id = 'short-term-goals-container';
+        goalsPanel.style.cssText = `
+            padding: 15px;
+            max-height: 350px;
+            overflow-y: auto;
+            display: ${this.goalsCollapsed ? 'none' : 'block'};
+        `;
+        
+        goalsWrapper.appendChild(goalsHeader);
+        goalsWrapper.appendChild(goalsPanel);
+        
         this.container.appendChild(eventsPanel);
+        this.container.appendChild(goalsWrapper);
         this.container.appendChild(challengesWrapper);
         document.body.appendChild(this.container);
         
         // Initialize header content
+        this.updateGoalsHeader();
         this.updateChallengesHeader();
         // Initialize panel content if not collapsed
+        if (!this.goalsCollapsed) {
+            this.updateGoalsPanel();
+        }
         if (!this.challengesCollapsed) {
             this.updateChallengesPanel();
         }
@@ -134,9 +182,24 @@ class GameInfoUI {
         this.updateChallengesHeader();
     }
     
+    private toggleGoals() {
+        this.goalsCollapsed = !this.goalsCollapsed;
+        const panel = document.getElementById('short-term-goals-container');
+        if (panel) {
+            panel.style.display = this.goalsCollapsed ? 'none' : 'block';
+            // Update panel content when opening
+            if (!this.goalsCollapsed) {
+                this.updateGoalsPanel();
+            }
+        }
+        this.saveUIState();
+        this.updateGoalsHeader();
+    }
+    
     private saveUIState() {
         localStorage.setItem('gameInfoUIState', JSON.stringify({
-            challengesCollapsed: this.challengesCollapsed
+            challengesCollapsed: this.challengesCollapsed,
+            goalsCollapsed: this.goalsCollapsed
         }));
     }
     
@@ -145,9 +208,14 @@ class GameInfoUI {
         if (saved) {
             const state = JSON.parse(saved);
             this.challengesCollapsed = state.challengesCollapsed ?? true;
-            const panel = document.getElementById('daily-challenges-container');
-            if (panel) {
-                panel.style.display = this.challengesCollapsed ? 'none' : 'block';
+            this.goalsCollapsed = state.goalsCollapsed ?? true;
+            const challengesPanel = document.getElementById('daily-challenges-container');
+            const goalsPanel = document.getElementById('short-term-goals-container');
+            if (challengesPanel) {
+                challengesPanel.style.display = this.challengesCollapsed ? 'none' : 'block';
+            }
+            if (goalsPanel) {
+                goalsPanel.style.display = this.goalsCollapsed ? 'none' : 'block';
             }
         }
     }
@@ -158,7 +226,11 @@ class GameInfoUI {
         this.lastUpdate = 0;
         
         this.updateEventsPanel();
+        this.updateGoalsHeader();
         this.updateChallengesHeader();
+        if (!this.goalsCollapsed) {
+            this.updateGoalsPanel();
+        }
         if (!this.challengesCollapsed) {
             this.updateChallengesPanel();
         }
@@ -298,6 +370,93 @@ class GameInfoUI {
             thoughtPoints: '思考ポイント'
         };
         return names[type] || type;
+    }
+    
+    private updateGoalsHeader() {
+        const header = document.getElementById('goals-header');
+        if (!header) return;
+        
+        const goals = (shortTermGoals as any).currentGoals || [];
+        const completedCount = goals.filter((g: any) => g.completed).length;
+        const totalCount = goals.length;
+        
+        header.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="color: #4CAF50; font-size: 16px; font-weight: bold;">
+                    🎯 短期目標
+                </span>
+                <span style="
+                    background: ${completedCount === totalCount && totalCount > 0 ? '#4CAF50' : '#2196F3'};
+                    color: white;
+                    padding: 2px 8px;
+                    border-radius: 12px;
+                    font-size: 12px;
+                ">
+                    ${completedCount}/${totalCount}
+                </span>
+            </div>
+            <span style="color: #4CAF50; font-size: 20px;">
+                ${this.goalsCollapsed ? '▼' : '▲'}
+            </span>
+        `;
+    }
+    
+    private updateGoalsPanel() {
+        const panel = document.getElementById('short-term-goals-container');
+        if (!panel) return;
+        
+        const goals = (shortTermGoals as any).currentGoals || [];
+        
+        if (goals.length === 0) {
+            panel.innerHTML = '<p style="color: #aaa; text-align: center;">目標を生成中...</p>';
+            return;
+        }
+        
+        const goalsHTML = goals.map((goal: any) => {
+            const progress = goal.getProgress();
+            const progressPercent = Math.min(100, (progress.current / progress.target) * 100);
+            
+            return `
+                <div style="
+                    background: rgba(76, 175, 80, 0.1);
+                    border: 1px solid ${goal.completed ? '#4CAF50' : '#2196F3'};
+                    border-radius: 5px;
+                    padding: 8px;
+                    margin: 5px 0;
+                    ${goal.completed ? 'opacity: 0.7;' : ''}
+                ">
+                    <h4 style="color: ${goal.completed ? '#4CAF50' : '#87CEEB'}; margin: 0; font-size: 13px;">
+                        ${goal.completed ? '✅ ' : goal.icon + ' '}${goal.title}
+                    </h4>
+                    <p style="color: #ccc; margin: 3px 0; font-size: 11px;">${goal.description}</p>
+                    ${!goal.completed ? `
+                        <div style="
+                            background: rgba(0, 0, 0, 0.3);
+                            height: 12px;
+                            border-radius: 6px;
+                            overflow: hidden;
+                            margin: 5px 0;
+                        ">
+                            <div style="
+                                background: linear-gradient(90deg, #4CAF50, #8BC34A);
+                                height: 100%;
+                                width: ${progressPercent}%;
+                                transition: width 0.3s;
+                            "></div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-size: 10px; color: #aaa;">
+                            <span>${progress.current}/${progress.target}</span>
+                            <span>⏱ ${goal.timeEstimate}</span>
+                        </div>
+                        <p style="color: #FFD700; margin: 5px 0 0 0; font-size: 11px;">
+                            🎁 ${goal.rewardDescription}
+                        </p>
+                    ` : ''}
+                </div>
+            `;
+        }).join('');
+        
+        panel.innerHTML = goalsHTML;
     }
 }
 

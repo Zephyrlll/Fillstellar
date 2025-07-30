@@ -1,6 +1,6 @@
 import * as BABYLON from '@babylonjs/core';
 import { ProceduralTerrain } from './ProceduralTerrain';
-import { SphericalMovement } from './SphericalMovement';
+// import { SphericalMovement } from './SphericalMovement';
 
 export class ThirdPersonCamera {
     private scene: BABYLON.Scene;
@@ -8,7 +8,8 @@ export class ThirdPersonCamera {
     private canvas: HTMLCanvasElement;
     private target: BABYLON.TransformNode;
     private terrain: ProceduralTerrain | null = null;
-    private sphericalMovement: SphericalMovement | null = null;
+    // private sphericalMovement: SphericalMovement | null = null;
+    private planetRadius: number = 100;
     
     // カメラ設定
     private distance: number = 12;
@@ -40,8 +41,9 @@ export class ThirdPersonCamera {
     setTerrain(terrain: ProceduralTerrain): void {
         this.terrain = terrain;
         if (terrain.isSpherical()) {
-            this.sphericalMovement = new SphericalMovement(this.scene);
-            this.sphericalMovement.setPlanetData(BABYLON.Vector3.Zero(), terrain.getPlanetRadius());
+            // this.sphericalMovement = new SphericalMovement(this.scene);
+            // this.sphericalMovement.setPlanetData(BABYLON.Vector3.Zero(), terrain.getPlanetRadius());
+            this.planetRadius = terrain.getPlanetRadius();
         }
     }
     
@@ -100,8 +102,8 @@ export class ThirdPersonCamera {
 
         const targetPosition = this.target.position.clone();
 
-        if (this.terrain && this.terrain.isSpherical() && this.sphericalMovement) {
-            const up = this.sphericalMovement.getUpVector(targetPosition);
+        if (this.terrain && this.terrain.isSpherical()) {
+            const up = this.getUpVector(targetPosition);
 
             // マウスの動きでカメラを回転
             const yaw = -this.lastMovementX * this.rotationSpeed;
@@ -173,9 +175,9 @@ export class ThirdPersonCamera {
         // カメラのワールドマトリックスからZ軸（前方）を取得
         const forward = this.camera.getWorldMatrix().getRotationMatrix().getRow(2).toVector3();
         
-        if (this.terrain && this.terrain.isSpherical() && this.sphericalMovement) {
+        if (this.terrain && this.terrain.isSpherical()) {
             const targetPos = this.target.position;
-            const up = this.sphericalMovement.getUpVector(targetPos);
+            const up = this.getUpVector(targetPos);
             
             // ワールドの前方ベクトルを接平面に投影
             const tangentDir = forward.subtract(up.scale(BABYLON.Vector3.Dot(forward, up)));
@@ -199,9 +201,9 @@ export class ThirdPersonCamera {
         // カメラのワールドマトリックスからX軸（右方）を取得
         const right = this.camera.getWorldMatrix().getRotationMatrix().getRow(0).toVector3();
 
-        if (this.terrain && this.terrain.isSpherical() && this.sphericalMovement) {
+        if (this.terrain && this.terrain.isSpherical()) {
             const targetPos = this.target.position;
-            const up = this.sphericalMovement.getUpVector(targetPos);
+            const up = this.getUpVector(targetPos);
 
             // ワールドの右ベクトルを接平面に投影
             const tangentRight = right.subtract(up.scale(BABYLON.Vector3.Dot(right, up)));
@@ -227,5 +229,10 @@ export class ThirdPersonCamera {
     
     public setTarget(target: BABYLON.TransformNode): void {
         this.target = target;
+    }
+    
+    // 簡易的な球面用メソッド
+    private getUpVector(position: BABYLON.Vector3): BABYLON.Vector3 {
+        return position.normalize();
     }
 }

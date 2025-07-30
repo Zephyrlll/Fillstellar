@@ -25,4 +25,9 @@ export class ExplorationSystem {
     importDiscoveries(discoveries: string[]): void {
         this.discoveries = new Set(discoveries);
     }
+    
+    dispose(): void {
+        this.discoveries.clear();
+        console.log('[EXPLORATION_SYSTEM] Disposed');
+    }
 }

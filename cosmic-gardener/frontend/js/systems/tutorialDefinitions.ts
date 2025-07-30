@@ -72,6 +72,107 @@ export const tutorials: Tutorial[] = [
         position: 'center'
       }
     ]
+  },
+  
+  // Interactive gameplay tutorial
+  {
+    id: 'first-asteroid',
+    name: '最初の小惑星を作ろう',
+    description: '実際に天体を作成してみる',
+    category: TutorialCategory.BASICS,
+    autoStart: false,
+    priority: 90,
+    prerequisite: 'welcome',
+    steps: [
+      {
+        id: 'asteroid-1',
+        title: '小惑星を作成しよう',
+        content: '画面右側の「小惑星を作成」ボタンをクリックしてください。宇宙の塵100を消費して小惑星を作成できます。',
+        targetElement: '.create-asteroid-button',
+        position: 'left',
+        requireAction: 'create-asteroid',
+        skipable: false
+      },
+      {
+        id: 'asteroid-2',
+        title: '素晴らしい！',
+        content: '最初の天体を作成しました！小惑星は重力で相互作用し、衝突して成長することがあります。',
+        position: 'center'
+      },
+      {
+        id: 'asteroid-3',
+        title: '短期目標を確認',
+        content: '画面右上の短期目標パネルを見てください。次に何をすべきかが常に表示されています。',
+        targetElement: '#short-term-goals',
+        position: 'left'
+      }
+    ]
+  },
+  
+  // Star creation tutorial
+  {
+    id: 'first-star',
+    name: '恒星の作成',
+    description: 'エネルギー生産の要となる恒星を作る',
+    category: TutorialCategory.BASICS,
+    autoStart: false,
+    priority: 80,
+    triggerCondition: 'dust >= 1000',
+    steps: [
+      {
+        id: 'star-1',
+        title: '恒星を作る準備ができました！',
+        content: '宇宙の塵が1000以上溜まりました。恒星を作成してエネルギー生産を始めましょう。',
+        position: 'center'
+      },
+      {
+        id: 'star-2',
+        title: '恒星作成ボタン',
+        content: '「恒星を作成」ボタンをクリックして、最初の恒星を配置してください。',
+        targetElement: '.create-star-button',
+        position: 'left',
+        requireAction: 'create-star'
+      },
+      {
+        id: 'star-3',
+        title: 'エネルギー生産開始！',
+        content: '恒星はエネルギーを生産します。エネルギーは研究や高度な天体作成に必要です。',
+        position: 'center'
+      }
+    ]
+  },
+  
+  // Research tutorial
+  {
+    id: 'research-basics',
+    name: '研究システム',
+    description: '新技術の解放方法を学ぶ',
+    category: TutorialCategory.BASICS,
+    autoStart: false,
+    priority: 70,
+    triggerCondition: 'energy >= 100',
+    steps: [
+      {
+        id: 'research-1',
+        title: '研究を始めよう',
+        content: 'エネルギーが100以上溜まりました。研究システムで新しい技術を解放できます。',
+        position: 'center'
+      },
+      {
+        id: 'research-2',
+        title: '研究ラボを開く',
+        content: '画面右側の「研究ラボ」ボタンをクリックしてください。',
+        targetElement: '.research-lab-button',
+        position: 'left',
+        requireAction: 'open-research'
+      },
+      {
+        id: 'research-3',
+        title: '技術を選択',
+        content: '利用可能な研究項目から興味のあるものを選んで研究を開始しましょう。新しい天体タイプや効率向上が解放されます。',
+        position: 'center'
+      }
+    ]
   }
 ];
 

@@ -87,13 +87,13 @@ export const gamePhases: GamePhase[] = [
       {
         type: PhaseRequirementType.RESOURCE_TOTAL,
         target: 'organicMatter',
-        value: 1000,
-        description: '有機物を1,000以上蓄積'
+        value: 100,
+        description: '有機物を100以上蓄積'
       },
       {
         type: PhaseRequirementType.PLAYTIME,
-        value: 30 * 60 * 1000,  // 30 minutes
-        description: 'プレイ時間30分以上'
+        value: 10 * 60 * 1000,  // 10 minutes
+        description: 'プレイ時間10分以上'
       }
     ],
     rewards: [

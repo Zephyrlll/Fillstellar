@@ -2,12 +2,12 @@ import * as BABYLON from '@babylonjs/core';
 import { AnimatedAvatar } from './AnimatedAvatar';
 import { ThirdPersonCamera } from './ThirdPersonCamera';
 import { FirstPersonCamera } from './FirstPersonCamera';
-import { SphericalMovement } from './SphericalMovement';
-import { SphericalMovementSimple } from './SphericalMovementSimple';
-import { SphericalMovementFixed } from './SphericalMovementFixed';
-import { SphericalMovementWorking } from './SphericalMovementWorking';
-import { SphericalMovementFinal } from './SphericalMovementFinal';
-import { SphericalMovementSimplest } from './SphericalMovementSimplest';
+// import { SphericalMovement } from './SphericalMovement';
+// import { SphericalMovementSimple } from './SphericalMovementSimple';
+// import { SphericalMovementFixed } from './SphericalMovementFixed';
+// import { SphericalMovementWorking } from './SphericalMovementWorking';
+// import { SphericalMovementFinal } from './SphericalMovementFinal';
+// import { SphericalMovementSimplest } from './SphericalMovementSimplest';
 import { ProceduralTerrain } from './ProceduralTerrain';
 import { DebugTracker } from './DebugTracker';
 
@@ -18,13 +18,14 @@ export class CharacterController {
     private avatar: AnimatedAvatar | null = null;
     private thirdPersonCamera: ThirdPersonCamera | null = null;
     private firstPersonCamera: FirstPersonCamera | null = null;
-    private sphericalMovement: SphericalMovement;
-    private sphericalMovementSimple: SphericalMovementSimple | null = null;
-    private sphericalMovementFixed: SphericalMovementFixed | null = null;
-    private sphericalMovementWorking: SphericalMovementWorking | null = null;
-    private sphericalMovementFinal: SphericalMovementFinal | null = null;
-    private sphericalMovementSimplest: SphericalMovementSimplest | null = null;
+    // private sphericalMovement: SphericalMovement;
+    // private sphericalMovementSimple: SphericalMovementSimple | null = null;
+    // private sphericalMovementFixed: SphericalMovementFixed | null = null;
+    // private sphericalMovementWorking: SphericalMovementWorking | null = null;
+    // private sphericalMovementFinal: SphericalMovementFinal | null = null;
+    // private sphericalMovementSimplest: SphericalMovementSimplest | null = null;
     private planetCenter: BABYLON.Vector3 = BABYLON.Vector3.Zero();
+    private planetRadius: number = 100;
     private terrain: ProceduralTerrain | null = null;
     
     // 移動制御
@@ -58,9 +59,9 @@ export class CharacterController {
         // アバターは作成しない（spawnで作成する）
         
         // 球体移動システムを設定
-        this.sphericalMovement = new SphericalMovement(scene);
+        // this.sphericalMovement = new SphericalMovement(scene);
         // デフォルトの惑星データを設定
-        this.sphericalMovement.setPlanetData(BABYLON.Vector3.Zero(), 100);
+        // this.sphericalMovement.setPlanetData(BABYLON.Vector3.Zero(), 100);
         
         this.setupControls();
         
@@ -96,7 +97,7 @@ export class CharacterController {
                 console.log('[CHARACTER] Jump initiated!');
                 if (this.terrain && this.terrain.isSpherical() && this.avatar) {
                     // 球体地形：上方向にジャンプ
-                    const jumpVel = this.sphericalMovement.applyJump(
+                    const jumpVel = this.applyJump(
                         this.avatar.getRootMesh().position,
                         this.jumpSpeed
                     );
@@ -172,13 +173,14 @@ export class CharacterController {
             console.log(`[CHARACTER] Planet radius: ${planetRadius}`);
             
             // 球体移動システムに惑星データを設定
-            this.sphericalMovement.setPlanetData(BABYLON.Vector3.Zero(), planetRadius);
-            this.sphericalMovementSimple = new SphericalMovementSimple(BABYLON.Vector3.Zero(), planetRadius);
-            this.sphericalMovementFixed = new SphericalMovementFixed(BABYLON.Vector3.Zero(), planetRadius);
-            this.sphericalMovementWorking = new SphericalMovementWorking(this.scene, BABYLON.Vector3.Zero(), planetRadius);
-            this.sphericalMovementFinal = new SphericalMovementFinal(BABYLON.Vector3.Zero(), planetRadius);
-            this.sphericalMovementSimplest = new SphericalMovementSimplest(BABYLON.Vector3.Zero(), planetRadius);
-            console.log(`[CHARACTER] Set planet data in sphericalMovement with radius: ${planetRadius}`);
+            // this.sphericalMovement.setPlanetData(BABYLON.Vector3.Zero(), planetRadius);
+            // this.sphericalMovementSimple = new SphericalMovementSimple(BABYLON.Vector3.Zero(), planetRadius);
+            // this.sphericalMovementFixed = new SphericalMovementFixed(BABYLON.Vector3.Zero(), planetRadius);
+            // this.sphericalMovementWorking = new SphericalMovementWorking(this.scene, BABYLON.Vector3.Zero(), planetRadius);
+            // this.sphericalMovementFinal = new SphericalMovementFinal(BABYLON.Vector3.Zero(), planetRadius);
+            // this.sphericalMovementSimplest = new SphericalMovementSimplest(BABYLON.Vector3.Zero(), planetRadius);
+            console.log(`[CHARACTER] Set planet data with radius: ${planetRadius}`);
+            this.planetRadius = planetRadius;
             
             // 位置がすでに正しい半径にあるか確認
             const currentDistance = position.length();
@@ -198,7 +200,7 @@ export class CharacterController {
             console.log(`[CHARACTER] Up vector: ${up}`);
             
             // キャラクターの回転を設定
-            const rotation = this.sphericalMovement.calculateCharacterRotation(
+            const rotation = this.calculateCharacterRotation(
                 position,
                 BABYLON.Vector3.Zero(),
                 this.forwardVector // ★修正：初期の前方ベクトルを使用
@@ -276,11 +278,11 @@ export class CharacterController {
             }
             
             // 現在の位置から上方向を計算
-            const up = this.sphericalMovement.getUpVector(currentPos);
+            const up = this.getUpVector(currentPos);
             
             // 重力を適用（球体の中心に向かって）
             if (!this.isGrounded) {
-                this.velocity = this.sphericalMovement.applyGravity(
+                this.velocity = this.applyGravity(
                     currentPos,
                     this.velocity,
                     this.gravity,
@@ -336,8 +338,8 @@ export class CharacterController {
             }
             
             // 移動入力を取得（速度を調整）
-            const baseSpeed = 1.0; // 移動速度を大幅に減らす
-            const runMultiplier = this.keys['shift'] ? 1.5 : 1.0; // Shiftで1.5倍速
+            const baseSpeed = 5.0; // 移動速度を上げる
+            const runMultiplier = this.keys['shift'] ? 2.0 : 1.0; // Shiftで2倍速
             const moveSpeed = baseSpeed * runMultiplier;
             let movement = BABYLON.Vector3.Zero();
             
@@ -577,5 +579,44 @@ export class CharacterController {
                 mesh.isVisible = true;
             });
         }
+    }
+    
+    // 簡易的な球面移動メソッド
+    private getUpVector(position: BABYLON.Vector3): BABYLON.Vector3 {
+        return position.subtract(this.planetCenter).normalize();
+    }
+    
+    private applyJump(position: BABYLON.Vector3, jumpSpeed: number): BABYLON.Vector3 {
+        const up = this.getUpVector(position);
+        return up.scale(jumpSpeed);
+    }
+    
+    private applyGravity(position: BABYLON.Vector3, velocity: BABYLON.Vector3, gravity: number, deltaTime: number): BABYLON.Vector3 {
+        const up = this.getUpVector(position);
+        const gravityForce = up.scale(gravity * deltaTime);
+        return velocity.add(gravityForce);
+    }
+    
+    private calculateCharacterRotation(position: BABYLON.Vector3, center: BABYLON.Vector3, forward: BABYLON.Vector3): BABYLON.Quaternion {
+        const up = this.getUpVector(position);
+        
+        // 前方向を接平面に投影
+        let projectedForward = forward.subtract(up.scale(BABYLON.Vector3.Dot(forward, up)));
+        if (projectedForward.length() < 0.001) {
+            projectedForward = new BABYLON.Vector3(0, 0, 1);
+            projectedForward = projectedForward.subtract(up.scale(BABYLON.Vector3.Dot(projectedForward, up)));
+        }
+        projectedForward.normalize();
+        
+        // 右方向を計算
+        const right = BABYLON.Vector3.Cross(up, projectedForward);
+        
+        // 回転行列を作成
+        const rotMatrix = BABYLON.Matrix.Identity();
+        rotMatrix.setRow(0, new BABYLON.Vector4(right.x, right.y, right.z, 0));
+        rotMatrix.setRow(1, new BABYLON.Vector4(up.x, up.y, up.z, 0));
+        rotMatrix.setRow(2, new BABYLON.Vector4(-projectedForward.x, -projectedForward.y, -projectedForward.z, 0));
+        
+        return BABYLON.Quaternion.FromRotationMatrix(rotMatrix);
     }
 }

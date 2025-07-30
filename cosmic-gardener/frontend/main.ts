@@ -14,7 +14,7 @@ import { Dashboard } from './js/systems/dashboard.ts';
 import { FeedbackSystem } from './js/systems/feedbackSystem.ts';
 import { AchievementSystem } from './js/systems/achievements.ts';
 import { AchievementUI } from './js/systems/achievementUI.ts';
-import { MenuSystem } from './js/systems/menuSystem.ts';
+import { menuSystem } from './js/systems/menuSystem.ts';
 import { UIPositionManager } from './js/systems/uiPositionManager.ts';
 import { PrestigeUI } from './js/systems/prestigeUI.ts';
 import { prestigeSystem } from './js/systems/prestigeSystem.ts';
@@ -41,6 +41,9 @@ import { endgameProgressUI } from './js/systems/endgameProgressUI.ts';
 import { researchPathFinder } from './js/systems/researchPathFinder.ts';
 import { researchPathFinderUI } from './js/systems/researchPathFinderUI.ts';
 import { shortTermGoals } from './js/systems/shortTermGoals.ts';
+import { progressiveUnlock } from './js/systems/progressiveUnlock.ts';
+import { welcomeMessage } from './js/systems/welcomeMessage.ts';
+import { celestialLimiter } from './js/systems/celestialLimiter.ts';
 import { updateUI, debouncedUpdateGalaxyMap, ui } from './js/ui.ts';
 import { createCelestialBody, checkLifeSpawn, evolveLife } from './js/celestialBody.ts';
 import { spatialGrid, updatePhysics } from './js/physics.ts';
@@ -282,7 +285,6 @@ let feedbackSystem: FeedbackSystem;
 export { feedbackSystem };
 const achievementSystem = new AchievementSystem();
 let achievementUI: AchievementUI;
-const menuSystem = new MenuSystem();
 const uiPositionManager = new UIPositionManager();
 const prestigeUI = new PrestigeUI();
 let renderOptimizer: RenderOptimizer;
@@ -1020,6 +1022,15 @@ async function init() {
     // Initialize short term goals system
     shortTermGoals.init();
     console.log('[INIT] Short term goals system initialized');
+    
+    // Initialize progressive unlock system
+    progressiveUnlock.init();
+    console.log('[INIT] Progressive unlock system initialized');
+    
+    // Show welcome message for new players
+    if (welcomeMessage.shouldShowWelcome()) {
+        welcomeMessage.showWelcomeMessage();
+    }
     
     // Initialize automation system
     automationManager.init();

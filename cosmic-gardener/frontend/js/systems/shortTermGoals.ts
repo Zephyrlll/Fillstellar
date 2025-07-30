@@ -21,7 +21,7 @@ export interface ShortTermGoal {
 
 class ShortTermGoalsSystem {
   private static instance: ShortTermGoalsSystem;
-  private currentGoals: ShortTermGoal[] = [];
+  public currentGoals: ShortTermGoal[] = []; // publicに変更してgameInfoUIからアクセス可能に
   private completedGoals = new Set<string>();
   private updateInterval: number | null = null;
   
@@ -37,9 +37,17 @@ class ShortTermGoalsSystem {
   }
   
   init(): void {
+    console.log('[GOALS] Initializing short term goals system...');
     this.generateInitialGoals();
+    console.log('[GOALS] Initial goals generated:', this.currentGoals.length);
     this.startUpdateLoop();
+    console.log('[GOALS] Update loop started');
     this.createUI();
+    console.log('[GOALS] UI created');
+    
+    // 初期表示を更新
+    this.updateUI();
+    console.log('[GOALS] Initial UI update completed');
   }
   
   private generateInitialGoals(): void {
@@ -289,140 +297,18 @@ class ShortTermGoalsSystem {
   }
   
   private createUI(): void {
-    const container = document.createElement('div');
-    container.id = 'short-term-goals';
-    container.className = 'short-term-goals-container';
-    container.innerHTML = `
-      <div class="goals-header">
-        <span class="goals-title">🎯 短期目標</span>
-        <button class="goals-toggle">▼</button>
-      </div>
-      <div class="goals-list"></div>
-    `;
+    // 既存の独立したUIコンテナを削除
+    const existingContainer = document.getElementById('short-term-goals');
+    if (existingContainer) {
+      existingContainer.remove();
+    }
     
-    document.querySelector('.game-container')?.appendChild(container);
+    // gameInfoUIに統合されたので、独立したUIは作成しない
+    console.log('[GOALS] UI will be integrated into gameInfoUI');
     
-    // トグル機能
-    const toggle = container.querySelector('.goals-toggle') as HTMLButtonElement;
-    const list = container.querySelector('.goals-list') as HTMLDivElement;
-    toggle.addEventListener('click', () => {
-      list.classList.toggle('collapsed');
-      toggle.textContent = list.classList.contains('collapsed') ? '▶' : '▼';
-    });
-    
-    // スタイル追加
+    // 目標完了通知用のスタイル追加
     const style = document.createElement('style');
     style.textContent = `
-      .short-term-goals-container {
-        position: fixed;
-        top: 100px;
-        right: 20px;
-        width: 300px;
-        background: rgba(0, 0, 0, 0.8);
-        border: 1px solid #444;
-        border-radius: 8px;
-        padding: 10px;
-        color: white;
-        font-family: Arial, sans-serif;
-        z-index: 1000;
-      }
-      
-      .goals-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 10px;
-        cursor: pointer;
-      }
-      
-      .goals-title {
-        font-size: 16px;
-        font-weight: bold;
-      }
-      
-      .goals-toggle {
-        background: none;
-        border: none;
-        color: white;
-        cursor: pointer;
-        font-size: 12px;
-      }
-      
-      .goals-list {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        max-height: 400px;
-        overflow-y: auto;
-        transition: max-height 0.3s ease;
-      }
-      
-      .goals-list.collapsed {
-        max-height: 0;
-        overflow: hidden;
-      }
-      
-      .goal-item {
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 6px;
-        padding: 10px;
-        position: relative;
-        overflow: hidden;
-      }
-      
-      .goal-item.completed {
-        opacity: 0.5;
-        background: rgba(0, 255, 0, 0.1);
-      }
-      
-      .goal-header {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-bottom: 5px;
-      }
-      
-      .goal-icon {
-        font-size: 20px;
-      }
-      
-      .goal-title {
-        font-size: 14px;
-        font-weight: bold;
-        flex: 1;
-      }
-      
-      .goal-description {
-        font-size: 12px;
-        color: #aaa;
-        margin-bottom: 5px;
-      }
-      
-      .goal-progress {
-        height: 4px;
-        background: rgba(255, 255, 255, 0.2);
-        border-radius: 2px;
-        overflow: hidden;
-        margin-bottom: 5px;
-      }
-      
-      .goal-progress-bar {
-        height: 100%;
-        background: #4CAF50;
-        transition: width 0.3s ease;
-      }
-      
-      .goal-footer {
-        display: flex;
-        justify-content: space-between;
-        font-size: 11px;
-        color: #888;
-      }
-      
-      .goal-reward {
-        color: #FFD700;
-      }
-      
       .goal-completed-notification {
         position: fixed;
         top: 50%;
@@ -479,31 +365,8 @@ class ShortTermGoalsSystem {
   }
   
   private updateUI(): void {
-    const list = document.querySelector('.goals-list');
-    if (!list) return;
-    
-    list.innerHTML = this.currentGoals.map(goal => {
-      const progress = goal.getProgress();
-      const progressPercent = Math.min(100, (progress.current / progress.target) * 100);
-      
-      return `
-        <div class="goal-item ${goal.completed ? 'completed' : ''}">
-          <div class="goal-header">
-            <span class="goal-icon">${goal.icon}</span>
-            <span class="goal-title">${goal.title}</span>
-          </div>
-          <div class="goal-description">${goal.description}</div>
-          <div class="goal-progress">
-            <div class="goal-progress-bar" style="width: ${progressPercent}%"></div>
-          </div>
-          <div class="goal-footer">
-            <span class="goal-status">${progress.current}/${progress.target}</span>
-            <span class="goal-time">⏱ ${goal.timeEstimate}</span>
-            <span class="goal-reward">🎁 ${goal.rewardDescription}</span>
-          </div>
-        </div>
-      `;
-    }).join('');
+    // gameInfoUIが更新を処理するので、ここでは何もしない
+    // gameInfoUIのupdateGoalsPanel()メソッドが直接currentGoalsを参照する
   }
   
   private startUpdateLoop(): void {
