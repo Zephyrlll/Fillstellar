@@ -1998,11 +1998,11 @@ export const optionsConfig: OptionsConfig = {
               label: 'バージョン',
               type: 'button',
               value: 'v0.1.0',
-              description: 'Cosmic Gardener (Idle Game Update)',
+              description: 'Fillstellar (Idle Game Update)',
               onClick: () => {
                 if ((window as any).feedbackSystem) {
                   (window as any).feedbackSystem.showToast({
-                    message: 'Cosmic Gardener v0.1.0\nBuilt with TypeScript + Three.js',
+                    message: 'Fillstellar v0.1.0\nBuilt with TypeScript + Three.js',
                     type: 'info',
                     duration: 5000
                   });

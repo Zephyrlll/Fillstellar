@@ -34,46 +34,84 @@ export class SphericalMovement {
         return BABYLON.Vector3.Cross(forward, up).normalize();
     }
     
-    // 球体表面での移動を計算
+    // 球体表面での移動を計算（Unity風 RotateAround方式）
     moveOnSphere(
         currentPosition: BABYLON.Vector3,
         moveDirection: BABYLON.Vector3,
         distance: number
     ): BABYLON.Vector3 {
-        if (moveDirection.length() === 0) {
+        if (moveDirection.length() === 0 || distance === 0) {
             return currentPosition;
         }
         
-        // デバッグ: 惑星半径が0の場合は警告
-        if (this.planetRadius === 0) {
-            console.error('[SPHERICAL_MOVEMENT] Planet radius is 0! This will cause problems.');
+        // 現在位置から惑星中心へのベクトル
+        const toCenter = this.planetCenter.subtract(currentPosition);
+        const radius = toCenter.length();
+        
+        if (radius < 0.001) {
+            console.error('[SPHERICAL] Position too close to center!');
             return currentPosition;
         }
         
-        // 現在の位置での座標系を取得
-        const up = this.getUpVector(currentPosition);
+        // 現在の上方向（重力の逆）
+        const up = currentPosition.subtract(this.planetCenter).normalize();
         
-        // 移動方向を球面に沿うように調整（上方向成分を除去）
-        let tangentMove = moveDirection.subtract(up.scale(BABYLON.Vector3.Dot(moveDirection, up)));
-        if (tangentMove.length() > 0) {
-            tangentMove.normalize();
-            tangentMove.scaleInPlace(distance);
+        // 移動方向を接平面に投影して正規化
+        const tangentMove = moveDirection.subtract(
+            up.scale(BABYLON.Vector3.Dot(moveDirection, up))
+        );
+        
+        if (tangentMove.length() < 0.001) {
+            return currentPosition;
         }
+        tangentMove.normalize();
         
-        // 球面上を移動
-        const newPosition = currentPosition.add(tangentMove);
+        // Unity風の実装：2軸の回転を別々に計算
+        let newPosition = currentPosition.clone();
         
-        // 惑星の中心からの距離を維持（球面に投影）
-        const fromCenter = newPosition.subtract(this.planetCenter);
-        const currentDistance = fromCenter.length();
-        
-        if (currentDistance > 0) {
-            // 現在の高さを維持
-            const currentHeight = currentPosition.subtract(this.planetCenter).length();
+        // 前後移動（Forward/Backward）
+        const forward = tangentMove;
+        const forwardAmount = BABYLON.Vector3.Dot(moveDirection, forward) * distance;
+        if (Math.abs(forwardAmount) > 0.001) {
+            // 回転軸は右方向（forward × up）
+            const rightAxis = BABYLON.Vector3.Cross(up, forward).normalize();
+            const forwardAngle = forwardAmount / radius;
             
-            // 正規化して現在の高さに調整
-            fromCenter.normalize();
-            return this.planetCenter.add(fromCenter.scale(currentHeight));
+            // 惑星中心を軸に回転
+            const rotationQuat = BABYLON.Quaternion.RotationAxis(rightAxis, forwardAngle);
+            newPosition = newPosition.subtract(this.planetCenter);
+            newPosition = newPosition.rotateByQuaternionToRef(rotationQuat, newPosition);
+            newPosition = newPosition.add(this.planetCenter);
+        }
+        
+        // 左右移動（Strafe）
+        const right = BABYLON.Vector3.Cross(forward, up).normalize();
+        const rightAmount = BABYLON.Vector3.Dot(moveDirection, right) * distance;
+        if (Math.abs(rightAmount) > 0.001) {
+            // 回転軸は前方向
+            const strafeAngle = rightAmount / radius;
+            
+            // 惑星中心を軸に回転
+            const rotationQuat = BABYLON.Quaternion.RotationAxis(forward, -strafeAngle);
+            newPosition = newPosition.subtract(this.planetCenter);
+            newPosition = newPosition.rotateByQuaternionToRef(rotationQuat, newPosition);
+            newPosition = newPosition.add(this.planetCenter);
+        }
+        
+        // 半径を確実に維持
+        const finalFromCenter = newPosition.subtract(this.planetCenter);
+        const finalRadius = finalFromCenter.length();
+        if (Math.abs(finalRadius - radius) > 0.001) {
+            finalFromCenter.scaleInPlace(radius / finalRadius);
+            newPosition = this.planetCenter.add(finalFromCenter);
+        }
+        
+        // デバッグ
+        if (Math.abs(up.y) < 0.5) { // 赤道付近
+            const newUp = newPosition.subtract(this.planetCenter).normalize();
+            const oldLat = Math.asin(up.y) * 180 / Math.PI;
+            const newLat = Math.asin(newUp.y) * 180 / Math.PI;
+            console.log(`[SPHERICAL-UNITY] Lat: ${oldLat.toFixed(1)}° -> ${newLat.toFixed(1)}°`);
         }
         
         return newPosition;
@@ -94,9 +132,9 @@ export class SphericalMovement {
     ): BABYLON.Vector3 {
         const up = this.getUpVector(position);
         // 重力は「上」の逆方向（中心に向かう）
-        // gravityは負の値（-20）なので、-upを使って下向きにする
         const gravityDirection = up.scale(-1);
-        return velocity.add(gravityDirection.scale(gravity * deltaTime));
+        // gravityの絶対値を使用して、常に下向きの力にする
+        return velocity.add(gravityDirection.scale(Math.abs(gravity) * deltaTime));
     }
     
     // 地面との衝突判定
@@ -125,35 +163,44 @@ export class SphericalMovement {
         };
     }
     
-    // キャラクターの向きを計算（球面に沿った回転）
+    // キャラクターの向きを計算（前方ベクトル維持方式）
     calculateCharacterRotation(
         position: BABYLON.Vector3,
         moveDirection: BABYLON.Vector3,
-        currentRotation: BABYLON.Vector3
+        currentForward: BABYLON.Vector3 // 前のフレームのforwardベクトルを受け取る
     ): BABYLON.Quaternion {
         const up = this.getUpVector(position);
-        
-        // 基本の向き（上方向に合わせる）
-        const defaultUp = BABYLON.Vector3.Up();
-        let rotationQuaternion = BABYLON.Quaternion.FromUnitVectorsToRef(defaultUp, up, new BABYLON.Quaternion());
-        
-        // 移動方向に基づく追加の回転
-        if (moveDirection.length() > 0) {
-            // 移動方向を球面に投影
-            const tangentMove = moveDirection.subtract(up.scale(BABYLON.Vector3.Dot(moveDirection, up)));
-            if (tangentMove.length() > 0) {
-                tangentMove.normalize();
-                
-                // Y軸周りの回転角度を計算
-                const angle = Math.atan2(tangentMove.x, tangentMove.z);
-                const yRotation = BABYLON.Quaternion.RotationAxis(up, angle);
-                
-                // 回転を合成
-                rotationQuaternion = rotationQuaternion.multiply(yRotation);
-            }
+
+        let forward: BABYLON.Vector3;
+
+        if (moveDirection.length() > 0.01) {
+            // 移動方向がある場合、それを新しい前方ベクトルとする
+            forward = moveDirection.clone();
+        } else {
+            // 移動していない場合、現在の前方ベクトルを維持する
+            forward = currentForward.clone();
         }
-        
-        return rotationQuaternion;
+
+        // 前方ベクトルを地面（接平面）に投影して正規化
+        forward = forward.subtract(up.scale(BABYLON.Vector3.Dot(forward, up))).normalize();
+
+        if (forward.length() < 0.001) {
+            // まれに前方ベクトルが上方向と完全に一致した場合のフォールバック
+            // 現在の右ベクトルを計算
+            const right = BABYLON.Vector3.Cross(up, currentForward).normalize();
+            // 新しい前方ベクトルを再計算
+            forward = BABYLON.Vector3.Cross(right, up).normalize();
+        }
+
+        // LookAt行列からクォータニオンを生成
+        const matrix = BABYLON.Matrix.LookAtLH(
+            BABYLON.Vector3.Zero(),
+            forward,
+            up
+        );
+        matrix.invert();
+
+        return BABYLON.Quaternion.FromRotationMatrix(matrix);
     }
     
     // 球面座標系での方向転換

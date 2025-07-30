@@ -1,4 +1,4 @@
-// Resource Sell Modal for Cosmic Gardener
+// Resource Sell Modal for Fillstellar
 // Provides UI for selling resources in the market
 
 import { gameStateManager } from './state.js';

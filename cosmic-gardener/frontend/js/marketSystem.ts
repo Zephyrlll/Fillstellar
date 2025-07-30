@@ -1,4 +1,4 @@
-// Market System for Cosmic Gardener
+// Market System for Fillstellar
 // Handles trading, pricing, and market dynamics
 
 import { gameState, gameStateManager } from '@/state';

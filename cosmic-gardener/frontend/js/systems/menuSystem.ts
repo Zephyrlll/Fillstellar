@@ -681,7 +681,7 @@ export class MenuSystem {
   private showVersion(): void {
     if ((window as any).feedbackSystem) {
       (window as any).feedbackSystem.showToast({
-        message: 'Cosmic Gardener v0.1.0 (Idle Game Update)',
+        message: 'Fillstellar v0.1.0 (Idle Game Update)',
         type: 'info',
         duration: 5000
       });

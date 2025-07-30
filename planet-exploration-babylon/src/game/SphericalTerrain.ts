@@ -1,14 +1,21 @@
 import * as BABYLON from '@babylonjs/core';
 import { PlanetData } from './PlanetExploration';
+import { PlanetTextures } from './PlanetTextures';
+import { TreeGenerator } from './TreeGenerator';
 
 export class SphericalTerrain {
     private scene: BABYLON.Scene;
     private planetMesh: BABYLON.Mesh | null = null;
     private radius: number = 100; // 惑星の半径（メートル）
     private subdivisions: number = 64; // 球体の細分化レベル
+    private planetTextures: PlanetTextures;
+    private treeGenerator: TreeGenerator;
+    private trees: BABYLON.Mesh[] = [];
     
     constructor(scene: BABYLON.Scene) {
         this.scene = scene;
+        this.planetTextures = new PlanetTextures(scene);
+        this.treeGenerator = new TreeGenerator(scene);
         console.log(`[SPHERICAL_TERRAIN] Constructor - initial radius: ${this.radius}`);
     }
     
@@ -40,11 +47,11 @@ export class SphericalTerrain {
         console.log(`[SPHERICAL_TERRAIN] Created sphere bounding radius: ${bounds.boundingSphere.radius}`);
         console.log(`[SPHERICAL_TERRAIN] Created sphere min: ${bounds.minimum}, max: ${bounds.maximum}`);
         
-        // 地形の起伏を追加（一時的に無効化）
-        // this.addTerrainNoise(planet.type);
-        console.log('[SPHERICAL_TERRAIN] Terrain noise disabled for debugging');
+        // 地形の起伏を追加
+        this.addTerrainNoise(planet.type);
+        console.log('[SPHERICAL_TERRAIN] Terrain noise applied');
         
-        // マテリアルを適用
+        // マテリアルを適用（テクスチャ付き）
         this.applyPlanetMaterial(planet);
         
         // 惑星を原点に配置
@@ -53,6 +60,9 @@ export class SphericalTerrain {
         console.log(`[SPHERICAL_TERRAIN] Generated ${planet.type} planet with radius ${this.radius}m`);
         console.log(`[SPHERICAL_TERRAIN] Planet mesh position:`, this.planetMesh.position);
         console.log(`[SPHERICAL_TERRAIN] Planet mesh bounding info:`, this.planetMesh.getBoundingInfo().boundingSphere.radius);
+        
+        // 木を配置
+        this.placeTrees(planet);
     }
     
     private addTerrainNoise(planetType: PlanetData['type']): void {
@@ -151,39 +161,13 @@ export class SphericalTerrain {
     private applyPlanetMaterial(planet: PlanetData): void {
         if (!this.planetMesh) return;
         
-        const material = new BABYLON.StandardMaterial("planetMaterial", this.scene);
+        // PlanetTexturesを使用してマテリアルを作成
+        const material = this.planetTextures.createPlanetMaterial(planet.type);
         
-        // 惑星タイプに応じた色設定
-        switch (planet.type) {
-            case 'forest':
-                material.diffuseColor = new BABYLON.Color3(0.2, 0.5, 0.1);
-                material.specularColor = new BABYLON.Color3(0.1, 0.2, 0.05);
-                break;
-            case 'desert':
-                material.diffuseColor = new BABYLON.Color3(0.8, 0.6, 0.3);
-                material.specularColor = new BABYLON.Color3(0.3, 0.2, 0.1);
-                break;
-            case 'ocean':
-                material.diffuseColor = new BABYLON.Color3(0.1, 0.3, 0.6);
-                material.specularColor = new BABYLON.Color3(0.3, 0.5, 0.8);
-                material.specularPower = 64;
-                break;
-            case 'ice':
-                material.diffuseColor = new BABYLON.Color3(0.8, 0.9, 1.0);
-                material.specularColor = new BABYLON.Color3(0.9, 0.95, 1.0);
-                material.specularPower = 128;
-                break;
-            case 'volcanic':
-                material.diffuseColor = new BABYLON.Color3(0.3, 0.1, 0.1);
-                material.emissiveColor = new BABYLON.Color3(0.5, 0.1, 0);
-                material.specularColor = new BABYLON.Color3(0.1, 0.05, 0.05);
-                break;
-            case 'alien':
-                material.diffuseColor = new BABYLON.Color3(0.5, 0.2, 0.7);
-                material.emissiveColor = new BABYLON.Color3(0.1, 0.05, 0.15);
-                material.specularColor = new BABYLON.Color3(0.7, 0.4, 0.9);
-                break;
-        }
+        // 追加の設定
+        material.specularPower = material.specularPower || 32;
+        material.useParallax = true;
+        material.useParallaxOcclusion = false; // パフォーマンスのため
         
         this.planetMesh.material = material;
         
@@ -247,7 +231,71 @@ export class SphericalTerrain {
         return position.normalize();
     }
     
+    private placeTrees(planet: PlanetData): void {
+        // 既存の木を削除
+        this.trees.forEach(tree => tree.dispose());
+        this.trees = [];
+        
+        // 惑星タイプに応じた木の密度を設定
+        let treeDensity = 0;
+        switch (planet.type) {
+            case 'forest':
+                treeDensity = 100; // 多くの木
+                break;
+            case 'desert':
+                treeDensity = 10; // わずかな植物
+                break;
+            case 'ocean':
+                treeDensity = 5; // 島にのみ
+                break;
+            case 'ice':
+                treeDensity = 20; // 氷の木
+                break;
+            case 'volcanic':
+                treeDensity = 5; // まばらな植物
+                break;
+            case 'alien':
+                treeDensity = 30; // 奇妙な植物
+                break;
+        }
+        
+        // 木を配置
+        for (let i = 0; i < treeDensity; i++) {
+            // ランダムな球面座標を生成
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.acos(2 * Math.random() - 1);
+            
+            // 球面座標から直交座標に変換（地形の高さを考慮）
+            const x = this.radius * Math.sin(phi) * Math.cos(theta);
+            const y = this.radius * Math.cos(phi);
+            const z = this.radius * Math.sin(phi) * Math.sin(theta);
+            
+            const position = new BABYLON.Vector3(x, y, z);
+            const normal = position.clone().normalize();
+            
+            // 地形の高さに応じて位置を調整
+            const terrainHeight = this.getSurfaceHeight(position);
+            position.scaleInPlace(terrainHeight / this.radius);
+            
+            // 木を作成
+            const tree = this.treeGenerator.createTree(planet.type, position, normal);
+            if (tree) {
+                // サイズのバリエーション
+                const scale = 0.5 + Math.random() * 0.5;
+                tree.scaling = new BABYLON.Vector3(scale, scale, scale);
+                
+                this.trees.push(tree);
+            }
+        }
+        
+        console.log(`[SPHERICAL_TERRAIN] Placed ${this.trees.length} trees on ${planet.type} planet`);
+    }
+    
     dispose(): void {
+        // 木を削除
+        this.trees.forEach(tree => tree.dispose());
+        this.trees = [];
+        
         if (this.planetMesh) {
             this.planetMesh.dispose();
             this.planetMesh = null;

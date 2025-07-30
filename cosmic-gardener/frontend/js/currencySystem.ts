@@ -1,4 +1,4 @@
-// Currency System for Cosmic Gardener
+// Currency System for Fillstellar
 // Manages various currencies and exchange systems
 
 import { gameState, gameStateManager } from './state.js';

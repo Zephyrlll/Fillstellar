@@ -566,7 +566,7 @@ export class ProductionChainVisualizerUI {
     const exportData = {
       version: '1.0',
       name: '生産チェーン',
-      description: 'Cosmic Gardener Production Chain',
+      description: 'Fillstellar Production Chain',
       chain: {
         nodes: Array.from(chain.nodes.values()),
         links: Array.from(chain.links.values())

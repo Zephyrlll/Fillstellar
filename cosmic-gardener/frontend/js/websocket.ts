@@ -1,5 +1,5 @@
 /**
- * Cosmic Gardener WebSocket Client
+ * Fillstellar WebSocket Client
  * 
  * リアルタイム通信を管理するWebSocketクライアント
  */

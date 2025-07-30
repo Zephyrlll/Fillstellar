@@ -1,8 +1,13 @@
 import * as BABYLON from '@babylonjs/core';
-import { StaticAvatar } from './StaticAvatar';
+import { AnimatedAvatar } from './AnimatedAvatar';
 import { ThirdPersonCamera } from './ThirdPersonCamera';
 import { FirstPersonCamera } from './FirstPersonCamera';
 import { SphericalMovement } from './SphericalMovement';
+import { SphericalMovementSimple } from './SphericalMovementSimple';
+import { SphericalMovementFixed } from './SphericalMovementFixed';
+import { SphericalMovementWorking } from './SphericalMovementWorking';
+import { SphericalMovementFinal } from './SphericalMovementFinal';
+import { SphericalMovementSimplest } from './SphericalMovementSimplest';
 import { ProceduralTerrain } from './ProceduralTerrain';
 import { DebugTracker } from './DebugTracker';
 
@@ -10,16 +15,23 @@ export class CharacterController {
     private scene: BABYLON.Scene;
     private camera: BABYLON.UniversalCamera;
     private canvas: HTMLCanvasElement;
-    private avatar: StaticAvatar | null = null;
+    private avatar: AnimatedAvatar | null = null;
     private thirdPersonCamera: ThirdPersonCamera | null = null;
     private firstPersonCamera: FirstPersonCamera | null = null;
     private sphericalMovement: SphericalMovement;
+    private sphericalMovementSimple: SphericalMovementSimple | null = null;
+    private sphericalMovementFixed: SphericalMovementFixed | null = null;
+    private sphericalMovementWorking: SphericalMovementWorking | null = null;
+    private sphericalMovementFinal: SphericalMovementFinal | null = null;
+    private sphericalMovementSimplest: SphericalMovementSimplest | null = null;
+    private planetCenter: BABYLON.Vector3 = BABYLON.Vector3.Zero();
     private terrain: ProceduralTerrain | null = null;
     
     // 移動制御
-    private jumpSpeed: number = 8;
+    private jumpSpeed: number = 5;  // ジャンプ速度を調整
     private velocity: BABYLON.Vector3 = BABYLON.Vector3.Zero();
     private isGrounded: boolean = true;
+    private gravity: number = -9.8; // 重力加速度
     
     // 入力状態
     private keys: { [key: string]: boolean } = {};
@@ -27,6 +39,7 @@ export class CharacterController {
     // ビューモード
     private isFirstPerson: boolean = false;
     private fpsCameraOffset: BABYLON.Vector3 = new BABYLON.Vector3(0, 1.6, 0); // 頭の位置
+    private forwardVector: BABYLON.Vector3 = new BABYLON.Vector3(0, 0, 1); // キャラクターの前方ベクトルを保持
     
     // デバッグ用
     private isFirstUpdate: boolean = true;
@@ -50,6 +63,27 @@ export class CharacterController {
         this.sphericalMovement.setPlanetData(BABYLON.Vector3.Zero(), 100);
         
         this.setupControls();
+        
+        // デバッグ: 位置監視を開始
+        this.startPositionMonitoring();
+    }
+    
+    private startPositionMonitoring(): void {
+        // 1秒ごとにアバターの位置を監視
+        setInterval(() => {
+            if (this.avatar && this.initialPosition) {
+                const pos = this.avatar.getRootMesh().position;
+                const distance = pos.length();
+                if (distance < 10) {
+                    console.error(`[CHARACTER] CRITICAL: Avatar at origin! Position: ${pos}, Distance: ${distance}`);
+                    // 緊急リセット
+                    console.error('[CHARACTER] EMERGENCY RESET TO INITIAL POSITION!');
+                    this.avatar.getRootMesh().position.copyFrom(this.initialPosition);
+                } else if (distance < 50) {
+                    console.warn(`[CHARACTER] WARNING: Avatar too close to origin! Position: ${pos}, Distance: ${distance}`);
+                }
+            }
+        }, 1000);
     }
     
     private setupControls(): void {
@@ -59,7 +93,8 @@ export class CharacterController {
             
             // スペースキーでジャンプ
             if (e.key === ' ' && this.isGrounded) {
-                if (this.terrain && this.terrain.isSpherical()) {
+                console.log('[CHARACTER] Jump initiated!');
+                if (this.terrain && this.terrain.isSpherical() && this.avatar) {
                     // 球体地形：上方向にジャンプ
                     const jumpVel = this.sphericalMovement.applyJump(
                         this.avatar.getRootMesh().position,
@@ -71,6 +106,7 @@ export class CharacterController {
                     this.velocity.y = this.jumpSpeed;
                 }
                 this.isGrounded = false;
+                e.preventDefault(); // スペースキーのデフォルト動作を防ぐ
             }
             
             // Vキーで視点切り替え
@@ -99,15 +135,24 @@ export class CharacterController {
         tracker.log('CHARACTER', `spawn() called with position: ${position} (distance: ${position.length()})`);
         tracker.trackAvatarPosition(position, 'CharacterController.spawn(input)');
         
+        // ポジションの検証
+        if (position.length() < 10) {
+            console.error('[CHARACTER] INVALID SPAWN POSITION! Too close to origin:', position);
+            // 強制的に適切な位置に修正
+            const planetRadius = this.terrain ? this.terrain.getPlanetRadius() : 100;
+            position = new BABYLON.Vector3(0, planetRadius + 5, 0);
+            console.warn('[CHARACTER] Corrected spawn position to:', position);
+        }
+        
         // 既存のアバターがあれば削除
         if (this.avatar) {
             this.avatar.dispose();
             this.avatar = null;
         }
         
-        // 静的アバターを作成
-        this.avatar = new StaticAvatar(this.scene, position);
-        console.log(`[CHARACTER] StaticAvatar created at: ${this.avatar.getPosition()}`);
+        // アニメーション付きアバターを作成
+        this.avatar = new AnimatedAvatar(this.scene, position.clone());
+        console.log(`[CHARACTER] AnimatedAvatar created at: ${this.avatar.getPosition()}`);
         
         // カメラシステムを設定
         if (this.avatar) {
@@ -115,7 +160,7 @@ export class CharacterController {
             this.firstPersonCamera = new FirstPersonCamera(this.scene, this.camera, this.canvas);
         }
         
-        // 初期状態を設定
+        // 初期状態を設定（必ずcloneする）
         this.initialPosition = position.clone();
         this.hasSpawned = true;
         this.velocity = BABYLON.Vector3.Zero();
@@ -128,6 +173,11 @@ export class CharacterController {
             
             // 球体移動システムに惑星データを設定
             this.sphericalMovement.setPlanetData(BABYLON.Vector3.Zero(), planetRadius);
+            this.sphericalMovementSimple = new SphericalMovementSimple(BABYLON.Vector3.Zero(), planetRadius);
+            this.sphericalMovementFixed = new SphericalMovementFixed(BABYLON.Vector3.Zero(), planetRadius);
+            this.sphericalMovementWorking = new SphericalMovementWorking(this.scene, BABYLON.Vector3.Zero(), planetRadius);
+            this.sphericalMovementFinal = new SphericalMovementFinal(BABYLON.Vector3.Zero(), planetRadius);
+            this.sphericalMovementSimplest = new SphericalMovementSimplest(BABYLON.Vector3.Zero(), planetRadius);
             console.log(`[CHARACTER] Set planet data in sphericalMovement with radius: ${planetRadius}`);
             
             // 位置がすでに正しい半径にあるか確認
@@ -151,9 +201,10 @@ export class CharacterController {
             const rotation = this.sphericalMovement.calculateCharacterRotation(
                 position,
                 BABYLON.Vector3.Zero(),
-                this.avatar.getRootMesh().rotation
+                this.forwardVector // ★修正：初期の前方ベクトルを使用
             );
             this.avatar.getRootMesh().rotationQuaternion = rotation;
+            this.forwardVector = this.avatar.getRootMesh().forward; // ★追加：前方ベクトルを更新
             
             // カメラを適切な位置に配置
             // キャラクターの後ろ斜め上から見下ろす位置
@@ -208,70 +259,225 @@ export class CharacterController {
         // 球体地形の場合の処理
         if (isSpherical) {
             const planetRadius = this.terrain!.getPlanetRadius();
-            const characterHeight = 2; // キャラクターの高さ
+            const characterHeight = 0.9; // キャラクターの足元から重心までの高さ（脚の半分）
             const targetRadius = planetRadius + characterHeight;
             
-            // 現在の位置から上方向を計算
-            const up = currentPos.length() > 0.001 ? currentPos.normalize() : new BABYLON.Vector3(0, 1, 0);
+            // 位置が原点に近すぎる場合は初期位置を使用
+            if (currentPos.length() < 1) {
+                console.warn('[CHARACTER] Position too close to origin, using initial position');
+                if (this.initialPosition) {
+                    currentPos.copyFrom(this.initialPosition);
+                    this.avatar.getRootMesh().position.copyFrom(this.initialPosition);
+                } else {
+                    // 緊急用：Y軸上の位置に設定
+                    currentPos.set(0, targetRadius, 0);
+                    this.avatar.getRootMesh().position.copyFrom(currentPos);
+                }
+            }
             
-            // 移動入力を取得
-            const moveSpeed = 5; // 速度を調整
+            // 現在の位置から上方向を計算
+            const up = this.sphericalMovement.getUpVector(currentPos);
+            
+            // 重力を適用（球体の中心に向かって）
+            if (!this.isGrounded) {
+                this.velocity = this.sphericalMovement.applyGravity(
+                    currentPos,
+                    this.velocity,
+                    this.gravity,
+                    deltaTime
+                );
+            }
+            
+            // ジャンプによる移動を適用
+            if (this.velocity.length() > 0.01) {  // 小さな値は無視
+                const jumpMovement = this.velocity.scale(deltaTime);
+                currentPos.addInPlace(jumpMovement);
+                this.avatar.getRootMesh().position.copyFrom(currentPos);
+                
+                // ジャンプ/落下アニメーション
+                const upVelocity = BABYLON.Vector3.Dot(this.velocity, up);
+                if (upVelocity > 0.5) {
+                    this.avatar.setState('jump');
+                } else if (!this.isGrounded) {
+                    this.avatar.setState('fall');
+                }
+                
+                // デバッグ出力
+                if (this.updateCount % 10 === 0) {  // 10フレームごと
+                    console.log(`[CHARACTER] Jump - Velocity: ${this.velocity.length().toFixed(2)}, Height: ${(currentPos.length() - planetRadius).toFixed(2)}`);
+                }
+            }
+            
+            // 地面との衝突判定
+            const currentDistance = currentPos.length();
+            const groundTolerance = 0.1; // 地面判定の許容誤差
+            
+            if (currentDistance <= targetRadius + groundTolerance) {
+                // 地面に接触または近い
+                if (currentDistance < targetRadius) {
+                    // 地面の下にいる場合は押し上げる
+                    const correctedPos = currentPos.clone().normalize().scale(targetRadius);
+                    this.avatar.getRootMesh().position.copyFrom(correctedPos);
+                    currentPos.copyFrom(correctedPos);
+                }
+                
+                // 下向きの速度がある場合のみ着地とみなす
+                const downwardVelocity = BABYLON.Vector3.Dot(this.velocity, currentPos.clone().normalize().scale(-1));
+                if (downwardVelocity > 0) {
+                    this.velocity = BABYLON.Vector3.Zero();
+                    this.isGrounded = true;
+                    this.avatar.setState('land'); // 着地アニメーション
+                    console.log('[CHARACTER] Landed on ground');
+                } else if (Math.abs(currentDistance - targetRadius) < groundTolerance) {
+                    this.isGrounded = true;
+                }
+            } else {
+                this.isGrounded = false;
+            }
+            
+            // 移動入力を取得（速度を調整）
+            const baseSpeed = 1.0; // 移動速度を大幅に減らす
+            const runMultiplier = this.keys['shift'] ? 1.5 : 1.0; // Shiftで1.5倍速
+            const moveSpeed = baseSpeed * runMultiplier;
             let movement = BABYLON.Vector3.Zero();
             
-            if (this.keys['w']) movement.z = moveSpeed * deltaTime;
-            if (this.keys['s']) movement.z = -moveSpeed * deltaTime;
-            if (this.keys['a']) movement.x = -moveSpeed * deltaTime;
-            if (this.keys['d']) movement.x = moveSpeed * deltaTime;
+            if (this.keys['w']) movement.z = moveSpeed * deltaTime;   // 前進
+            if (this.keys['s']) movement.z = -moveSpeed * deltaTime;  // 後退
+            if (this.keys['a']) movement.x = -moveSpeed * deltaTime;  // 左
+            if (this.keys['d']) movement.x = moveSpeed * deltaTime;   // 右
             
             // 移動がある場合
             if (movement.length() > 0 && this.thirdPersonCamera) {
-                // カメラの向きを取得
+                // シンプルな実装：カメラ方向を基準に移動
                 const cameraForward = this.thirdPersonCamera.getCameraDirection();
                 const cameraRight = this.thirdPersonCamera.getCameraRight();
                 
-                // 球面に沿った移動ベクトルを計算
-                const tangentMovement = cameraForward.scale(movement.z).add(cameraRight.scale(movement.x));
+                // 入力に基づいて移動ベクトルを計算
+                let moveVector = BABYLON.Vector3.Zero();
+                if (this.keys['w']) moveVector.addInPlace(cameraForward);
+                if (this.keys['s']) moveVector.subtractInPlace(cameraForward);
+                if (this.keys['a']) moveVector.subtractInPlace(cameraRight);
+                if (this.keys['d']) moveVector.addInPlace(cameraRight);
                 
-                // 球面上での移動を適用
-                const newPos = this.sphericalMovement.moveOnSphere(
-                    currentPos,
-                    tangentMovement,
-                    tangentMovement.length()
-                );
+                if (moveVector.length() > 0.001) {
+                    moveVector.normalize();
+                    
+                    // 現在位置の法線（上方向）
+                    const fromCenter = currentPos.subtract(this.planetCenter);
+                    const up = fromCenter.normalize();
+                    
+                    // 移動ベクトルを接平面に投影
+                    const tangentMove = moveVector.subtract(up.scale(BABYLON.Vector3.Dot(moveVector, up)));
+                    tangentMove.normalize();
+                    
+                    // 回転軸を計算（現在位置ベクトルと移動方向の外積）
+                    const axis = BABYLON.Vector3.Cross(fromCenter, tangentMove);
+                    axis.normalize();
+                    
+                    // 角速度
+                    const angle = moveSpeed * deltaTime / planetRadius;
+                    
+                    // 回転を適用（惑星中心を基準に）
+                    const rotation = BABYLON.Quaternion.RotationAxis(axis, angle);
+                    let newFromCenter = fromCenter.clone();
+                    newFromCenter = newFromCenter.applyRotationQuaternion(rotation);
+                    
+                    // 半径を維持
+                    newFromCenter.normalize();
+                    newFromCenter.scaleInPlace(targetRadius);
+                    
+                    // 最終位置（惑星中心を加算）
+                    const newPos = this.planetCenter.add(newFromCenter);
+                    this.avatar.getRootMesh().position = newPos;
+                }
                 
-                // 高さを調整（球の表面に固定）
-                const adjustedPos = newPos.normalize().scale(targetRadius);
-                this.avatar.getRootMesh().position = adjustedPos;
+                // キャラクターの回転を更新（地面に垂直に立つ）
+                const avatarPos = this.avatar.getRootMesh().position;
+                const avatarUp = avatarPos.subtract(this.planetCenter).normalize();
                 
-                // キャラクターの回転を更新
-                const rotation = this.sphericalMovement.calculateCharacterRotation(
-                    adjustedPos,
-                    tangentMovement,
-                    this.avatar.getRootMesh().rotation
-                );
-                this.avatar.getRootMesh().rotationQuaternion = rotation;
+                // 移動方向またはカメラ方向を前方向に
+                let forward = moveVector.length() > 0.001 ? moveVector : cameraForward;
+                forward = forward.subtract(avatarUp.scale(BABYLON.Vector3.Dot(forward, avatarUp)));
+                if (forward.length() > 0.001) {
+                    forward.normalize();
+                    
+                    const right = BABYLON.Vector3.Cross(avatarUp, forward);
+                    const lookAt = BABYLON.Matrix.LookAtLH(BABYLON.Vector3.Zero(), forward, avatarUp);
+                    lookAt.invert();
+                    
+                    this.avatar.getRootMesh().rotationQuaternion = BABYLON.Quaternion.FromRotationMatrix(lookAt);
+                }
+                
+                // 移動アニメーションの設定
+                if (this.isGrounded) {
+                    if (this.keys['shift']) {
+                        this.avatar.setState('run', moveSpeed);
+                    } else {
+                        this.avatar.setState('walk', moveSpeed);
+                    }
+                }
             } else {
-                // 移動していない場合でも高さを維持
-                const adjustedPos = currentPos.normalize().scale(targetRadius);
-                if (adjustedPos.subtract(currentPos).length() > 0.01) {
-                    this.avatar.getRootMesh().position = adjustedPos;
+                // 移動していない場合でも地面にいる時のみ高さを維持
+                if (this.isGrounded && currentPos.length() > 0.1) {
+                    const currentDistance = currentPos.length();
+                    const distanceDiff = targetRadius - currentDistance;
+                    
+                    // 大きな差がある場合のみ調整（より寛容に）
+                    if (Math.abs(distanceDiff) > 0.5) {
+                        // Lerpを使ってスムーズに調整
+                        const adjustedPos = currentPos.clone().normalize().scale(targetRadius);
+                        const lerpFactor = 0.02; // より遅い補間（0.02）
+                        this.avatar.getRootMesh().position = BABYLON.Vector3.Lerp(
+                            this.avatar.getRootMesh().position,
+                            adjustedPos,
+                            lerpFactor
+                        );
+                    }
+                    
+                    // アイドルアニメーション
+                    if (!this.avatar['currentState'] || this.avatar['currentState'] === 'walk' || this.avatar['currentState'] === 'run') {
+                        this.avatar.setState('idle');
+                    }
+                }
+                
+                // 移動していない場合でも、常に地面に対して垂直になるように回転を更新
+                const avatarPos = this.avatar.getRootMesh().position;
+                const avatarUp = avatarPos.subtract(this.planetCenter).normalize();
+                
+                // 現在の前方向を維持、または初期値を使用
+                let forward = this.forwardVector || new BABYLON.Vector3(0, 0, 1);
+                forward = forward.subtract(avatarUp.scale(BABYLON.Vector3.Dot(forward, avatarUp)));
+                if (forward.length() > 0.001) {
+                    forward.normalize();
+                    
+                    const lookAt = BABYLON.Matrix.LookAtLH(BABYLON.Vector3.Zero(), forward, avatarUp);
+                    lookAt.invert();
+                    
+                    this.avatar.getRootMesh().rotationQuaternion = BABYLON.Quaternion.FromRotationMatrix(lookAt);
                 }
             }
             
             // 定期的なステータス出力
             if (this.updateCount % 60 === 0) {
                 const pos = this.avatar.getRootMesh().position;
-                console.log(`[CHARACTER] Status - Position: ${pos.toString()}, Distance: ${pos.length().toFixed(2)}, Target: ${targetRadius.toFixed(2)}`);
+                const distance = pos.length();
+                const lat = Math.asin(pos.y / distance) * 180 / Math.PI;
+                const lon = Math.atan2(pos.z, pos.x) * 180 / Math.PI;
+                console.log(`[CHARACTER] Pos: (${pos.x.toFixed(1)}, ${pos.y.toFixed(1)}, ${pos.z.toFixed(1)})`);
+                console.log(`[CHARACTER] Distance: ${distance.toFixed(2)}, Lat: ${lat.toFixed(1)}°, Lon: ${lon.toFixed(1)}°`);
+                const theta = Math.atan2(pos.z, pos.x) * 180 / Math.PI;
+                const phi = Math.acos(pos.y / pos.length()) * 180 / Math.PI;
+                console.log(`[CHARACTER] Spherical: theta=${theta.toFixed(1)}°, phi=${phi.toFixed(1)}° (0°=North Pole, 90°=Equator)`);
             }
         } else {
             // 平面地形の場合（既存の処理）
             const moveSpeed = 10;
             let simpleMovement = BABYLON.Vector3.Zero();
             
-            if (this.keys['w']) simpleMovement.z = moveSpeed * deltaTime;
-            if (this.keys['s']) simpleMovement.z = -moveSpeed * deltaTime;
-            if (this.keys['a']) simpleMovement.x = -moveSpeed * deltaTime;
-            if (this.keys['d']) simpleMovement.x = moveSpeed * deltaTime;
+            if (this.keys['w']) simpleMovement.z = moveSpeed * deltaTime;   // 前進
+            if (this.keys['s']) simpleMovement.z = -moveSpeed * deltaTime;  // 後退
+            if (this.keys['a']) simpleMovement.x = -moveSpeed * deltaTime;  // 左
+            if (this.keys['d']) simpleMovement.x = moveSpeed * deltaTime;   // 右
             
             if (simpleMovement.length() > 0 && this.thirdPersonCamera) {
                 const cameraForward = this.thirdPersonCamera.getCameraDirection();
@@ -281,6 +487,11 @@ export class CharacterController {
                 const newPos = currentPos.add(worldMovement);
                 this.avatar.getRootMesh().position = newPos;
             }
+        }
+        
+        // アバターのアニメーション更新
+        if (this.avatar) {
+            this.avatar.update(deltaTime);
         }
         
         // カメラの更新

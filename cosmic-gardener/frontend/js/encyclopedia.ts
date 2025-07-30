@@ -1,4 +1,4 @@
-// 🌌 Cosmic Gardener Encyclopedia - Resource & Item Database
+// 🌌 Fillstellar Encyclopedia - Resource & Item Database
 // Complete catalog of all resources, items, and cosmic phenomena
 
 export enum ItemRarity {

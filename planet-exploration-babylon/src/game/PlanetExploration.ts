@@ -6,7 +6,7 @@ import { ExplorationSystem } from './ExplorationSystem';
 import { ResourceScanner } from './ResourceScanner';
 import { AtmosphereEffects } from './AtmosphereEffects';
 import { DebugTracker } from './DebugTracker';
-import { DirectSpawnTest } from './DirectSpawnTest';
+import { SpaceSkybox } from './SpaceSkybox';
 
 export interface PlanetData {
     id: string;
@@ -32,6 +32,7 @@ export class PlanetExploration {
     private exploration: ExplorationSystem;
     private scanner: ResourceScanner;
     private atmosphere: AtmosphereEffects;
+    private spaceSkybox: SpaceSkybox;
     
     constructor(canvas: HTMLCanvasElement) {
         this.canvas = canvas;
@@ -90,17 +91,15 @@ export class PlanetExploration {
         this.character = new CharacterController(this.scene, this.camera, this.canvas);
         this.character.setTerrain(this.terrain); // terrainを設定
         
-        // デバッグ：即座にダミーアバターを作成
-        const dummyAvatar = BABYLON.MeshBuilder.CreateBox("dummyAvatar", { size: 5 }, this.scene);
-        dummyAvatar.position = new BABYLON.Vector3(0, 120, 0);
-        const dummyMat = new BABYLON.StandardMaterial("dummyMat", this.scene);
-        dummyMat.emissiveColor = new BABYLON.Color3(1, 0, 1); // マゼンタ
-        dummyAvatar.material = dummyMat;
-        console.log('[PLANET_EXPLORATION] Dummy avatar created at:', dummyAvatar.position);
+        // テスト用オブジェクトは削除済み
         
         this.exploration = new ExplorationSystem(this.scene);
         this.scanner = new ResourceScanner(this.scene);
         this.atmosphere = new AtmosphereEffects(this.scene);
+        this.spaceSkybox = new SpaceSkybox(this.scene);
+        
+        // スカイボックスを作成
+        this.spaceSkybox.create();
         
         // デバッグ用のインスペクター（一時的に無効化）
         // if (import.meta.env.DEV) {
@@ -179,7 +178,7 @@ export class PlanetExploration {
         
         // 環境色を設定（HDRテクスチャの代わり）
         this.scene.ambientColor = new BABYLON.Color3(0.3, 0.3, 0.4);
-        this.scene.clearColor = new BABYLON.Color4(0.05, 0.05, 0.1, 1); // 暗い宇宙の背景
+        this.scene.clearColor = new BABYLON.Color4(0, 0, 0, 1); // 完全な黒（スカイボックスが背景になるため）
     }
     
     private async setupPhysics(): Promise<void> {
@@ -198,6 +197,7 @@ export class PlanetExploration {
         this.exploration.update(deltaTime);
         this.scanner.update(deltaTime);
         this.atmosphere.update(deltaTime);
+        this.spaceSkybox.update(deltaTime);
     }
     
     start(planet: PlanetData): void {
@@ -209,22 +209,35 @@ export class PlanetExploration {
         this.terrain.generatePlanet(planet);
         this.atmosphere.setPlanetType(planet);
         
+        // キャラクターのterrainが確実に設定されていることを確認
+        if (!this.character['terrain']) {
+            console.warn('[PLANET_EXPLORATION] Character terrain not set, setting now');
+            this.character.setTerrain(this.terrain);
+        }
+        
         // キャラクターを配置（即座に実行）
         const tracker = DebugTracker.getInstance();
         
         // setTimeout(() => {
             tracker.log('PLANET_EXPLORATION', 'Starting character spawn sequence');
             
-            // テスト：固定位置にスポーン
-            const fixedSpawnPoint = new BABYLON.Vector3(0, 120, 0); // Y軸上、半径120
-            tracker.log('PLANET_EXPLORATION', `Using FIXED spawn point: ${fixedSpawnPoint} (distance: ${fixedSpawnPoint.length()})`);
-            tracker.log('PLANET_EXPLORATION', `Is spherical: ${this.terrain.isSpherical()}, radius: ${this.terrain.getPlanetRadius()}`);
+            // テスト：惑星の半径に基づいてスポーン位置を計算
+            const planetRadius = this.terrain.getPlanetRadius();
+            const spawnHeight = planetRadius + 2; // 地表から2m上（アバターの高さを考慮）
+            const fixedSpawnPoint = new BABYLON.Vector3(0, spawnHeight, 0); // Y軸上
+            
+            console.log('[PLANET_EXPLORATION] Spawn calculation:');
+            console.log(`  - Planet radius: ${planetRadius}`);
+            console.log(`  - Spawn height: ${spawnHeight}`);
+            console.log(`  - Spawn point: ${fixedSpawnPoint} (distance: ${fixedSpawnPoint.length()})`);
+            
+            tracker.log('PLANET_EXPLORATION', `Using calculated spawn point: ${fixedSpawnPoint} (distance: ${fixedSpawnPoint.length()})`);
+            tracker.log('PLANET_EXPLORATION', `Is spherical: ${this.terrain.isSpherical()}, radius: ${planetRadius}`);
             
             // spawn前の位置確認
             console.log('[PLANET_EXPLORATION] Avatar position BEFORE spawn:', this.character.getPosition());
             
-            // 直接スポーンテスト
-            DirectSpawnTest.test(this.scene, fixedSpawnPoint);
+            // テスト用オブジェクトの生成は削除
             
             this.character.spawn(fixedSpawnPoint);
             

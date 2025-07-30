@@ -13,13 +13,15 @@ export class ThirdPersonCamera {
     // カメラ設定
     private distance: number = 12;
     private height: number = 5;
-    private rotationSpeed: number = 0.005;
-    private followSpeed: number = 0.1;
+    private rotationSpeed: number = 0.003; // マウス感度を下げる（0.005 -> 0.003）
+    private followSpeed: number = 0.15; // カメラ追従速度を上げる（アバターに追いつくため）
     
     // マウス制御
     private isPointerLocked: boolean = false;
-    private cameraAlpha: number = 0;
-    private cameraBeta: number = Math.PI / 8;
+    public cameraAlpha: number = 0;
+    public cameraBeta: number = Math.PI / 8;
+    private lastMovementX: number = 0;
+    private lastMovementY: number = 0;
     
     constructor(
         scene: BABYLON.Scene,
@@ -81,9 +83,13 @@ export class ThirdPersonCamera {
     }
     
     private handleMouseMove(e: MouseEvent): void {
-        // マウスの移動量に基づいてカメラを回転
-        this.cameraAlpha -= e.movementX * this.rotationSpeed;
-        this.cameraBeta -= e.movementY * this.rotationSpeed;
+        // 球面モード用に移動量を蓄積
+        this.lastMovementX += e.movementX;
+        this.lastMovementY += e.movementY;
+
+        // 平面モード用に角度を更新（既存の処理）
+        this.cameraAlpha += e.movementX * this.rotationSpeed;
+        this.cameraBeta += e.movementY * this.rotationSpeed;
         
         // 垂直角度の制限
         this.cameraBeta = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, this.cameraBeta));
@@ -91,53 +97,45 @@ export class ThirdPersonCamera {
     
     public update(): void {
         if (!this.target) return;
-        
-        // ターゲットの位置を取得
+
         const targetPosition = this.target.position.clone();
-        
+
         if (this.terrain && this.terrain.isSpherical() && this.sphericalMovement) {
-            // 球体地形での処理
             const up = this.sphericalMovement.getUpVector(targetPosition);
+
+            // マウスの動きでカメラを回転
+            const yaw = -this.lastMovementX * this.rotationSpeed;
+            const pitch = -this.lastMovementY * this.rotationSpeed;
+
+            // 現在のカメラオフセットを取得
+            let currentOffset = this.camera.position.subtract(targetPosition);
+
+            // 垂直回転（ピッチ）
+            const right = BABYLON.Vector3.Cross(up, currentOffset).normalize();
+            let rotation = BABYLON.Quaternion.RotationAxis(right, pitch);
+            currentOffset = currentOffset.applyRotationQuaternion(rotation);
+
+            // 水平回転（ヨー）
+            rotation = BABYLON.Quaternion.RotationAxis(up, yaw);
+            currentOffset = currentOffset.applyRotationQuaternion(rotation);
             
-            // カメラのローカル座標系を構築
-            // 前方向を現在のカメラ角度から計算
-            let forward = new BABYLON.Vector3(
-                Math.sin(this.cameraAlpha),
-                0,
-                Math.cos(this.cameraAlpha)
-            );
-            
-            // 前方向を球面に投影
-            forward = this.sphericalMovement.getForwardVector(targetPosition, forward);
-            
-            // 右方向を計算
-            const right = this.sphericalMovement.getRightVector(targetPosition, forward);
-            
-            // カメラの相対位置を計算
-            let cameraOffset = BABYLON.Vector3.Zero();
-            
-            // 水平方向のオフセット（後ろと横）
-            cameraOffset = cameraOffset.add(forward.scale(-this.distance * Math.cos(this.cameraBeta)));
-            
-            // 垂直方向のオフセット（上）
-            cameraOffset = cameraOffset.add(up.scale(this.height + this.distance * Math.sin(this.cameraBeta)));
-            
-            // カメラの目標位置
-            const targetCameraPos = targetPosition.add(cameraOffset);
-            
+            // 最終的なカメラ位置を計算
+            const desiredPosition = targetPosition.add(currentOffset);
+
             // カメラ位置をスムーズに追従
             this.camera.position = BABYLON.Vector3.Lerp(
                 this.camera.position,
-                targetCameraPos,
+                desiredPosition,
                 this.followSpeed
             );
-            
-            // カメラの向きを設定（ターゲットを見る）
-            const lookAtTarget = targetPosition.add(up.scale(this.height * 0.5));
-            this.camera.setTarget(lookAtTarget);
-            
-            // カメラの上方向を球体の法線に合わせる
+
+            // カメラの向きと上方向を設定
+            this.camera.setTarget(targetPosition.add(up.scale(this.height * 0.5)));
             this.camera.upVector = up;
+
+            // マウス移動量をリセット
+            this.lastMovementX = 0;
+            this.lastMovementY = 0;
         } else {
             // 平面地形での処理（既存のコード）
             const x = targetPosition.x + this.distance * Math.sin(this.cameraAlpha) * Math.cos(this.cameraBeta);
@@ -172,35 +170,52 @@ export class ThirdPersonCamera {
     }
     
     public getCameraDirection(): BABYLON.Vector3 {
-        // カメラの前方向ベクトルを取得
-        const forward = this.camera.getTarget().subtract(this.camera.position);
+        // カメラのワールドマトリックスからZ軸（前方）を取得
+        const forward = this.camera.getWorldMatrix().getRotationMatrix().getRow(2).toVector3();
         
         if (this.terrain && this.terrain.isSpherical() && this.sphericalMovement) {
-            // 球体地形では、上方向成分を除去して水平方向のみを取得
-            const up = this.sphericalMovement.getUpVector(this.target.position);
-            const upComponent = up.scale(BABYLON.Vector3.Dot(forward, up));
-            const tangentForward = forward.subtract(upComponent);
-            tangentForward.normalize();
-            return tangentForward;
+            const targetPos = this.target.position;
+            const up = this.sphericalMovement.getUpVector(targetPos);
+            
+            // ワールドの前方ベクトルを接平面に投影
+            const tangentDir = forward.subtract(up.scale(BABYLON.Vector3.Dot(forward, up)));
+            
+            if (tangentDir.length() > 0.001) {
+                return tangentDir.normalize();
+            }
+            
+            // 投影が失敗した場合（カメラが真上/真下を向いている場合）のフォールバック
+            // カメラの右ベクトルを使って前方を再計算
+            const right = this.camera.getWorldMatrix().getRotationMatrix().getRow(0).toVector3();
+            const tangentForward = BABYLON.Vector3.Cross(up, right);
+            return tangentForward.normalize();
         } else {
-            // 平面地形では、Y成分を除去
             forward.y = 0;
-            forward.normalize();
-            return forward;
+            return forward.normalize();
         }
     }
     
     public getCameraRight(): BABYLON.Vector3 {
-        // カメラの右方向ベクトルを取得
-        const forward = this.getCameraDirection();
-        
+        // カメラのワールドマトリックスからX軸（右方）を取得
+        const right = this.camera.getWorldMatrix().getRotationMatrix().getRow(0).toVector3();
+
         if (this.terrain && this.terrain.isSpherical() && this.sphericalMovement) {
-            // 球体地形では、球面に沿った右方向を計算
-            const up = this.sphericalMovement.getUpVector(this.target.position);
-            return BABYLON.Vector3.Cross(forward, up).normalize();
+            const targetPos = this.target.position;
+            const up = this.sphericalMovement.getUpVector(targetPos);
+
+            // ワールドの右ベクトルを接平面に投影
+            const tangentRight = right.subtract(up.scale(BABYLON.Vector3.Dot(right, up)));
+            
+            if (tangentRight.length() > 0.001) {
+                return tangentRight.normalize();
+            }
+
+            // 投影が失敗した場合のフォールバック
+            const forward = this.getCameraDirection(); // 修正された前方ベクトルを利用
+            const tangentRightFallback = BABYLON.Vector3.Cross(up, forward);
+            return tangentRightFallback.normalize();
         } else {
-            // 平面地形では、通常の右方向
-            return BABYLON.Vector3.Cross(BABYLON.Vector3.Up(), forward);
+            return right.normalize();
         }
     }
     
