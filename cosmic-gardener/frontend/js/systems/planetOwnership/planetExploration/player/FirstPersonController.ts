@@ -5,11 +5,13 @@
 
 import * as THREE from 'three';
 import { SphericalWorld } from '../core/SphericalWorld.js';
+import { AvatarController } from './AvatarController.js';
 
 export class FirstPersonController {
     private camera: THREE.PerspectiveCamera;
     private canvas: HTMLCanvasElement;
     private sphericalWorld: SphericalWorld;
+    private avatarController: AvatarController | null = null;
     
     // 位置と向き
     private position: THREE.Vector3;
@@ -26,15 +28,15 @@ export class FirstPersonController {
     
     // マウス制御
     private isPointerLocked = false;
-    private mouseSensitivity = 0.002;
+    private mouseSensitivity = 0.003;  // より高感度に
     
-    // 物理パラメータ
-    private moveSpeed = 10;
-    private runSpeed = 20;
-    private jumpForce = 8;
+    // 物理パラメータ（マインクラフト風に調整）
+    private moveSpeed = 4.3;  // 通常歩行速度
+    private runSpeed = 5.6;   // 走る速度
+    private jumpForce = 6.5;  // ジャンプ力
     private isRunning = false;
     private isGrounded = true;
-    private playerHeight = 2;
+    private playerHeight = 1.8;  // プレイヤーの目線の高さ（スティーブの高さ）
     
     // 衝突検出
     private raycaster: THREE.Raycaster;
@@ -43,7 +45,8 @@ export class FirstPersonController {
     constructor(
         camera: THREE.PerspectiveCamera,
         canvas: HTMLCanvasElement,
-        sphericalWorld: SphericalWorld
+        sphericalWorld: SphericalWorld,
+        scene?: THREE.Scene
     ) {
         this.camera = camera;
         this.canvas = canvas;
@@ -52,6 +55,11 @@ export class FirstPersonController {
         this.position = new THREE.Vector3();
         this.velocity = new THREE.Vector3();
         this.raycaster = new THREE.Raycaster();
+        
+        // シーンが提供されている場合はアバターコントローラーを作成
+        if (scene) {
+            this.avatarController = new AvatarController(scene, sphericalWorld);
+        }
         
         this.setupEventListeners();
         this.setupPointerLock();
@@ -186,7 +194,7 @@ export class FirstPersonController {
     /**
      * 位置を設定
      */
-    setPosition(position: THREE.Vector3): void {
+    async setPosition(position: THREE.Vector3): Promise<void> {
         this.position.copy(position);
         this.camera.position.copy(position);
         
@@ -198,6 +206,13 @@ export class FirstPersonController {
         this.camera.up.copy(up);
         const lookAt = position.clone().add(forward);
         this.camera.lookAt(lookAt);
+        
+        // アバターコントローラーがある場合は初期化
+        if (this.avatarController) {
+            await this.avatarController.initialize(position);
+            // FPSモードではアバターを非表示
+            this.avatarController.setVisible(false);
+        }
     }
     
     /**
@@ -253,8 +268,9 @@ export class FirstPersonController {
             moveVector.normalize().multiplyScalar(currentSpeed * deltaTime);
         }
         
-        // ジャンプ処理
+        // ジャンプ処理（マインクラフト風）
         if (this.isJumping && this.isGrounded) {
+            // 瞬間的な上向きの速度を与える
             this.velocity.copy(up.clone().multiplyScalar(this.jumpForce));
             this.isGrounded = false;
             this.isJumping = false;
@@ -277,6 +293,37 @@ export class FirstPersonController {
         
         const lookAtTarget = this.position.clone().add(viewForward);
         this.camera.lookAt(lookAtTarget);
+        
+        // アバターコントローラーを更新
+        if (this.avatarController) {
+            // アバターの位置を更新
+            this.avatarController.setPosition(this.position);
+            
+            // 移動状態を更新
+            const movementDirection = new THREE.Vector3();
+            if (this.moveForward) movementDirection.add(moveForwardDir);
+            if (this.moveBackward) movementDirection.sub(moveForwardDir);
+            if (this.moveRight) movementDirection.add(moveRightDir);
+            if (this.moveLeft) movementDirection.sub(moveRightDir);
+            
+            this.avatarController.setMovementDirection(movementDirection, this.isRunning);
+            
+            // ジャンプ状態を更新
+            if (this.isJumping) {
+                this.avatarController.jump();
+            }
+            
+            // アバターの状態を更新
+            this.avatarController.updateState({
+                position: this.position,
+                velocity: this.velocity,
+                isGrounded: this.isGrounded,
+                isJumping: this.isJumping
+            });
+            
+            // アバターを更新
+            this.avatarController.update(deltaTime);
+        }
     }
     
     /**
@@ -309,6 +356,13 @@ export class FirstPersonController {
     }
     
     /**
+     * アバターコントローラーを取得
+     */
+    getAvatarController(): AvatarController | null {
+        return this.avatarController;
+    }
+    
+    /**
      * クリーンアップ
      */
     dispose(): void {
@@ -328,5 +382,11 @@ export class FirstPersonController {
         // 指示UIを削除
         const instructions = document.getElementById('pointer-lock-instructions');
         instructions?.remove();
+        
+        // アバターコントローラーをクリーンアップ
+        if (this.avatarController) {
+            this.avatarController.dispose();
+            this.avatarController = null;
+        }
     }
 }

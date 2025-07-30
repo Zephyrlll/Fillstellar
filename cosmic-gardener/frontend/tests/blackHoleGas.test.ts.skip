@@ -1,0 +1,144 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import * as THREE from 'three';
+
+// Mock document.createElement before importing BlackHoleGas
+vi.stubGlobal('document', {
+  createElement: vi.fn().mockImplementation((tagName: string) => {
+    if (tagName === 'canvas') {
+      return {
+        width: 256,
+        height: 256,
+        getContext: vi.fn().mockReturnValue({
+          createRadialGradient: vi.fn().mockReturnValue({
+            addColorStop: vi.fn()
+          }),
+          fillStyle: '',
+          fillRect: vi.fn()
+        })
+      };
+    }
+    return {};
+  })
+});
+
+// Now import BlackHoleGas after the mock is set up
+import { BlackHoleGas } from '../js/blackHoleGas';
+
+// Mock THREE.js scene
+vi.mock('../js/threeSetup.js', () => ({
+  scene: {
+    add: vi.fn(),
+    remove: vi.fn()
+  }
+}));
+
+describe('BlackHoleGas', () => {
+  let blackHoleGas: BlackHoleGas;
+  let mockBlackHole: THREE.Mesh;
+
+  beforeEach(() => {
+    // Create a fresh instance for each test
+    blackHoleGas = new BlackHoleGas();
+    
+    // Create a mock black hole
+    mockBlackHole = new THREE.Mesh();
+    mockBlackHole.position.set(100, 0, 0);
+    mockBlackHole.userData = { type: 'black_hole' };
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe('update', () => {
+    it('should not throw error when called on disposed effect', () => {
+      // Dispose the effect
+      blackHoleGas.dispose();
+      
+      // Should not throw when updating a disposed effect
+      expect(() => {
+        blackHoleGas.update(0.016, mockBlackHole.position);
+      }).not.toThrow();
+    });
+
+    it('should not throw error when material uniforms are undefined', () => {
+      // Set up the black hole
+      blackHoleGas.setBlackHole(mockBlackHole);
+      
+      // Manually corrupt the uniforms to simulate disposal
+      const gasGroup = (blackHoleGas as any).gasGroup;
+      gasGroup.children.forEach((child: any) => {
+        if (child.material && child.material.uniforms) {
+          child.material.uniforms = undefined;
+        }
+      });
+      
+      // Should not throw when uniforms are undefined
+      expect(() => {
+        blackHoleGas.update(0.016, mockBlackHole.position);
+      }).not.toThrow();
+    });
+
+    it('should handle null or undefined positions gracefully', () => {
+      blackHoleGas.setBlackHole(mockBlackHole);
+      
+      // Should handle undefined position
+      expect(() => {
+        blackHoleGas.update(0.016, undefined);
+      }).not.toThrow();
+      
+      // Should handle null position
+      expect(() => {
+        blackHoleGas.update(0.016, null as any);
+      }).not.toThrow();
+    });
+  });
+
+  describe('dispose', () => {
+    it('should properly clean up resources', () => {
+      blackHoleGas.setBlackHole(mockBlackHole);
+      
+      // Dispose the effect
+      blackHoleGas.dispose();
+      
+      // Verify it's inactive
+      expect(blackHoleGas.isEffectActive()).toBe(false);
+      
+      // Verify internal state is cleared
+      const privateGas = blackHoleGas as any;
+      expect(privateGas.gasParticles).toHaveLength(0);
+      expect(privateGas.blackHole).toBeNull();
+    });
+
+    it('should be safe to call multiple times', () => {
+      blackHoleGas.setBlackHole(mockBlackHole);
+      
+      // Should not throw when called multiple times
+      expect(() => {
+        blackHoleGas.dispose();
+        blackHoleGas.dispose();
+        blackHoleGas.dispose();
+      }).not.toThrow();
+    });
+  });
+
+  describe('setBlackHole', () => {
+    it('should reinitialize after disposal', () => {
+      // Initial setup
+      blackHoleGas.setBlackHole(mockBlackHole);
+      expect(blackHoleGas.isEffectActive()).toBe(true);
+      
+      // Dispose
+      blackHoleGas.dispose();
+      expect(blackHoleGas.isEffectActive()).toBe(false);
+      
+      // Reinitialize with new black hole
+      const newBlackHole = new THREE.Mesh();
+      newBlackHole.userData = { type: 'black_hole' };
+      blackHoleGas.setBlackHole(newBlackHole);
+      
+      // Should be active again
+      expect(blackHoleGas.isEffectActive()).toBe(true);
+    });
+  });
+});

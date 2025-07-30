@@ -9,7 +9,7 @@ import { OwnedPlanet } from '../../planetShop.js';
 export class SphericalWorld {
     private planet: OwnedPlanet;
     private radius: number;
-    private gravity = 9.8;
+    private gravity = 20;  // マインクラフト風の重力（より速い落下）
     
     // 世界設定
     private settings = {
@@ -49,13 +49,15 @@ export class SphericalWorld {
         const lat = Math.PI / 4; // 45度
         const lon = 0;
         
-        return this.sphericalToCartesian(lat, lon, this.radius + 2);
+        // 地表（altitude = 0）から2メートル上
+        return this.sphericalToCartesian(lat, lon, 2);
     }
     
     /**
      * 球面座標をデカルト座標に変換
      */
     sphericalToCartesian(lat: number, lon: number, altitude: number): THREE.Vector3 {
+        // altitude は地表からの高さ（0 = 地表）
         const r = this.radius + altitude;
         const x = r * Math.sin(lat) * Math.cos(lon);
         const y = r * Math.cos(lat);

@@ -1,5 +1,27 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as THREE from 'three';
+
+// Mock document.createElement before importing BlackHoleGas
+vi.stubGlobal('document', {
+  createElement: vi.fn().mockImplementation((tagName: string) => {
+    if (tagName === 'canvas') {
+      return {
+        width: 256,
+        height: 256,
+        getContext: vi.fn().mockReturnValue({
+          createRadialGradient: vi.fn().mockReturnValue({
+            addColorStop: vi.fn()
+          }),
+          fillStyle: '',
+          fillRect: vi.fn()
+        })
+      };
+    }
+    return {};
+  })
+});
+
+// Now import BlackHoleGas after the mock is set up
 import { BlackHoleGas } from '../js/blackHoleGas';
 
 // Mock THREE.js scene

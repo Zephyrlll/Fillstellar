@@ -34,6 +34,7 @@ export class Planet3DViewer {
      * 3Dビューアーを開く
      */
     open(planet: OwnedPlanet): void {
+        console.log('[3D] Opening 3D viewer for planet:', planet.name);
         if (this.isOpen) {
             this.close();
         }
@@ -93,6 +94,7 @@ export class Planet3DViewer {
      * UIを作成
      */
     private createUI(): void {
+        console.log('[3D] Creating UI for planet:', this.currentPlanet?.name);
         this.container = document.createElement('div');
         this.container.id = 'planet-3d-viewer';
         this.container.innerHTML = `
@@ -251,6 +253,8 @@ export class Planet3DViewer {
                 font-weight: bold;
                 transition: all 0.3s;
                 box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
+                z-index: 1000;
+                pointer-events: auto;
             ">
                 🚀 惑星を探索する
             </button>
@@ -273,6 +277,10 @@ export class Planet3DViewer {
                         <span>視点回転</span>
                     </div>
                     <div class="control-key">
+                        <span class="key-badge">V</span>
+                        <span>視点切替（FPS/TPS）</span>
+                    </div>
+                    <div class="control-key">
                         <span class="key-badge">ESC</span>
                         <span>閉じる</span>
                     </div>
@@ -281,6 +289,11 @@ export class Planet3DViewer {
         `;
         
         document.body.appendChild(this.container);
+        
+        // デバッグ：要素が存在するか確認
+        console.log('[3D] Container added to body');
+        const exploreDebug = document.getElementById('explore-planet-btn');
+        console.log('[3D] Explore button exists in DOM:', !!exploreDebug);
         
         // イベントリスナー
         const closeBtn = document.getElementById('close-planet-3d');
@@ -291,7 +304,11 @@ export class Planet3DViewer {
         // 惑星探索ボタン
         const exploreBtn = document.getElementById('explore-planet-btn');
         if (exploreBtn) {
-            exploreBtn.addEventListener('click', () => this.startExploration());
+            console.log('[3D] Explore button found, adding event listener');
+            exploreBtn.addEventListener('click', () => {
+                console.log('[3D] Explore button clicked');
+                this.startExploration();
+            });
             exploreBtn.addEventListener('mouseenter', (e) => {
                 (e.target as HTMLElement).style.transform = 'scale(1.05)';
                 (e.target as HTMLElement).style.boxShadow = '0 6px 20px rgba(76, 175, 80, 0.6)';
@@ -494,13 +511,22 @@ export class Planet3DViewer {
         
         console.log('[3D] Starting planet exploration for:', this.currentPlanet.name);
         
-        // 現在の3Dビューアーを閉じる
-        this.close();
-        
-        // 惑星探索ゲームを開始
-        const explorationGame = PlanetExplorationGame.getInstance();
-        explorationGame.start(this.currentPlanet).catch(error => {
-            console.error('[3D] Failed to start exploration:', error);
-        });
+        try {
+            // 惑星データを保存
+            const planetToExplore = this.currentPlanet;
+            
+            // 現在の3Dビューアーを閉じる
+            this.close();
+            
+            // 惑星探索ゲームを開始
+            console.log('[3D] Getting PlanetExplorationGame instance');
+            const explorationGame = PlanetExplorationGame.getInstance();
+            console.log('[3D] Starting exploration game with planet:', planetToExplore.name);
+            explorationGame.start(planetToExplore).catch(error => {
+                console.error('[3D] Failed to start exploration:', error);
+            });
+        } catch (error) {
+            console.error('[3D] Error in startExploration:', error);
+        }
     }
 }

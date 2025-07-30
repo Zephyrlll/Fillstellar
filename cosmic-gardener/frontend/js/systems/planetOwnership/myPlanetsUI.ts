@@ -158,24 +158,25 @@ export class MyPlanetsUI {
           margin-bottom: 10px;
         }
         
-        .view-3d-button {
+        .explore-button {
           background: linear-gradient(135deg, #4CAF50, #45a049);
           border: none;
           color: white;
-          padding: 8px 16px;
+          padding: 10px 20px;
           border-radius: 20px;
-          font-size: 14px;
+          font-size: 16px;
           cursor: pointer;
           transition: all 0.3s;
           box-shadow: 0 2px 5px rgba(76, 175, 80, 0.3);
+          font-weight: bold;
         }
         
-        .view-3d-button:hover {
+        .explore-button:hover {
           transform: scale(1.05);
           box-shadow: 0 4px 10px rgba(76, 175, 80, 0.5);
         }
         
-        .view-3d-button:active {
+        .explore-button:active {
           transform: scale(0.95);
         }
         
@@ -360,8 +361,8 @@ export class MyPlanetsUI {
                 <span>${daysOwned}日前に購入</span>
               </div>
             </div>
-            <button class="view-3d-button" data-planet-index="${index}" title="3D表示">
-              🌐 3D
+            <button class="explore-button" data-planet-index="${index}" title="惑星を探索">
+              🚀 探索する
             </button>
           </div>
           
@@ -383,15 +384,22 @@ export class MyPlanetsUI {
       `;
     }).join('');
     
-    // 3D表示ボタンのイベントリスナー
-    listContainer.querySelectorAll('.view-3d-button').forEach(button => {
+    // 探索ボタンのイベントリスナー
+    listContainer.querySelectorAll('.explore-button').forEach(button => {
       button.addEventListener('click', (e) => {
         const index = parseInt((e.currentTarget as HTMLElement).dataset.planetIndex || '0');
         const planet = ownedPlanets[index];
         if (planet) {
-          import('./planet3D/Planet3DViewer.js').then(({ Planet3DViewer }) => {
-            Planet3DViewer.getInstance().open(planet);
+          // 直接探索モードを開始
+          import('./planetExploration/core/PlanetExplorationGame.js').then(({ PlanetExplorationGame }) => {
+            console.log('[MY_PLANETS] Starting exploration for:', planet.name);
+            const explorationGame = PlanetExplorationGame.getInstance();
+            explorationGame.start(planet).catch(error => {
+              console.error('[MY_PLANETS] Failed to start exploration:', error);
+            });
           });
+          // 所有惑星UIを閉じる
+          this.close();
         }
       });
     });

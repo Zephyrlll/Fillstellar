@@ -3,13 +3,13 @@
  * 惑星探索ゲームのUI
  */
 
-import { FirstPersonController } from '../player/FirstPersonController.js';
+import { CameraManager } from '../player/CameraManager.js';
 import { BuildingSystem, BuildingType } from '../building/BuildingSystem.js';
 import { ResourceSystem, ResourceType } from '../resources/ResourceSystem.js';
 
 export class ExplorationUI {
     private container: HTMLElement;
-    private playerController: FirstPersonController;
+    private cameraManager: CameraManager;
     private buildingSystem: BuildingSystem;
     private resourceSystem: ResourceSystem;
     
@@ -21,17 +21,17 @@ export class ExplorationUI {
     private exitButton: HTMLElement;
     
     // 状態
-    private showInventory = false;
-    private showBuildMenu = false;
+    private isInventoryVisible = false;
+    private isBuildMenuVisible = false;
     
     constructor(
         container: HTMLElement,
-        playerController: FirstPersonController,
+        cameraManager: CameraManager,
         buildingSystem: BuildingSystem,
         resourceSystem: ResourceSystem
     ) {
         this.container = container;
-        this.playerController = playerController;
+        this.cameraManager = cameraManager;
         this.buildingSystem = buildingSystem;
         this.resourceSystem = resourceSystem;
         
@@ -47,10 +47,11 @@ export class ExplorationUI {
         this.hudElement = document.createElement('div');
         this.hudElement.id = 'exploration-hud';
         this.hudElement.innerHTML = `
-            <div class="crosshair">+</div>
+            <div class="crosshair" id="crosshair"></div>
             <div class="controls-hint">
-                <div>WASD - 移動 | SPACE - ジャンプ | SHIFT - 走る</div>
+                <div>WASD - 移動 | SPACE - ジャンプ | SHIFT - 走る | V - 視点切替</div>
                 <div>E - 採集 | B - 建築 | I - インベントリ | ESC - メニュー</div>
+                <div class="view-mode-indicator">視点: <span id="view-mode-text">一人称</span></div>
             </div>
         `;
         this.hudElement.style.cssText = `
@@ -67,14 +68,44 @@ export class ExplorationUI {
         // クロスヘアのスタイル
         const style = document.createElement('style');
         style.textContent = `
+            .view-mode-indicator {
+                margin-top: 5px;
+                color: #4CAF50;
+                font-weight: bold;
+            }
+            
             .crosshair {
                 position: absolute;
                 top: 50%;
                 left: 50%;
                 transform: translate(-50%, -50%);
-                font-size: 24px;
-                color: rgba(255, 255, 255, 0.8);
-                text-shadow: 0 0 2px black;
+                width: 20px;
+                height: 20px;
+                pointer-events: none;
+            }
+            
+            .crosshair::before {
+                content: '';
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                width: 2px;
+                height: 10px;
+                background: rgba(255, 255, 255, 0.9);
+                box-shadow: 0 0 2px rgba(0, 0, 0, 0.8);
+            }
+            
+            .crosshair::after {
+                content: '';
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                width: 10px;
+                height: 2px;
+                background: rgba(255, 255, 255, 0.9);
+                box-shadow: 0 0 2px rgba(0, 0, 0, 0.8);
             }
             
             .controls-hint {
@@ -254,6 +285,9 @@ export class ExplorationUI {
     private setupEventListeners(): void {
         document.addEventListener('keydown', this.onKeyDown);
         
+        // 視点モード変更イベントをリッスン
+        window.addEventListener('viewModeChange', this.onViewModeChange);
+        
         this.exitButton.addEventListener('click', () => {
             if (confirm('惑星探索を終了しますか？')) {
                 this.onExit();
@@ -300,7 +334,7 @@ export class ExplorationUI {
      * インベントリを表示
      */
     private showInventory(): void {
-        this.showInventory = true;
+        this.isInventoryVisible = true;
         this.inventoryElement.style.display = 'block';
         this.updateInventoryContent();
     }
@@ -309,7 +343,7 @@ export class ExplorationUI {
      * インベントリを非表示
      */
     private hideInventory(): void {
-        this.showInventory = false;
+        this.isInventoryVisible = false;
         this.inventoryElement.style.display = 'none';
     }
     
@@ -365,7 +399,7 @@ export class ExplorationUI {
      * 建築メニューを表示
      */
     private showBuildMenu(): void {
-        this.showBuildMenu = true;
+        this.isBuildMenuVisible = true;
         this.buildMenuElement.style.display = 'flex';
     }
     
@@ -373,7 +407,7 @@ export class ExplorationUI {
      * 建築メニューを非表示
      */
     private hideBuildMenu(): void {
-        this.showBuildMenu = false;
+        this.isBuildMenuVisible = false;
         this.buildMenuElement.style.display = 'none';
     }
     
@@ -420,7 +454,7 @@ export class ExplorationUI {
      * 統計情報を更新
      */
     private updateStats(): void {
-        const position = this.playerController.getPosition();
+        const position = this.cameraManager.getPosition();
         const coords = position ? `${position.x.toFixed(1)}, ${position.y.toFixed(1)}, ${position.z.toFixed(1)}` : 'N/A';
         
         const buildings = this.buildingSystem.getAllBuildings();
@@ -466,10 +500,29 @@ export class ExplorationUI {
     }
     
     /**
+     * 視点モード変更イベント
+     */
+    private onViewModeChange = (event: CustomEvent): void => {
+        const mode = event.detail.mode;
+        const viewModeText = document.getElementById('view-mode-text');
+        const crosshair = document.getElementById('crosshair');
+        
+        if (viewModeText) {
+            viewModeText.textContent = mode === 'first-person' ? '一人称' : '三人称';
+        }
+        
+        // TPSモードではクロスヘアを非表示
+        if (crosshair) {
+            crosshair.style.display = mode === 'first-person' ? 'block' : 'none';
+        }
+    };
+    
+    /**
      * クリーンアップ
      */
     dispose(): void {
         document.removeEventListener('keydown', this.onKeyDown);
+        window.removeEventListener('viewModeChange', this.onViewModeChange);
         
         // UI要素を削除
         this.hudElement.remove();

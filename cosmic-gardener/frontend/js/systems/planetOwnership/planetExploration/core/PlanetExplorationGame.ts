@@ -6,7 +6,7 @@
 import * as THREE from 'three';
 import { OwnedPlanet } from '../../planetShop.js';
 import { SphericalWorld } from './SphericalWorld.js';
-import { FirstPersonController } from '../player/FirstPersonController.js';
+import { CameraManager } from '../player/CameraManager.js';
 import { TerrainGenerator } from '../terrain/TerrainGenerator.js';
 import { BuildingSystem } from '../building/BuildingSystem.js';
 import { ResourceSystem } from '../resources/ResourceSystem.js';
@@ -25,7 +25,7 @@ export class PlanetExplorationGame {
     
     // Game systems
     private sphericalWorld: SphericalWorld;
-    private playerController: FirstPersonController;
+    private cameraManager: CameraManager;
     private terrainGenerator: TerrainGenerator;
     private chunkManager: ChunkManager;
     private buildingSystem: BuildingSystem;
@@ -52,6 +52,8 @@ export class PlanetExplorationGame {
      * ゲームを開始
      */
     async start(planet: OwnedPlanet): Promise<void> {
+        console.log('[EXPLORATION] Starting exploration game for planet:', planet.name);
+        
         if (this.isRunning) {
             this.stop();
         }
@@ -84,7 +86,7 @@ export class PlanetExplorationGame {
         }
         
         // システムのクリーンアップ
-        if (this.playerController) this.playerController.dispose();
+        if (this.cameraManager) this.cameraManager.dispose();
         if (this.chunkManager) this.chunkManager.dispose();
         if (this.buildingSystem) this.buildingSystem.dispose();
         if (this.resourceSystem) this.resourceSystem.dispose();
@@ -129,12 +131,12 @@ export class PlanetExplorationGame {
         this.scene = new THREE.Scene();
         this.scene.fog = new THREE.Fog(0x87CEEB, 100, 2000);
         
-        // カメラ
+        // カメラ（マインクラフト風のFOV）
         this.camera = new THREE.PerspectiveCamera(
-            75,
+            70,  // マインクラフトのデフォルトFOV
             window.innerWidth / window.innerHeight,
             0.1,
-            3000
+            1000  // 描画距離を短く
         );
         
         // レンダラー
@@ -187,6 +189,8 @@ export class PlanetExplorationGame {
      * ゲームシステムを初期化
      */
     private async initializeSystems(): Promise<void> {
+        console.log('[EXPLORATION] Initializing game systems');
+        
         // 球面世界
         this.sphericalWorld = new SphericalWorld(this.planet);
         
@@ -203,16 +207,19 @@ export class PlanetExplorationGame {
             this.terrainGenerator
         );
         
-        // プレイヤーコントローラー
-        this.playerController = new FirstPersonController(
+        // カメラマネージャー（視点切り替え対応）
+        console.log('[EXPLORATION] Creating camera manager');
+        this.cameraManager = new CameraManager(
             this.camera,
             this.renderer.domElement,
+            this.scene,
             this.sphericalWorld
         );
         
         // 初期位置に配置
         const spawnPosition = this.sphericalWorld.getSpawnPosition();
-        this.playerController.setPosition(spawnPosition);
+        console.log('[EXPLORATION] Setting initial position:', spawnPosition);
+        await this.cameraManager.setInitialPosition(spawnPosition);
         
         // 建築システム
         this.buildingSystem = new BuildingSystem(
@@ -231,7 +238,7 @@ export class PlanetExplorationGame {
         // UI
         this.ui = new ExplorationUI(
             this.container!,
-            this.playerController,
+            this.cameraManager,
             this.buildingSystem,
             this.resourceSystem
         );
@@ -265,8 +272,8 @@ export class PlanetExplorationGame {
         const elapsedTime = this.clock.getElapsedTime();
         
         // システム更新
-        this.playerController.update(deltaTime);
-        this.chunkManager.update(this.playerController.getPosition());
+        this.cameraManager.update(deltaTime);
+        this.chunkManager.update(this.cameraManager.getPosition());
         this.buildingSystem.update(deltaTime);
         this.resourceSystem.update(deltaTime);
         this.ui.update(deltaTime);
