@@ -187,6 +187,21 @@ export class MultiverseSystem {
     return true;
   }
   
+  // 宇宙数を取得
+  getUniverseCount(): number {
+    return this.data.universes.length;
+  }
+  
+  // アクティブな宇宙IDを取得
+  getActiveUniverseId(): string | null {
+    return this.data.activeUniverseId;
+  }
+  
+  // 全宇宙のサマリーを取得
+  getAllUniverseSummaries(): UniverseSummary[] {
+    return this.data.universes.map(u => this.getUniverseSummary(u.id)).filter(s => s !== null) as UniverseSummary[];
+  }
+  
   // 宇宙のサマリー情報を取得
   getUniverseSummary(universeId: string): UniverseSummary | null {
     const universe = this.data.universes.find(u => u.id === universeId);

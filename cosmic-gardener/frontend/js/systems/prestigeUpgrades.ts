@@ -5,13 +5,13 @@ export const prestigeUpgrades: PrestigeUpgrade[] = [
   {
     id: 'cosmic_abundance',
     name: '宇宙の豊穣',
-    description: '宇宙の塵の生産量を10%増加',
+    description: '宇宙の塵の生産量を25%増加',
     maxLevel: 10,
     baseCost: 1,
     costScaling: 1.5,
     effect: {
       type: PrestigeEffectType.RESOURCE_MULTIPLIER,
-      value: 0.1,
+      value: 0.25,
       target: 'cosmicDust'
     },
     icon: '✨'
@@ -19,13 +19,13 @@ export const prestigeUpgrades: PrestigeUpgrade[] = [
   {
     id: 'stellar_efficiency',
     name: '恒星効率',
-    description: 'エネルギー生産量を15%増加',
+    description: 'エネルギー生産量を30%増加',
     maxLevel: 10,
     baseCost: 2,
     costScaling: 1.5,
     effect: {
       type: PrestigeEffectType.RESOURCE_MULTIPLIER,
-      value: 0.15,
+      value: 0.30,
       target: 'energy'
     },
     icon: '⭐'
@@ -33,13 +33,13 @@ export const prestigeUpgrades: PrestigeUpgrade[] = [
   {
     id: 'universal_prosperity',
     name: '宇宙繁栄',
-    description: 'すべての資源生産量を5%増加',
+    description: 'すべての資源生産量を10%増加',
     maxLevel: 20,
     baseCost: 5,
     costScaling: 1.8,
     effect: {
       type: PrestigeEffectType.RESOURCE_MULTIPLIER,
-      value: 0.05
+      value: 0.10
     },
     icon: '🌌',
     prerequisite: 'cosmic_abundance'
@@ -49,13 +49,13 @@ export const prestigeUpgrades: PrestigeUpgrade[] = [
   {
     id: 'dust_reserves',
     name: '塵の蓄積',
-    description: '開始時の宇宙の塵を50,000増加',
+    description: '開始時の宇宙の塵を100,000増加',
     maxLevel: 10,
     baseCost: 3,
     costScaling: 1.4,
     effect: {
       type: PrestigeEffectType.STARTING_RESOURCES,
-      value: 50000,
+      value: 100000,
       target: 'cosmicDust'
     },
     icon: '💫'

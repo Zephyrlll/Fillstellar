@@ -14,10 +14,10 @@ export class PrestigeSystem {
   private static instance: PrestigeSystem;
   private saveSystem: SaveSystem;
   private requirements: PrestigeRequirements = {
-    minPlayTime: 10 * 60 * 1000, // 10 minutes
-    minResources: 1000000, // 1M total resources
-    minCelestialBodies: 5,
-    hasIntelligentLife: true
+    minPlayTime: 5 * 60 * 1000, // 5 minutes (reduced from 10)
+    minResources: 500000, // 500K total resources (reduced from 1M)
+    minCelestialBodies: 3, // Reduced from 5
+    hasIntelligentLife: false // Changed to optional
   };
   
   private constructor() {
@@ -50,7 +50,7 @@ export class PrestigeSystem {
       playTime >= this.requirements.minPlayTime &&
       totalResources >= this.requirements.minResources &&
       celestialCount >= this.requirements.minCelestialBodies &&
-      hasIntelligentLife;
+      (!this.requirements.hasIntelligentLife || hasIntelligentLife);
     
     return {
       canPrestige: meetsRequirements,
@@ -73,21 +73,21 @@ export class PrestigeSystem {
     const achievementCount = this.getAchievementCount();
     const playTime = state.totalPlayTime || 0;
     
-    // Base calculation: log10 of total resources
-    const basePoints = Math.max(0, Math.log10(totalResources));
+    // Base calculation: log10 of total resources (increased multiplier)
+    const basePoints = Math.max(0, Math.log10(totalResources)) * 2; // x2 multiplier
     
-    // Celestial bonus: sqrt of celestial body count
-    const celestialBonus = Math.sqrt(celestialCount);
+    // Celestial bonus: sqrt of celestial body count (increased)
+    const celestialBonus = Math.sqrt(celestialCount) * 3; // x3 multiplier
     
-    // Achievement bonus: 1% per achievement
-    const achievementBonus = achievementCount * 0.01;
+    // Achievement bonus: 2% per achievement (doubled)
+    const achievementBonus = achievementCount * 0.02;
     
-    // Time bonus: diminishing returns on play time (hours)
+    // Time bonus: diminishing returns on play time (hours) - improved
     const hoursPlayed = playTime / (1000 * 60 * 60);
-    const timeBonus = Math.log(1 + hoursPlayed) * 0.5;
+    const timeBonus = Math.log(1 + hoursPlayed) * 1.0; // x2 multiplier
     
-    // Total multiplier
-    const bonusMultiplier = 1 + achievementBonus + timeBonus;
+    // Total multiplier (improved)
+    const bonusMultiplier = 1.5 + achievementBonus + timeBonus; // Base 1.5x
     
     // Final calculation
     const prestigePoints = Math.floor(

@@ -98,6 +98,8 @@ import { physicsConfig } from './js/physicsConfig.ts';
 import './js/debugPhysics.ts';
 // Orbit trails
 import { orbitTrailSystem } from './js/orbitTrails.ts';
+// Multiverse bonus
+import { multiverseBonusSystem } from './js/systems/multiverseBonus.ts';
 // Background galaxies
 import { backgroundGalaxies } from './js/backgroundGalaxies.ts';
 // Celestial Creation UI
@@ -254,6 +256,10 @@ function createNotificationContainer(): HTMLElement {
 import { blackHoleGas } from './js/blackHoleGas.ts';
 // Derived resource generator
 import { DerivedResourceGenerator } from './js/derivedResourceGenerator.ts';
+// UI effect imports
+import { resourcePopupManager } from './js/effects/resourcePopup.ts';
+import { achievementEffectManager } from './js/effects/achievementEffect.ts';
+import { researchCompleteEffectManager } from './js/effects/researchCompleteEffect.ts';
 
 // Initialize idle game systems
 const saveSystem = new SaveSystem();
@@ -433,6 +439,11 @@ function animate() {
     // 背景銀河を更新（カメラ位置を渡す）
     backgroundGalaxies.update(animationDeltaTime, camera.position);
     
+    // Update UI effects
+    resourcePopupManager.update();
+    achievementEffectManager.update();
+    researchCompleteEffectManager.update();
+    
     // ブラックホールのガス効果を更新（一時的に無効化してデバッグ）
     const blackHole = gameState.stars.find(star => star.userData.type === 'black_hole');
     // エラーデバッグのため一時的にコメントアウト
@@ -495,6 +506,8 @@ function animate() {
     if (paragonSystem.isEndgame()) {
         dustRate *= paragonSystem.getResourceProductionBonus('cosmicDust');
     }
+    // Apply multiverse bonus
+    dustRate = multiverseBonusSystem.applyBonus(dustRate, 'resourceMultiplier');
     // Use mathCache for resource generation rates
     let energyRate = mathCache.getEnergyGenerationRate();
     let organicMatterRate = mathCache.getOrganicMatterGenerationRate();
@@ -630,6 +643,11 @@ function animate() {
                 ...newState.resourceAccumulators,
                 cosmicDust: 0
             };
+            
+            // Show popup for significant amounts
+            if (dustToAdd >= 0.1) {
+                resourcePopupManager.createWorldPopup(dustToAdd, 'cosmicDust', new THREE.Vector3(0, 5, 0));
+            }
         }
         
         if (newState.resourceAccumulators.energy >= 1) {
@@ -643,6 +661,11 @@ function animate() {
                 ...newState.resourceAccumulators,
                 energy: newState.resourceAccumulators.energy - energyToAdd
             };
+            
+            // Show popup
+            if (energyToAdd > 0) {
+                resourcePopupManager.createWorldPopup(energyToAdd, 'energy', new THREE.Vector3(0, 5, 0));
+            }
         }
         
         if (newState.resourceAccumulators.organicMatter >= 1) {
@@ -656,6 +679,11 @@ function animate() {
                 ...newState.resourceAccumulators,
                 organicMatter: newState.resourceAccumulators.organicMatter - organicToAdd
             };
+            
+            // Show popup
+            if (organicToAdd > 0) {
+                resourcePopupManager.createWorldPopup(organicToAdd, 'organicMatter', new THREE.Vector3(0, 5, 0));
+            }
         }
         
         if (newState.resourceAccumulators.biomass && newState.resourceAccumulators.biomass >= 1) {
@@ -700,6 +728,9 @@ function animate() {
     
     // Update resource particle effects
     resourceParticleSystem.update(deltaTime);
+    
+    // Process multiverse resource flow
+    multiverseBonusSystem.processResourceFlow(resourceDeltaTime);
     
     // Update planet shop
     import('./js/systems/planetOwnership/planetShop.js').then(({ PlanetShop }) => {

@@ -89,20 +89,20 @@ export interface BalanceConfig {
 // Default balanced configuration
 export const defaultBalanceConfig: BalanceConfig = {
   resourceRates: {
-    cosmicDust: { base: 3, perLevel: 0.5 }, // Increased from 1 to 3 for better early game progression
-    energy: { base: 0, perLevel: 0.001 }, // Per solar mass
-    organicMatter: { base: 0, perLevel: 0.1 }, // Per life stage
-    biomass: { base: 0, perLevel: 0.05 },
-    darkMatter: { base: 0, perLevel: 0.0001 }, // Per black hole mass
-    thoughtPoints: { base: 0, perLevel: 0.000001 } // Per intelligent population
+    cosmicDust: { base: 6, perLevel: 1.0 }, // Doubled from 3 to 6 for faster early game
+    energy: { base: 0.1, perLevel: 0.002 }, // Added base generation, doubled per level
+    organicMatter: { base: 0, perLevel: 0.2 }, // Doubled per life stage
+    biomass: { base: 0, perLevel: 0.1 }, // Doubled
+    darkMatter: { base: 0, perLevel: 0.0002 }, // Doubled
+    thoughtPoints: { base: 0, perLevel: 0.000002 } // Doubled
   },
   
   creationCosts: {
-    asteroid: { cosmicDust: 10 },
-    comet: { cosmicDust: 25, energy: 5 },
-    planet: { cosmicDust: 100, energy: 50 },
-    star: { cosmicDust: 1000, energy: 500 },
-    black_hole: { cosmicDust: 10000, energy: 5000, darkMatter: 100 }
+    asteroid: { cosmicDust: 5 }, // Reduced from 10
+    comet: { cosmicDust: 15, energy: 3 }, // Reduced from 25/5
+    planet: { cosmicDust: 50, energy: 25 }, // Reduced from 100/50
+    star: { cosmicDust: 500, energy: 250 }, // Reduced from 1000/500
+    black_hole: { cosmicDust: 5000, energy: 2500, darkMatter: 50 } // Reduced from 10000/5000/100
   },
   
   lifeEvolution: {

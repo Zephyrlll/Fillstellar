@@ -2,6 +2,7 @@ import { Achievement, AchievementData, AchievementProgress } from '../types/achi
 import { achievements, getAchievementById, getTotalAchievementCount } from './achievementDefinitions.js';
 import { gameState, gameStateManager } from '../state.js';
 import { FeedbackSystem } from './feedbackSystem.js';
+import { achievementEffectManager } from '../effects/achievementEffect.js';
 
 export class AchievementSystem {
   private data: AchievementData = {
@@ -93,6 +94,14 @@ export class AchievementSystem {
         name: achievement.name,
         description: achievement.description,
         icon: achievement.icon
+      });
+      
+      // Show achievement effect
+      achievementEffectManager.showAchievement({
+        title: achievement.name,
+        description: achievement.description,
+        icon: achievement.icon,
+        rarity: this.getAchievementRarity(achievement)
       });
       
       // Also show a toast for the reward
@@ -307,5 +316,26 @@ export class AchievementSystem {
       newlyUnlocked: []
     };
     this.saveData();
+  }
+  
+  private getAchievementRarity(achievement: Achievement): 'common' | 'rare' | 'epic' | 'legendary' {
+    // Determine rarity based on achievement difficulty or unlock rate
+    if (achievement.id === 'perfectionist') return 'legendary';
+    
+    // Check reward value
+    if (achievement.reward) {
+      const totalResources = achievement.reward.resources ? 
+        Object.values(achievement.reward.resources).reduce((sum, val) => sum + val, 0) : 0;
+      
+      if (totalResources >= 10000) return 'legendary';
+      if (totalResources >= 1000) return 'epic';
+      if (totalResources >= 100) return 'rare';
+    }
+    
+    // Check category
+    if (achievement.category === 'secret') return 'epic';
+    if (achievement.category === 'master') return 'rare';
+    
+    return 'common';
   }
 }

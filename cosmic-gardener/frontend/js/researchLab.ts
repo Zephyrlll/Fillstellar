@@ -3,6 +3,7 @@ import { allResearchItems, researchCategories } from './researchData.js';
 import { ResearchItem, ResearchState, isResearchAvailable, canAffordResearch, isResearchCompleted } from './types/research.js';
 import { soundManager } from './sound.js';
 import { showMessage } from './ui.js';
+import { researchCompleteEffectManager } from './effects/researchCompleteEffect.js';
 
 export class ResearchLabUI {
   private overlay: HTMLElement;
@@ -449,6 +450,14 @@ export class ResearchLabUI {
     // Play sound and show message
     soundManager.playUISound('success');
     showMessage(`研究完了: ${item.name}`, 'success');
+    
+    // Show research complete effect
+    researchCompleteEffectManager.showResearchComplete({
+      name: item.name,
+      icon: item.icon || '🔬',
+      category: item.category,
+      unlocks: item.unlocks || []
+    });
     
     // Update display
     this.updateDisplay();

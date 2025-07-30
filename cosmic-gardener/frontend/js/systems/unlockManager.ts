@@ -109,6 +109,46 @@ export class UnlockManager {
       requiredPhase: 2
     });
     
+    // Automation unlocks (early unlock)
+    this.registerUnlock({
+      id: 'automation_basic',
+      type: UnlockEventType.FEATURE,
+      name: '基本自動化',
+      description: '資源収集の自動化が解放されます',
+      icon: '🤖',
+      requiredPhase: 1, // Phase 1 (early unlock)
+      customRequirement: () => {
+        const state = gameStateManager.getState();
+        return state.resources.cosmicDust >= 5000; // Only 5000 dust required
+      }
+    });
+    
+    this.registerUnlock({
+      id: 'automation_conversion',
+      type: UnlockEventType.FEATURE,
+      name: '変換自動化',
+      description: '資源変換の自動化が解放されます',
+      icon: '🔄',
+      requiredPhase: 2, // Phase 2
+      customRequirement: () => {
+        const state = gameStateManager.getState();
+        return state.stars.length >= 2; // Only 2 celestial bodies required
+      }
+    });
+    
+    this.registerUnlock({
+      id: 'automation_celestial',
+      type: UnlockEventType.FEATURE,
+      name: '天体作成自動化',
+      description: '天体作成の自動化が解放されます',
+      icon: '🌟',
+      requiredPhase: 3, // Phase 3
+      customRequirement: () => {
+        const state = gameStateManager.getState();
+        return state.stars.length >= 5; // Only 5 celestial bodies required
+      }
+    });
+    
     this.registerUnlock({
       id: 'evolution_boost',
       type: UnlockEventType.FEATURE,
