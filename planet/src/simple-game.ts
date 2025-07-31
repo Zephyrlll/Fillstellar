@@ -3,6 +3,9 @@ import { HumanoidAvatar } from './game/avatar/HumanoidAvatar';
 import { AvatarAnimationController, AnimationState } from './game/avatar/AvatarAnimationController';
 import { CrossGameResourceManager } from './game/crossgame/CrossGameResourceManager';
 import { ResourceTransferUI } from './game/ui/ResourceTransferUI';
+import { SurvivalSystem, EnvironmentalFactors } from './game/systems/SurvivalSystem';
+import { ConsumableManager, ConsumableItem } from './game/systems/ConsumableItems';
+import { ConsumablesUI } from './game/ui/ConsumablesUI';
 
 // 型定義
 interface BuildingType {
@@ -143,6 +146,11 @@ export class SimplePlanetGame {
     private crossGameResourceManager: CrossGameResourceManager;
     private resourceTransferUI: ResourceTransferUI;
     
+    // 生存システム
+    private survivalSystem: SurvivalSystem;
+    private consumableManager: ConsumableManager;
+    private consumablesUI: ConsumablesUI;
+    
     constructor(canvas: HTMLCanvasElement) {
         this.canvas = canvas;
         this.engine = new BABYLON.Engine(canvas, true);
@@ -206,6 +214,15 @@ export class SimplePlanetGame {
         
         // クロスゲームシステム初期化
         this.initializeCrossGameSystem();
+        
+        // 生存システム初期化
+        this.survivalSystem = new SurvivalSystem(this.scene);
+        this.consumableManager = new ConsumableManager();
+        this.consumablesUI = new ConsumablesUI(
+            this.consumableManager,
+            this.survivalSystem,
+            (item: ConsumableItem) => this.craftConsumable(item)
+        );
         
         // 入力設定
         this.setupInput();
@@ -570,6 +587,8 @@ export class SimplePlanetGame {
             <div>I: インベントリ</div>
             <div>U: アップグレード</div>
             <div>T: リソース転送</div>
+            <div>C: 消耗品クラフト</div>
+            <div>1-5: アイテム使用</div>
             <div>F5: セーブ / F9: ロード</div>
             <div>マウス: カメラ回転</div>
         `;
@@ -778,7 +797,7 @@ export class SimplePlanetGame {
                         // 時々パーツも生成（研究所があると確率UP）
                         if (Math.random() < 0.001 * labBonus) {
                             this.inventory.parts += 1;
-                            this.showNotification('パーツを発見しました！', 'success');
+                            // 通知は削除してUIで静かに表示
                         }
                         
                         // 採掘エフェクトを追加（まだ存在しない場合）
@@ -828,6 +847,24 @@ export class SimplePlanetGame {
         
         // 探査要素の更新
         this.checkLocationInteraction();
+        
+        // 生存システムの更新
+        if (this.survivalSystem) {
+            const isIndoors = this.isPlayerInBuilding();
+            const factors: EnvironmentalFactors = {
+                isIndoors: isIndoors,
+                temperature: 20 + Math.sin(this.timeOfDay * Math.PI / 12) * 15, // 昼夜で温度変化
+                oxygenLevel: isIndoors ? 100 : 21, // 基地内は酸素豊富
+                timeOfDay: this.timeOfDay,
+                weather: this.weather
+            };
+            this.survivalSystem.update(deltaTime, factors);
+            
+            // 死亡チェック
+            if (!this.survivalSystem.isAlive()) {
+                this.engine.stopRenderLoop();
+            }
+        }
         
         // 環境音（たまに再生）
         this.playSound('ambient');
@@ -2450,7 +2487,7 @@ export class SimplePlanetGame {
         this.tutorialUI.id = 'tutorialUI';
         this.tutorialUI.style.cssText = `
             position: absolute;
-            bottom: 100px;
+            bottom: 200px;
             left: 50%;
             transform: translateX(-50%);
             background: rgba(0, 0, 0, 0.9);
@@ -2459,6 +2496,7 @@ export class SimplePlanetGame {
             font-family: Arial;
             border-radius: 10px;
             max-width: 400px;
+            z-index: 1000;
             border: 2px solid #00ff00;
             box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
         `;
@@ -3442,5 +3480,48 @@ export class SimplePlanetGame {
         );
         
         console.log('[CROSSGAME] Cross-game system initialized');
+    }
+    
+    private isPlayerInBuilding(): boolean {
+        // プレイヤーが基地の近くにいるかチェック
+        for (const [id, building] of this.buildings) {
+            if (building.type.id === 'base') {
+                const distance = BABYLON.Vector3.Distance(this.player.position, building.position);
+                if (distance < 5) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+    
+    private craftConsumable(item: ConsumableItem): boolean {
+        // リソースチェック
+        const cost = item.cost;
+        if (cost.minerals && this.resources.minerals < cost.minerals) return false;
+        if (cost.energy && this.resources.energy < cost.energy) return false;
+        if (cost.parts && this.inventory.parts < cost.parts) return false;
+        
+        // リソースを消費
+        if (cost.minerals) {
+            this.resources.minerals -= cost.minerals;
+            this.inventory.minerals -= cost.minerals;
+        }
+        if (cost.energy) {
+            this.resources.energy -= cost.energy;
+            this.inventory.energy -= cost.energy;
+        }
+        if (cost.parts) {
+            this.inventory.parts -= cost.parts;
+        }
+        
+        // UI更新
+        this.updateResourceUI();
+        this.updateInventoryUI();
+        
+        this.showNotification(`${item.name}をクラフトしました！`, 'success');
+        this.playSound('build');
+        
+        return true;
     }
 }
