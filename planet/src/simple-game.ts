@@ -1,4 +1,8 @@
 import * as BABYLON from '@babylonjs/core';
+import { HumanoidAvatar } from './game/avatar/HumanoidAvatar';
+import { AvatarAnimationController, AnimationState } from './game/avatar/AvatarAnimationController';
+import { CrossGameResourceManager } from './game/crossgame/CrossGameResourceManager';
+import { ResourceTransferUI } from './game/ui/ResourceTransferUI';
 
 // 型定義
 interface BuildingType {
@@ -50,6 +54,10 @@ export class SimplePlanetGame {
     private camera: BABYLON.ArcRotateCamera;
     private player: BABYLON.Mesh;
     private ground: BABYLON.Mesh;
+    
+    // アバターシステム
+    private humanoidAvatar: HumanoidAvatar;
+    private animationController: AvatarAnimationController;
     
     // プレイヤーの状態
     private playerSpeed = 0.15; // 歩く速度を大幅に下げる
@@ -131,6 +139,10 @@ export class SimplePlanetGame {
     private scanParticles: BABYLON.ParticleSystem | null = null;
     private locationMarkers: Map<string, BABYLON.Mesh> = new Map();
     
+    // クロスゲームリソースシステム
+    private crossGameResourceManager: CrossGameResourceManager;
+    private resourceTransferUI: ResourceTransferUI;
+    
     constructor(canvas: HTMLCanvasElement) {
         this.canvas = canvas;
         this.engine = new BABYLON.Engine(canvas, true);
@@ -191,6 +203,9 @@ export class SimplePlanetGame {
         
         // サウンドシステム初期化
         this.initializeSounds();
+        
+        // クロスゲームシステム初期化
+        this.initializeCrossGameSystem();
         
         // 入力設定
         this.setupInput();
@@ -411,17 +426,28 @@ export class SimplePlanetGame {
     }
     
     private createPlayer() {
-        // シンプルなカプセル型プレイヤー
-        this.player = BABYLON.MeshBuilder.CreateCapsule('player', {
-            height: 2,
-            radius: 0.5
-        }, this.scene);
+        // 人間形アバターを作成
+        this.humanoidAvatar = new HumanoidAvatar(this.scene, {
+            height: 1.75,
+            bodyType: 'normal',
+            skinColor: new BABYLON.Color3(0.96, 0.82, 0.69),
+            hairColor: new BABYLON.Color3(0.3, 0.2, 0.1),
+            clothingColor: new BABYLON.Color3(0.2, 0.4, 0.7)
+        });
         
+        // アニメーションコントローラーを初期化
+        this.animationController = new AvatarAnimationController(this.humanoidAvatar, this.scene);
+        
+        // プレイヤーメッシュを取得
+        this.player = this.humanoidAvatar.getRootMesh();
+        this.player.name = 'player';
+        
+        // 初期位置
         this.player.position.y = 5;
         
-        const playerMat = new BABYLON.StandardMaterial('playerMat', this.scene);
-        playerMat.diffuseColor = new BABYLON.Color3(0.2, 0.5, 0.8);
-        this.player.material = playerMat;
+        // コリジョン設定
+        this.player.checkCollisions = true;
+        this.player.ellipsoid = new BABYLON.Vector3(0.5, 0.9, 0.5);
         
         // カメラターゲット
         this.camera.setTarget(this.player.position);
@@ -543,6 +569,7 @@ export class SimplePlanetGame {
             <div>B: 建設メニュー</div>
             <div>I: インベントリ</div>
             <div>U: アップグレード</div>
+            <div>T: リソース転送</div>
             <div>F5: セーブ / F9: ロード</div>
             <div>マウス: カメラ回転</div>
         `;
@@ -600,6 +627,11 @@ export class SimplePlanetGame {
                 this.performScan();
             }
             
+            // リソース転送UI
+            if (e.key.toLowerCase() === 't') {
+                this.resourceTransferUI?.toggle();
+            }
+            
             // セーブ/ロード
             if (e.key.toLowerCase() === 'f5') {
                 this.saveGame();
@@ -652,6 +684,8 @@ export class SimplePlanetGame {
     }
     
     private update() {
+        const deltaTime = this.engine.getDeltaTime() / 1000;
+        
         // 重力（より自然に）
         this.playerVelocity.y -= 0.02;
         
@@ -661,11 +695,19 @@ export class SimplePlanetGame {
         this.player.position.y += this.playerVelocity.y;
         
         // 地面との衝突
-        const groundHeight = this.getGroundHeight(this.player.position.x, this.player.position.z) + 1;
+        const groundHeight = this.getGroundHeight(this.player.position.x, this.player.position.z) + 0.875; // アバターの高さを考慮
         if (this.player.position.y <= groundHeight) {
             this.player.position.y = groundHeight;
             this.playerVelocity.y = 0;
             this.isJumping = false;
+        }
+        
+        // アニメーションの状態を更新
+        this.updateAnimationState();
+        
+        // アニメーションを更新
+        if (this.animationController) {
+            this.animationController.update(deltaTime);
         }
         
         // 境界制限（拡大）
@@ -679,6 +721,9 @@ export class SimplePlanetGame {
         
         // カメラ追従
         this.camera.setTarget(this.player.position);
+        
+        // プレイヤーの向きを更新
+        this.updatePlayerRotation();
         
         // 建設モードの更新
         if (this.buildMode && this.previewBuilding) {
@@ -705,7 +750,6 @@ export class SimplePlanetGame {
         }
         
         // 建物の効果を処理
-        let deltaTime = this.engine.getDeltaTime() / 1000;
         let powerBonus = 1; // 発電所による生産ボーナス
         let labBonus = 1;   // 研究所によるボーナス
         
@@ -813,28 +857,35 @@ export class SimplePlanetGame {
             const distance = BABYLON.Vector3.Distance(this.player.position, resource.position);
             
             if (distance < collectRange) {
-                // リソース獲得
-                const type = resource.metadata.type;
-                this.resources[type === 'mineral' ? 'minerals' : 'energy'] += 10;
+                // 採取アニメーションを再生
+                this.animationController.setState(AnimationState.COLLECT);
                 
-                // インベントリにも追加
-                this.inventory[type === 'mineral' ? 'minerals' : 'energy'] += 10;
+                // アニメーション完了後にリソースを獲得
+                setTimeout(() => {
+                    // リソース獲得
+                    const type = resource.metadata.type;
+                    this.resources[type === 'mineral' ? 'minerals' : 'energy'] += 10;
+                    
+                    // インベントリにも追加
+                    this.inventory[type === 'mineral' ? 'minerals' : 'energy'] += 10;
+                    
+                    // UI更新
+                    document.getElementById('minerals')!.textContent = this.resources.minerals.toString();
+                    document.getElementById('energy')!.textContent = this.resources.energy.toString();
+                    
+                    // リソース削除
+                    resource.dispose();
+                    this.resourceNodes.splice(i, 1);
+                    
+                    // 採取エフェクト
+                    this.createCollectionEffect(resource.position, type);
+                    
+                    // サウンド再生
+                    this.playSound(type === 'mineral' ? 'collect' : 'collectEnergy');
+                    
+                    console.log(`採取: ${type}`);
+                }, 500); // 0.5秒後に採取完了
                 
-                // UI更新
-                document.getElementById('minerals')!.textContent = this.resources.minerals.toString();
-                document.getElementById('energy')!.textContent = this.resources.energy.toString();
-                
-                // リソース削除
-                resource.dispose();
-                this.resourceNodes.splice(i, 1);
-                
-                // 採取エフェクト
-                this.createCollectionEffect(resource.position, type);
-                
-                // サウンド再生
-                this.playSound(type === 'mineral' ? 'collect' : 'collectEnergy');
-                
-                console.log(`採取: ${type}`);
                 break;
             }
         }
@@ -2977,21 +3028,33 @@ export class SimplePlanetGame {
     }
     
     private createScanner() {
-        // スキャナーのビジュアル表現（プレイヤーに装着）
+        // スキャナーのビジュアル表現（アバターの右手に装着）
         this.scanner = BABYLON.MeshBuilder.CreateCylinder('scanner', {
-            height: 0.3,
-            diameterTop: 0.2,
-            diameterBottom: 0.1,
+            height: 0.15,
+            diameterTop: 0.1,
+            diameterBottom: 0.05,
             tessellation: 16
         }, this.scene);
         
-        this.scanner.parent = this.player;
-        this.scanner.position = new BABYLON.Vector3(0.5, 0.5, 0);
+        // 右手に装着
+        const rightHand = this.humanoidAvatar.getBone('rightHand');
+        if (rightHand) {
+            this.scanner.parent = rightHand;
+            this.scanner.position = new BABYLON.Vector3(0, -0.1, 0);
+            this.scanner.rotation = new BABYLON.Vector3(0, 0, Math.PI / 2);
+        } else {
+            // フォールバック：プレイヤーに直接装着
+            this.scanner.parent = this.player;
+            this.scanner.position = new BABYLON.Vector3(0.5, 0.5, 0);
+        }
         
         const scannerMat = new BABYLON.StandardMaterial('scannerMat', this.scene);
         scannerMat.diffuseColor = new BABYLON.Color3(0.2, 0.5, 0.8);
         scannerMat.emissiveColor = new BABYLON.Color3(0.1, 0.3, 0.6);
         this.scanner.material = scannerMat;
+        
+        // 初期状態では非表示
+        this.scanner.visibility = 0;
         
         // スキャンエフェクト用パーティクル
         this.createScanParticles();
@@ -3035,6 +3098,11 @@ export class SimplePlanetGame {
         console.log('[EXPLORATION] Performing scan...');
         this.scannerActive = true;
         this.scannerCooldown = 5; // 5秒のクールダウン
+        
+        // スキャナーを表示
+        if (this.scanner) {
+            this.scanner.visibility = 1;
+        }
         
         // スキャンエフェクト開始
         this.scanParticles?.start();
@@ -3093,6 +3161,11 @@ export class SimplePlanetGame {
         setTimeout(() => {
             this.scanParticles?.stop();
             this.scannerActive = false;
+            
+            // スキャナーを非表示
+            if (this.scanner) {
+                this.scanner.visibility = 0;
+            }
         }, 2000);
     }
     
@@ -3289,5 +3362,85 @@ export class SimplePlanetGame {
                 particleSystem.dispose();
             }, 2000);
         }, 800);
+    }
+    
+    private updateAnimationState(): void {
+        const speed = Math.sqrt(this.playerVelocity.x ** 2 + this.playerVelocity.z ** 2);
+        const verticalSpeed = Math.abs(this.playerVelocity.y);
+        
+        // 現在のアニメーション状態を判定
+        if (this.buildMode) {
+            this.animationController.setState(AnimationState.BUILD);
+        } else if (this.scannerActive) {
+            this.animationController.setState(AnimationState.SCAN);
+        } else if (this.isJumping && verticalSpeed > 0.1) {
+            this.animationController.setState(AnimationState.JUMP);
+        } else if (!this.isJumping && verticalSpeed > 0.1) {
+            this.animationController.setState(AnimationState.FALLING);
+        } else if (speed > 0.05) {
+            if (this.isRunning) {
+                this.animationController.setState(AnimationState.RUN);
+            } else {
+                this.animationController.setState(AnimationState.WALK);
+            }
+        } else {
+            this.animationController.setState(AnimationState.IDLE);
+        }
+    }
+    
+    private updatePlayerRotation(): void {
+        const speed = Math.sqrt(this.playerVelocity.x ** 2 + this.playerVelocity.z ** 2);
+        
+        if (speed > 0.01) {
+            // 移動方向を計算
+            const targetRotation = Math.atan2(this.playerVelocity.x, this.playerVelocity.z);
+            
+            // スムーズに回転
+            let currentRotation = this.player.rotation.y;
+            let rotationDiff = targetRotation - currentRotation;
+            
+            // 最短経路で回転
+            while (rotationDiff > Math.PI) rotationDiff -= Math.PI * 2;
+            while (rotationDiff < -Math.PI) rotationDiff += Math.PI * 2;
+            
+            this.player.rotation.y += rotationDiff * 0.1;
+        }
+    }
+    
+    private initializeCrossGameSystem(): void {
+        console.log('[CROSSGAME] Initializing cross-game system...');
+        
+        // クロスゲームリソースマネージャーを初期化
+        this.crossGameResourceManager = new CrossGameResourceManager();
+        
+        // リソース転送UIを初期化
+        this.resourceTransferUI = new ResourceTransferUI(
+            this.crossGameResourceManager,
+            (resourceType: string, amount: number) => {
+                // 変換されたリソースを受け取る
+                switch (resourceType) {
+                    case 'minerals':
+                        this.resources.minerals += amount;
+                        this.inventory.minerals += amount;
+                        break;
+                    case 'energy':
+                        this.resources.energy += amount;
+                        this.inventory.energy += amount;
+                        break;
+                    case 'parts':
+                        this.inventory.parts += amount;
+                        break;
+                    case 'artifacts':
+                        this.inventory.artifacts += amount;
+                        break;
+                }
+                
+                this.updateResourceUI();
+                this.updateInventoryUI();
+                this.showNotification(`${amount} ${resourceType} を獲得しました！`, 'success');
+            }
+        );
+        
+        console.log('[CROSSGAME] Cross-game system initialized');
     }
 }
