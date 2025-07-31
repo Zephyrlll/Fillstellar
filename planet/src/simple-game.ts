@@ -15,6 +15,7 @@ interface Building {
     position: BABYLON.Vector3;
     productionRate?: number;
     particleSystem?: BABYLON.ParticleSystem;
+    upgrades?: string[];
 }
 
 interface Objective {
@@ -22,6 +23,23 @@ interface Objective {
     description: string;
     completed: boolean;
     reward: { minerals?: number; energy?: number };
+}
+
+interface DiscoverableLocation {
+    id: string;
+    type: 'cave' | 'ruins' | 'crystal' | 'ship' | 'oasis';
+    position: BABYLON.Vector3;
+    discovered: boolean;
+    mesh: BABYLON.Mesh;
+    rewards?: { minerals?: number; energy?: number; parts?: number; artifacts?: number };
+    description: string;
+}
+
+interface ScanResult {
+    type: 'resource' | 'location' | 'nothing';
+    distance: number;
+    direction: BABYLON.Vector3;
+    value?: number;
 }
 
 // シンプルな惑星探査ゲーム
@@ -55,7 +73,10 @@ export class SimplePlanetGame {
     private buildingTypes: BuildingType[] = [
         { id: 'base', name: '基地', cost: { minerals: 50, energy: 20 }, color: new BABYLON.Color3(0.5, 0.5, 0.6) },
         { id: 'miner', name: '採掘機', cost: { minerals: 30, energy: 10 }, color: new BABYLON.Color3(0.8, 0.6, 0.2) },
-        { id: 'storage', name: 'ストレージ', cost: { minerals: 20, energy: 5 }, color: new BABYLON.Color3(0.3, 0.5, 0.3) }
+        { id: 'storage', name: 'ストレージ', cost: { minerals: 20, energy: 5 }, color: new BABYLON.Color3(0.3, 0.5, 0.3) },
+        { id: 'lab', name: '研究所', cost: { minerals: 100, energy: 50 }, color: new BABYLON.Color3(0.4, 0.4, 0.9) },
+        { id: 'power', name: '発電所', cost: { minerals: 60, energy: 20 }, color: new BABYLON.Color3(1, 1, 0.3) },
+        { id: 'defense', name: '防衛施設', cost: { minerals: 80, energy: 40 }, color: new BABYLON.Color3(0.8, 0.2, 0.2) }
     ];
     
     // 天候システム
@@ -86,7 +107,8 @@ export class SimplePlanetGame {
         minerals: 0,
         energy: 0,
         tools: 1,
-        parts: 0
+        parts: 0,
+        artifacts: 0
     };
     private inventoryOpen = false;
     
@@ -94,6 +116,20 @@ export class SimplePlanetGame {
     private weather: 'clear' | 'foggy' | 'windy' | 'storm' = 'clear';
     private weatherTimer = 0;
     private weatherParticles: BABYLON.ParticleSystem | null = null;
+    
+    // チュートリアルシステム
+    private tutorialStep = 0;
+    private tutorialCompleted = false;
+    private tutorialUI: HTMLDivElement | null = null;
+    
+    // 探査システム
+    private discoverableLocations: DiscoverableLocation[] = [];
+    private scanner: BABYLON.Mesh | null = null;
+    private scannerActive = false;
+    private scannerCooldown = 0;
+    private scannerRange = 100;
+    private scanParticles: BABYLON.ParticleSystem | null = null;
+    private locationMarkers: Map<string, BABYLON.Mesh> = new Map();
     
     constructor(canvas: HTMLCanvasElement) {
         this.canvas = canvas;
@@ -146,6 +182,9 @@ export class SimplePlanetGame {
         
         // リソース配置
         this.placeResources();
+        
+        // 探査要素の初期化
+        this.initializeExploration();
         
         // UI作成
         this.createUI();
@@ -500,7 +539,10 @@ export class SimplePlanetGame {
             <div>Shift: 走る</div>
             <div>スペース: ジャンプ</div>
             <div>E: リソース採取</div>
+            <div>F: スキャナー</div>
             <div>B: 建設メニュー</div>
+            <div>I: インベントリ</div>
+            <div>U: アップグレード</div>
             <div>F5: セーブ / F9: ロード</div>
             <div>マウス: カメラ回転</div>
         `;
@@ -517,6 +559,9 @@ export class SimplePlanetGame {
         
         // インベントリUI作成
         this.createInventoryUI();
+        
+        // チュートリアルを開始
+        this.startTutorial();
     }
     
     private setupInput() {
@@ -543,6 +588,16 @@ export class SimplePlanetGame {
             // インベントリ切り替え
             if (e.key.toLowerCase() === 'i') {
                 this.toggleInventory();
+            }
+            
+            // アップグレードメニュー
+            if (e.key.toLowerCase() === 'u') {
+                this.showUpgradeMenu();
+            }
+            
+            // スキャナー使用
+            if (e.key.toLowerCase() === 'f') {
+                this.performScan();
             }
             
             // セーブ/ロード
@@ -649,27 +704,59 @@ export class SimplePlanetGame {
             }
         }
         
-        // 採掘機の自動生産
+        // 建物の効果を処理
         let deltaTime = this.engine.getDeltaTime() / 1000;
+        let powerBonus = 1; // 発電所による生産ボーナス
+        let labBonus = 1;   // 研究所によるボーナス
+        
+        // ボーナス計算
         for (const [id, building] of this.buildings) {
-            if (building.type.id === 'miner' && building.productionRate) {
-                this.resources.minerals += building.productionRate * deltaTime;
-                this.resources.energy += building.productionRate * 0.5 * deltaTime;
-                
-                // インベントリにも追加
-                this.inventory.minerals += building.productionRate * deltaTime;
-                this.inventory.energy += building.productionRate * 0.5 * deltaTime;
-                
-                // 時々パーツも生成
-                if (Math.random() < 0.001) {
-                    this.inventory.parts += 1;
-                    this.showNotification('パーツを発見しました！', 'success');
-                }
-                
-                // 採掘エフェクトを追加（まだ存在しない場合）
-                if (!building.particleSystem) {
-                    this.createMinerEffect(building);
-                }
+            if (building.type.id === 'power') {
+                powerBonus += 0.2; // 発電所1つにつき20%ボーナス
+            }
+            if (building.type.id === 'lab') {
+                labBonus += 0.1; // 研究所1つにつき10%ボーナス
+            }
+        }
+        
+        for (const [id, building] of this.buildings) {
+            switch (building.type.id) {
+                case 'miner':
+                    if (building.productionRate) {
+                        const production = building.productionRate * deltaTime * powerBonus;
+                        this.resources.minerals += production;
+                        this.resources.energy += production * 0.5;
+                        
+                        // インベントリにも追加
+                        this.inventory.minerals += production;
+                        this.inventory.energy += production * 0.5;
+                        
+                        // 時々パーツも生成（研究所があると確率UP）
+                        if (Math.random() < 0.001 * labBonus) {
+                            this.inventory.parts += 1;
+                            this.showNotification('パーツを発見しました！', 'success');
+                        }
+                        
+                        // 採掘エフェクトを追加（まだ存在しない場合）
+                        if (!building.particleSystem) {
+                            this.createMinerEffect(building);
+                        }
+                    }
+                    break;
+                    
+                case 'power':
+                    // 発電所はエネルギーを生成
+                    this.resources.energy += 0.5 * deltaTime;
+                    this.inventory.energy += 0.5 * deltaTime;
+                    break;
+                    
+                case 'lab':
+                    // 研究所は時々ツールを生成
+                    if (Math.random() < 0.0005) {
+                        this.inventory.tools += 1;
+                        this.showNotification('新しいツールを開発しました！', 'success');
+                    }
+                    break;
             }
         }
         
@@ -689,6 +776,14 @@ export class SimplePlanetGame {
         if (Math.floor(Date.now() / 50) % 2 === 0) {
             this.updateMinimap();
         }
+        
+        // スキャナークールダウン更新
+        if (this.scannerCooldown > 0) {
+            this.scannerCooldown -= deltaTime;
+        }
+        
+        // 探査要素の更新
+        this.checkLocationInteraction();
         
         // 環境音（たまに再生）
         this.playSound('ambient');
@@ -845,6 +940,24 @@ export class SimplePlanetGame {
                 setTimeout(() => createSound(784, 0.2)(), 200); // G
             },
             error: createSound(200, 0.2, 'sawtooth'),
+            scan: () => {
+                if (!this.soundEnabled) return;
+                // スキャン音（周波数スイープ）
+                const osc = audioContext.createOscillator();
+                const gain = audioContext.createGain();
+                osc.connect(gain);
+                gain.connect(audioContext.destination);
+                
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(200, audioContext.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(2000, audioContext.currentTime + 0.5);
+                
+                gain.gain.setValueAtTime(0.2, audioContext.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+                
+                osc.start(audioContext.currentTime);
+                osc.stop(audioContext.currentTime + 0.5);
+            },
             ambient: () => {
                 // 環境音（定期的に再生）
                 if (!this.soundEnabled || Math.random() > 0.02) return;
@@ -1172,6 +1285,83 @@ export class SimplePlanetGame {
                 
                 buildingMesh = BABYLON.Mesh.MergeMeshes([tank, tankTop, tankBottom, ...pipes], true, true, undefined, false, true) as BABYLON.Mesh;
                 buildingMesh.name = `storage_${timestamp}`;
+                break;
+                
+            case 'lab':
+                // 研究所：ガラスドーム型
+                const labBase = BABYLON.MeshBuilder.CreateCylinder(`labBase_${timestamp}`, {
+                    diameter: 3,
+                    height: 1
+                }, this.scene);
+                
+                const labDome = BABYLON.MeshBuilder.CreateSphere(`labDome_${timestamp}`, {
+                    diameter: 2.8,
+                    slice: 0.5
+                }, this.scene);
+                labDome.position.y = 1;
+                
+                const labAntenna = BABYLON.MeshBuilder.CreateCylinder(`labAntenna_${timestamp}`, {
+                    diameter: 0.2,
+                    height: 3
+                }, this.scene);
+                labAntenna.position.y = 2.5;
+                
+                buildingMesh = BABYLON.Mesh.MergeMeshes([labBase, labDome, labAntenna], true, true, undefined, false, true) as BABYLON.Mesh;
+                buildingMesh.name = `lab_${timestamp}`;
+                break;
+                
+            case 'power':
+                // 発電所：ソーラーパネル付き
+                const powerBase = BABYLON.MeshBuilder.CreateBox(`powerBase_${timestamp}`, {
+                    width: 2,
+                    height: 1,
+                    depth: 2
+                }, this.scene);
+                
+                const panel1 = BABYLON.MeshBuilder.CreateBox(`panel1_${timestamp}`, {
+                    width: 3,
+                    height: 0.1,
+                    depth: 2
+                }, this.scene);
+                panel1.position.y = 1.5;
+                panel1.rotation.z = 0.3;
+                
+                const panel2 = BABYLON.MeshBuilder.CreateBox(`panel2_${timestamp}`, {
+                    width: 3,
+                    height: 0.1,
+                    depth: 2
+                }, this.scene);
+                panel2.position.y = 1.5;
+                panel2.rotation.z = -0.3;
+                
+                buildingMesh = BABYLON.Mesh.MergeMeshes([powerBase, panel1, panel2], true, true, undefined, false, true) as BABYLON.Mesh;
+                buildingMesh.name = `power_${timestamp}`;
+                break;
+                
+            case 'defense':
+                // 防衛施設：タレット型
+                const defenseBase = BABYLON.MeshBuilder.CreateCylinder(`defenseBase_${timestamp}`, {
+                    diameter: 2.5,
+                    height: 1.5
+                }, this.scene);
+                
+                const turret = BABYLON.MeshBuilder.CreateBox(`turret_${timestamp}`, {
+                    width: 1.5,
+                    height: 1,
+                    depth: 1.5
+                }, this.scene);
+                turret.position.y = 1.25;
+                
+                const barrel = BABYLON.MeshBuilder.CreateCylinder(`barrel_${timestamp}`, {
+                    diameter: 0.3,
+                    height: 2
+                }, this.scene);
+                barrel.position.y = 1.5;
+                barrel.position.z = 0.75;
+                barrel.rotation.x = Math.PI / 2;
+                
+                buildingMesh = BABYLON.Mesh.MergeMeshes([defenseBase, turret, barrel], true, true, undefined, false, true) as BABYLON.Mesh;
+                buildingMesh.name = `defense_${timestamp}`;
                 break;
                 
             default:
@@ -1756,6 +1946,67 @@ export class SimplePlanetGame {
             }
         }
         
+        // 発見された場所を表示
+        for (const location of this.discoverableLocations) {
+            if (!location.discovered) continue;
+            
+            const x = (location.position.x / scale) + size / 2;
+            const z = (location.position.z / scale) + size / 2;
+            
+            // 範囲内のみ表示
+            if (x >= 0 && x <= size && z >= 0 && z <= size) {
+                // アイコンを描画
+                ctx.fillStyle = 'rgba(255, 255, 0, 0.8)';
+                ctx.strokeStyle = 'rgba(255, 255, 0, 1)';
+                ctx.lineWidth = 2;
+                
+                switch (location.type) {
+                    case 'cave':
+                        // 洞窟アイコン（半円）
+                        ctx.beginPath();
+                        ctx.arc(x, z, 4, Math.PI, 0);
+                        ctx.closePath();
+                        ctx.fill();
+                        ctx.stroke();
+                        break;
+                    case 'ruins':
+                        // 遺跡アイコン（四角）
+                        ctx.fillRect(x - 3, z - 3, 6, 6);
+                        ctx.strokeRect(x - 3, z - 3, 6, 6);
+                        break;
+                    case 'crystal':
+                        // クリスタルアイコン（ダイヤモンド）
+                        ctx.beginPath();
+                        ctx.moveTo(x, z - 4);
+                        ctx.lineTo(x + 3, z);
+                        ctx.lineTo(x, z + 4);
+                        ctx.lineTo(x - 3, z);
+                        ctx.closePath();
+                        ctx.fill();
+                        ctx.stroke();
+                        break;
+                    case 'ship':
+                        // 宇宙船アイコン（三角）
+                        ctx.beginPath();
+                        ctx.moveTo(x, z - 4);
+                        ctx.lineTo(x + 3, z + 4);
+                        ctx.lineTo(x - 3, z + 4);
+                        ctx.closePath();
+                        ctx.fill();
+                        ctx.stroke();
+                        break;
+                    case 'oasis':
+                        // オアシスアイコン（円）
+                        ctx.beginPath();
+                        ctx.arc(x, z, 3, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.stroke();
+                        break;
+                }
+                ctx.lineWidth = 1;
+            }
+        }
+        
         // プレイヤー位置
         const px = Math.max(5, Math.min(size - 5, (this.player.position.x / scale) + size / 2));
         const pz = Math.max(5, Math.min(size - 5, (this.player.position.z / scale) + size / 2));
@@ -1830,7 +2081,7 @@ export class SimplePlanetGame {
             font-family: Arial;
             border-radius: 5px;
         `;
-        infoPanel.innerHTML = '[I] インベントリ';
+        infoPanel.innerHTML = '[I] インベントリ | [U] アップグレード';
         document.body.appendChild(infoPanel);
     }
     
@@ -1842,7 +2093,8 @@ export class SimplePlanetGame {
             { id: 'minerals', name: '鉱石', icon: '💎', color: '#6699ff' },
             { id: 'energy', name: 'エネルギー', icon: '⚡', color: '#ffcc00' },
             { id: 'tools', name: 'ツール', icon: '🔧', color: '#cccccc' },
-            { id: 'parts', name: 'パーツ', icon: '⚙️', color: '#888888' }
+            { id: 'parts', name: 'パーツ', icon: '⚙️', color: '#888888' },
+            { id: 'artifacts', name: 'アーティファクト', icon: '🔮', color: '#ff66ff' }
         ];
         
         content.innerHTML = '';
@@ -2135,6 +2387,379 @@ export class SimplePlanetGame {
         this.playSound('error'); // 雷の音の代わり
     }
     
+    private startTutorial() {
+        // セーブデータがある場合はチュートリアルをスキップ
+        if (localStorage.getItem('planetExplorationSave')) {
+            this.tutorialCompleted = true;
+            return;
+        }
+        
+        // チュートリアルUI作成
+        this.tutorialUI = document.createElement('div');
+        this.tutorialUI.id = 'tutorialUI';
+        this.tutorialUI.style.cssText = `
+            position: absolute;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 20px;
+            font-family: Arial;
+            border-radius: 10px;
+            max-width: 400px;
+            border: 2px solid #00ff00;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
+        `;
+        document.body.appendChild(this.tutorialUI);
+        
+        // 最初のステップを表示
+        this.showTutorialStep();
+    }
+    
+    private tutorialSteps = [
+        {
+            title: 'ようこそ、探検家！',
+            content: '未知の惑星へようこそ。この惑星を探索し、基地を建設しましょう。',
+            action: null,
+            condition: null
+        },
+        {
+            title: '移動の基本',
+            content: 'WASDキーで移動できます。試してみましょう！',
+            action: 'move',
+            condition: () => Math.abs(this.player.position.x) > 2 || Math.abs(this.player.position.z) > 2
+        },
+        {
+            title: 'カメラ操作',
+            content: 'マウスを動かしてカメラを回転させましょう。マウスホイールでズームも可能です。',
+            action: 'camera',
+            condition: () => true // 時間経過で自動進行
+        },
+        {
+            title: 'リソース収集',
+            content: '近くの青い鉱石か黄色いエネルギーに近づいて、Eキーで収集しましょう。',
+            action: 'collect',
+            condition: () => this.resources.minerals > 100 || this.resources.energy > 50
+        },
+        {
+            title: 'スキャナーの使い方',
+            content: 'Fキーでスキャナーを使用できます。隠された場所や資源を発見しましょう！',
+            action: 'scan',
+            condition: () => this.scannerActive || this.discoverableLocations.some(l => l.discovered)
+        },
+        {
+            title: '建設の準備',
+            content: 'Bキーを押して建設メニューを開きましょう。',
+            action: 'build_menu',
+            condition: () => this.buildMode || document.getElementById('buildingMenu')?.style.display === 'block'
+        },
+        {
+            title: '最初の建物',
+            content: '基地を建設しましょう。マウスで場所を選んでクリックで配置します。',
+            action: 'build',
+            condition: () => Array.from(this.buildings.values()).some(b => b.type.id === 'base')
+        },
+        {
+            title: 'インベントリ',
+            content: 'Iキーでインベントリを確認できます。収集したアイテムが表示されます。',
+            action: 'inventory',
+            condition: () => this.inventoryOpen
+        },
+        {
+            title: 'セーブとロード',
+            content: 'F5でセーブ、F9でロードができます。進捗を保存しましょう！',
+            action: null,
+            condition: null
+        },
+        {
+            title: '探索開始！',
+            content: 'チュートリアル完了！左上の目標を達成しながら、惑星を探索しましょう。',
+            action: null,
+            condition: null
+        }
+    ];
+    
+    private showTutorialStep() {
+        if (!this.tutorialUI || this.tutorialStep >= this.tutorialSteps.length) {
+            this.completeTutorial();
+            return;
+        }
+        
+        const step = this.tutorialSteps[this.tutorialStep];
+        
+        this.tutorialUI.innerHTML = `
+            <h3 style="margin: 0 0 10px 0; color: #00ff00;">${step.title}</h3>
+            <p style="margin: 0 0 15px 0;">${step.content}</p>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="font-size: 12px; color: #888;">
+                    ステップ ${this.tutorialStep + 1} / ${this.tutorialSteps.length}
+                </div>
+                ${this.tutorialStep > 0 || !step.condition ? 
+                    `<button onclick="window.skipTutorialStep()" style="
+                        background: #00ff00;
+                        color: black;
+                        border: none;
+                        padding: 5px 15px;
+                        border-radius: 5px;
+                        cursor: pointer;
+                        font-weight: bold;
+                    ">次へ</button>` : ''}
+            </div>
+        `;
+        
+        // グローバル関数として登録
+        (window as any).skipTutorialStep = () => this.nextTutorialStep();
+        
+        // 条件チェックを開始
+        if (step.condition) {
+            this.checkTutorialCondition();
+        }
+    }
+    
+    private checkTutorialCondition() {
+        const step = this.tutorialSteps[this.tutorialStep];
+        if (!step.condition) return;
+        
+        const checkInterval = setInterval(() => {
+            if (step.condition!()) {
+                clearInterval(checkInterval);
+                this.nextTutorialStep();
+            }
+        }, 100);
+        
+        // タイムアウト（30秒後に自動でスキップ可能に）
+        setTimeout(() => {
+            clearInterval(checkInterval);
+            if (this.tutorialUI && this.tutorialStep < this.tutorialSteps.length) {
+                const button = this.tutorialUI.querySelector('button');
+                if (!button) {
+                    this.showTutorialStep(); // ボタンを表示
+                }
+            }
+        }, 30000);
+    }
+    
+    private nextTutorialStep() {
+        this.tutorialStep++;
+        this.showTutorialStep();
+        this.playSound('collect');
+    }
+    
+    private completeTutorial() {
+        this.tutorialCompleted = true;
+        if (this.tutorialUI) {
+            this.tutorialUI.remove();
+            this.tutorialUI = null;
+        }
+        this.showNotification('チュートリアル完了！探索を楽しんでください！', 'success');
+        
+        // チュートリアル完了を記録
+        localStorage.setItem('tutorialCompleted', 'true');
+    }
+    
+    private showUpgradeMenu() {
+        // 近くの建物を検索
+        const nearbyBuilding = this.getNearbyBuilding(5);
+        if (!nearbyBuilding) {
+            this.showNotification('アップグレード可能な建物が近くにありません', 'error');
+            return;
+        }
+        
+        // アップグレードメニューを作成
+        const menu = document.createElement('div');
+        menu.id = 'upgradeMenu';
+        menu.style.cssText = `
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.95);
+            color: white;
+            padding: 20px;
+            font-family: Arial;
+            border-radius: 10px;
+            min-width: 300px;
+            border: 2px solid #ff8800;
+        `;
+        
+        const upgrades = this.getUpgradesForBuilding(nearbyBuilding.type.id);
+        
+        let menuHTML = `
+            <h2 style="text-align: center; margin-bottom: 20px; color: #ff8800;">
+                ${nearbyBuilding.type.name}のアップグレード
+            </h2>
+        `;
+        
+        if (upgrades.length === 0) {
+            menuHTML += '<p style="text-align: center; color: #888;">利用可能なアップグレードはありません</p>';
+        } else {
+            upgrades.forEach(upgrade => {
+                const canAfford = this.inventory.parts >= upgrade.cost;
+                menuHTML += `
+                    <div class="upgrade-option" style="
+                        background: rgba(255,255,255,0.1);
+                        padding: 10px;
+                        margin: 10px 0;
+                        border-radius: 5px;
+                        cursor: ${canAfford ? 'pointer' : 'not-allowed'};
+                        opacity: ${canAfford ? '1' : '0.5'};
+                    " data-upgrade="${upgrade.id}" data-building="${nearbyBuilding.id}">
+                        <h3 style="margin: 0 0 5px 0; color: #ff8800;">${upgrade.name}</h3>
+                        <div style="font-size: 12px; margin-bottom: 5px;">${upgrade.description}</div>
+                        <div style="color: ${canAfford ? '#88ff88' : '#ff8888'};">
+                            コスト: パーツ ×${upgrade.cost}
+                        </div>
+                    </div>
+                `;
+            });
+        }
+        
+        menuHTML += '<button id="closeUpgradeMenu" style="width: 100%; padding: 10px; margin-top: 20px;">閉じる (ESC)</button>';
+        menu.innerHTML = menuHTML;
+        document.body.appendChild(menu);
+        
+        // イベントリスナー
+        menu.querySelectorAll('.upgrade-option').forEach(option => {
+            option.addEventListener('click', (e) => {
+                const upgradeId = (e.currentTarget as HTMLElement).dataset.upgrade;
+                const buildingId = (e.currentTarget as HTMLElement).dataset.building;
+                const upgrade = upgrades.find(u => u.id === upgradeId);
+                
+                if (upgrade && buildingId && this.inventory.parts >= upgrade.cost) {
+                    this.applyUpgrade(buildingId, upgrade);
+                    menu.remove();
+                }
+            });
+        });
+        
+        document.getElementById('closeUpgradeMenu')?.addEventListener('click', () => {
+            menu.remove();
+        });
+        
+        // ESCキーで閉じる
+        const closeHandler = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                menu.remove();
+                window.removeEventListener('keydown', closeHandler);
+            }
+        };
+        window.addEventListener('keydown', closeHandler);
+    }
+    
+    private getNearbyBuilding(range: number): Building | null {
+        let nearest: Building | null = null;
+        let minDistance = range;
+        
+        for (const [id, building] of this.buildings) {
+            const distance = BABYLON.Vector3.Distance(this.player.position, building.position);
+            if (distance < minDistance) {
+                minDistance = distance;
+                nearest = building;
+            }
+        }
+        
+        return nearest;
+    }
+    
+    private getUpgradesForBuilding(buildingType: string): Array<{id: string, name: string, description: string, cost: number}> {
+        const upgrades: { [key: string]: Array<{id: string, name: string, description: string, cost: number}> } = {
+            miner: [
+                { id: 'efficiency', name: '効率強化', description: '生産速度を50%向上', cost: 3 },
+                { id: 'deep_drill', name: '深層採掘', description: 'レアリソースの発見確率UP', cost: 5 }
+            ],
+            power: [
+                { id: 'solar_boost', name: 'ソーラーブースト', description: 'エネルギー生成量2倍', cost: 4 },
+                { id: 'battery', name: 'バッテリー', description: 'エネルギー蓄積機能追加', cost: 6 }
+            ],
+            lab: [
+                { id: 'advanced_research', name: '高度な研究', description: 'ツール生成速度UP', cost: 5 },
+                { id: 'automation', name: '自動化', description: '全建物の効率+10%', cost: 8 }
+            ],
+            defense: [
+                { id: 'shield', name: 'シールド', description: '周囲の建物を保護', cost: 4 },
+                { id: 'radar', name: 'レーダー', description: '探索範囲拡大', cost: 3 }
+            ]
+        };
+        
+        return upgrades[buildingType] || [];
+    }
+    
+    private applyUpgrade(buildingId: string, upgrade: {id: string, name: string, description: string, cost: number}) {
+        const building = this.buildings.get(buildingId);
+        if (!building) return;
+        
+        // パーツを消費
+        this.inventory.parts -= upgrade.cost;
+        
+        // アップグレード効果を適用
+        if (!building.upgrades) {
+            building.upgrades = [];
+        }
+        building.upgrades.push(upgrade.id);
+        
+        // 効果を即座に適用
+        switch (upgrade.id) {
+            case 'efficiency':
+                if (building.productionRate) {
+                    building.productionRate *= 1.5;
+                }
+                break;
+            case 'solar_boost':
+                // 発電所の効果は別途処理
+                break;
+        }
+        
+        // エフェクトを表示
+        this.createUpgradeEffect(building.position);
+        this.showNotification(`${building.type.name}をアップグレードしました！`, 'success');
+        this.playSound('complete');
+    }
+    
+    private createUpgradeEffect(position: BABYLON.Vector3) {
+        // アップグレードエフェクト（オレンジ色の上昇パーティクル）
+        const particleSystem = new BABYLON.ParticleSystem('upgradeEffect', 100, this.scene);
+        
+        const texture = new BABYLON.DynamicTexture('upgradeTexture', 16, this.scene);
+        const ctx = texture.getContext();
+        ctx.beginPath();
+        ctx.arc(8, 8, 7, 0, Math.PI * 2);
+        ctx.fillStyle = '#ff8800';
+        ctx.fill();
+        texture.update();
+        
+        particleSystem.particleTexture = texture;
+        particleSystem.emitter = position.clone();
+        particleSystem.emitRate = 50;
+        particleSystem.blendMode = BABYLON.ParticleSystem.BLENDMODE_ADD;
+        
+        particleSystem.minSize = 0.3;
+        particleSystem.maxSize = 0.6;
+        particleSystem.minLifeTime = 1;
+        particleSystem.maxLifeTime = 2;
+        
+        particleSystem.direction1 = new BABYLON.Vector3(-0.5, 1, -0.5);
+        particleSystem.direction2 = new BABYLON.Vector3(0.5, 2, 0.5);
+        particleSystem.minEmitPower = 2;
+        particleSystem.maxEmitPower = 4;
+        particleSystem.updateSpeed = 0.02;
+        
+        particleSystem.gravity = new BABYLON.Vector3(0, 0.5, 0);
+        
+        particleSystem.color1 = new BABYLON.Color4(1, 0.5, 0, 1);
+        particleSystem.color2 = new BABYLON.Color4(1, 0.8, 0, 0.8);
+        particleSystem.colorDead = new BABYLON.Color4(0, 0, 0, 0);
+        
+        particleSystem.start();
+        
+        setTimeout(() => {
+            particleSystem.stop();
+            setTimeout(() => {
+                particleSystem.dispose();
+            }, 2000);
+        }, 1000);
+    }
+    
     private checkObjectives() {
         const currentObj = this.objectives[this.currentObjectiveIndex];
         if (!currentObj || currentObj.completed) return;
@@ -2187,5 +2812,482 @@ export class SimplePlanetGame {
         // 次の目標へ
         this.currentObjectiveIndex++;
         this.updateObjectiveUI();
+    }
+    
+    // 探査システムの初期化
+    private initializeExploration() {
+        console.log('[EXPLORATION] Initializing exploration system...');
+        
+        // 発見可能な場所を生成
+        this.generateDiscoverableLocations();
+        
+        // スキャナーの作成
+        this.createScanner();
+        
+        console.log('[EXPLORATION] Exploration system initialized');
+    }
+    
+    private generateDiscoverableLocations() {
+        const locationTypes = [
+            { type: 'cave' as const, count: 3, color: new BABYLON.Color3(0.3, 0.3, 0.4) },
+            { type: 'ruins' as const, count: 2, color: new BABYLON.Color3(0.6, 0.5, 0.4) },
+            { type: 'crystal' as const, count: 4, color: new BABYLON.Color3(0.7, 0.9, 1.0) },
+            { type: 'ship' as const, count: 1, color: new BABYLON.Color3(0.5, 0.5, 0.6) },
+            { type: 'oasis' as const, count: 2, color: new BABYLON.Color3(0.2, 0.6, 0.3) }
+        ];
+        
+        locationTypes.forEach(locType => {
+            for (let i = 0; i < locType.count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const radius = 50 + Math.random() * 200; // 50-250mの範囲
+                const x = Math.sin(angle) * radius;
+                const z = Math.cos(angle) * radius;
+                
+                // 地形の高さを取得
+                const ray = new BABYLON.Ray(
+                    new BABYLON.Vector3(x, 100, z),
+                    new BABYLON.Vector3(0, -1, 0)
+                );
+                const hit = this.scene.pickWithRay(ray, (mesh) => mesh === this.ground);
+                const y = hit?.pickedPoint?.y || 0;
+                
+                const location: DiscoverableLocation = {
+                    id: `${locType.type}_${i}`,
+                    type: locType.type,
+                    position: new BABYLON.Vector3(x, y, z),
+                    discovered: false,
+                    mesh: this.createLocationMesh(locType.type, new BABYLON.Vector3(x, y, z), locType.color),
+                    rewards: this.generateLocationRewards(locType.type),
+                    description: this.getLocationDescription(locType.type)
+                };
+                
+                // 初期状態では非表示
+                location.mesh.visibility = 0;
+                location.mesh.isPickable = false;
+                
+                this.discoverableLocations.push(location);
+            }
+        });
+    }
+    
+    private createLocationMesh(type: string, position: BABYLON.Vector3, color: BABYLON.Color3): BABYLON.Mesh {
+        let mesh: BABYLON.Mesh;
+        
+        switch (type) {
+            case 'cave':
+                mesh = BABYLON.MeshBuilder.CreateSphere(`location_${type}`, {
+                    diameter: 6,
+                    segments: 8
+                }, this.scene);
+                mesh.scaling.y = 0.6; // 洞窟は平たく
+                break;
+                
+            case 'ruins':
+                mesh = BABYLON.MeshBuilder.CreateBox(`location_${type}`, {
+                    size: 4,
+                    height: 6
+                }, this.scene);
+                break;
+                
+            case 'crystal':
+                mesh = BABYLON.MeshBuilder.CreateCylinder(`location_${type}`, {
+                    diameterTop: 0,
+                    diameterBottom: 3,
+                    height: 5,
+                    tessellation: 6
+                }, this.scene);
+                break;
+                
+            case 'ship':
+                mesh = BABYLON.MeshBuilder.CreateCylinder(`location_${type}`, {
+                    diameterTop: 2,
+                    diameterBottom: 4,
+                    height: 8,
+                    tessellation: 8
+                }, this.scene);
+                mesh.rotation.z = Math.PI / 6; // 傾いた船
+                break;
+                
+            case 'oasis':
+                mesh = BABYLON.MeshBuilder.CreateTorus(`location_${type}`, {
+                    diameter: 8,
+                    thickness: 2,
+                    tessellation: 16
+                }, this.scene);
+                mesh.position.y = -1; // 地面に埋まっている感じ
+                break;
+                
+            default:
+                mesh = BABYLON.MeshBuilder.CreateBox(`location_${type}`, { size: 4 }, this.scene);
+        }
+        
+        mesh.position = position;
+        
+        const mat = new BABYLON.StandardMaterial(`locationMat_${type}`, this.scene);
+        mat.diffuseColor = color;
+        mat.emissiveColor = color.scale(0.2);
+        mat.specularColor = new BABYLON.Color3(0.1, 0.1, 0.1);
+        mesh.material = mat;
+        
+        return mesh;
+    }
+    
+    private generateLocationRewards(type: string): { minerals?: number; energy?: number; parts?: number; artifacts?: number } {
+        switch (type) {
+            case 'cave':
+                return {
+                    minerals: 50 + Math.floor(Math.random() * 100),
+                    energy: 10 + Math.floor(Math.random() * 20)
+                };
+            case 'ruins':
+                return {
+                    parts: 2 + Math.floor(Math.random() * 4),
+                    artifacts: 1 + Math.floor(Math.random() * 2)
+                };
+            case 'crystal':
+                return {
+                    energy: 100 + Math.floor(Math.random() * 100),
+                    minerals: 20 + Math.floor(Math.random() * 30)
+                };
+            case 'ship':
+                return {
+                    parts: 5 + Math.floor(Math.random() * 5),
+                    energy: 50 + Math.floor(Math.random() * 50),
+                    artifacts: 2 + Math.floor(Math.random() * 3)
+                };
+            case 'oasis':
+                return {
+                    energy: 30 + Math.floor(Math.random() * 70),
+                    minerals: 30 + Math.floor(Math.random() * 70)
+                };
+            default:
+                return { minerals: 50, energy: 25 };
+        }
+    }
+    
+    private getLocationDescription(type: string): string {
+        switch (type) {
+            case 'cave': return '神秘的な洞窟';
+            case 'ruins': return '古代の遺跡';
+            case 'crystal': return 'エネルギークリスタル';
+            case 'ship': return '墜落した宇宙船';
+            case 'oasis': return '資源のオアシス';
+            default: return '未知の場所';
+        }
+    }
+    
+    private createScanner() {
+        // スキャナーのビジュアル表現（プレイヤーに装着）
+        this.scanner = BABYLON.MeshBuilder.CreateCylinder('scanner', {
+            height: 0.3,
+            diameterTop: 0.2,
+            diameterBottom: 0.1,
+            tessellation: 16
+        }, this.scene);
+        
+        this.scanner.parent = this.player;
+        this.scanner.position = new BABYLON.Vector3(0.5, 0.5, 0);
+        
+        const scannerMat = new BABYLON.StandardMaterial('scannerMat', this.scene);
+        scannerMat.diffuseColor = new BABYLON.Color3(0.2, 0.5, 0.8);
+        scannerMat.emissiveColor = new BABYLON.Color3(0.1, 0.3, 0.6);
+        this.scanner.material = scannerMat;
+        
+        // スキャンエフェクト用パーティクル
+        this.createScanParticles();
+    }
+    
+    private createScanParticles() {
+        this.scanParticles = new BABYLON.ParticleSystem('scanParticles', 500, this.scene);
+        this.scanParticles.particleTexture = new BABYLON.Texture('https://raw.githubusercontent.com/BabylonJS/Babylon.js/master/packages/tools/playground/public/textures/flare.png', this.scene);
+        
+        this.scanParticles.emitter = this.player;
+        this.scanParticles.minEmitBox = new BABYLON.Vector3(-0.5, 0, -0.5);
+        this.scanParticles.maxEmitBox = new BABYLON.Vector3(0.5, 0, 0.5);
+        
+        this.scanParticles.color1 = new BABYLON.Color4(0.2, 0.5, 0.8, 1);
+        this.scanParticles.color2 = new BABYLON.Color4(0.4, 0.7, 1, 0.5);
+        this.scanParticles.colorDead = new BABYLON.Color4(0.2, 0.5, 0.8, 0);
+        
+        this.scanParticles.minSize = 0.1;
+        this.scanParticles.maxSize = 0.3;
+        
+        this.scanParticles.minLifeTime = 0.5;
+        this.scanParticles.maxLifeTime = 1.5;
+        
+        this.scanParticles.emitRate = 100;
+        
+        this.scanParticles.direction1 = new BABYLON.Vector3(-1, 0, -1);
+        this.scanParticles.direction2 = new BABYLON.Vector3(1, 0.5, 1);
+        
+        this.scanParticles.minEmitPower = 1;
+        this.scanParticles.maxEmitPower = 3;
+        
+        this.scanParticles.updateSpeed = 0.01;
+    }
+    
+    private performScan() {
+        if (this.scannerCooldown > 0 || !this.inventory.tools) {
+            this.showNotification('スキャナーはまだ使用できません', 'error');
+            return;
+        }
+        
+        console.log('[EXPLORATION] Performing scan...');
+        this.scannerActive = true;
+        this.scannerCooldown = 5; // 5秒のクールダウン
+        
+        // スキャンエフェクト開始
+        this.scanParticles?.start();
+        this.playSound('scan');
+        
+        // スキャン結果を収集
+        const results: ScanResult[] = [];
+        
+        // 近くのリソースをスキャン
+        this.resourceNodes.forEach(node => {
+            const distance = BABYLON.Vector3.Distance(this.player.position, node.position);
+            if (distance <= this.scannerRange && node.isVisible) {
+                results.push({
+                    type: 'resource',
+                    distance: distance,
+                    direction: node.position.subtract(this.player.position).normalize(),
+                    value: 10 + Math.floor(Math.random() * 20)
+                });
+            }
+        });
+        
+        // 発見されていない場所をスキャン
+        this.discoverableLocations.forEach(location => {
+            if (!location.discovered) {
+                const distance = BABYLON.Vector3.Distance(this.player.position, location.position);
+                if (distance <= this.scannerRange) {
+                    results.push({
+                        type: 'location',
+                        distance: distance,
+                        direction: location.position.subtract(this.player.position).normalize()
+                    });
+                    
+                    // 場所を発見
+                    this.discoverLocation(location);
+                }
+            }
+        });
+        
+        // 結果を表示
+        if (results.length > 0) {
+            const closest = results.reduce((prev, curr) => prev.distance < curr.distance ? prev : curr);
+            let message = '';
+            
+            if (closest.type === 'resource') {
+                message = `資源を検出: ${Math.floor(closest.distance)}m先`;
+            } else {
+                message = `特別な場所を発見: ${Math.floor(closest.distance)}m先`;
+            }
+            
+            this.showNotification(message, 'success');
+        } else {
+            this.showNotification('この範囲には何も検出されませんでした', 'info');
+        }
+        
+        // エフェクト終了
+        setTimeout(() => {
+            this.scanParticles?.stop();
+            this.scannerActive = false;
+        }, 2000);
+    }
+    
+    private discoverLocation(location: DiscoverableLocation) {
+        location.discovered = true;
+        location.mesh.visibility = 1;
+        location.mesh.isPickable = true;
+        
+        // 発見エフェクト
+        this.createDiscoveryEffect(location.position);
+        
+        // マーカーを作成
+        const marker = BABYLON.MeshBuilder.CreateCylinder(`marker_${location.id}`, {
+            height: 10,
+            diameterTop: 0,
+            diameterBottom: 2,
+            tessellation: 4
+        }, this.scene);
+        
+        marker.position = location.position.clone();
+        marker.position.y += 8;
+        
+        const markerMat = new BABYLON.StandardMaterial(`markerMat_${location.id}`, this.scene);
+        markerMat.diffuseColor = new BABYLON.Color3(1, 1, 0);
+        markerMat.emissiveColor = new BABYLON.Color3(1, 1, 0);
+        marker.material = markerMat;
+        
+        // マーカーをアニメーション
+        BABYLON.Animation.CreateAndStartAnimation(
+            `markerAnim_${location.id}`,
+            marker,
+            'position.y',
+            30,
+            30,
+            marker.position.y,
+            marker.position.y + 2,
+            BABYLON.Animation.ANIMATIONLOOPMODE_CYCLE
+        );
+        
+        this.locationMarkers.set(location.id, marker);
+        
+        this.showNotification(`${location.description}を発見しました！`, 'success');
+    }
+    
+    private createDiscoveryEffect(position: BABYLON.Vector3) {
+        const particleSystem = new BABYLON.ParticleSystem('discoveryEffect', 1000, this.scene);
+        particleSystem.particleTexture = new BABYLON.Texture('https://raw.githubusercontent.com/BabylonJS/Babylon.js/master/packages/tools/playground/public/textures/flare.png', this.scene);
+        
+        particleSystem.emitter = position;
+        
+        particleSystem.color1 = new BABYLON.Color4(1, 1, 0, 1);
+        particleSystem.color2 = new BABYLON.Color4(1, 0.8, 0, 0.8);
+        particleSystem.colorDead = new BABYLON.Color4(1, 0.5, 0, 0);
+        
+        particleSystem.minSize = 0.5;
+        particleSystem.maxSize = 1.5;
+        
+        particleSystem.minLifeTime = 0.5;
+        particleSystem.maxLifeTime = 1.5;
+        
+        particleSystem.emitRate = 200;
+        
+        particleSystem.blendMode = BABYLON.ParticleSystem.BLENDMODE_ONEONE;
+        
+        particleSystem.gravity = new BABYLON.Vector3(0, -1, 0);
+        
+        particleSystem.direction1 = new BABYLON.Vector3(-1, 2, -1);
+        particleSystem.direction2 = new BABYLON.Vector3(1, 4, 1);
+        
+        particleSystem.minEmitPower = 2;
+        particleSystem.maxEmitPower = 5;
+        
+        particleSystem.updateSpeed = 0.01;
+        
+        particleSystem.start();
+        
+        setTimeout(() => {
+            particleSystem.stop();
+            setTimeout(() => {
+                particleSystem.dispose();
+            }, 2000);
+        }, 1000);
+    }
+    
+    private checkLocationInteraction() {
+        for (const location of this.discoverableLocations) {
+            if (!location.discovered) continue;
+            
+            const distance = BABYLON.Vector3.Distance(this.player.position, location.position);
+            if (distance < 5) {
+                // プレイヤーが場所に近づいた
+                if (!location.mesh.metadata?.collected) {
+                    this.collectLocationRewards(location);
+                }
+            }
+        }
+    }
+    
+    private collectLocationRewards(location: DiscoverableLocation) {
+        if (!location.rewards) return;
+        
+        location.mesh.metadata = { collected: true };
+        
+        // 報酬を付与
+        if (location.rewards.minerals) {
+            this.resources.minerals += location.rewards.minerals;
+        }
+        if (location.rewards.energy) {
+            this.resources.energy += location.rewards.energy;
+        }
+        if (location.rewards.parts) {
+            this.inventory.parts += location.rewards.parts;
+        }
+        if (location.rewards.artifacts) {
+            this.inventory.artifacts += location.rewards.artifacts;
+        }
+        
+        this.updateResourceUI();
+        this.updateInventoryUI();
+        
+        // 収集エフェクト
+        this.createCollectionEffect(location.position);
+        
+        // マーカーを削除
+        const marker = this.locationMarkers.get(location.id);
+        if (marker) {
+            marker.dispose();
+            this.locationMarkers.delete(location.id);
+        }
+        
+        // 場所のメッシュをフェードアウト
+        BABYLON.Animation.CreateAndStartAnimation(
+            `fadeOut_${location.id}`,
+            location.mesh,
+            'visibility',
+            30,
+            30,
+            1,
+            0,
+            BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT,
+            undefined,
+            () => {
+                location.mesh.isPickable = false;
+            }
+        );
+        
+        let rewardText = `${location.description}から報酬を獲得:`;
+        if (location.rewards.minerals) rewardText += ` 鉱石+${location.rewards.minerals}`;
+        if (location.rewards.energy) rewardText += ` エネルギー+${location.rewards.energy}`;
+        if (location.rewards.parts) rewardText += ` パーツ+${location.rewards.parts}`;
+        if (location.rewards.artifacts) rewardText += ` アーティファクト+${location.rewards.artifacts}`;
+        
+        this.showNotification(rewardText, 'success');
+        this.playSound('collect');
+    }
+    
+    private createCollectionEffect(position: BABYLON.Vector3) {
+        const particleSystem = new BABYLON.ParticleSystem('collectionEffect', 500, this.scene);
+        particleSystem.particleTexture = new BABYLON.Texture('https://raw.githubusercontent.com/BabylonJS/Babylon.js/master/packages/tools/playground/public/textures/flare.png', this.scene);
+        
+        particleSystem.emitter = position;
+        particleSystem.minEmitBox = new BABYLON.Vector3(-1, 0, -1);
+        particleSystem.maxEmitBox = new BABYLON.Vector3(1, 0, 1);
+        
+        particleSystem.color1 = new BABYLON.Color4(0, 1, 0, 1);
+        particleSystem.color2 = new BABYLON.Color4(0.5, 1, 0.5, 0.8);
+        particleSystem.colorDead = new BABYLON.Color4(0, 1, 0, 0);
+        
+        particleSystem.minSize = 0.2;
+        particleSystem.maxSize = 0.6;
+        
+        particleSystem.minLifeTime = 0.3;
+        particleSystem.maxLifeTime = 1;
+        
+        particleSystem.emitRate = 100;
+        
+        particleSystem.blendMode = BABYLON.ParticleSystem.BLENDMODE_ONEONE;
+        
+        particleSystem.gravity = new BABYLON.Vector3(0, 5, 0);
+        
+        particleSystem.direction1 = new BABYLON.Vector3(-0.5, 1, -0.5);
+        particleSystem.direction2 = new BABYLON.Vector3(0.5, 2, 0.5);
+        
+        particleSystem.minEmitPower = 2;
+        particleSystem.maxEmitPower = 4;
+        
+        particleSystem.updateSpeed = 0.01;
+        
+        particleSystem.start();
+        
+        setTimeout(() => {
+            particleSystem.stop();
+            setTimeout(() => {
+                particleSystem.dispose();
+            }, 2000);
+        }, 800);
     }
 }
