@@ -11,8 +11,12 @@ import { ConsumablesUI } from './ui/ConsumablesUI.js';
 interface BuildingType {
     id: string;
     name: string;
-    cost: { minerals: number; energy: number };
+    category: 'house' | 'decoration' | 'entertainment';
+    cost: number; // シンプルに統一通貨（コイン）に
     color: BABYLON.Color3;
+    description?: string;
+    size?: number; // 建物のサイズ係数
+    particleEffect?: boolean; // パーティクル効果の有無
 }
 
 interface Building {
@@ -70,8 +74,8 @@ export class SimplePlanetGame {
     private isJumping = false;
     private isRunning = false;
     
-    // リソース
-    private resources = { minerals: 100, energy: 50 }; // 初期リソース
+    // リソース（シンプル化）
+    private coins = 1000; // 初期コイン（統一通貨）
     private resourceNodes: BABYLON.Mesh[] = [];
     
     // 建設システム
@@ -82,12 +86,87 @@ export class SimplePlanetGame {
     private placementIndicator: BABYLON.Mesh | null = null;
     private buildClickHandler: ((event: MouseEvent) => void) | null = null;
     private buildingTypes: BuildingType[] = [
-        { id: 'base', name: '基地', cost: { minerals: 50, energy: 20 }, color: new BABYLON.Color3(0.5, 0.5, 0.6) },
-        { id: 'miner', name: '採掘機', cost: { minerals: 30, energy: 10 }, color: new BABYLON.Color3(0.8, 0.6, 0.2) },
-        { id: 'storage', name: 'ストレージ', cost: { minerals: 20, energy: 5 }, color: new BABYLON.Color3(0.3, 0.5, 0.3) },
-        { id: 'lab', name: '研究所', cost: { minerals: 100, energy: 50 }, color: new BABYLON.Color3(0.4, 0.4, 0.9) },
-        { id: 'power', name: '発電所', cost: { minerals: 60, energy: 20 }, color: new BABYLON.Color3(1, 1, 0.3) },
-        { id: 'defense', name: '防衛施設', cost: { minerals: 80, energy: 40 }, color: new BABYLON.Color3(0.8, 0.2, 0.2) }
+        // 住居カテゴリ
+        { 
+            id: 'cosmic_cottage', 
+            name: 'コズミックコテージ', 
+            category: 'house',
+            cost: 500, 
+            color: new BABYLON.Color3(0.9, 0.7, 0.8),
+            description: 'かわいい小さな家。星の光で輝きます',
+            size: 1,
+            particleEffect: true
+        },
+        { 
+            id: 'space_mansion', 
+            name: 'スペースマンション', 
+            category: 'house',
+            cost: 2000, 
+            color: new BABYLON.Color3(0.7, 0.7, 0.9),
+            description: 'モダンで洗練された宇宙の住まい',
+            size: 1.5
+        },
+        { 
+            id: 'ufo_house', 
+            name: 'UFOハウス', 
+            category: 'house',
+            cost: 3000, 
+            color: new BABYLON.Color3(0.3, 0.9, 0.5),
+            description: 'ユニークな円盤型の家。回転します！',
+            size: 1.2,
+            particleEffect: true
+        },
+        // 装飾カテゴリ
+        { 
+            id: 'glowing_tree', 
+            name: '光る木', 
+            category: 'decoration',
+            cost: 100, 
+            color: new BABYLON.Color3(0.3, 1, 0.5),
+            description: '美しく光る宇宙の木',
+            size: 0.8,
+            particleEffect: true
+        },
+        { 
+            id: 'rainbow_fountain', 
+            name: '虹の噴水', 
+            category: 'decoration',
+            cost: 300, 
+            color: new BABYLON.Color3(0.5, 0.8, 1),
+            description: '七色に輝く噴水',
+            size: 1,
+            particleEffect: true
+        },
+        { 
+            id: 'floating_garden', 
+            name: '浮遊ガーデン', 
+            category: 'decoration',
+            cost: 500, 
+            color: new BABYLON.Color3(0.6, 0.9, 0.4),
+            description: '重力に逆らって浮かぶ庭園',
+            size: 1.3,
+            particleEffect: true
+        },
+        // エンタメカテゴリ
+        { 
+            id: 'hover_kart', 
+            name: 'ホバーカート場', 
+            category: 'entertainment',
+            cost: 1500, 
+            color: new BABYLON.Color3(1, 0.6, 0.2),
+            description: 'エキサイティングなレース場',
+            size: 2
+        },
+        { 
+            id: 'zero_gravity_pool', 
+            name: '無重力プール', 
+            category: 'entertainment',
+            cost: 2500, 
+            color: new BABYLON.Color3(0.2, 0.6, 1),
+            description: '水が球体になる不思議なプール',
+            size: 1.8,
+            particleEffect: true
+        }
     ];
     
     // 天候システム
@@ -95,13 +174,13 @@ export class SimplePlanetGame {
     private sunLight: BABYLON.DirectionalLight;
     private skyMaterial: BABYLON.StandardMaterial;
     
-    // 目標システム
+    // 目標システム（シンプル化）
     private objectives: Objective[] = [
-        { id: 'first_base', description: '基地を建設する', completed: false, reward: { minerals: 50 } },
-        { id: 'first_miner', description: '採掘機を建設する', completed: false, reward: { energy: 30 } },
-        { id: 'collect_200', description: '鉱石を200個集める', completed: false, reward: { energy: 50 } },
-        { id: 'build_5', description: '建物を5つ建設する', completed: false, reward: { minerals: 100, energy: 50 } },
-        { id: 'survive_night', description: '夜を生き延びる', completed: false, reward: { minerals: 50, energy: 50 } }
+        { id: 'first_house', description: '最初の家を建てる', completed: false, reward: { minerals: 500 } },
+        { id: 'first_decoration', description: '装飾を1つ配置する', completed: false, reward: { minerals: 300 } },
+        { id: 'build_3', description: '建物を3つ建設する', completed: false, reward: { minerals: 1000 } },
+        { id: 'all_categories', description: '各カテゴリから1つずつ建てる', completed: false, reward: { minerals: 2000 } },
+        { id: 'planet_paradise', description: '建物を10個建設する', completed: false, reward: { minerals: 5000 } }
     ];
     private currentObjectiveIndex = 0;
     
@@ -560,8 +639,7 @@ export class SimplePlanetGame {
             border-radius: 5px;
         `;
         resourceUI.innerHTML = `
-            <div>鉱石: <span id="minerals">0</span></div>
-            <div>エネルギー: <span id="energy">0</span></div>
+            <div style="font-size: 20px; color: #FFD700;">💰 コイン: <span id="minerals">0</span></div>
         `;
         document.body.appendChild(resourceUI);
         
@@ -787,12 +865,11 @@ export class SimplePlanetGame {
                 case 'miner':
                     if (building.productionRate) {
                         const production = building.productionRate * deltaTime * powerBonus;
-                        this.resources.minerals += production;
-                        this.resources.energy += production * 0.5;
+                        this.coins += production * 10; // 生産を直接コインに変換
                         
                         // インベントリにも追加
                         this.inventory.minerals += production;
-                        this.inventory.energy += production * 0.5;
+                        this.coins += production * 5; // エネルギー生産もコインに変換
                         
                         // 時々パーツも生成（研究所があると確率UP）
                         if (Math.random() < 0.001 * labBonus) {
@@ -809,8 +886,7 @@ export class SimplePlanetGame {
                     
                 case 'power':
                     // 発電所はエネルギーを生成
-                    this.resources.energy += 0.5 * deltaTime;
-                    this.inventory.energy += 0.5 * deltaTime;
+                    this.coins += 5 * deltaTime; // 時間経過でコイン獲得
                     break;
                     
                 case 'lab':
@@ -899,16 +975,16 @@ export class SimplePlanetGame {
                 
                 // アニメーション完了後にリソースを獲得
                 setTimeout(() => {
-                    // リソース獲得
+                    // コイン獲得（リソースタイプに応じて）
                     const type = resource.metadata.type;
-                    this.resources[type === 'mineral' ? 'minerals' : 'energy'] += 10;
+                    const coinAmount = type === 'mineral' ? 50 : 30; // 鉱物は50コイン、エネルギーは30コイン
+                    this.coins += coinAmount;
                     
                     // インベントリにも追加
                     this.inventory[type === 'mineral' ? 'minerals' : 'energy'] += 10;
                     
                     // UI更新
-                    document.getElementById('minerals')!.textContent = this.resources.minerals.toString();
-                    document.getElementById('energy')!.textContent = this.resources.energy.toString();
+                    this.updateResourceUI();
                     
                     // リソース削除
                     resource.dispose();
@@ -1084,6 +1160,109 @@ export class SimplePlanetGame {
         }
     }
     
+    private addBuildingParticleEffect(building: Building) {
+        const particleSystem = new BABYLON.ParticleSystem(`particleEffect_${building.id}`, 100, this.scene);
+        
+        // テクスチャを作成
+        const texture = new BABYLON.DynamicTexture(`particleTexture_${building.id}`, 16, this.scene);
+        const ctx = texture.getContext();
+        ctx.beginPath();
+        ctx.arc(8, 8, 6, 0, Math.PI * 2);
+        
+        // 建物タイプに応じた色
+        switch (building.type.id) {
+            case 'cosmic_cottage':
+                ctx.fillStyle = '#FFB6C1'; // ピンク
+                break;
+            case 'glowing_tree':
+                ctx.fillStyle = '#90EE90'; // ライトグリーン
+                break;
+            case 'rainbow_fountain':
+                ctx.fillStyle = '#87CEEB'; // スカイブルー
+                break;
+            case 'floating_garden':
+                ctx.fillStyle = '#98FB98'; // ペールグリーン
+                break;
+            case 'zero_gravity_pool':
+                ctx.fillStyle = '#00BFFF'; // ディープスカイブルー
+                break;
+            default:
+                ctx.fillStyle = '#ffffff';
+        }
+        ctx.fill();
+        texture.update();
+        
+        particleSystem.particleTexture = texture;
+        particleSystem.emitter = building.mesh;
+        
+        // 建物タイプに応じた効果
+        switch (building.type.id) {
+            case 'cosmic_cottage':
+                // 星のようにキラキラ
+                particleSystem.emitRate = 10;
+                particleSystem.minLifeTime = 2;
+                particleSystem.maxLifeTime = 4;
+                particleSystem.minSize = 0.1;
+                particleSystem.maxSize = 0.3;
+                particleSystem.createSphereEmitter(2);
+                break;
+                
+            case 'glowing_tree':
+                // 葉っぱが舞い散る効果
+                particleSystem.emitRate = 5;
+                particleSystem.minLifeTime = 3;
+                particleSystem.maxLifeTime = 5;
+                particleSystem.minSize = 0.2;
+                particleSystem.maxSize = 0.4;
+                particleSystem.gravity = new BABYLON.Vector3(0, -0.5, 0);
+                particleSystem.createBoxEmitter(new BABYLON.Vector3(0, 2, 0), new BABYLON.Vector3(0, 2, 0), new BABYLON.Vector3(-1, 0, -1), new BABYLON.Vector3(1, 0, 1));
+                break;
+                
+            case 'rainbow_fountain':
+                // 水しぶき効果
+                particleSystem.emitRate = 50;
+                particleSystem.minLifeTime = 1;
+                particleSystem.maxLifeTime = 2;
+                particleSystem.minSize = 0.1;
+                particleSystem.maxSize = 0.2;
+                particleSystem.createConeEmitter(1, Math.PI / 4);
+                particleSystem.direction1 = new BABYLON.Vector3(0, 3, 0);
+                particleSystem.direction2 = new BABYLON.Vector3(0, 3, 0);
+                particleSystem.gravity = new BABYLON.Vector3(0, -2, 0);
+                break;
+                
+            case 'floating_garden':
+                // 浮遊する花びら
+                particleSystem.emitRate = 8;
+                particleSystem.minLifeTime = 4;
+                particleSystem.maxLifeTime = 6;
+                particleSystem.minSize = 0.2;
+                particleSystem.maxSize = 0.3;
+                particleSystem.createSphereEmitter(1.5);
+                particleSystem.minEmitPower = 0.1;
+                particleSystem.maxEmitPower = 0.3;
+                break;
+                
+            case 'zero_gravity_pool':
+                // 水の泡
+                particleSystem.emitRate = 20;
+                particleSystem.minLifeTime = 2;
+                particleSystem.maxLifeTime = 4;
+                particleSystem.minSize = 0.1;
+                particleSystem.maxSize = 0.4;
+                particleSystem.createSphereEmitter(1.5);
+                particleSystem.minEmitPower = 0.1;
+                particleSystem.maxEmitPower = 0.5;
+                break;
+        }
+        
+        particleSystem.blendMode = BABYLON.ParticleSystem.BLENDMODE_ADD;
+        particleSystem.start();
+        
+        // パーティクルシステムを建物データに保存
+        building.particleSystem = particleSystem;
+    }
+    
     private createBuildingEffect(position: BABYLON.Vector3) {
         // パーティクルシステムを作成
         const particleSystem = new BABYLON.ParticleSystem('buildingEffect', 200, this.scene);
@@ -1227,21 +1406,53 @@ export class SimplePlanetGame {
             min-width: 300px;
         `;
         
-        let menuHTML = '<h2 style="text-align: center; margin-bottom: 20px;">建設メニュー</h2>';
+        let menuHTML = `
+            <h2 style="text-align: center; margin-bottom: 20px; color: #FFD700;">🏠 建築カタログ</h2>
+            <div style="margin-bottom: 10px; text-align: center; font-size: 18px; color: #FFA500;">
+                💰 所持コイン: ${Math.floor(this.coins)}
+            </div>
+        `;
+        
+        // カテゴリごとに分けて表示
+        const categories = {
+            'house': { name: '🏠 住居', items: [] as BuildingType[] },
+            'decoration': { name: '🌟 装飾', items: [] as BuildingType[] },
+            'entertainment': { name: '🎮 エンタメ', items: [] as BuildingType[] }
+        };
         
         this.buildingTypes.forEach(type => {
-            menuHTML += `
-                <div class="building-option" data-type="${type.id}" style="
-                    background: rgba(255,255,255,0.1);
-                    padding: 10px;
-                    margin: 10px 0;
-                    border-radius: 5px;
-                    cursor: pointer;
-                ">
-                    <h3 style="margin: 0 0 5px 0;">${type.name}</h3>
-                    <div>コスト: 鉱石 ${type.cost.minerals}, エネルギー ${type.cost.energy}</div>
-                </div>
-            `;
+            categories[type.category].items.push(type);
+        });
+        
+        Object.entries(categories).forEach(([key, category]) => {
+            if (category.items.length === 0) return;
+            
+            menuHTML += `<h3 style="color: #FFD700; margin: 20px 0 10px 0;">${category.name}</h3>`;
+            
+            category.items.forEach(type => {
+                const canBuy = this.canAfford(type.cost);
+                menuHTML += `
+                    <div class="building-option" data-type="${type.id}" style="
+                        background: ${canBuy ? 'rgba(100,200,100,0.2)' : 'rgba(200,100,100,0.2)'};
+                        padding: 15px;
+                        margin: 10px 0;
+                        border-radius: 10px;
+                        cursor: ${canBuy ? 'pointer' : 'not-allowed'};
+                        border: 2px solid ${canBuy ? '#4CAF50' : '#ff6666'};
+                        transition: all 0.3s;
+                    " ${canBuy ? '' : 'data-disabled="true"'}>
+                        <h3 style="margin: 0 0 5px 0; color: ${canBuy ? '#4CAF50' : '#ff6666'};">
+                            ${type.name}
+                        </h3>
+                        <div style="font-size: 12px; color: #AAA; margin-bottom: 5px;">
+                            ${type.description || ''}
+                        </div>
+                        <div style="color: ${canBuy ? '#FFD700' : '#ff6666'};">
+                            💰 ${type.cost} コイン
+                        </div>
+                    </div>
+                `;
+            });
         });
         
         menuHTML += '<button id="closeBuildMenu" style="width: 100%; padding: 10px; margin-top: 20px;">閉じる (ESC)</button>';
@@ -1251,12 +1462,16 @@ export class SimplePlanetGame {
         // イベントリスナー
         menu.querySelectorAll('.building-option').forEach(option => {
             option.addEventListener('click', (e) => {
-                const typeId = (e.currentTarget as HTMLElement).dataset.type;
+                const element = e.currentTarget as HTMLElement;
+                if (element.dataset.disabled === 'true') {
+                    this.showNotification('💰 コインが足りません！', 'error');
+                    return;
+                }
+                
+                const typeId = element.dataset.type;
                 const buildingType = this.buildingTypes.find(t => t.id === typeId);
                 if (buildingType && this.canAfford(buildingType.cost)) {
                     this.startBuildMode(buildingType);
-                } else {
-                    alert('リソースが不足しています！');
                 }
             });
         });
@@ -1273,38 +1488,134 @@ export class SimplePlanetGame {
         }
     }
     
-    private canAfford(cost: { minerals: number; energy: number }): boolean {
-        return this.resources.minerals >= cost.minerals && this.resources.energy >= cost.energy;
+    private canAfford(cost: number): boolean {
+        return this.coins >= cost;
     }
     
     private createBuildingMesh(buildingType: BuildingType, isPreview: boolean): BABYLON.Mesh {
         const timestamp = Date.now();
         let buildingMesh: BABYLON.Mesh;
+        const size = buildingType.size || 1;
         
         switch (buildingType.id) {
-            case 'base':
-                // ベース：ドーム型の構造
-                const dome = BABYLON.MeshBuilder.CreateSphere(`dome_${timestamp}`, { 
-                    diameter: 3, 
+            case 'cosmic_cottage':
+                // かわいいコテージ：家型
+                const house = BABYLON.MeshBuilder.CreateBox(`house_${timestamp}`, {
+                    width: 2 * size,
+                    height: 2 * size,
+                    depth: 2 * size
+                }, this.scene);
+                const roof = BABYLON.MeshBuilder.CreateCylinder(`roof_${timestamp}`, {
+                    diameterTop: 0,
+                    diameterBottom: 3 * size,
+                    height: 1.5 * size,
+                    tessellation: 4
+                }, this.scene);
+                roof.position.y = 1.75 * size;
+                roof.rotation.y = Math.PI / 4;
+                
+                buildingMesh = BABYLON.Mesh.MergeMeshes([house, roof], true, true, undefined, false, true) as BABYLON.Mesh;
+                buildingMesh.name = `cosmic_cottage_${timestamp}`;
+                break;
+                
+            case 'space_mansion':
+                // モダンなマンション
+                const mansion = BABYLON.MeshBuilder.CreateBox(`mansion_${timestamp}`, {
+                    width: 3 * size,
+                    height: 4 * size,
+                    depth: 2 * size
+                }, this.scene);
+                buildingMesh = mansion;
+                buildingMesh.name = `space_mansion_${timestamp}`;
+                break;
+                
+            case 'ufo_house':
+                // UFO型の家
+                const ufo = BABYLON.MeshBuilder.CreateSphere(`ufo_${timestamp}`, {
+                    diameter: 3 * size,
                     slice: 0.5,
                     sideOrientation: BABYLON.Mesh.DOUBLESIDE
                 }, this.scene);
-                const foundation = BABYLON.MeshBuilder.CreateCylinder(`foundation_${timestamp}`, {
-                    diameter: 4,
-                    height: 0.5
-                }, this.scene);
-                foundation.position.y = -0.25;
+                ufo.scaling.y = 0.5; // 平たくする
+                buildingMesh = ufo;
+                buildingMesh.name = `ufo_house_${timestamp}`;
+                break;
                 
-                // アンテナを追加
-                const antenna = BABYLON.MeshBuilder.CreateCylinder(`antenna_${timestamp}`, {
-                    diameter: 0.1,
-                    height: 2
+            case 'glowing_tree':
+                // 光る木
+                const trunk = BABYLON.MeshBuilder.CreateCylinder(`trunk_${timestamp}`, {
+                    diameter: 0.5 * size,
+                    height: 2 * size
                 }, this.scene);
-                antenna.position.y = 2;
+                const leaves = BABYLON.MeshBuilder.CreateSphere(`leaves_${timestamp}`, {
+                    diameter: 2 * size
+                }, this.scene);
+                leaves.position.y = 1.5 * size;
                 
-                // メッシュを結合
-                buildingMesh = BABYLON.Mesh.MergeMeshes([dome, foundation, antenna], true, true, undefined, false, true) as BABYLON.Mesh;
-                buildingMesh.name = `base_${timestamp}`;
+                buildingMesh = BABYLON.Mesh.MergeMeshes([trunk, leaves], true, true, undefined, false, true) as BABYLON.Mesh;
+                buildingMesh.name = `glowing_tree_${timestamp}`;
+                break;
+                
+            case 'rainbow_fountain':
+                // 虹の噴水
+                const base = BABYLON.MeshBuilder.CreateCylinder(`fbase_${timestamp}`, {
+                    diameter: 2 * size,
+                    height: 0.5 * size
+                }, this.scene);
+                const center = BABYLON.MeshBuilder.CreateCylinder(`fcenter_${timestamp}`, {
+                    diameter: 0.3 * size,
+                    height: 1.5 * size
+                }, this.scene);
+                center.position.y = 0.75 * size;
+                
+                buildingMesh = BABYLON.Mesh.MergeMeshes([base, center], true, true, undefined, false, true) as BABYLON.Mesh;
+                buildingMesh.name = `rainbow_fountain_${timestamp}`;
+                break;
+                
+            case 'floating_garden':
+                // 浮遊ガーデン：複数の浮かぶ島
+                const island1 = BABYLON.MeshBuilder.CreateSphere(`island1_${timestamp}`, {
+                    diameter: 1.5 * size,
+                    slice: 0.6
+                }, this.scene);
+                island1.position.y = 0.5 * size;
+                
+                const island2 = BABYLON.MeshBuilder.CreateSphere(`island2_${timestamp}`, {
+                    diameter: 1 * size,
+                    slice: 0.6
+                }, this.scene);
+                island2.position.set(1 * size, 1 * size, 0);
+                
+                const island3 = BABYLON.MeshBuilder.CreateSphere(`island3_${timestamp}`, {
+                    diameter: 0.8 * size,
+                    slice: 0.6
+                }, this.scene);
+                island3.position.set(-0.8 * size, 1.5 * size, 0.8 * size);
+                
+                buildingMesh = BABYLON.Mesh.MergeMeshes([island1, island2, island3], true, true, undefined, false, true) as BABYLON.Mesh;
+                buildingMesh.name = `floating_garden_${timestamp}`;
+                break;
+                
+            case 'hover_kart':
+                // ホバーカート場：トラック
+                const track = BABYLON.MeshBuilder.CreateTorus(`track_${timestamp}`, {
+                    diameter: 4 * size,
+                    thickness: 1 * size,
+                    tessellation: 6
+                }, this.scene);
+                track.position.y = 0.5 * size;
+                buildingMesh = track;
+                buildingMesh.name = `hover_kart_${timestamp}`;
+                break;
+                
+            case 'zero_gravity_pool':
+                // 無重力プール：球体
+                const pool = BABYLON.MeshBuilder.CreateSphere(`pool_${timestamp}`, {
+                    diameter: 3 * size
+                }, this.scene);
+                pool.position.y = 1.5 * size;
+                buildingMesh = pool;
+                buildingMesh.name = `zero_gravity_pool_${timestamp}`;
                 break;
                 
             case 'miner':
@@ -1455,14 +1766,15 @@ export class SimplePlanetGame {
                 
             default:
                 // デフォルト：シンプルな箱
-                buildingMesh = BABYLON.MeshBuilder.CreateBox(`building_${timestamp}`, { size: 2 }, this.scene);
+                buildingMesh = BABYLON.MeshBuilder.CreateBox(`building_${timestamp}`, { size: 2 * size }, this.scene);
                 break;
         }
         
         // マテリアルを設定
         const mat = new BABYLON.StandardMaterial(`buildingMat_${timestamp}`, this.scene);
         mat.diffuseColor = buildingType.color;
-        mat.specularColor = new BABYLON.Color3(0.2, 0.2, 0.2);
+        mat.specularColor = new BABYLON.Color3(0.3, 0.3, 0.3);
+        mat.emissiveColor = buildingType.color.scale(0.3); // 少し光らせる
         
         if (isPreview) {
             mat.alpha = 0.5;
@@ -1541,9 +1853,8 @@ export class SimplePlanetGame {
             return;
         }
         
-        // リソースを消費
-        this.resources.minerals -= this.selectedBuildingType.cost.minerals;
-        this.resources.energy -= this.selectedBuildingType.cost.energy;
+        // コインを消費
+        this.coins -= this.selectedBuildingType.cost;
         this.updateResourceUI();
         
         // 建物を配置
@@ -1557,13 +1868,25 @@ export class SimplePlanetGame {
             type: this.selectedBuildingType,
             mesh: building,
             position: building.position.clone(),
-            productionRate: this.selectedBuildingType.id === 'miner' ? 1 : 0
+            productionRate: 0 // 生産は削除（カジュアル化）
         };
         
         this.buildings.set(buildingData.id, buildingData);
         
         // 建設エフェクト
         this.createBuildingEffect(building.position);
+        
+        // パーティクル効果を追加
+        if (this.selectedBuildingType.particleEffect) {
+            this.addBuildingParticleEffect(buildingData);
+        }
+        
+        // 特殊効果（UFOハウスの回転など）
+        if (this.selectedBuildingType.id === 'ufo_house') {
+            this.scene.registerBeforeRender(() => {
+                building.rotation.y += 0.01;
+            });
+        }
         
         // サウンド再生
         this.playSound('build');
@@ -1578,8 +1901,16 @@ export class SimplePlanetGame {
     }
     
     private updateResourceUI() {
-        document.getElementById('minerals')!.textContent = Math.floor(this.resources.minerals).toString();
-        document.getElementById('energy')!.textContent = Math.floor(this.resources.energy).toString();
+        // コイン表示を更新
+        const coinDisplay = document.getElementById('minerals');
+        if (coinDisplay) {
+            coinDisplay.textContent = `💰 ${Math.floor(this.coins)}`;
+        }
+        // エネルギー表示は隠す
+        const energyDisplay = document.getElementById('energy');
+        if (energyDisplay && energyDisplay.parentElement) {
+            energyDisplay.parentElement.style.display = 'none';
+        }
     }
     
     private createSkybox() {
@@ -1913,8 +2244,7 @@ export class SimplePlanetGame {
             ">
                 <p style="margin: 0 0 5px 0;">${currentObj.description}</p>
                 <div style="font-size: 12px; color: #aaa;">
-                    報酬: ${currentObj.reward.minerals ? `鉱石 ${currentObj.reward.minerals}` : ''}
-                    ${currentObj.reward.energy ? `エネルギー ${currentObj.reward.energy}` : ''}
+                    報酬: ${currentObj.reward.minerals ? `💰 ${currentObj.reward.minerals}コイン` : ''}
                 </div>
             </div>
             <div style="font-size: 12px; color: #888;">
@@ -2530,7 +2860,7 @@ export class SimplePlanetGame {
             title: 'リソース収集',
             content: '近くの青い鉱石か黄色いエネルギーに近づいて、Eキーで収集しましょう。',
             action: 'collect',
-            condition: () => this.resources.minerals > 100 || this.resources.energy > 50
+            condition: () => this.coins > 500
         },
         {
             title: 'スキャナーの使い方',
@@ -2855,26 +3185,30 @@ export class SimplePlanetGame {
         if (!currentObj || currentObj.completed) return;
         
         let completed = false;
+        const buildingsList = Array.from(this.buildings.values());
         
         switch (currentObj.id) {
-            case 'first_base':
-                completed = Array.from(this.buildings.values()).some(b => b.type.id === 'base');
+            case 'first_house':
+                completed = buildingsList.some(b => b.type.category === 'house');
                 break;
                 
-            case 'first_miner':
-                completed = Array.from(this.buildings.values()).some(b => b.type.id === 'miner');
+            case 'first_decoration':
+                completed = buildingsList.some(b => b.type.category === 'decoration');
                 break;
                 
-            case 'collect_200':
-                completed = this.resources.minerals >= 200;
+            case 'build_3':
+                completed = this.buildings.size >= 3;
                 break;
                 
-            case 'build_5':
-                completed = this.buildings.size >= 5;
+            case 'all_categories':
+                const hasHouse = buildingsList.some(b => b.type.category === 'house');
+                const hasDecoration = buildingsList.some(b => b.type.category === 'decoration');
+                const hasEntertainment = buildingsList.some(b => b.type.category === 'entertainment');
+                completed = hasHouse && hasDecoration && hasEntertainment;
                 break;
                 
-            case 'survive_night':
-                completed = this.timeOfDay < 6 || this.timeOfDay > 20;
+            case 'planet_paradise':
+                completed = this.buildings.size >= 10;
                 break;
         }
         
@@ -2888,12 +3222,9 @@ export class SimplePlanetGame {
     private completeObjective(objective: Objective) {
         objective.completed = true;
         
-        // 報酬を付与
+        // 報酬を付与（コインとして）
         if (objective.reward.minerals) {
-            this.resources.minerals += objective.reward.minerals;
-        }
-        if (objective.reward.energy) {
-            this.resources.energy += objective.reward.energy;
+            this.coins += objective.reward.minerals;
         }
         
         this.updateResourceUI();
@@ -3310,10 +3641,10 @@ export class SimplePlanetGame {
         
         // 報酬を付与
         if (location.rewards.minerals) {
-            this.resources.minerals += location.rewards.minerals;
+            this.coins += location.rewards.minerals * 10; // 鉱物をコインに変換
         }
         if (location.rewards.energy) {
-            this.resources.energy += location.rewards.energy;
+            this.coins += location.rewards.energy * 5; // エネルギーをコインに変換
         }
         if (location.rewards.parts) {
             this.inventory.parts += location.rewards.parts;
@@ -3351,9 +3682,13 @@ export class SimplePlanetGame {
             }
         );
         
+        // 合計コイン報酬を計算
+        let totalCoins = 0;
+        if (location.rewards.minerals) totalCoins += location.rewards.minerals * 10;
+        if (location.rewards.energy) totalCoins += location.rewards.energy * 5;
+        
         let rewardText = `${location.description}から報酬を獲得:`;
-        if (location.rewards.minerals) rewardText += ` 鉱石+${location.rewards.minerals}`;
-        if (location.rewards.energy) rewardText += ` エネルギー+${location.rewards.energy}`;
+        if (totalCoins > 0) rewardText += ` 💰+${totalCoins}コイン`;
         if (location.rewards.parts) rewardText += ` パーツ+${location.rewards.parts}`;
         if (location.rewards.artifacts) rewardText += ` アーティファクト+${location.rewards.artifacts}`;
         
@@ -3459,11 +3794,11 @@ export class SimplePlanetGame {
                 // 変換されたリソースを受け取る
                 switch (resourceType) {
                     case 'minerals':
-                        this.resources.minerals += amount;
+                        this.coins += amount * 10; // 鉱物をコインに変換
                         this.inventory.minerals += amount;
                         break;
                     case 'energy':
-                        this.resources.energy += amount;
+                        this.coins += amount * 5; // エネルギーをコインに変換
                         this.inventory.energy += amount;
                         break;
                     case 'parts':
@@ -3499,17 +3834,18 @@ export class SimplePlanetGame {
     private craftConsumable(item: ConsumableItem): boolean {
         // リソースチェック
         const cost = item.cost;
-        if (cost.minerals && this.resources.minerals < cost.minerals) return false;
-        if (cost.energy && this.resources.energy < cost.energy) return false;
+        // コインで支払い可能かチェック
+        const totalCost = (cost.minerals || 0) * 10 + (cost.energy || 0) * 5;
+        if (totalCost > this.coins) return false;
+        // シンプル化されたため、energyコストチェックは不要
         if (cost.parts && this.inventory.parts < cost.parts) return false;
         
-        // リソースを消費
+        // コインを消費
+        this.coins -= totalCost;
         if (cost.minerals) {
-            this.resources.minerals -= cost.minerals;
             this.inventory.minerals -= cost.minerals;
         }
         if (cost.energy) {
-            this.resources.energy -= cost.energy;
             this.inventory.energy -= cost.energy;
         }
         if (cost.parts) {

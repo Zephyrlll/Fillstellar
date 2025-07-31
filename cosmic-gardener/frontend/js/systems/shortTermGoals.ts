@@ -4,7 +4,7 @@
  */
 
 import { gameStateManager } from '../state.js';
-import { ui } from '../ui.js';
+import { showMessage } from '../ui.js';
 
 export interface ShortTermGoal {
   id: string;
@@ -76,7 +76,7 @@ class ShortTermGoalsSystem {
               cosmicDust: state.resources.cosmicDust + 200
             }
           }));
-          ui.showNotification('ボーナス: 宇宙の塵 +200', 'success');
+          showMessage('ボーナス: 宇宙の塵 +200', 'success');
         },
         rewardDescription: '宇宙の塵 +200',
         timeEstimate: '即座',
@@ -109,7 +109,7 @@ class ShortTermGoalsSystem {
               energy: state.resources.energy + 100
             }
           }));
-          ui.showNotification('ボーナス: 宇宙の塵 +500, エネルギー +100', 'success');
+          showMessage('ボーナス: 宇宙の塵 +500, エネルギー +100', 'success');
         },
         rewardDescription: '宇宙の塵 +500, エネルギー +100',
         timeEstimate: '2-3分',
@@ -140,7 +140,7 @@ class ShortTermGoalsSystem {
               energy: state.resources.energy + 500
             }
           }));
-          ui.showNotification('ボーナス: エネルギー +500', 'success');
+          showMessage('ボーナス: エネルギー +500', 'success');
         },
         rewardDescription: 'エネルギー +500',
         timeEstimate: '5分',
@@ -170,7 +170,7 @@ class ShortTermGoalsSystem {
             cosmicDust: state.resources.cosmicDust + 1000
           }
         }));
-        ui.showNotification('ボーナス: 宇宙の塵 +1000', 'success');
+        showMessage('ボーナス: 宇宙の塵 +1000', 'success');
       },
       rewardDescription: '宇宙の塵 +1000',
       timeEstimate: '8-10分',
@@ -251,7 +251,7 @@ class ShortTermGoalsSystem {
               energy: state.resources.energy + 1000 * (starCount + 1)
             }
           }));
-          ui.showNotification(`ボーナス: エネルギー +${1000 * (starCount + 1)}`, 'success');
+          showMessage(`ボーナス: エネルギー +${1000 * (starCount + 1)}`, 'success');
         },
         rewardDescription: `エネルギー +${1000 * (starCount + 1)}`,
         timeEstimate: '5-7分',
@@ -287,7 +287,7 @@ class ShortTermGoalsSystem {
               cosmicDust: state.resources.cosmicDust + rewardDust
             }
           }));
-          ui.showNotification(`ボーナス: 宇宙の塵 +${rewardDust}`, 'success');
+          showMessage(`ボーナス: 宇宙の塵 +${rewardDust}`, 'success');
         },
         rewardDescription: `宇宙の塵 +${nextTarget * 2}`,
         timeEstimate: '10分',

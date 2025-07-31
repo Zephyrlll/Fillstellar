@@ -170,6 +170,11 @@ function initializeIdleGameSystems() {
                     // Show offline report modal
                     const modal = new OfflineReportModal(offlineProgress);
                     modal.show();
+                    
+                    // Check for planet offline production
+                    setTimeout(() => {
+                        OfflineProductionUI.getInstance().checkAndShow();
+                    }, 2000); // Show after 2 seconds
                 }
             }
             
@@ -274,6 +279,8 @@ import { researchCompleteEffectManager } from './js/effects/researchCompleteEffe
 import { CelestialEffects } from './js/effects/celestialEffects.ts';
 import { audioSystem } from './js/systems/audioSystem.ts';
 import { audioSettingsUI } from './js/ui/audioSettingsUI.ts';
+// Planet ownership imports
+import { OfflineProductionUI } from './js/systems/planetOwnership/OfflineProductionUI.ts';
 
 // Initialize idle game systems
 const saveSystem = new SaveSystem();

@@ -6,6 +6,7 @@
 import { gameState, gameStateManager } from '../../state.js';
 import { formatNumber } from '../../utils.js';
 import { OwnedPlanet } from './planetShop.js';
+import { PlanetPersistence } from './PlanetPersistence.js';
 
 export class MyPlanetsUI {
   private static instance: MyPlanetsUI;
@@ -180,6 +181,28 @@ export class MyPlanetsUI {
           transform: scale(0.95);
         }
         
+        .automation-button {
+          background: linear-gradient(135deg, #2196F3, #1976D2);
+          border: none;
+          color: white;
+          padding: 10px 20px;
+          border-radius: 20px;
+          font-size: 16px;
+          cursor: pointer;
+          transition: all 0.3s;
+          box-shadow: 0 2px 5px rgba(33, 150, 243, 0.3);
+          font-weight: bold;
+        }
+        
+        .automation-button:hover {
+          transform: scale(1.05);
+          box-shadow: 0 4px 10px rgba(33, 150, 243, 0.5);
+        }
+        
+        .automation-button:active {
+          transform: scale(0.95);
+        }
+        
         .planet-info {
           flex: 1;
         }
@@ -204,6 +227,33 @@ export class MyPlanetsUI {
           margin-top: 10px;
           padding-top: 10px;
           border-top: 1px solid #333;
+        }
+        
+        .planet-stats {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 10px;
+          margin-top: 10px;
+          padding-top: 10px;
+          border-top: 1px solid #333;
+        }
+        
+        .stat-item-small {
+          text-align: center;
+          background: rgba(0, 0, 0, 0.2);
+          padding: 8px;
+          border-radius: 5px;
+          font-size: 12px;
+        }
+        
+        .stat-label-small {
+          color: #888;
+          margin-bottom: 3px;
+        }
+        
+        .stat-value-small {
+          color: #FFD700;
+          font-weight: bold;
         }
         
         .production-box {
@@ -248,11 +298,55 @@ export class MyPlanetsUI {
           background: #45a049;
           transform: scale(1.05);
         }
+        
+        .ranking-button {
+          background: linear-gradient(135deg, #FFD700, #FFA500);
+          border: none;
+          color: black;
+          padding: 10px 20px;
+          border-radius: 20px;
+          font-size: 16px;
+          cursor: pointer;
+          transition: all 0.3s;
+          box-shadow: 0 2px 5px rgba(255, 215, 0, 0.3);
+          font-weight: bold;
+        }
+        
+        .ranking-button:hover {
+          transform: scale(1.05);
+          box-shadow: 0 4px 10px rgba(255, 215, 0, 0.5);
+        }
+        
+        .trade-button {
+          background: linear-gradient(135deg, #FF9800, #F57C00);
+          border: none;
+          color: white;
+          padding: 10px 20px;
+          border-radius: 20px;
+          font-size: 16px;
+          cursor: pointer;
+          transition: all 0.3s;
+          box-shadow: 0 2px 5px rgba(255, 152, 0, 0.3);
+          font-weight: bold;
+        }
+        
+        .trade-button:hover {
+          transform: scale(1.05);
+          box-shadow: 0 4px 10px rgba(255, 152, 0, 0.5);
+        }
       </style>
       
       <div class="my-planets-header">
         <div class="my-planets-title">🌍 マイ惑星</div>
-        <button class="my-planets-close" id="close-my-planets">×</button>
+        <div style="display: flex; gap: 15px;">
+          <button class="trade-button" id="open-trade">
+            🚢 貿易
+          </button>
+          <button class="ranking-button" id="open-ranking">
+            🏆 ランキング
+          </button>
+          <button class="my-planets-close" id="close-my-planets">×</button>
+        </div>
       </div>
       
       <div class="summary-section">
@@ -288,6 +382,26 @@ export class MyPlanetsUI {
     const closeBtn = document.getElementById('close-my-planets');
     if (closeBtn) {
       closeBtn.addEventListener('click', () => this.close());
+    }
+    
+    // 貿易ボタン
+    const tradeBtn = document.getElementById('open-trade');
+    if (tradeBtn) {
+      tradeBtn.addEventListener('click', () => {
+        import('./PlanetTradeUI.js').then(({ PlanetTradeUI }) => {
+          PlanetTradeUI.getInstance().open();
+        });
+      });
+    }
+    
+    // ランキングボタン
+    const rankingBtn = document.getElementById('open-ranking');
+    if (rankingBtn) {
+      rankingBtn.addEventListener('click', () => {
+        import('./PlanetRankingUI.js').then(({ PlanetRankingUI }) => {
+          PlanetRankingUI.getInstance().open();
+        });
+      });
     }
   }
   
@@ -350,6 +464,9 @@ export class MyPlanetsUI {
       const purchaseDate = new Date(planet.purchaseDate);
       const daysOwned = Math.floor((Date.now() - planet.purchaseDate) / (1000 * 60 * 60 * 24));
       
+      // 永続データを取得
+      const persistentData = PlanetPersistence.getInstance().loadPlanetData(planet.id);
+      
       return `
         <div class="planet-item">
           <div class="planet-header">
@@ -361,9 +478,14 @@ export class MyPlanetsUI {
                 <span>${daysOwned}日前に購入</span>
               </div>
             </div>
-            <button class="explore-button" data-planet-index="${index}" title="惑星を探索">
-              🚀 探索する
-            </button>
+            <div style="display: flex; gap: 10px;">
+              <button class="explore-button" data-planet-index="${index}" title="惑星を探索">
+                🚀 探索する
+              </button>
+              <button class="automation-button" data-planet-index="${index}" title="自動化管理">
+                🤖 自動化
+              </button>
+            </div>
           </div>
           
           <div class="planet-production">
@@ -380,6 +502,27 @@ export class MyPlanetsUI {
               <div class="production-value">+${formatNumber(planet.baseProduction.organicMatter * planet.productionMultiplier)}/s</div>
             </div>
           </div>
+          
+          ${persistentData ? `
+            <div class="planet-stats">
+              <div class="stat-item-small">
+                <div class="stat-label-small">訪問回数</div>
+                <div class="stat-value-small">${persistentData.statistics.totalVisits}</div>
+              </div>
+              <div class="stat-item-small">
+                <div class="stat-label-small">建物数</div>
+                <div class="stat-value-small">${persistentData.buildings.length}</div>
+              </div>
+              <div class="stat-item-small">
+                <div class="stat-label-small">総採掘量</div>
+                <div class="stat-value-small">${formatNumber(persistentData.statistics.totalResourcesCollected.minerals)}</div>
+              </div>
+              <div class="stat-item-small">
+                <div class="stat-label-small">発見エリア</div>
+                <div class="stat-value-small">${persistentData.exploration.areasDiscovered.length}</div>
+              </div>
+            </div>
+          ` : ''}
         </div>
       `;
     }).join('');
@@ -390,16 +533,29 @@ export class MyPlanetsUI {
         const index = parseInt((e.currentTarget as HTMLElement).dataset.planetIndex || '0');
         const planet = ownedPlanets[index];
         if (planet) {
-          // 直接探索モードを開始（Babylon.js版）
-          import('./planetExploration/PlanetExplorationBabylon.js').then(({ PlanetExplorationBabylon }) => {
-            console.log('[MY_PLANETS] Starting exploration for:', planet.name);
-            const explorationGame = PlanetExplorationBabylon.getInstance();
-            explorationGame.start(planet).catch(error => {
-              console.error('[MY_PLANETS] Failed to start exploration:', error);
-            });
+          // まず準備ショップを開く
+          import('./PlanetExplorationShop.js').then(({ PlanetExplorationShop }) => {
+            console.log('[MY_PLANETS] Opening exploration shop for:', planet.name);
+            const shop = PlanetExplorationShop.getInstance();
+            shop.open(planet);
           });
           // 所有惑星UIを閉じる
           this.close();
+        }
+      });
+    });
+    
+    // 自動化ボタンのイベントリスナー
+    listContainer.querySelectorAll('.automation-button').forEach(button => {
+      button.addEventListener('click', (e) => {
+        const index = parseInt((e.currentTarget as HTMLElement).dataset.planetIndex || '0');
+        const planet = ownedPlanets[index];
+        if (planet) {
+          import('./PlanetAutomationUI.js').then(({ PlanetAutomationUI }) => {
+            console.log('[MY_PLANETS] Opening automation UI for:', planet.name);
+            const automationUI = PlanetAutomationUI.getInstance();
+            automationUI.open(planet);
+          });
         }
       });
     });
