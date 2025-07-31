@@ -390,10 +390,10 @@ export class MyPlanetsUI {
         const index = parseInt((e.currentTarget as HTMLElement).dataset.planetIndex || '0');
         const planet = ownedPlanets[index];
         if (planet) {
-          // 直接探索モードを開始
-          import('./planetExploration/core/PlanetExplorationGame.js').then(({ PlanetExplorationGame }) => {
+          // 直接探索モードを開始（Babylon.js版）
+          import('./planetExploration/PlanetExplorationBabylon.js').then(({ PlanetExplorationBabylon }) => {
             console.log('[MY_PLANETS] Starting exploration for:', planet.name);
-            const explorationGame = PlanetExplorationGame.getInstance();
+            const explorationGame = PlanetExplorationBabylon.getInstance();
             explorationGame.start(planet).catch(error => {
               console.error('[MY_PLANETS] Failed to start exploration:', error);
             });

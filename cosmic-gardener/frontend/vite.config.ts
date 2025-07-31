@@ -41,6 +41,8 @@ export default defineConfig({
           three: ['three'],
           // Split anime.js into its own chunk
           animejs: ['animejs'],
+          // Split Babylon.js into its own chunk
+          babylon: ['@babylonjs/core', '@babylonjs/havok'],
         },
         // Ensure proper file naming
         entryFileNames: 'assets/[name].[hash].js',
@@ -53,7 +55,7 @@ export default defineConfig({
   },
   
   optimizeDeps: {
-    include: ['three', 'animejs'],
+    include: ['three', 'animejs', '@babylonjs/core', '@babylonjs/havok'],
     exclude: [],
   },
   

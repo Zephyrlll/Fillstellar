@@ -24,7 +24,8 @@
       "mcp__playwright__browser_navigate",
       "Bash(npm:*)",
       "Bash(rustc:*)",
-      "Bash(cargo --version)"
+      "Bash(cargo --version)",
+      "Bash(powershell:*)"
     ],
     "deny": []
   }
